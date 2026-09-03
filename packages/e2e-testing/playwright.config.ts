@@ -203,6 +203,24 @@ export default defineConfig({
         viewport: { width: 1440, height: 900 },
       },
     },
+    // APP12-A02-C1 — the Admin Ready-Made order branch.
+    //
+    // The Admin origin is the baseURL because the operator's screen is what is
+    // under test; the customer's checkout runs in its own context on the
+    // Storefront origin, which is how a real order gets made for the operator
+    // to work on. 1440 is the project default and 1024 is asserted inside the
+    // suite by resizing — the Admin is a desktop operator tool and D01 draws no
+    // mobile design for it (`APP12-D01` §L).
+    {
+      name: 'app12-a02-chromium',
+      testMatch: '**/app12/a02-*.acceptance.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        ...chromiumLaunch,
+        baseURL: ADMIN_URL,
+        viewport: { width: 1440, height: 900 },
+      },
+    },
     {
       name: 'app7-e01-chromium',
       testMatch: '**/app7/*.acceptance.spec.ts',

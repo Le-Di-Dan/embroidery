@@ -26,16 +26,44 @@ describe('APP7-B02 — the Admin order queue query', () => {
     ).toEqual({ status: ['AWAITING_DEPOSIT', 'DEPOSIT_PAID'] });
   });
 
-  it('accepts every LC-14 state, including the ones APP7 offers no action in', () => {
+  it('accepts every order state of both lifecycles, actionable or not', () => {
     for (const status of ORDER_STATUS_FILTERS) {
       expect(listAdminOrdersQuerySchema.parse({ status }).status).toEqual([status]);
     }
-    expect(ORDER_STATUS_FILTERS).toHaveLength(11);
+    // Thirteen since `APP12-A02-C1`: the eleven custom LC-14 states plus the two
+    // Ready-Made ones. `APP7-B02` published eleven because no order could hold a
+    // Ready-Made state; `APP12-B02` made those orders real, and a queue that
+    // could not filter for `AWAITING_SHIPPING_FEE` could not triage them.
+    expect(ORDER_STATUS_FILTERS).toHaveLength(13);
+    expect(ORDER_STATUS_FILTERS).toContain('AWAITING_SHIPPING_FEE');
+    expect(ORDER_STATUS_FILTERS).toContain('AWAITING_PAYMENT');
   });
 
-  it('refuses a status that is not an LC-14 state', () => {
+  it('refuses a status the orders column cannot hold', () => {
+    // `PAID` is the one an operator would most plausibly reach for and the one
+    // most worth refusing: satisfaction is the obligation's fact under LC-15,
+    // never a second copy on the order. `EXPIRED` likewise — a lapsed
+    // reservation cancels the order and the reason rides on the customer
+    // projection, so no order row ever holds it.
     expect(() => listAdminOrdersQuerySchema.parse({ status: 'PAID' })).toThrow();
+    expect(() => listAdminOrdersQuerySchema.parse({ status: 'EXPIRED' })).toThrow();
     expect(() => listAdminOrdersQuerySchema.parse({ status: [] })).toThrow();
+  });
+
+  it('accepts either origin, both, or none, and refuses anything else', () => {
+    expect(listAdminOrdersQuerySchema.parse({ origin: 'READY_MADE' }).origin).toEqual([
+      'READY_MADE',
+    ]);
+    expect(listAdminOrdersQuerySchema.parse({ origin: ['CUSTOM', 'READY_MADE'] }).origin).toEqual([
+      'CUSTOM',
+      'READY_MADE',
+    ]);
+    // Omitted is how you ask for every origin. There is no sentinel to get
+    // wrong, and an empty array is a filter that could match nothing.
+    expect(listAdminOrdersQuerySchema.parse({}).origin).toBeUndefined();
+    expect(() => listAdminOrdersQuerySchema.parse({ origin: [] })).toThrow();
+    expect(() => listAdminOrdersQuerySchema.parse({ origin: 'READYMADE' })).toThrow();
+    expect(() => listAdminOrdersQuerySchema.parse({ origin: 'ready_made' })).toThrow();
   });
 
   it('coerces and bounds the page size, and refuses a nonsensical one', () => {
@@ -51,14 +79,19 @@ describe('APP7-B02 — the Admin order queue query', () => {
     expect(listAdminOrdersQuerySchema.parse({ cursor: 'abc' }).cursor).toBe('abc');
   });
 
-  it('carries no filter beyond cursor, limit and status', () => {
+  it('carries no filter beyond cursor, limit, status and origin', () => {
     // The closed key set, asserted directly. B04 owns payment operational
     // visibility and APP8 owns inventory and production, so none of those may
     // appear here — and neither may a product, SKU or catalog search that would
     // make the queue read live Catalog state.
+    //
+    // `origin` joined the set in `APP12-A02-C1` and is the one addition: it
+    // filters on the order's own immutable discriminator, not on a payment or
+    // catalog fact, so it stays inside the same boundary the other three do.
     expect(Object.keys(listAdminOrdersQuerySchema.shape).sort()).toEqual([
       'cursor',
       'limit',
+      'origin',
       'status',
     ]);
   });

@@ -23,6 +23,7 @@ interface OperationShape {
     readonly name: string;
     readonly in: string;
     readonly required?: boolean;
+    readonly schema?: SchemaShape;
   }[];
   readonly requestBody?: unknown;
   readonly responses?: Record<string, unknown>;
@@ -30,6 +31,7 @@ interface OperationShape {
 }
 interface SchemaShape {
   readonly type?: string;
+  readonly format?: string;
   readonly required?: readonly string[];
   readonly properties?: Record<string, SchemaShape>;
   readonly enum?: readonly string[];
@@ -154,12 +156,24 @@ describe('APP7-B02 — the published Admin order contract', () => {
     // precisely because `AdminOrderModule` holds no writer, which is the
     // property the two assertions below still prove. B02's two operation ids and
     // its two response schemas are untouched by either.
+    // `APP9-B04` added the shipping-detail read and write and `APP9-B05` the
+    // dispatch and completion commands; this inventory was never updated for
+    // them and had been failing at HEAD since. `APP12-A02-C1` records them,
+    // because it runs this suite and a permanently red assertion proves
+    // nothing. All four are writes or reads owned by their own modules, and
+    // none of them is B02's: the property under test — that `AdminOrderModule`
+    // itself holds no writer — is unchanged, and `APP12-A02-C1` adds no
+    // operation of its own to this list.
     expect(operations.sort()).toEqual([
       'GET /api/admin/orders',
       'GET /api/admin/orders/{orderId}',
       'GET /api/admin/orders/{orderId}/payments',
+      'GET /api/admin/orders/{orderId}/shipping-detail',
+      'POST /api/admin/orders/{orderId}/completion',
+      'POST /api/admin/orders/{orderId}/dispatch',
       'POST /api/admin/orders/{orderId}/production-jobs',
       'POST /api/admin/orders/{orderId}/transitions',
+      'PUT /api/admin/orders/{orderId}/shipping-detail',
     ]);
   });
 
@@ -168,8 +182,20 @@ describe('APP7-B02 — the published Admin order contract', () => {
     expect(operation?.requestBody).toBeUndefined();
 
     const parameters = (operation?.parameters ?? []).filter((one) => one.in === 'query');
-    expect(parameters.map((one) => one.name).sort()).toEqual(['cursor', 'limit', 'status']);
+    expect(parameters.map((one) => one.name).sort()).toEqual([
+      'cursor',
+      'limit',
+      'origin',
+      'status',
+    ]);
     expect(parameters.every((one) => one.required !== true)).toBe(true);
+
+    // `APP12-A02-C1` — the origin filter is served by the **server**, so it has
+    // to exist as a parameter here. A queue whose only origin filter was a
+    // client-side predicate would page over the unfiltered set and hand an
+    // operator short pages with a cursor that skips rows.
+    const origin = parameters.find((one) => one.name === 'origin');
+    expect(origin?.schema?.items?.enum).toEqual(['CUSTOM', 'READY_MADE']);
   });
 
   it('declares the detail id as a path parameter and accepts no body', () => {
@@ -199,6 +225,7 @@ describe('APP7-B02 — the published Admin order contract', () => {
       'customRequestId',
       'customerId',
       'orderId',
+      'origin',
       'status',
       'totalAmount',
     ]);
@@ -220,6 +247,8 @@ describe('APP7-B02 — the published Admin order contract', () => {
       'customerId',
       'items',
       'orderId',
+      'origin',
+      'paymentDeadline',
       'status',
       'totalAmount',
       'updatedAt',
@@ -267,13 +296,19 @@ describe('APP7-B02 — the published Admin order contract', () => {
     }
   });
 
-  it('publishes all eleven LC-14 states on both status fields', () => {
+  it('publishes all thirteen order states on both status fields', () => {
+    // Eleven custom LC-14 states plus the two Ready-Made ones
+    // (`APP12-A02-C1`). `APP7-B02` published eleven because no order could hold
+    // a Ready-Made state; a queue that cannot name `AWAITING_SHIPPING_FEE`
+    // cannot render, let alone triage, the order sitting in it.
     const states = [
       'AWAITING_DEPOSIT',
       'DEPOSIT_PAID',
       'IN_PRODUCTION',
       'PRODUCTION_COMPLETED',
       'AWAITING_FINAL_PAYMENT',
+      'AWAITING_SHIPPING_FEE',
+      'AWAITING_PAYMENT',
       'READY_FOR_DELIVERY',
       'DELIVERED',
       'COMPLETED',
@@ -283,6 +318,46 @@ describe('APP7-B02 — the published Admin order contract', () => {
     ];
     expect(schemaOf('AdminOrderQueueItemResponse').properties?.['status']?.enum).toEqual(states);
     expect(schemaOf('AdminOrderDetailResponse').properties?.['status']?.enum).toEqual(states);
+
+    // Neither invented state may appear. `PAID` would be a second copy of a
+    // fact LC-15 keeps on the obligation; `EXPIRED` would be an order state no
+    // row can hold, since a lapsed reservation cancels the order instead.
+    for (const schema of ['AdminOrderQueueItemResponse', 'AdminOrderDetailResponse']) {
+      expect(schemaOf(schema).properties?.['status']?.enum).not.toContain('PAID');
+      expect(schemaOf(schema).properties?.['status']?.enum).not.toContain('EXPIRED');
+    }
+  });
+
+  it('makes origin required and the whole custom chain optional beside it', () => {
+    // `APP12-A02-C1`. `ck_orders__custom_chain_by_origin` nulls all four
+    // custom-chain columns on a `READY_MADE` row, so any of them declared
+    // `required` is a shape half the table cannot satisfy — which is exactly
+    // what made the queue answer HTTP 500 for the whole page once one
+    // Ready-Made order existed.
+    for (const schema of ['AdminOrderQueueItemResponse', 'AdminOrderDetailResponse']) {
+      const required = [...(schemaOf(schema).required ?? [])];
+      expect(required).toContain('origin');
+      expect(required).not.toContain('customRequestId');
+      expect(schemaOf(schema).properties?.['origin']?.enum).toEqual(['CUSTOM', 'READY_MADE']);
+    }
+
+    const detail = [...(schemaOf('AdminOrderDetailResponse').required ?? [])];
+    expect(detail).not.toContain('acceptedQuotationVersionId');
+    expect(detail).not.toContain('currentApprovalSnapshotId');
+    expect(detail).not.toContain('paymentDeadline');
+
+    // A Ready-Made line approved nothing, so the snapshot cannot be required
+    // either — and the id must stay a real reference rather than being filled
+    // in with a sentinel.
+    expect([...(schemaOf('AdminOrderItemResponse').required ?? [])]).not.toContain(
+      'approvalSnapshotId',
+    );
+
+    // The facts every order has, whatever its origin, stay required. Widening
+    // the chain must not quietly loosen the rest of the row.
+    for (const always of ['orderId', 'code', 'status', 'customerId', 'totalAmount']) {
+      expect([...(schemaOf('AdminOrderQueueItemResponse').required ?? [])]).toContain(always);
+    }
   });
 
   it('carries no credential or storage identity anywhere in either schema', () => {
@@ -303,11 +378,34 @@ describe('APP7-B02 — the published Admin order contract', () => {
       ...propertyNames('AdminOrderQueueItemResponse'),
       ...propertyNames('AdminOrderDetailResponse'),
       ...propertyNames('AdminOrderItemResponse'),
-    ].map((name) => name.toLowerCase());
+    ]
+      // `paymentDeadline` is the one deliberate exception, and it is not a
+      // payment fact: it is the **reservation's** own committed `expires_at`,
+      // the instant the stock hold lapses. It carries no obligation, no
+      // attempt, no amount and no transfer reference, so the rule this test
+      // enforces — that the order read never becomes a second payment
+      // authority — is intact. Every other substring below still applies to it,
+      // which is what the assertion under this filter proves.
+      .filter((name) => name !== 'paymentDeadline')
+      .map((name) => name.toLowerCase());
 
     for (const forbidden of FORBIDDEN_PROPERTY_SUBSTRINGS) {
       expect(properties.filter((name) => name.includes(forbidden))).toEqual([]);
     }
+
+    // The exception is exactly one field, spelled exactly this way. Anything
+    // else payment-shaped would have to be added here deliberately.
+    const deadlineFields = [
+      ...propertyNames('AdminOrderQueueItemResponse'),
+      ...propertyNames('AdminOrderDetailResponse'),
+      ...propertyNames('AdminOrderItemResponse'),
+    ].filter((name) => name.toLowerCase().includes('payment'));
+    expect(deadlineFields).toEqual(['paymentDeadline']);
+    // It is a date, never an amount or an id: a money field here would be this
+    // read composing a total the payment vertical owns.
+    expect(schemaOf('AdminOrderDetailResponse').properties?.['paymentDeadline']?.format).toBe(
+      'date-time',
+    );
   });
 
   it('names no live Catalog identity or price in either schema', () => {

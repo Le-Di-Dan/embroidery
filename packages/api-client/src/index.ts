@@ -42,6 +42,7 @@ export * from './catalog';
 export * from './design-studio';
 export * from './custom-requests';
 export * from './quotation-and-design-review';
+export * from './admin-orders-and-payments';
 export * from './orders-and-payments';
 export * from './inventory-and-production';
 export * from './gallery';

@@ -1669,6 +1669,8 @@
               "IN_PRODUCTION",
               "PRODUCTION_COMPLETED",
               "AWAITING_FINAL_PAYMENT",
+              "AWAITING_SHIPPING_FEE",
+              "AWAITING_PAYMENT",
               "READY_FOR_DELIVERY",
               "DELIVERED",
               "COMPLETED",
@@ -1692,6 +1694,8 @@
               "IN_PRODUCTION",
               "PRODUCTION_COMPLETED",
               "AWAITING_FINAL_PAYMENT",
+              "AWAITING_SHIPPING_FEE",
+              "AWAITING_PAYMENT",
               "READY_FOR_DELIVERY",
               "DELIVERED",
               "COMPLETED",
@@ -1714,7 +1718,7 @@
       "AdminOrderDetailResponse": {
         "properties": {
           "acceptedQuotationVersionId": {
-            "description": "The exact accepted quotation version this order froze its commercial basis from (REL-073). Never `quotations.current_version_id`, which is a mutable pointer.",
+            "description": "The exact accepted quotation version this order froze its commercial basis from (REL-073). Never `quotations.current_version_id`, which is a mutable pointer. Present exactly when `origin` is `CUSTOM`: a Ready-Made order was never quoted, and its commercial basis is the frozen SKU price on its own lines plus the shipping fee.",
             "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6073",
             "format": "uuid",
             "type": "string"
@@ -1733,12 +1737,13 @@
             "type": "string"
           },
           "currentApprovalSnapshotId": {
-            "description": "The order’s current approval snapshot (REL-074) — an audited pointer, reported as stored. Each line carries its own immutable `approvalSnapshotId` beside it.",
+            "description": "The order’s current approval snapshot (REL-074) — an audited pointer, reported as stored. Each line carries its own immutable `approvalSnapshotId` beside it. Present exactly when `origin` is `CUSTOM`.",
             "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6074",
             "format": "uuid",
             "type": "string"
           },
           "customRequestId": {
+            "description": "Present exactly when `origin` is `CUSTOM`.",
             "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
             "format": "uuid",
             "type": "string"
@@ -1760,6 +1765,21 @@
             "format": "uuid",
             "type": "string"
           },
+          "origin": {
+            "description": "How this order came into being (`COL-TBL043-12`). The only legitimate discriminator between the two shapes below: which of the optional custom-chain fields are present is a consequence of it, never a substitute for reading it.",
+            "enum": [
+              "CUSTOM",
+              "READY_MADE"
+            ],
+            "example": "CUSTOM",
+            "type": "string"
+          },
+          "paymentDeadline": {
+            "description": "When this Ready-Made order’s stock hold — and with it the window to pay — lapses. The active reservation’s own committed `expires_at`, read rather than recomputed: it is never `now` plus a window constant, never taken from a released or consumed reservation, and never derived from the order’s timestamps. Absent on a `CUSTOM` order, and absent once nothing is `RESERVED` — the hold lapsed, was released, or was consumed at verification — which is exactly when a countdown must stop being shown.",
+            "example": "2026-08-21T09:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
           "status": {
             "enum": [
               "AWAITING_DEPOSIT",
@@ -1767,6 +1787,8 @@
               "IN_PRODUCTION",
               "PRODUCTION_COMPLETED",
               "AWAITING_FINAL_PAYMENT",
+              "AWAITING_SHIPPING_FEE",
+              "AWAITING_PAYMENT",
               "READY_FOR_DELIVERY",
               "DELIVERED",
               "COMPLETED",
@@ -1792,10 +1814,8 @@
           "orderId",
           "code",
           "status",
-          "customRequestId",
+          "origin",
           "customerId",
-          "acceptedQuotationVersionId",
-          "currentApprovalSnapshotId",
           "totalAmount",
           "currencyCode",
           "createdAt",
@@ -1825,6 +1845,8 @@
               "IN_PRODUCTION",
               "PRODUCTION_COMPLETED",
               "AWAITING_FINAL_PAYMENT",
+              "AWAITING_SHIPPING_FEE",
+              "AWAITING_PAYMENT",
               "READY_FOR_DELIVERY",
               "DELIVERED",
               "COMPLETED",
@@ -1862,6 +1884,8 @@
               "IN_PRODUCTION",
               "PRODUCTION_COMPLETED",
               "AWAITING_FINAL_PAYMENT",
+              "AWAITING_SHIPPING_FEE",
+              "AWAITING_PAYMENT",
               "READY_FOR_DELIVERY",
               "DELIVERED",
               "COMPLETED",
@@ -1887,7 +1911,7 @@
       "AdminOrderItemResponse": {
         "properties": {
           "approvalSnapshotId": {
-            "description": "The exact approval evidence that authorized this line (D7-07). Immutable, unlike the order’s own `currentApprovalSnapshotId`, which is an audited pointer that a post-approval revision may move.",
+            "description": "The exact approval evidence that authorized this line (D7-07). Immutable, unlike the order’s own `currentApprovalSnapshotId`, which is an audited pointer that a post-approval revision may move. Present exactly on a line of a `CUSTOM` order: a Ready-Made line is a SKU the customer bought as it already was, so nothing was designed and nothing was approved (`BR-031`), and `tg_order_items__origin_subject` nulls it.",
             "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6074",
             "format": "uuid",
             "type": "string"
@@ -1961,47 +1985,26 @@
           "quantity",
           "unitPriceAmount",
           "lineTotalAmount",
-          "currencyCode",
-          "approvalSnapshotId"
+          "currencyCode"
         ],
         "type": "object"
       },
       "AdminOrderPaymentsResponse": {
         "properties": {
           "attempts": {
-            "description": "Every attempt on this deposit, oldest first, with a stable `id` tie-breaker.",
+            "description": "Every attempt on `currentObligation`, oldest first, with a stable `id` tie-breaker. Empty when there is no current obligation, and — because the list is keyed on that obligation’s id — never carrying an attempt made against a superseded predecessor.",
             "items": {
               "$ref": "#/components/schemas/AdminPaymentAttemptResponse"
             },
             "type": "array"
           },
-          "depositObligationId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "depositStatus": {
-            "enum": [
-              "PENDING",
-              "SATISFIED",
-              "CANCELLED",
-              "SUPERSEDED"
+          "currentObligation": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AdminPaymentObligationResponse"
+              }
             ],
-            "example": "PENDING",
-            "type": "string"
-          },
-          "expectedAmount": {
-            "description": "The DEPOSIT obligation’s own frozen amount — the figure a received transfer must match exactly. Never a share recomputed from a quotation and never a live catalog price.",
-            "example": "1500000.00",
-            "type": "string"
-          },
-          "expectedCurrencyCode": {
-            "example": "VND",
-            "type": "string"
-          },
-          "expectedTransferReference": {
-            "description": "The exact memo the customer was told to put on the transfer: `ORD`, the order code body, then `DC`. Derived from the order, never stored and never accepted from a request.",
-            "example": "ORD7K3MPQ2XVDDC",
-            "type": "string"
+            "description": "The obligation currently being collected, or **absent when there is nothing to collect yet**. The one case that produces the absence is a Ready-Made order still at `AWAITING_SHIPPING_FEE`: `BR-029` creates the `FULL` obligation with the first shipping fee, so before that the order is genuinely unpriced. That is a real order awaiting a price, not a missing one, and no provisional obligation, zero amount or placeholder transfer reference is fabricated to stand in for it."
           },
           "orderCode": {
             "example": "ORD-7K3MPQ2XVD",
@@ -2023,37 +2026,35 @@
               "COMPLETED",
               "ON_HOLD",
               "CANCELLING",
-              "CANCELLED"
+              "CANCELLED",
+              "AWAITING_SHIPPING_FEE",
+              "AWAITING_PAYMENT"
             ],
             "example": "AWAITING_DEPOSIT",
             "type": "string"
           },
+          "origin": {
+            "description": "How the order came into being (`COL-TBL043-12`), and therefore which obligation kind this surface collects: `CUSTOM` a `DEPOSIT`, `READY_MADE` a `FULL`. Published so a client branches on the order’s own discriminator rather than on which obligation it happens to find.",
+            "enum": [
+              "CUSTOM",
+              "READY_MADE"
+            ],
+            "example": "CUSTOM",
+            "type": "string"
+          },
           "reconciliations": {
-            "description": "Every manual reconciliation recorded against this deposit, oldest first.",
+            "description": "Every manual reconciliation recorded against the current obligation and its attempts, oldest first. Empty when there is no current obligation.",
             "items": {
               "$ref": "#/components/schemas/AdminPaymentReconciliationResponse"
             },
             "type": "array"
-          },
-          "satisfiedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "satisfiedByAttemptId": {
-            "description": "The one attempt that satisfied the deposit, once one has.",
-            "format": "uuid",
-            "type": "string"
           }
         },
         "required": [
           "orderId",
           "orderCode",
           "orderStatus",
-          "depositObligationId",
-          "depositStatus",
-          "expectedAmount",
-          "expectedCurrencyCode",
-          "expectedTransferReference",
+          "origin",
           "attempts",
           "reconciliations"
         ],
@@ -2078,7 +2079,7 @@
             "type": "string"
           },
           "customRequestId": {
-            "description": "The custom request this order was created from. One order per request (`uq_orders__request`), so this is also how the Admin screen navigates back.",
+            "description": "The custom request this order was created from. One order per request (`uq_orders__request`), so this is also how the Admin screen navigates back. Present exactly when `origin` is `CUSTOM` — `ck_orders__custom_chain_by_origin` nulls it on a `READY_MADE` order, which was never designed and has no request behind it.",
             "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
             "format": "uuid",
             "type": "string"
@@ -2093,6 +2094,15 @@
             "format": "uuid",
             "type": "string"
           },
+          "origin": {
+            "description": "How this order came into being (`COL-TBL043-12`), read from the immutable `origin` column. It is the **only** legitimate discriminator between the two order shapes: a consumer must not infer it from the status, from a missing `customRequestId` or from which payment obligation the order carries.",
+            "enum": [
+              "CUSTOM",
+              "READY_MADE"
+            ],
+            "example": "CUSTOM",
+            "type": "string"
+          },
           "status": {
             "description": "The current LC-14 state, reported as stored.",
             "enum": [
@@ -2101,6 +2111,8 @@
               "IN_PRODUCTION",
               "PRODUCTION_COMPLETED",
               "AWAITING_FINAL_PAYMENT",
+              "AWAITING_SHIPPING_FEE",
+              "AWAITING_PAYMENT",
               "READY_FOR_DELIVERY",
               "DELIVERED",
               "COMPLETED",
@@ -2121,7 +2133,7 @@
           "orderId",
           "code",
           "status",
-          "customRequestId",
+          "origin",
           "customerId",
           "totalAmount",
           "currencyCode",
@@ -2167,6 +2179,8 @@
               "IN_PRODUCTION",
               "PRODUCTION_COMPLETED",
               "AWAITING_FINAL_PAYMENT",
+              "AWAITING_SHIPPING_FEE",
+              "AWAITING_PAYMENT",
               "READY_FOR_DELIVERY",
               "DELIVERED",
               "COMPLETED",
@@ -2205,6 +2219,8 @@
               "IN_PRODUCTION",
               "PRODUCTION_COMPLETED",
               "AWAITING_FINAL_PAYMENT",
+              "AWAITING_SHIPPING_FEE",
+              "AWAITING_PAYMENT",
               "READY_FOR_DELIVERY",
               "DELIVERED",
               "COMPLETED",
@@ -2351,6 +2367,66 @@
           "byteSize",
           "createdAt",
           "previewEligible"
+        ],
+        "type": "object"
+      },
+      "AdminPaymentObligationResponse": {
+        "properties": {
+          "expectedAmount": {
+            "description": "The obligation’s own frozen amount — the figure a received transfer must match exactly. Never a share recomputed from a quotation, never a live catalog price, and for a Ready-Made `FULL` never re-derived from the merchandise subtotal plus the shipping fee.",
+            "example": "1500000.00",
+            "type": "string"
+          },
+          "expectedCurrencyCode": {
+            "example": "VND",
+            "type": "string"
+          },
+          "expectedTransferReference": {
+            "description": "The exact memo the customer was told to put on the transfer: `ORD`, the order code body, then the kind’s suffix — `DC` for a deposit, `FL` for a Ready-Made full payment. Derived from the order, never stored and never accepted from a request.",
+            "example": "ORD7K3MPQ2XVDDC",
+            "type": "string"
+          },
+          "kind": {
+            "description": "Which obligation this is, read off the row. `DEPOSIT` on a `CUSTOM` order and `FULL` on a `READY_MADE` one; `REMAINING` is never presented here, because APP9 collects it through the order’s own lifecycle.",
+            "enum": [
+              "DEPOSIT",
+              "REMAINING",
+              "FULL"
+            ],
+            "example": "DEPOSIT",
+            "type": "string"
+          },
+          "obligationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "satisfiedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "satisfiedByAttemptId": {
+            "description": "The one attempt that satisfied this obligation, once one has.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "SATISFIED",
+              "CANCELLED",
+              "SUPERSEDED"
+            ],
+            "example": "PENDING",
+            "type": "string"
+          }
+        },
+        "required": [
+          "obligationId",
+          "kind",
+          "status",
+          "expectedAmount",
+          "expectedCurrencyCode",
+          "expectedTransferReference"
         ],
         "type": "object"
       },
@@ -8314,7 +8390,7 @@
             "type": "string"
           },
           "orderStatus": {
-            "description": "The order’s state after the decision committed, read back rather than assumed. A verified deposit reports `DEPOSIT_PAID` and a verified balance `READY_FOR_DELIVERY`; a review reports the order unmoved.",
+            "description": "The order’s state after the decision committed, read back rather than assumed. A verified deposit reports `DEPOSIT_PAID`, a verified balance `READY_FOR_DELIVERY`, and a verified Ready-Made full payment `READY_FOR_DELIVERY`; a review reports the order unmoved — which for a Ready-Made order can be `AWAITING_PAYMENT`, a state this enum could not carry before `APP12-A02-C1`.",
             "enum": [
               "AWAITING_DEPOSIT",
               "DEPOSIT_PAID",
@@ -8326,7 +8402,9 @@
               "COMPLETED",
               "ON_HOLD",
               "CANCELLING",
-              "CANCELLED"
+              "CANCELLED",
+              "AWAITING_SHIPPING_FEE",
+              "AWAITING_PAYMENT"
             ],
             "example": "DEPOSIT_PAID",
             "type": "string"
@@ -20952,6 +21030,22 @@
         "operationId": "adminOrder_list",
         "parameters": [
           {
+            "description": "Repeatable. Omitted means every origin. Applied in SQL against the immutable `origin` column before the page is cut, so a filtered page is a full page and its cursor skips nothing.",
+            "in": "query",
+            "name": "origin",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": [
+                  "CUSTOM",
+                  "READY_MADE"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
             "description": "Repeatable. Omitted means every state.",
             "in": "query",
             "name": "status",
@@ -20964,6 +21058,8 @@
                   "IN_PRODUCTION",
                   "PRODUCTION_COMPLETED",
                   "AWAITING_FINAL_PAYMENT",
+                  "AWAITING_SHIPPING_FEE",
+                  "AWAITING_PAYMENT",
                   "READY_FOR_DELIVERY",
                   "DELIVERED",
                   "COMPLETED",
@@ -21682,7 +21778,7 @@
     },
     "/api/admin/orders/{orderId}/payments": {
       "get": {
-        "description": "Everything an operator needs to verify a deposit: the order’s LC-14 state, the DEPOSIT obligation with the exact amount owed and its currency, the transfer reference the customer was told to use, every attempt against that deposit with its LC-16 state, the metadata of any transfer screenshots the customer submitted, and the manual reconciliation history. The expected amount is the obligation’s own frozen column — no deposit percentage is recomputed and no live quotation or catalog price is read. The reference is derived from the order code and stored nowhere. Evidence is **supporting material**: its status is never a payment status, an empty list is an ordinary valid deposit, and no image bytes are served here — `APP7-B06` owns the private delivery. The remaining payment is not shown and is not collectible in this phase. It is a read: nothing is written, no status moves and no event is appended.",
+        "description": "Everything an operator needs to verify the money owed on one order: the order’s LC-14 state, its `origin`, the obligation currently being collected — the `DEPOSIT` on a `CUSTOM` order, the `FULL` on a `READY_MADE` one — with the exact amount owed and its currency, the transfer reference the customer was told to use, every attempt against that obligation with its LC-16 state, the metadata of any transfer screenshots the customer submitted, and the manual reconciliation history. Which kind is collected follows the order’s origin, never the reverse. The expected amount is the obligation’s own frozen column — no deposit percentage is recomputed, no live quotation or catalog price is read, and a Ready-Made total is never re-derived from its subtotal plus the shipping fee. The reference is derived from the order code and stored nowhere. Only the **live** obligation is reported, so a predecessor superseded by a shipping-fee correction never appears and its attempts are never listed as the successor’s. A Ready-Made order still awaiting its shipping fee has no obligation yet and answers 200 with `currentObligation` absent — that is an unpriced order, not a missing one. Evidence is **supporting material**: its status is never a payment status, an empty list is ordinary and valid, and no image bytes are served here — `APP7-B06` owns the private delivery. The custom remaining payment is not shown and is not collectible here. It is a read: nothing is written, no status moves and no event is appended.",
         "operationId": "adminOrderPayment_read",
         "parameters": [
           {
@@ -21730,7 +21826,7 @@
                 }
               }
             },
-            "description": "The order’s deposit payment vertical.",
+            "description": "The order’s current payment vertical.",
             "headers": {
               "X-Request-ID": {
                 "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
@@ -21833,7 +21929,7 @@
             "adminSession": []
           }
         ],
-        "summary": "Get one order’s deposit payment facts",
+        "summary": "Get one order’s current payment facts",
         "tags": [
           "adminOrderPayment"
         ]

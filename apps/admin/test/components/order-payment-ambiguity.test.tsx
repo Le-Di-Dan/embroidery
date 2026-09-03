@@ -34,6 +34,8 @@ import {
   makeOrderDetail,
   makePayments,
   makeVerifiedDecision,
+  EXPECTED_AMOUNT,
+  EXPECTED_REFERENCE,
   ORDER_ID,
 } from '../support/order-fixture';
 
@@ -53,11 +55,24 @@ const verifyMock = adminPaymentAttemptVerify as jest.MockedFunction<
 
 let user: ReturnType<typeof createUser>;
 
-/** The committed truth an earlier, unanswered call would have produced. */
+/**
+ * The committed truth an earlier, unanswered call would have produced.
+ *
+ * The obligation's state moved under `currentObligation` in `APP12-A02-C1`;
+ * the fact asserted is unchanged — the deposit is satisfied and its attempt
+ * succeeded.
+ */
 const settledPayments = () =>
   envelope(
     makePayments({
-      depositStatus: 'SATISFIED',
+      currentObligation: {
+        obligationId: '019d0000-0000-7000-8000-000000000001',
+        kind: 'DEPOSIT',
+        status: 'SATISFIED',
+        expectedAmount: EXPECTED_AMOUNT,
+        expectedCurrencyCode: 'VND',
+        expectedTransferReference: EXPECTED_REFERENCE,
+      },
       orderStatus: 'DEPOSIT_PAID',
       attempts: [makeAttempt({ status: 'SUCCEEDED' })],
     }),

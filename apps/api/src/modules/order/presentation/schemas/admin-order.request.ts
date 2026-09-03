@@ -16,7 +16,7 @@
  * inventory/production). A filter added because the SQL would support it is a
  * contract nothing asked for.
  */
-import type { CustomOrderState, OrderState } from '@embroidery/database';
+import type { OrderOrigin, OrderState } from '@embroidery/database';
 import { z } from 'zod';
 
 import { createZodDto, registerZodDtos } from '../../../../platform/validation';
@@ -33,12 +33,18 @@ import { createZodDto, registerZodDtos } from '../../../../platform/validation';
  * queue reports the **stored** status, and refusing `IN_PRODUCTION` here would
  * make the endpoint claim the database cannot hold a value it does hold.
  *
- * APP12-DB01 widened the `orders.status` column vocabulary to thirteen by
- * adding the two Ready-Made states. The proof below is therefore taken against
- * `CustomOrderState` — the eleven a custom order may hold — because this
- * endpoint is the custom order queue and no order can hold a Ready-Made state
- * until APP12-B02 ships. Widening the published filter is APP12-A02's decision
- * to make with its own contract change, not a side effect of a migration.
+ * APP12-DB01 widened the `orders.status` column vocabulary to thirteen by adding
+ * the two Ready-Made states, and `APP7-B02` deliberately left the published set
+ * at the eleven custom ones because no order could hold a Ready-Made state yet.
+ * `APP12-B02` then made those orders real, so **`APP12-A02-C1` publishes all
+ * thirteen** — the decision `APP7-B02` said belonged to this checkpoint.
+ *
+ * The exhaustiveness proof below is therefore taken against `OrderState`, the
+ * whole column vocabulary. Nothing invented is added beside it: there is no
+ * `PAID` (satisfaction is the obligation's fact under LC-15, never a second
+ * copy on the order) and no `EXPIRED` (a lapsed reservation cancels the order
+ * and the machine-readable reason rides on the customer projection), and a
+ * filter value the database cannot store would be a promise no row can keep.
  */
 export const ORDER_STATUS_FILTERS = [
   'AWAITING_DEPOSIT',
@@ -46,6 +52,8 @@ export const ORDER_STATUS_FILTERS = [
   'IN_PRODUCTION',
   'PRODUCTION_COMPLETED',
   'AWAITING_FINAL_PAYMENT',
+  'AWAITING_SHIPPING_FEE',
+  'AWAITING_PAYMENT',
   'READY_FOR_DELIVERY',
   'DELIVERED',
   'COMPLETED',
@@ -54,7 +62,7 @@ export const ORDER_STATUS_FILTERS = [
   'CANCELLED',
 ] as const satisfies readonly OrderState[];
 
-type MissingOrderStatus = Exclude<CustomOrderState, (typeof ORDER_STATUS_FILTERS)[number]>;
+type MissingOrderStatus = Exclude<OrderState, (typeof ORDER_STATUS_FILTERS)[number]>;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- compile-time exhaustiveness proof
 type AssertNoMissingOrderStatus = MissingOrderStatus extends never
   ? true
@@ -73,11 +81,44 @@ const statusFilterSchema = z.preprocess(
   z.array(z.enum(ORDER_STATUS_FILTERS)).min(1).max(ORDER_STATUS_FILTERS.length),
 );
 
+/**
+ * The two order origins (`APP12-A02-C1`, `COL-TBL043-12`).
+ *
+ * A local tuple for the same reason `ORDER_STATUS_FILTERS` is one —
+ * presentation must not pull the ORM schema namespace in — with `satisfies` and
+ * the proof below tying it to the canonical union in both directions, so a
+ * third origin cannot be added to the database without this filter failing to
+ * compile.
+ */
+export const ORDER_ORIGIN_FILTERS = [
+  'CUSTOM',
+  'READY_MADE',
+] as const satisfies readonly OrderOrigin[];
+
+type MissingOrderOrigin = Exclude<OrderOrigin, (typeof ORDER_ORIGIN_FILTERS)[number]>;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- compile-time exhaustiveness proof
+type AssertNoMissingOrderOrigin = MissingOrderOrigin extends never
+  ? true
+  : ['missing', MissingOrderOrigin];
+
+/**
+ * One or many origins, normalized exactly as `status` is.
+ *
+ * Repeatable rather than a single value, so the filter has one shape whether an
+ * operator narrows to one origin or explicitly asks for both. Omitting it is
+ * how you ask for every origin; there is no `ALL` sentinel to get wrong.
+ */
+const originFilterSchema = z.preprocess(
+  (value) => (typeof value === 'string' ? [value] : value),
+  z.array(z.enum(ORDER_ORIGIN_FILTERS)).min(1).max(ORDER_ORIGIN_FILTERS.length),
+);
+
 export const listAdminOrdersQuerySchema = z
   .object({
     cursor: z.string().min(1).max(512).optional(),
     limit: z.coerce.number().int().min(1).max(100).optional(),
     status: statusFilterSchema.optional(),
+    origin: originFilterSchema.optional(),
   })
   .strict();
 

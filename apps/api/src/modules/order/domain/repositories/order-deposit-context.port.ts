@@ -20,28 +20,48 @@
  * and the frozen line items. A customer deposit surface needs none of those, and
  * a SELECT that never retrieves them is redaction nobody downstream can forget.
  */
-import type { OrderState } from '@embroidery/database';
+import type { OrderOrigin, OrderState } from '@embroidery/database';
 
 import type { CustomRequestId } from './custom-request.repository';
 
 export const ORDER_DEPOSIT_CONTEXT_PORT = Symbol('ORDER_DEPOSIT_CONTEXT_PORT');
 
 /**
- * What an order will say to the customer paying its deposit.
+ * What an order will say to the surface collecting money against it.
  *
- * Three fields. `id` addresses the DEPOSIT obligation, `code` derives the
- * transfer reference and identifies the order on the customer's screen, and
- * `status` is the LC-14 state the deposit surface must report truthfully.
+ * Four fields. `id` addresses the obligation, `code` derives the transfer
+ * reference and identifies the order on screen, `status` is the LC-14 state the
+ * surface must report truthfully, and `origin` says which obligation kind the
+ * order carries at all.
+ *
+ * ### `origin` (`APP12-A02-C1`)
+ *
+ * Added for the **Admin** payment read, which until this correction assumed
+ * every order had a `DEPOSIT` and answered `ORDER_NOT_FOUND` for the Ready-Made
+ * half of the shop. `BR-029` gives a Ready-Made order one `FULL` obligation and
+ * no deposit at any point in its life, so the read has to know which kind to
+ * ask for — and `COL-TBL043-12` is the only fact that says so. Deriving it from
+ * which obligation happens to exist would invert the dependency: an order
+ * before its first shipping fee has **no** obligation at all, and that must
+ * read as "not priced yet", never as "not a Ready-Made order".
+ *
+ * It rides on this port rather than `ORDER_ORIGIN_PORT` because that symbol is
+ * exported by `OrderPersistenceModule` beside `ORDER_REPOSITORY`; importing it
+ * into a payment **read** module would hand a zero-write query a `transition()`.
+ * This port is already Ordering-owned, already read-only and already the one
+ * the Admin payment read resolves its order through.
  *
  * `customerId`, `acceptedQuotationVersionId`, `currentApprovalSnapshotId`,
- * `totalAmount` and the timestamps are deliberately absent: the deposit amount
- * is the obligation's, never the order total, and the rest are facts the paying
- * customer has no use for.
+ * `totalAmount` and the timestamps are deliberately absent: the payable amount
+ * is the obligation's, never the order total, and the rest are facts a payment
+ * surface has no use for.
  */
 export interface OrderDepositContext {
   readonly id: string;
   readonly code: string;
   readonly status: OrderState;
+  /** `COL-TBL043-12` — immutable, and what decides the payable obligation kind. */
+  readonly origin: OrderOrigin;
 }
 
 export interface OrderDepositContextPort {

@@ -23,31 +23,36 @@
  * **No inventory or production fact.** APP8 owns those.
  */
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import type { CustomOrderState, OrderState } from '@embroidery/database';
+import type { OrderOrigin, OrderState } from '@embroidery/database';
 
-import { ORDER_STATUS_FILTERS } from './admin-order.request';
+import { ORDER_ORIGIN_FILTERS, ORDER_STATUS_FILTERS } from './admin-order.request';
 
 const ORDER_ID_EXAMPLE = '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6081';
 const REQUEST_ID_EXAMPLE = '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071';
 const CUSTOMER_ID_EXAMPLE = '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072';
 
 /**
- * The published LC-14 vocabulary.
+ * The published order-status vocabulary.
  *
- * The same eleven states the filter accepts, published from one tuple so the
- * two can never disagree about what an order status is.
+ * The same states the filter accepts, published from one tuple so the two can
+ * never disagree about what an order status is. `APP12-A02-C1` widened it from
+ * the eleven custom states to all thirteen; the tuple and its exhaustiveness
+ * proof live in `admin-order.request.ts`.
  */
 export const PUBLISHED_ORDER_STATES = ORDER_STATUS_FILTERS;
 
+/** The published origin vocabulary, from the same single tuple as the filter. */
+export const PUBLISHED_ORDER_ORIGINS = ORDER_ORIGIN_FILTERS;
+
 /**
- * Compile-time proof the published list omits no custom-order state.
+ * Compile-time proof the published list omits no order state.
  *
- * Taken against `CustomOrderState` since APP12-DB01: the `orders.status`
- * column vocabulary now also holds the two Ready-Made states, which this
- * endpoint does not publish and no order can hold until APP12-B02 ships.
+ * Taken against `OrderState`, the whole `orders.status` column vocabulary,
+ * since `APP12-B02` made Ready-Made orders real and `APP12-A02-C1` published
+ * the queue that has to triage them.
  */
 export type PublishedOrderStatesAreComplete =
-  Exclude<CustomOrderState, (typeof PUBLISHED_ORDER_STATES)[number]> extends never ? true : never;
+  Exclude<OrderState, (typeof PUBLISHED_ORDER_STATES)[number]> extends never ? true : never;
 
 export class AdminOrderQueueItemResponse {
   @ApiProperty({ format: 'uuid', example: ORDER_ID_EXAMPLE })
@@ -67,13 +72,26 @@ export class AdminOrderQueueItemResponse {
   status!: OrderState;
 
   @ApiProperty({
+    enum: PUBLISHED_ORDER_ORIGINS,
+    example: 'CUSTOM',
+    description:
+      'How this order came into being (`COL-TBL043-12`), read from the immutable `origin` ' +
+      'column. It is the **only** legitimate discriminator between the two order shapes: a ' +
+      'consumer must not infer it from the status, from a missing `customRequestId` or from ' +
+      'which payment obligation the order carries.',
+  })
+  origin!: OrderOrigin;
+
+  @ApiPropertyOptional({
     format: 'uuid',
     example: REQUEST_ID_EXAMPLE,
     description:
       'The custom request this order was created from. One order per request ' +
-      '(`uq_orders__request`), so this is also how the Admin screen navigates back.',
+      '(`uq_orders__request`), so this is also how the Admin screen navigates back. Present ' +
+      'exactly when `origin` is `CUSTOM` — `ck_orders__custom_chain_by_origin` nulls it on a ' +
+      '`READY_MADE` order, which was never designed and has no request behind it.',
   })
-  customRequestId!: string;
+  customRequestId?: string;
 
   @ApiProperty({ format: 'uuid', example: CUSTOMER_ID_EXAMPLE })
   customerId!: string;
@@ -116,7 +134,8 @@ export interface AdminOrderQueueViewPayload {
     readonly orderId: string;
     readonly code: string;
     readonly status: OrderState;
-    readonly customRequestId: string;
+    readonly origin: OrderOrigin;
+    readonly customRequestId: string | undefined;
     readonly customerId: string;
     readonly totalAmount: string;
     readonly currencyCode: string;

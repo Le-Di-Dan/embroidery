@@ -19,7 +19,7 @@ import { OrderQueueFilterBar } from './order-queue-filter-bar';
  * entry into one order.
  */
 export function OrderQueueScreen() {
-  const { filters, toggleStatus, reset } = useOrderQueueFilters();
+  const { filters, toggleStatus, toggleOrigin, reset } = useOrderQueueFilters();
 
   return (
     <section className="orders">
@@ -29,7 +29,12 @@ export function OrderQueueScreen() {
         <p className="orders__subtitle">{ORDER_QUEUE_COPY.page.subtitle}</p>
       </header>
 
-      <OrderQueueFilterBar filters={filters} onToggleStatus={toggleStatus} onReset={reset} />
+      <OrderQueueFilterBar
+        filters={filters}
+        onToggleStatus={toggleStatus}
+        onToggleOrigin={toggleOrigin}
+        onReset={reset}
+      />
 
       <OrderQueueCollection filters={filters} onResetFilters={reset} />
     </section>

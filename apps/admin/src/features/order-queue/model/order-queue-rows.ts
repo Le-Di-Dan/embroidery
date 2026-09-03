@@ -30,6 +30,10 @@ import type { AdminOrderQueueItemResponse, AdminOrderQueueResponse } from '@embr
 
 import { truncateIdentifier } from '../../../shared/presentation/identifier';
 import {
+  presentOrderOrigin,
+  type OriginPresentation,
+} from '../../../shared/presentation/order-origin';
+import {
   presentOrderStatus,
   type StatusPresentation,
 } from '../../../shared/presentation/order-status';
@@ -44,13 +48,26 @@ export interface OrderQueueRow {
   readonly key: string;
   readonly code: string;
   readonly status: StatusPresentation;
+  /**
+   * The order-origin badge (`APP12-A02-C1`, `912:337`).
+   *
+   * Read from the contract's own `origin` and nothing else — never inferred
+   * from the status, from a missing `customRequestId` or from a payment fact.
+   */
+  readonly origin: OriginPresentation;
   /** The frozen total, grouped for reading. Never re-summed. */
   readonly totalAmount: string;
   readonly currencyCode: string;
   /** The raw ISO instant, for the machine-readable `dateTime` attribute. */
   readonly createdAt: string;
   readonly detailHref: string;
-  readonly requestHref: string;
+  /**
+   * The request this order was created from, where there is one.
+   *
+   * Absent on a Ready-Made order: it was never designed and carries no custom
+   * request, so there is nothing to navigate to.
+   */
+  readonly requestHref: string | undefined;
   /** Shortened for the cell; the full value is the cell's `title`. */
   readonly customerShortId: string;
   readonly customerId: string;
@@ -61,11 +78,17 @@ export function toOrderQueueRow(item: AdminOrderQueueItemResponse): OrderQueueRo
     key: item.orderId,
     code: item.code,
     status: presentOrderStatus(item.status),
+    origin: presentOrderOrigin(item.origin),
     totalAmount: formatGroupedAmount(item.totalAmount),
     currencyCode: item.currencyCode,
     createdAt: item.createdAt,
     detailHref: adminOrderDetailRoute(item.orderId),
-    requestHref: `${ADMIN_REQUEST_DETAIL_PREFIX}/${item.customRequestId}`,
+    // Built only where the id exists. A template over an absent id would
+    // navigate an operator to `/requests/undefined`.
+    requestHref:
+      item.customRequestId === undefined
+        ? undefined
+        : `${ADMIN_REQUEST_DETAIL_PREFIX}/${item.customRequestId}`,
     customerShortId: truncateIdentifier(item.customerId),
     customerId: item.customerId,
   };

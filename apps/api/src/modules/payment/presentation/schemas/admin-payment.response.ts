@@ -52,6 +52,19 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { schema, PAYMENT_RECONCILIATION_ACTIONS } from '@embroidery/database';
 
+import {
+  AdminPaymentObligationResponse,
+  type AdminPaymentObligationPayload,
+} from './admin-payment-obligation.response';
+
+// Re-exported so the controller and its contract suite keep one import site for
+// the whole Admin payment surface; the class itself lives beside the subject it
+// describes.
+export {
+  AdminPaymentObligationResponse,
+  type AdminPaymentObligationPayload,
+} from './admin-payment-obligation.response';
+
 const AMOUNT = {
   type: String,
   example: '1500000.00',
@@ -199,52 +212,46 @@ export class AdminOrderPaymentsResponse {
   @ApiProperty({ example: 'ORD-7K3MPQ2XVD' })
   orderCode!: string;
 
-  @ApiProperty({ enum: schema.CUSTOM_ORDER_STATES, example: 'AWAITING_DEPOSIT' })
+  @ApiProperty({ enum: schema.ORDER_STATES, example: 'AWAITING_DEPOSIT' })
   orderStatus!: string;
 
-  @ApiProperty({ format: 'uuid' })
-  depositObligationId!: string;
-
-  @ApiProperty({ enum: schema.PAYMENT_OBLIGATION_STATES, example: 'PENDING' })
-  depositStatus!: string;
-
   @ApiProperty({
-    ...AMOUNT,
+    enum: schema.ORDER_ORIGINS,
+    example: 'CUSTOM',
     description:
-      'The DEPOSIT obligation’s own frozen amount — the figure a received transfer must match ' +
-      'exactly. Never a share recomputed from a quotation and never a live catalog price.',
+      'How the order came into being (`COL-TBL043-12`), and therefore which obligation kind ' +
+      'this surface collects: `CUSTOM` a `DEPOSIT`, `READY_MADE` a `FULL`. Published so a ' +
+      'client branches on the order’s own discriminator rather than on which obligation it ' +
+      'happens to find.',
   })
-  expectedAmount!: string;
-
-  @ApiProperty({ example: 'VND' })
-  expectedCurrencyCode!: string;
-
-  @ApiProperty({
-    example: 'ORD7K3MPQ2XVDDC',
-    description:
-      'The exact memo the customer was told to put on the transfer: `ORD`, the order code body, ' +
-      'then `DC`. Derived from the order, never stored and never accepted from a request.',
-  })
-  expectedTransferReference!: string;
+  origin!: string;
 
   @ApiPropertyOptional({
-    format: 'uuid',
-    description: 'The one attempt that satisfied the deposit, once one has.',
+    type: AdminPaymentObligationResponse,
+    description:
+      'The obligation currently being collected, or **absent when there is nothing to collect ' +
+      'yet**. The one case that produces the absence is a Ready-Made order still at ' +
+      '`AWAITING_SHIPPING_FEE`: `BR-029` creates the `FULL` obligation with the first shipping ' +
+      'fee, so before that the order is genuinely unpriced. That is a real order awaiting a ' +
+      'price, not a missing one, and no provisional obligation, zero amount or placeholder ' +
+      'transfer reference is fabricated to stand in for it.',
   })
-  satisfiedByAttemptId?: string;
-
-  @ApiPropertyOptional({ format: 'date-time' })
-  satisfiedAt?: string;
+  currentObligation?: AdminPaymentObligationResponse;
 
   @ApiProperty({
     type: [AdminPaymentAttemptResponse],
-    description: 'Every attempt on this deposit, oldest first, with a stable `id` tie-breaker.',
+    description:
+      'Every attempt on `currentObligation`, oldest first, with a stable `id` tie-breaker. ' +
+      'Empty when there is no current obligation, and — because the list is keyed on that ' +
+      'obligation’s id — never carrying an attempt made against a superseded predecessor.',
   })
   attempts!: AdminPaymentAttemptResponse[];
 
   @ApiProperty({
     type: [AdminPaymentReconciliationResponse],
-    description: 'Every manual reconciliation recorded against this deposit, oldest first.',
+    description:
+      'Every manual reconciliation recorded against the current obligation and its attempts, ' +
+      'oldest first. Empty when there is no current obligation.',
   })
   reconciliations!: AdminPaymentReconciliationResponse[];
 }
@@ -280,12 +287,14 @@ export class PaymentDecisionResponse {
   orderId!: string;
 
   @ApiProperty({
-    enum: schema.CUSTOM_ORDER_STATES,
+    enum: schema.ORDER_STATES,
     example: 'DEPOSIT_PAID',
     description:
       'The order’s state after the decision committed, read back rather than assumed. A ' +
-      'verified deposit reports `DEPOSIT_PAID` and a verified balance `READY_FOR_DELIVERY`; a ' +
-      'review reports the order unmoved.',
+      'verified deposit reports `DEPOSIT_PAID`, a verified balance `READY_FOR_DELIVERY`, and a ' +
+      'verified Ready-Made full payment `READY_FOR_DELIVERY`; a review reports the order ' +
+      'unmoved — which for a Ready-Made order can be `AWAITING_PAYMENT`, a state this enum ' +
+      'could not carry before `APP12-A02-C1`.',
   })
   orderStatus!: string;
 
@@ -340,13 +349,8 @@ export interface AdminOrderPaymentsPayload {
   readonly orderId: string;
   readonly orderCode: string;
   readonly orderStatus: string;
-  readonly depositObligationId: string;
-  readonly depositStatus: string;
-  readonly expectedAmount: string;
-  readonly expectedCurrencyCode: string;
-  readonly expectedTransferReference: string;
-  readonly satisfiedByAttemptId?: string | undefined;
-  readonly satisfiedAt?: string | undefined;
+  readonly origin: string;
+  readonly currentObligation?: AdminPaymentObligationPayload | undefined;
   readonly attempts: readonly AdminPaymentAttemptPayload[];
   readonly reconciliations: readonly AdminPaymentReconciliationPayload[];
 }

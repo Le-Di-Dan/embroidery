@@ -23,10 +23,13 @@ import { useCallback, useMemo } from 'react';
 
 import {
   DEFAULT_ORDER_QUEUE_FILTERS,
+  ORDER_QUEUE_ORIGIN_PARAM,
   ORDER_QUEUE_STATUS_PARAM,
   normalizeOrderQueueFilters,
   toOrderQueueSearchString,
+  toggleOrderOrigin,
   toggleOrderStatus,
+  type OrderOriginFilterValue,
   type OrderQueueFilters,
   type OrderStatusFilterValue,
 } from '../model/order-queue-filters';
@@ -34,6 +37,7 @@ import {
 export interface OrderQueueFilterController {
   readonly filters: OrderQueueFilters;
   readonly toggleStatus: (status: OrderStatusFilterValue) => void;
+  readonly toggleOrigin: (origin: OrderOriginFilterValue) => void;
   readonly reset: () => void;
 }
 
@@ -43,7 +47,11 @@ export function useOrderQueueFilters(): OrderQueueFilterController {
   const searchParams = useSearchParams();
 
   const filters = useMemo(
-    () => normalizeOrderQueueFilters(searchParams.getAll(ORDER_QUEUE_STATUS_PARAM)),
+    () =>
+      normalizeOrderQueueFilters(
+        searchParams.getAll(ORDER_QUEUE_STATUS_PARAM),
+        searchParams.getAll(ORDER_QUEUE_ORIGIN_PARAM),
+      ),
     [searchParams],
   );
 
@@ -62,11 +70,18 @@ export function useOrderQueueFilters(): OrderQueueFilterController {
     [apply, filters],
   );
 
+  const toggleOrigin = useCallback(
+    (origin: OrderOriginFilterValue) => {
+      apply(toggleOrderOrigin(filters, origin));
+    },
+    [apply, filters],
+  );
+
   // Resets to the default, which is the same thing as an empty query string —
   // so the reset affordance and a hand-cleared address bar land in one state.
   const reset = useCallback(() => {
     apply(DEFAULT_ORDER_QUEUE_FILTERS);
   }, [apply]);
 
-  return { filters, toggleStatus, reset };
+  return { filters, toggleStatus, toggleOrigin, reset };
 }

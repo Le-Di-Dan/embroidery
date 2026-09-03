@@ -24,7 +24,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { buildPage, decodeCursor, resolveLimit } from '@embroidery/persistence';
-import type { OrderState } from '@embroidery/database';
+import type { OrderOrigin, OrderState } from '@embroidery/database';
 
 import { adminOrderReadError } from '../../domain/admin/admin-order-read.errors';
 import {
@@ -38,13 +38,18 @@ export interface AdminOrderQueueInput {
   readonly cursor?: string | undefined;
   readonly limit?: number | undefined;
   readonly statuses?: readonly OrderState[] | undefined;
+  /** Absent means every origin (`APP12-A02-C1`). Applied in SQL, never in memory. */
+  readonly origins?: readonly OrderOrigin[] | undefined;
 }
 
 export interface AdminOrderQueueItem {
   readonly orderId: string;
   readonly code: string;
   readonly status: OrderState;
-  readonly customRequestId: string;
+  /** `COL-TBL043-12` — the only legitimate CUSTOM/READY_MADE discriminator. */
+  readonly origin: OrderOrigin;
+  /** Present exactly when `origin` is `CUSTOM`; a Ready-Made order has none. */
+  readonly customRequestId: string | undefined;
   readonly customerId: string;
   readonly totalAmount: string;
   readonly currencyCode: string;
@@ -68,7 +73,7 @@ export class ReadAdminOrderQueue {
     const after = decodePosition(input.cursor);
 
     const rows = await this.orders.listQueue({
-      filter: { statuses: input.statuses },
+      filter: { statuses: input.statuses, origins: input.origins },
       after,
       limit,
     });
@@ -83,6 +88,7 @@ export class ReadAdminOrderQueue {
         orderId: row.id,
         code: row.code,
         status: row.status,
+        origin: row.origin,
         customRequestId: row.customRequestId,
         customerId: row.customerId,
         // The frozen total, byte for byte as `numeric(14,2)` stored it. Not

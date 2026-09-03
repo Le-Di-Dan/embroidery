@@ -15,15 +15,31 @@
  * reconciliation history, not a form error. It is never shown as "Xác nhận thất
  * bại", and the dialog does not reopen blank as though nothing had happened.
  *
- * ## Exact success is all three facts, not one
+ * ## Exact success is both facts, not one
  *
  * `751:3` forbids collapsing the groups, and this is where that would be easiest
  * to get wrong. A success state is claimed only when the attempt is `SUCCEEDED`
- * **and** the deposit is `SATISFIED` **and** the order is `DEPOSIT_PAID`. Any
- * other combination — including an attempt that succeeded against an obligation
- * that did not — is reported as "the server recorded something, here is the
- * current truth", because a screen that announced a paid deposit from one of the
- * three facts would be asserting something the response did not say.
+ * **and** the obligation is `SATISFIED`. An attempt that succeeded against an
+ * obligation that did not is reported as "the server recorded something, here is
+ * the current truth", because a screen that announced a settled payment from one
+ * of the two facts would be asserting something the response did not say.
+ *
+ * ## Why the order's destination state is no longer the third condition
+ *
+ * `APP7-B04` also required `orderStatus === 'DEPOSIT_PAID'`, which was exact
+ * while a deposit was the only thing this screen could verify. It is not a
+ * portable rule: a verified `REMAINING` lands the order on `READY_FOR_DELIVERY`
+ * (`APP9-B03`) and so does a verified Ready-Made `FULL` (`APP12-B05`), so the
+ * literal made every non-deposit success fall through to `recorded` and
+ * announce nothing.
+ *
+ * The fix is **not** a kind → destination table here. That is LC-14, it is the
+ * server's, and a copy of it in the browser would be a second lifecycle
+ * authority that drifts the moment a transition changes — precisely what these
+ * modules exist to prevent. The two facts this module *can* judge without
+ * owning a lifecycle are the attempt's own state and the obligation's own
+ * state, and both are still required. `orderStatus` is carried through and
+ * rendered as the server reported it, never asserted against a literal.
  *
  * ## Nothing here is projected into the cache
  *
@@ -35,8 +51,7 @@ import type { PaymentDecisionResponse } from '@embroidery/api-client';
 
 const ATTEMPT_SUCCEEDED = 'SUCCEEDED';
 const ATTEMPT_REQUIRES_REVIEW = 'REQUIRES_REVIEW';
-const DEPOSIT_SATISFIED = 'SATISFIED';
-const ORDER_DEPOSIT_PAID = 'DEPOSIT_PAID';
+const OBLIGATION_SATISFIED = 'SATISFIED';
 
 /**
  * What the screen shows after a settled decision.
@@ -73,10 +88,12 @@ export function readPaymentDecision(decision: PaymentDecisionResponse): PaymentD
   };
 
   // All three, or none. See the class comment: one fact is not the payment.
+  // Both facts, or neither. `depositStatus` keeps its `APP7-B04` field name on
+  // the decision receipt and describes whichever obligation the decision acted
+  // on — the deposit, the balance, or the Ready-Made full payment.
   if (
     decision.attemptStatus === ATTEMPT_SUCCEEDED &&
-    decision.depositStatus === DEPOSIT_SATISFIED &&
-    decision.orderStatus === ORDER_DEPOSIT_PAID
+    decision.depositStatus === OBLIGATION_SATISFIED
   ) {
     return { kind: 'verified', ...base };
   }
@@ -97,10 +114,9 @@ export function readPaymentDecision(decision: PaymentDecisionResponse): PaymentD
  * attempt is located by id rather than assumed to be the newest one: a
  * concurrent initiation could have added another since the dialog opened.
  */
-export function isDepositSettledFor(
+export function isPaymentSettledFor(
   payments: {
-    readonly depositStatus: string;
-    readonly orderStatus: string;
+    readonly currentObligation?: { readonly status: string } | undefined;
     readonly attempts: readonly { readonly attemptId: string; readonly status: string }[];
   },
   attemptId: string,
@@ -108,8 +124,7 @@ export function isDepositSettledFor(
   const attempt = payments.attempts.find((candidate) => candidate.attemptId === attemptId);
   return (
     attempt?.status === ATTEMPT_SUCCEEDED &&
-    payments.depositStatus === DEPOSIT_SATISFIED &&
-    payments.orderStatus === ORDER_DEPOSIT_PAID
+    payments.currentObligation?.status === OBLIGATION_SATISFIED
   );
 }
 

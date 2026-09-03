@@ -29,6 +29,12 @@
 // composed **on top of** the APP7 card chrome above it, reusing `.order-card`
 // and its title, help, note and definition rules rather than redefining any of
 // them, and adding only what APP9 draws and APP7 never did.
+//
+// `ready-made-order` follows it on the same terms (`APP12-A02-C1`): the
+// Ready-Made branch reuses that same chrome and adds only the elements
+// `913:337` and `914:361` draw that neither APP7 nor APP9 has — the omission
+// note, the stock deadline, the supersede warning, the fee refusal and the
+// settled line. It redefines nothing above it.
 
 @use 'order-detail-layout';
 @use 'order-detail-cards';
@@ -37,3 +43,4 @@
 @use 'order-payment-dialogs';
 @use 'order-payment-outcome';
 @use 'order-fulfillment';
+@use 'ready-made-order';

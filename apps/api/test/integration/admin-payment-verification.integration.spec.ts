@@ -57,12 +57,16 @@ interface PaymentsBody {
   readonly orderId: string;
   readonly orderCode: string;
   readonly orderStatus: string;
-  readonly depositObligationId: string;
-  readonly depositStatus: string;
-  readonly expectedAmount: string;
-  readonly expectedCurrencyCode: string;
-  readonly expectedTransferReference: string;
-  readonly satisfiedByAttemptId?: string;
+  readonly origin: string;
+  readonly currentObligation?: {
+    readonly obligationId: string;
+    readonly kind: string;
+    readonly status: string;
+    readonly expectedAmount: string;
+    readonly expectedCurrencyCode: string;
+    readonly expectedTransferReference: string;
+    readonly satisfiedByAttemptId?: string;
+  };
   readonly attempts: readonly AttemptBody[];
   readonly reconciliations: readonly {
     readonly action: string;
@@ -114,14 +118,20 @@ describe('APP7-B04 — Admin deposit read and manual verification', () => {
       expect(body.orderId).toBe(seeded.orderId);
       expect(body.orderCode).toBe(seeded.orderCode);
       expect(body.orderStatus).toBe('AWAITING_DEPOSIT');
-      expect(body.depositObligationId).toBe(seeded.depositObligationId);
-      expect(body.depositStatus).toBe('PENDING');
+      // APP12-A02-C1 moved the obligation's own facts under currentObligation
+      // and added origin. A custom order still collects its DEPOSIT, and the
+      // kind is published rather than implied by the field name.
+      expect(body.origin).toBe('CUSTOM');
+      const obligation = body.currentObligation;
+      expect(obligation?.kind).toBe('DEPOSIT');
+      expect(obligation?.obligationId).toBe(seeded.depositObligationId);
+      expect(obligation?.status).toBe('PENDING');
       // The obligation's own frozen column — never a 40 % share recomputed here.
-      expect(body.expectedAmount).toBe(SEEDED_DEPOSIT_AMOUNT);
-      expect(body.expectedCurrencyCode).toBe('VND');
-      expect(body.expectedTransferReference).toBe(seeded.expectedReference);
-      expect(body.expectedTransferReference).toMatch(/^[A-Z0-9]{15}$/);
-      expect(body.satisfiedByAttemptId).toBeUndefined();
+      expect(obligation?.expectedAmount).toBe(SEEDED_DEPOSIT_AMOUNT);
+      expect(obligation?.expectedCurrencyCode).toBe('VND');
+      expect(obligation?.expectedTransferReference).toBe(seeded.expectedReference);
+      expect(obligation?.expectedTransferReference).toMatch(/^[A-Z0-9]{15}$/);
+      expect(obligation?.satisfiedByAttemptId).toBeUndefined();
 
       expect(body.attempts).toHaveLength(1);
       const attempt = body.attempts[0] as AttemptBody;
@@ -407,11 +417,12 @@ describe('APP7-B04 — Admin deposit read and manual verification', () => {
       const response = await authed.get(ADMIN_PAYMENT_ROUTES.read(seeded.orderId)).expect(200);
       const body = (response.body as Envelope<PaymentsBody>).data;
       expect(body.orderStatus).toBe('DEPOSIT_PAID');
-      expect(body.depositStatus).toBe('SATISFIED');
-      expect(body.satisfiedByAttemptId).toBe(seeded.attemptId);
+      expect(body.currentObligation?.kind).toBe('DEPOSIT');
+      expect(body.currentObligation?.status).toBe('SATISFIED');
+      expect(body.currentObligation?.satisfiedByAttemptId).toBe(seeded.attemptId);
       expect((body.attempts[0] as AttemptBody).status).toBe('SUCCEEDED');
       // The reference is derived, so it is the same value it was before payment.
-      expect(body.expectedTransferReference).toBe(seeded.expectedReference);
+      expect(body.currentObligation?.expectedTransferReference).toBe(seeded.expectedReference);
       expect(body.reconciliations).toHaveLength(1);
       expect(body.reconciliations[0]?.action).toBe('MANUAL_MATCH');
       expect(body.reconciliations[0]?.resolvedStatus).toBe('SUCCEEDED');

@@ -42,6 +42,7 @@ export function OrderQueueTable({ rows }: OrderQueueTableProps) {
       <caption className="order-table__caption">{ORDER_QUEUE_COPY.page.tableLabel}</caption>
       <colgroup>
         <col className="order-table__col--code" />
+        <col className="order-table__col--origin" />
         <col className="order-table__col--status" />
         <col className="order-table__col--total" />
         <col className="order-table__col--currency" />
@@ -52,6 +53,7 @@ export function OrderQueueTable({ rows }: OrderQueueTableProps) {
       <thead>
         <tr>
           <th scope="col">{ORDER_QUEUE_COPY.columns.code}</th>
+          <th scope="col">{ORDER_QUEUE_COPY.columns.origin}</th>
           <th scope="col">{ORDER_QUEUE_COPY.columns.status}</th>
           <th scope="col" className="order-table__numeric">
             {ORDER_QUEUE_COPY.columns.total}
@@ -75,6 +77,18 @@ export function OrderQueueTable({ rows }: OrderQueueTableProps) {
               </Link>
             </th>
             <td>
+              {/* `912:337`'s `Nguồn` column, on the **existing** badge. The
+                  symbol and the word carry the meaning as well as the tone, so
+                  the two origins stay distinguishable without colour. */}
+              <AdminStatusBadge
+                token={row.origin.token}
+                label={row.origin.label}
+                tone={row.origin.tone}
+                symbol={row.origin.symbol}
+                testId="order-queue-origin"
+              />
+            </td>
+            <td>
               <AdminStatusBadge
                 token={row.status.token}
                 label={row.status.label}
@@ -90,14 +104,22 @@ export function OrderQueueTable({ rows }: OrderQueueTableProps) {
                   neither is derived from the other by guesswork. */}
               <time dateTime={row.createdAt}>{formatInstant(row.createdAt)}</time>
             </td>
+            {/* A Ready-Made order was never designed and carries no custom
+                request, so there is nothing to open. The cell states the
+                absence rather than offering a dead link — `BR-031` says omit
+                the custom-only fact and say it is omitted. */}
             <td>
-              <Link
-                className="order-table__request"
-                href={row.requestHref}
-                aria-label={`${ORDER_QUEUE_COPY.actions.openRequest}: ${row.code}`}
-              >
-                {ORDER_QUEUE_COPY.actions.openRequest}
-              </Link>
+              {row.requestHref === undefined ? (
+                <span className="order-table__absent">{ORDER_QUEUE_COPY.actions.noRequest}</span>
+              ) : (
+                <Link
+                  className="order-table__request"
+                  href={row.requestHref}
+                  aria-label={`${ORDER_QUEUE_COPY.actions.openRequest}: ${row.code}`}
+                >
+                  {ORDER_QUEUE_COPY.actions.openRequest}
+                </Link>
+              )}
             </td>
             {/* Shortened for the column; the full id stays available on hover
                 and to assistive technology through `title`. There is no route

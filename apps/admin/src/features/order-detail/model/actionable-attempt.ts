@@ -35,7 +35,7 @@ import type {
 
 const OPEN_ATTEMPT_STATUSES: readonly string[] = ['PENDING', 'REQUIRES_REVIEW'];
 
-const DEPOSIT_PENDING = 'PENDING';
+const OBLIGATION_PENDING = 'PENDING';
 
 export function isOpenAttempt(attempt: AdminPaymentAttemptResponse): boolean {
   return OPEN_ATTEMPT_STATUSES.includes(attempt.status);
@@ -44,14 +44,29 @@ export function isOpenAttempt(attempt: AdminPaymentAttemptResponse): boolean {
 /**
  * The attempt the controls address, or `undefined` when there is none to act on.
  *
- * `APP7-B04` returns attempts oldest first, so the newest open one is the last
+ * The read returns attempts oldest first, so the newest open one is the last
  * match rather than the first. The obligation gate is checked first: on a
- * satisfied deposit there is nothing to reconcile whatever the attempts say.
+ * satisfied obligation there is nothing to reconcile whatever the attempts say.
+ *
+ * ## It reads the **current** obligation, whichever kind that is
+ *
+ * `APP12-A02-C1` replaced the flat `depositStatus` with `currentObligation`,
+ * and this function follows it unchanged in meaning: a `DEPOSIT` on a custom
+ * order, a `FULL` on a Ready-Made one. Two properties come free with that.
+ *
+ * An **absent** obligation — a Ready-Made order still awaiting its shipping fee
+ * — yields no actionable attempt, which is correct: there is no money to
+ * reconcile before there is anything to pay.
+ *
+ * And because the read lists attempts from the *live* obligation's own id, an
+ * attempt against a predecessor superseded by a shipping-fee correction is
+ * never in `payments.attempts` to be selected. The isolation is the contract's,
+ * not a filter this screen would have to remember to apply.
  */
 export function selectActionableAttempt(
   payments: AdminOrderPaymentsResponse,
 ): AdminPaymentAttemptResponse | undefined {
-  if (payments.depositStatus !== DEPOSIT_PENDING) {
+  if (payments.currentObligation?.status !== OBLIGATION_PENDING) {
     return undefined;
   }
   return payments.attempts.filter(isOpenAttempt).at(-1);

@@ -1,6 +1,6 @@
 /**
- * Drizzle implementation of the Admin deposit-payment read model
- * (`APP7-B04` §7, §9, §29).
+ * Drizzle implementation of the Admin payment read model
+ * (`APP7-B04` §7, §9, §29; generalized past DEPOSIT by `APP12-A02-C1`).
  *
  * Every statement names its columns. That is what keeps `provider_key`,
  * `provider_ref`, `grant_id`, `step_up_challenge_id` and
@@ -31,6 +31,7 @@ import { Injectable } from '@nestjs/common';
 import { schema } from '@embroidery/database';
 import type {
   PaymentAttemptState,
+  PaymentObligationKind,
   PaymentObligationState,
   PaymentReconciliationAction,
 } from '@embroidery/database';
@@ -38,7 +39,7 @@ import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
 import { and, asc, eq, inArray, or, type SQL } from 'drizzle-orm';
 
 import type {
-  AdminDepositObligationRow,
+  AdminObligationRow,
   AdminPaymentAttemptRow,
   AdminPaymentReadRepository,
   AdminReconciliationRow,
@@ -48,11 +49,15 @@ import type {
 const { paymentObligations, paymentAttempts, paymentReconciliations, paymentTransferEvidence } =
   schema;
 
-/** `uq_payment_obligations__order_kind__live` — at most one row can qualify. */
+/**
+ * `uq_payment_obligations__order_kind__live` — at most one row per order **and
+ * kind** can qualify.
+ *
+ * That index is what makes the obligation lookup single-valued without an
+ * ordering rule: a superseded predecessor is neither `PENDING` nor `SATISFIED`,
+ * so a shipping-fee correction's loser cannot be returned even by accident.
+ */
 const LIVE_OBLIGATION_STATES: PaymentObligationState[] = ['PENDING', 'SATISFIED'];
-
-/** `APP7` makes only the DEPOSIT payable; `REMAINING` collection is APP9's. */
-const DEPOSIT = 'DEPOSIT';
 
 @Injectable()
 export class DrizzleAdminPaymentReadRepository
@@ -63,11 +68,15 @@ export class DrizzleAdminPaymentReadRepository
     super(executor);
   }
 
-  async findDepositObligation(orderId: string): Promise<AdminDepositObligationRow | undefined> {
-    return this.run('findDepositObligation', async () => {
+  async findLiveObligation(
+    orderId: string,
+    kind: PaymentObligationKind,
+  ): Promise<AdminObligationRow | undefined> {
+    return this.run('findLiveObligation', async () => {
       const [row] = await this.db
         .select({
           id: paymentObligations.id,
+          kind: paymentObligations.kind,
           status: paymentObligations.status,
           amount: paymentObligations.amount,
           currencyCode: paymentObligations.currencyCode,
@@ -78,7 +87,7 @@ export class DrizzleAdminPaymentReadRepository
         .where(
           and(
             eq(paymentObligations.orderId, orderId),
-            eq(paymentObligations.kind, DEPOSIT),
+            eq(paymentObligations.kind, kind),
             inArray(paymentObligations.status, LIVE_OBLIGATION_STATES),
           ),
         )
@@ -89,6 +98,7 @@ export class DrizzleAdminPaymentReadRepository
       }
       return {
         id: row.id,
+        kind: row.kind as PaymentObligationKind,
         status: row.status as PaymentObligationState,
         amount: row.amount,
         currencyCode: row.currencyCode,

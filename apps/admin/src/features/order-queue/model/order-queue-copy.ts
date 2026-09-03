@@ -18,6 +18,7 @@ export const ORDER_QUEUE_COPY = {
   },
   columns: {
     code: 'Mã đơn hàng',
+    origin: 'Nguồn',
     status: 'Trạng thái',
     total: 'Tổng tiền',
     currency: 'Tiền tệ',
@@ -27,15 +28,18 @@ export const ORDER_QUEUE_COPY = {
   },
   filters: {
     legend: 'Trạng thái',
+    originLegend: 'Nguồn đơn',
     all: 'Tất cả',
     selected: (count: number) => `${String(count)} đã chọn`,
     reset: 'Bỏ lọc',
     scope:
-      'Bộ lọc khả dụng: trạng thái đơn hàng. Không có tìm kiếm, khoảng ngày hay bộ lọc bằng chứng.',
+      'Bộ lọc khả dụng: trạng thái và nguồn đơn. Không có tìm kiếm, khoảng ngày hay bộ lọc bằng chứng.',
   },
   actions: {
     openOrder: 'Mở đơn hàng',
     openRequest: 'Mở yêu cầu',
+    /** A Ready-Made order has no custom request behind it (`BR-031`). */
+    noRequest: '—',
     loadMore: 'Tải thêm đơn hàng',
     loadingMore: 'Đang tải…',
     retry: 'Thử lại',
@@ -46,7 +50,7 @@ export const ORDER_QUEUE_COPY = {
     emptyTitle: 'Chưa có đơn hàng nào',
     emptyBody: 'Đơn hàng xuất hiện ở đây sau khi khách duyệt thiết kế và báo giá được chấp nhận.',
     filteredEmptyTitle: 'Không có đơn hàng nào khớp bộ lọc',
-    filteredEmptyBody: 'Thử bỏ bớt trạng thái đã chọn.',
+    filteredEmptyBody: 'Thử bỏ bớt trạng thái hoặc nguồn đơn đã chọn.',
     errorTitle: 'Không tải được danh sách đơn hàng',
     errorBody: 'Kết nối tới máy chủ đang gặp sự cố. Thử lại sau ít phút.',
     cursorErrorTitle: 'Không tải tiếp được trang này',

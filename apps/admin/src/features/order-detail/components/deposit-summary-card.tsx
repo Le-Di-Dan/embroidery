@@ -40,7 +40,14 @@ interface DepositSummaryCardProps {
  * collectible in this phase, and `APP7-B04` publishes no obligation for it.
  */
 export function DepositSummaryCard({ payments }: DepositSummaryCardProps) {
-  const deposit = presentDepositStatus(payments.depositStatus);
+  // The custom order collects a DEPOSIT, and `APP12-A02-C1` publishes it as the
+  // read's `currentObligation` rather than as flat `deposit*` members. The card
+  // is unchanged in meaning: same obligation, same figures, read one level in.
+  const obligation = payments.currentObligation;
+  if (obligation === undefined) {
+    return null;
+  }
+  const deposit = presentDepositStatus(obligation.status);
   const order = presentOrderStatus(payments.orderStatus);
 
   return (
@@ -77,29 +84,30 @@ export function DepositSummaryCard({ payments }: DepositSummaryCardProps) {
         <p className="order-card__expected-heading">{COPY.deposit.expectedHeading}</p>
         <dl className="order-card__definitions">
           <DefinitionRow label={COPY.deposit.expectedAmount} testId="deposit-expected-amount">
-            {formatAmountWithCurrency(payments.expectedAmount, payments.expectedCurrencyCode)}
+            {formatAmountWithCurrency(obligation.expectedAmount, obligation.expectedCurrencyCode)}
           </DefinitionRow>
           <DefinitionRow label={COPY.deposit.expectedReference} testId="deposit-expected-reference">
-            {payments.expectedTransferReference}
+            {obligation.expectedTransferReference}
           </DefinitionRow>
         </dl>
         <p className="order-card__note">{COPY.deposit.expectedNote}</p>
       </div>
 
-      {payments.satisfiedAt === undefined && payments.satisfiedByAttemptId === undefined ? null : (
+      {obligation.satisfiedAt === undefined &&
+      obligation.satisfiedByAttemptId === undefined ? null : (
         <dl className="order-card__definitions">
-          {payments.satisfiedAt === undefined ? null : (
+          {obligation.satisfiedAt === undefined ? null : (
             <DefinitionRow label={COPY.deposit.satisfiedAt}>
-              <time dateTime={payments.satisfiedAt}>{formatInstant(payments.satisfiedAt)}</time>
+              <time dateTime={obligation.satisfiedAt}>{formatInstant(obligation.satisfiedAt)}</time>
             </DefinitionRow>
           )}
-          {payments.satisfiedByAttemptId === undefined ? null : (
+          {obligation.satisfiedByAttemptId === undefined ? null : (
             <DefinitionRow
               label={COPY.deposit.satisfiedBy}
-              title={payments.satisfiedByAttemptId}
+              title={obligation.satisfiedByAttemptId}
               testId="deposit-satisfied-by"
             >
-              {truncateIdentifier(payments.satisfiedByAttemptId)}
+              {truncateIdentifier(obligation.satisfiedByAttemptId)}
             </DefinitionRow>
           )}
         </dl>

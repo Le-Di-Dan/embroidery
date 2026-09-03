@@ -17,7 +17,11 @@
  * The `APP5-A01` convention, unchanged.
  */
 import { createUser, renderWithProviders, screen, waitFor } from '@embroidery/frontend-testing';
-import { adminOrderList, AdminOrderListStatusItem } from '@embroidery/api-client';
+import {
+  adminOrderList,
+  AdminOrderListOriginItem,
+  AdminOrderListStatusItem,
+} from '@embroidery/api-client';
 
 import { OrderQueueScreen } from '../../src/features/order-queue';
 import { envelope, makeQueueItem, makeQueuePage, ORDER_ID_PAID } from '../support/order-fixture';
@@ -75,19 +79,101 @@ const replayNavigation = (view: Rerender) => {
 };
 
 describe('the status filter', () => {
-  it('offers exactly the eleven states the contract publishes, and nothing else', async () => {
+  it('offers exactly the states and origins the contract publishes, and nothing else', async () => {
     render();
     await screen.findByTestId('order-queue-table');
 
+    // Thirteen states plus two origins (`APP12-A02-C1`). Both counts are taken
+    // from the generated enums as well as spelled out, so a contract that
+    // gained or lost a value fails here rather than leaving a stale checkbox.
     const boxes = screen.getAllByRole('checkbox');
-    expect(boxes).toHaveLength(Object.values(AdminOrderListStatusItem).length);
-    expect(boxes).toHaveLength(11);
+    expect(boxes).toHaveLength(
+      Object.values(AdminOrderListStatusItem).length +
+        Object.values(AdminOrderListOriginItem).length,
+    );
+    expect(Object.values(AdminOrderListStatusItem)).toHaveLength(13);
+    expect(Object.values(AdminOrderListOriginItem)).toHaveLength(2);
 
-    // No speculative control the API could not serve: `APP7-B02` publishes
-    // status, limit and cursor and nothing else.
+    // The two Ready-Made states an operator has to triage by are offered.
+    expect(screen.getByTestId('order-filter-AWAITING_SHIPPING_FEE')).toBeInTheDocument();
+    expect(screen.getByTestId('order-filter-AWAITING_PAYMENT')).toBeInTheDocument();
+    expect(screen.getByTestId('order-origin-filter-READY_MADE')).toBeInTheDocument();
+    expect(screen.getByTestId('order-origin-filter-CUSTOM')).toBeInTheDocument();
+
+    // No speculative control the API could not serve: the list publishes
+    // status, origin, limit and cursor and nothing else.
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/từ ngày|đến ngày|sku|nhà cung cấp/i)).not.toBeInTheDocument();
+  });
+
+  it('sends the origin to the server rather than filtering rows in the browser', async () => {
+    const view = render();
+    await screen.findByTestId('order-queue-table');
+
+    await user.click(screen.getByTestId('order-origin-filter-READY_MADE'));
+    replayNavigation(view);
+
+    // The parameter goes on the wire. A keyset-paginated queue filtered in the
+    // browser would return short pages and a cursor that skips whatever the
+    // predicate removed, so the origin has to be the server's predicate.
+    await waitFor(() => {
+      expect(lastParams()['origin']).toEqual(['READY_MADE']);
+    });
+    expect(navRouter.replace).toHaveBeenCalledWith('/orders?origin=READY_MADE', { scroll: false });
+  });
+
+  it('carries both filters in one URL, each as its own repeatable parameter', async () => {
+    const view = render();
+    await screen.findByTestId('order-queue-table');
+
+    await user.click(screen.getByTestId('order-filter-AWAITING_SHIPPING_FEE'));
+    replayNavigation(view);
+    await user.click(screen.getByTestId('order-origin-filter-READY_MADE'));
+    replayNavigation(view);
+
+    await waitFor(() => {
+      expect(lastParams()['status']).toEqual(['AWAITING_SHIPPING_FEE']);
+    });
+    expect(lastParams()['origin']).toEqual(['READY_MADE']);
+    expect(navRouter.replace).toHaveBeenLastCalledWith(
+      '/orders?status=AWAITING_SHIPPING_FEE&origin=READY_MADE',
+      { scroll: false },
+    );
+  });
+
+  it('reads a repeated origin with getAll, so a bookmarked URL survives', async () => {
+    navState.search = 'origin=CUSTOM&origin=READY_MADE';
+
+    render();
+    await screen.findByTestId('order-queue-table');
+
+    expect(screen.getByTestId('order-origin-filter-CUSTOM')).toBeChecked();
+    expect(screen.getByTestId('order-origin-filter-READY_MADE')).toBeChecked();
+    expect(screen.getByTestId('order-origin-filter-summary')).toHaveTextContent('2 đã chọn');
+  });
+
+  it('drops an origin the contract does not publish rather than sending it', async () => {
+    navState.search = 'origin=READYMADE&origin=READY_MADE';
+
+    render();
+    await screen.findByTestId('order-queue-table');
+
+    // The queue must never send the server a value it does not publish, and a
+    // hand-edited URL is exactly where one would come from.
+    await waitFor(() => {
+      expect(lastParams()['origin']).toEqual(['READY_MADE']);
+    });
+  });
+
+  it('sends no origin at all while nothing is selected', async () => {
+    render();
+
+    await waitFor(() => {
+      expect(listMock).toHaveBeenCalledTimes(1);
+    });
+    expect('origin' in lastParams()).toBe(false);
+    expect(screen.getByTestId('order-origin-filter-summary')).toHaveTextContent('Tất cả');
   });
 
   it('sends no status at all while nothing is selected', async () => {

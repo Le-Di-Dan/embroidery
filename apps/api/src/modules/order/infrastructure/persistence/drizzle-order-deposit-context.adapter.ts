@@ -1,10 +1,10 @@
 /**
  * Drizzle implementation of the deposit-context port (`APP7-B03` §8).
  *
- * Three columns, named explicitly. `select()` with no projection would return
+ * Four columns, named explicitly. `select()` with no projection would return
  * whatever TBL-043 grows next — which today already means `customer_id`,
  * `total_amount`, `current_approval_snapshot_id`, `hold_reason` and
- * `cancelled_reason` — so listing the three is what makes "nothing else is
+ * `cancelled_reason` — so listing the four is what makes "nothing else is
  * retrieved" a property of the statement rather than of a mapper someone could
  * later edit.
  *
@@ -18,7 +18,7 @@
  */
 import { Injectable } from '@nestjs/common';
 import { schema } from '@embroidery/database';
-import type { OrderState } from '@embroidery/database';
+import type { OrderOrigin, OrderState } from '@embroidery/database';
 import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
 import { eq, type SQL } from 'drizzle-orm';
 
@@ -52,13 +52,18 @@ export class DrizzleOrderDepositContextAdapter
   /**
    * The one projection both lookups share.
    *
-   * Written once so the three-column rule cannot drift between them: a fourth
+   * Written once so the four-column rule cannot drift between them: a fifth
    * column added to either statement would be a payment surface reading an
    * Ordering fact no port publishes.
    */
   private async selectOne(where: SQL): Promise<OrderDepositContext | undefined> {
     const [row] = await this.db
-      .select({ id: orders.id, code: orders.code, status: orders.status })
+      .select({
+        id: orders.id,
+        code: orders.code,
+        status: orders.status,
+        origin: orders.origin,
+      })
       .from(orders)
       .where(where)
       .limit(1);
@@ -66,6 +71,11 @@ export class DrizzleOrderDepositContextAdapter
     if (row === undefined) {
       return undefined;
     }
-    return { id: row.id, code: row.code, status: row.status as OrderState };
+    return {
+      id: row.id,
+      code: row.code,
+      status: row.status as OrderState,
+      origin: row.origin as OrderOrigin,
+    };
   }
 }

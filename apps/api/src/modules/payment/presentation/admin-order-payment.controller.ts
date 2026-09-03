@@ -62,6 +62,7 @@ import type { AdminOrderPaymentsView } from '../application/admin/admin-payment.
 import { guardedAdminPaymentRead } from '../domain/verification/payment-verification.errors';
 import {
   AdminOrderPaymentsResponse,
+  AdminPaymentObligationResponse,
   AdminPaymentAttemptResponse,
   AdminPaymentEvidenceResponse,
   AdminPaymentReconciliationResponse,
@@ -83,6 +84,7 @@ const ADMIN_PAYMENT_CACHE_CONTROL = 'no-store';
 // `$ref`s the generated client cannot name.
 @ApiExtraModels(
   AdminOrderPaymentsResponse,
+  AdminPaymentObligationResponse,
   AdminPaymentAttemptResponse,
   AdminPaymentEvidenceResponse,
   AdminPaymentReconciliationResponse,
@@ -94,24 +96,31 @@ export class AdminOrderPaymentController {
   @Header('Cache-Control', ADMIN_PAYMENT_CACHE_CONTROL)
   @ApiSuccessCode('ADMIN_ORDER_PAYMENTS_READ', 'Order payments retrieved.')
   @ApiOperation({
-    summary: 'Get one order’s deposit payment facts',
+    summary: 'Get one order’s current payment facts',
     description:
-      'Everything an operator needs to verify a deposit: the order’s LC-14 state, the DEPOSIT ' +
-      'obligation with the exact amount owed and its currency, the transfer reference the ' +
-      'customer was told to use, every attempt against that deposit with its LC-16 state, the ' +
-      'metadata of any transfer screenshots the customer submitted, and the manual ' +
-      'reconciliation history. The expected amount is the obligation’s own frozen column — no ' +
-      'deposit percentage is recomputed and no live quotation or catalog price is read. The ' +
-      'reference is derived from the order code and stored nowhere. Evidence is **supporting ' +
-      'material**: its status is never a payment status, an empty list is an ordinary valid ' +
-      'deposit, and no image bytes are served here — `APP7-B06` owns the private delivery. The ' +
-      'remaining payment is not shown and is not collectible in this phase. It is a read: ' +
-      'nothing is written, no status moves and no event is appended.',
+      'Everything an operator needs to verify the money owed on one order: the order’s LC-14 ' +
+      'state, its `origin`, the obligation currently being collected — the `DEPOSIT` on a ' +
+      '`CUSTOM` order, the `FULL` on a `READY_MADE` one — with the exact amount owed and its ' +
+      'currency, the transfer reference the customer was told to use, every attempt against ' +
+      'that obligation with its LC-16 state, the metadata of any transfer screenshots the ' +
+      'customer submitted, and the manual reconciliation history. Which kind is collected ' +
+      'follows the order’s origin, never the reverse. The expected amount is the obligation’s ' +
+      'own frozen column — no deposit percentage is recomputed, no live quotation or catalog ' +
+      'price is read, and a Ready-Made total is never re-derived from its subtotal plus the ' +
+      'shipping fee. The reference is derived from the order code and stored nowhere. Only the ' +
+      '**live** obligation is reported, so a predecessor superseded by a shipping-fee ' +
+      'correction never appears and its attempts are never listed as the successor’s. A ' +
+      'Ready-Made order still awaiting its shipping fee has no obligation yet and answers 200 ' +
+      'with `currentObligation` absent — that is an unpriced order, not a missing one. ' +
+      'Evidence is **supporting material**: its status is never a payment status, an empty ' +
+      'list is ordinary and valid, and no image bytes are served here — `APP7-B06` owns the ' +
+      'private delivery. The custom remaining payment is not shown and is not collectible ' +
+      'here. It is a read: nothing is written, no status moves and no event is appended.',
   })
   @ApiParam({ name: 'orderId', format: 'uuid' })
   @ApiResponse({
     status: 200,
-    description: 'The order’s deposit payment vertical.',
+    description: 'The order’s current payment vertical.',
     schema: envelopeSchemaOf(AdminOrderPaymentsResponse),
   })
   @ApiResponse({ status: 400, description: 'Malformed order id.', schema: ERROR_SCHEMA })
@@ -135,13 +144,23 @@ function toPayload(view: AdminOrderPaymentsView): AdminOrderPaymentsPayload {
     orderId: view.orderId,
     orderCode: view.orderCode,
     orderStatus: view.orderStatus,
-    depositObligationId: view.depositObligationId,
-    depositStatus: view.depositStatus,
-    expectedAmount: view.expectedAmount,
-    expectedCurrencyCode: view.expectedCurrencyCode,
-    expectedTransferReference: view.expectedTransferReference,
-    satisfiedByAttemptId: view.satisfiedByAttemptId,
-    satisfiedAt: view.satisfiedAt?.toISOString(),
+    origin: view.origin,
+    // Absent, not null: an order with nothing to collect yet carries no
+    // obligation key at all, so a consumer cannot mistake an empty object for a
+    // priced obligation with zero amount.
+    currentObligation:
+      view.currentObligation === undefined
+        ? undefined
+        : {
+            obligationId: view.currentObligation.obligationId,
+            kind: view.currentObligation.kind,
+            status: view.currentObligation.status,
+            expectedAmount: view.currentObligation.expectedAmount,
+            expectedCurrencyCode: view.currentObligation.expectedCurrencyCode,
+            expectedTransferReference: view.currentObligation.expectedTransferReference,
+            satisfiedByAttemptId: view.currentObligation.satisfiedByAttemptId,
+            satisfiedAt: view.currentObligation.satisfiedAt?.toISOString(),
+          },
     attempts: view.attempts.map((attempt) => ({
       attemptId: attempt.attemptId,
       method: attempt.method,

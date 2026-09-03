@@ -142,10 +142,29 @@ describe('APP9-B04 — the published shipping-detail and fee-acknowledgement con
   });
 
   it('adds no freeze, dispatch or carrier-tracking operation, and one public path only', () => {
-    const suspicious = Object.keys(document.paths).filter((path) =>
-      /freeze|dispatch|tracking|carrier|complete/i.test(path),
+    // `APP9-B05` legitimately published the dispatch and completion commands
+    // after this assertion was written, so the unscoped form had been failing at
+    // HEAD ever since. The rule `APP9-B04` set is that **it** adds no such
+    // operation — its own surface is the two shipping-detail routes plus the
+    // customer acknowledgement — not that no checkpoint ever may. The two B05
+    // paths are named rather than filtered by prefix, so a *third* dispatch- or
+    // freeze-shaped route appearing later still fails here.
+    // `APP12-A02-C1` runs this suite and records the correction rather than
+    // leaving a permanently red assertion.
+    const DELIVERED_BY_B05 = [
+      '/api/admin/orders/{orderId}/dispatch',
+      '/api/admin/orders/{orderId}/completion',
+    ];
+    const suspicious = Object.keys(document.paths).filter(
+      (path) =>
+        /freeze|dispatch|tracking|carrier|complete/i.test(path) && !DELIVERED_BY_B05.includes(path),
     );
     expect(suspicious).toEqual([]);
+    // Still no carrier, tracking or freeze route anywhere — the half of the
+    // original claim that was never about B05.
+    expect(
+      Object.keys(document.paths).filter((path) => /freeze|tracking|carrier/i.test(path)),
+    ).toEqual([]);
 
     // `APP9-B04-C1`: exactly one non-Admin shipping path, and it is the
     // customer's acknowledgement collection. ADR-DB3-004 still makes pre-freeze

@@ -28,6 +28,8 @@
  * how it got there.
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { SKU_STOCK_REPOSITORY, type SkuStockRepository } from '@embroidery/persistence';
+import type { OrderOrigin } from '@embroidery/database';
 
 import { adminOrderReadError } from '../../domain/admin/admin-order-read.errors';
 import {
@@ -37,6 +39,9 @@ import {
 } from '../../domain/repositories/admin-order-read.repository';
 import { projectOrderItemSubject, type OrderItemSubjectKind } from './admin-order.projection';
 import type { AdminOrderQueueItem } from './read-admin-order-queue.query';
+
+/** The one origin that holds stock against a payment window (`APP12-B02`). */
+const READY_MADE: OrderOrigin = 'READY_MADE';
 
 export interface AdminOrderItemView {
   readonly position: number;
@@ -50,13 +55,31 @@ export interface AdminOrderItemView {
   readonly unitPriceAmount: string;
   readonly lineTotalAmount: string;
   readonly currencyCode: string;
-  readonly approvalSnapshotId: string;
+  /** Present exactly on a `CUSTOM` line; a Ready-Made SKU line approved nothing. */
+  readonly approvalSnapshotId: string | undefined;
 }
 
 export interface AdminOrderDetailView extends AdminOrderQueueItem {
-  readonly acceptedQuotationVersionId: string;
-  readonly currentApprovalSnapshotId: string;
+  /** Present exactly when `origin` is `CUSTOM`. */
+  readonly acceptedQuotationVersionId: string | undefined;
+  /** Present exactly when `origin` is `CUSTOM`. */
+  readonly currentApprovalSnapshotId: string | undefined;
   readonly updatedAt: Date;
+  /**
+   * The Ready-Made reservation/payment deadline (`APP12-A02-C1`, D01 §J).
+   *
+   * The active reservation's own committed `expires_at`, read through the exact
+   * `findActiveOrderReservation` the `APP12-B04` customer projection uses —
+   * never `now + 24h`, never the newest row of a history and never a deadline
+   * derived from the order's own timestamps. Absent on a custom order, and
+   * absent once nothing `RESERVED` stands, which is exactly when a countdown
+   * must stop being shown.
+   *
+   * The read takes no lock. An Admin report that took `FOR UPDATE` on this row
+   * would be a lock the expiry sweep and the operator's own fee confirmation
+   * then queue behind.
+   */
+  readonly paymentDeadline: Date | undefined;
   readonly items: readonly AdminOrderItemView[];
 }
 
@@ -64,6 +87,7 @@ export interface AdminOrderDetailView extends AdminOrderQueueItem {
 export class ReadAdminOrderDetail {
   constructor(
     @Inject(ADMIN_ORDER_READ_REPOSITORY) private readonly orders: AdminOrderReadRepository,
+    @Inject(SKU_STOCK_REPOSITORY) private readonly stock: SkuStockRepository,
   ) {}
 
   async read(orderId: string): Promise<AdminOrderDetailView> {
@@ -72,12 +96,18 @@ export class ReadAdminOrderDetail {
       throw adminOrderReadError('ORDER_NOT_FOUND');
     }
 
-    const items = await this.orders.loadItems(orderId);
+    const items = await this.orders.loadItems(orderId, row.origin);
+    // Read for a Ready-Made order only. A custom order's stock is reserved when
+    // production starts, against a window that is not a payment deadline, and
+    // publishing it under this name would be a countdown to the wrong event.
+    const reservation =
+      row.origin === READY_MADE ? await this.stock.findActiveOrderReservation(orderId) : undefined;
 
     return {
       orderId: row.id,
       code: row.code,
       status: row.status,
+      origin: row.origin,
       customRequestId: row.customRequestId,
       customerId: row.customerId,
       acceptedQuotationVersionId: row.acceptedQuotationVersionId,
@@ -86,6 +116,7 @@ export class ReadAdminOrderDetail {
       currencyCode: row.currencyCode,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
+      paymentDeadline: reservation?.expiresAt,
       items: items.map(toItemView),
     };
   }

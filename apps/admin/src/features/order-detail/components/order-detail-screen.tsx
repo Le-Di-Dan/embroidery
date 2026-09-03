@@ -3,20 +3,29 @@
 import Link from 'next/link';
 
 import { formatAmountWithCurrency } from '../../../shared/presentation/exact-amount';
+import { presentOrderOrigin } from '../../../shared/presentation/order-origin';
 import { presentOrderStatus } from '../../../shared/presentation/order-status';
 import { AdminStatusBadge } from '../../../shared/status/admin-status-badge';
 import { ADMIN_ORDERS_ROUTE } from '../../order-queue';
 import { useOrderDetailQuery } from '../hooks/use-order-detail-queries';
 import { ORDER_DETAIL_COPY as COPY } from '../model/order-detail-copy';
 import { classifyOrderReadFailure } from '../model/order-detail-failure';
-import { DepositPaymentPanel } from './deposit-payment-panel';
-import { FulfillmentPanel } from './fulfillment-panel';
-import { OrderFrozenFactsCard } from './order-frozen-facts-card';
-import { OrderItemsTable } from './order-items-table';
+import { CustomOrderColumns } from './custom-order-columns';
+import { ReadyMadeOrderColumns } from './ready-made-order-columns';
 
 interface OrderDetailScreenProps {
   readonly orderId: string;
 }
+
+/**
+ * The one discriminator the columns branch on (`COL-TBL043-12`).
+ *
+ * Compared against `order.origin` and nothing else. `APP12-A02-C1` §9 forbids
+ * every substitute — the status, a missing `customRequestId`, which payment
+ * obligation the order carries — because each of those is a *consequence* of
+ * the origin and each is wrong in at least one legitimate state.
+ */
+const READY_MADE = 'READY_MADE';
 
 /**
  * `/orders/{orderId}` — the Admin order and deposit-payment workspace
@@ -109,6 +118,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
 
   const order = query.data;
   const status = presentOrderStatus(order.status);
+  const origin = presentOrderOrigin(order.origin);
 
   return (
     <section className="order-detail">
@@ -127,22 +137,27 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
             symbol={status.symbol}
             testId="order-detail-status"
           />
+          {/* `913:337` — one origin badge beside the status, on the existing
+              badge component. It names the fact the columns below branch on, so
+              an operator can see which screen they are looking at. */}
+          <AdminStatusBadge
+            token={origin.token}
+            label={origin.label}
+            tone={origin.tone}
+            symbol={origin.symbol}
+            testId="order-detail-origin-pill"
+          />
           <p className="order-detail__total">
             {`${COPY.page.orderTotal} ${formatAmountWithCurrency(order.totalAmount, order.currencyCode)}`}
           </p>
         </div>
       </header>
 
-      <div className="order-detail__columns">
-        <div className="order-detail__frozen">
-          <OrderFrozenFactsCard order={order} />
-          <OrderItemsTable items={order.items} />
-        </div>
-        <div className="order-detail__payments">
-          <FulfillmentPanel order={order} />
-          <DepositPaymentPanel orderId={orderId} />
-        </div>
-      </div>
+      {order.origin === READY_MADE ? (
+        <ReadyMadeOrderColumns orderId={orderId} order={order} />
+      ) : (
+        <CustomOrderColumns orderId={orderId} order={order} />
+      )}
     </section>
   );
 }

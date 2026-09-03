@@ -95,6 +95,26 @@ const ORDER_STATUS_STYLES: Readonly<Record<string, StatusStyle>> = {
     tone: 'warning',
     symbol: STATUS_SYMBOLS.waiting,
   },
+  // The two Ready-Made states (`APP12-A02-C1`, `912:337` and `913:337`). Both
+  // are drawn, so both carry their drawn tone and symbol rather than the
+  // neutral fallback the untinted eleven use.
+  //
+  // `Chờ báo phí` is `912:337`'s wording, used on the filter checkbox and the
+  // queue row. `913:337` draws the detail badge as `Chờ báo phí giao hàng`;
+  // this module publishes **one** name per state on purpose — an order must not
+  // change what it is called as the operator moves from the list to the order
+  // they opened — so the queue's shorter form is the one name, and the longer
+  // one reads as an expansion of it rather than a second label.
+  AWAITING_SHIPPING_FEE: {
+    label: 'Chờ báo phí',
+    tone: 'warning',
+    symbol: STATUS_SYMBOLS.waiting,
+  },
+  AWAITING_PAYMENT: {
+    label: 'Chờ thanh toán',
+    tone: 'warning',
+    symbol: STATUS_SYMBOLS.waiting,
+  },
   READY_FOR_DELIVERY: {
     label: 'Sẵn sàng giao',
     tone: 'info',

@@ -68,6 +68,7 @@ import {
 import {
   AdminOrderQueueItemResponse,
   AdminOrderQueueResponse,
+  PUBLISHED_ORDER_ORIGINS,
   PUBLISHED_ORDER_STATES,
   type AdminOrderQueueViewPayload,
 } from './schemas/admin-order-queue.response';
@@ -130,6 +131,16 @@ export class AdminOrderController {
     enum: PUBLISHED_ORDER_STATES,
     description: 'Repeatable. Omitted means every state.',
   })
+  @ApiQuery({
+    name: 'origin',
+    required: false,
+    isArray: true,
+    enum: PUBLISHED_ORDER_ORIGINS,
+    description:
+      'Repeatable. Omitted means every origin. Applied in SQL against the immutable `origin` ' +
+      'column before the page is cut, so a filtered page is a full page and its cursor skips ' +
+      'nothing.',
+  })
   @ApiResponse({
     status: 200,
     description: 'One page of orders.',
@@ -149,6 +160,7 @@ export class AdminOrderController {
           cursor: input.cursor,
           limit: input.limit,
           statuses: input.status,
+          origins: input.origin,
         }),
       ),
     );
@@ -199,6 +211,7 @@ function toQueuePayload(view: AdminOrderQueueView): AdminOrderQueueViewPayload {
       orderId: item.orderId,
       code: item.code,
       status: item.status,
+      origin: item.origin,
       customRequestId: item.customRequestId,
       customerId: item.customerId,
       totalAmount: item.totalAmount,
@@ -216,6 +229,7 @@ function toDetailPayload(view: AdminOrderDetailView): AdminOrderDetailPayload {
     orderId: view.orderId,
     code: view.code,
     status: view.status,
+    origin: view.origin,
     customRequestId: view.customRequestId,
     customerId: view.customerId,
     acceptedQuotationVersionId: view.acceptedQuotationVersionId,
@@ -224,6 +238,7 @@ function toDetailPayload(view: AdminOrderDetailView): AdminOrderDetailPayload {
     currencyCode: view.currencyCode,
     createdAt: view.createdAt.toISOString(),
     updatedAt: view.updatedAt.toISOString(),
+    paymentDeadline: view.paymentDeadline?.toISOString(),
     items: view.items.map((item) => ({
       position: item.position,
       subjectKind: item.subjectKind,

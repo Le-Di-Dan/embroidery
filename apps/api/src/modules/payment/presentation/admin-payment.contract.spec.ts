@@ -176,6 +176,7 @@ const FORBIDDEN_RESPONSE_PROPERTY_SUBSTRINGS = [
 
 const B04_RESPONSE_SCHEMAS = [
   'AdminOrderPaymentsResponse',
+  'AdminPaymentObligationResponse',
   'AdminPaymentAttemptResponse',
   'AdminPaymentEvidenceResponse',
   'AdminPaymentReconciliationResponse',
@@ -418,7 +419,7 @@ describe('APP7-B04 — the published Admin payment contract', () => {
     it('keeps the canonical pattern on the derived expected reference', () => {
       // The other half of the same rule: C1 must not weaken the identifier this
       // system issues, only stop imposing its shape on what a bank returned.
-      const expected = schemaOf('AdminOrderPaymentsResponse').properties?.[
+      const expected = schemaOf('AdminPaymentObligationResponse').properties?.[
         'expectedTransferReference'
       ];
       expect(expected?.type).toBe('string');
@@ -427,20 +428,21 @@ describe('APP7-B04 — the published Admin payment contract', () => {
   });
 
   describe('the responses publish safe facts only', () => {
-    it('names the deposit read’s properties exactly', () => {
+    it('names the payment read’s properties exactly', () => {
+      // `APP12-A02-C1` moved the obligation's own facts into
+      // `currentObligation` and added `origin`. The six flat `deposit*` /
+      // `expected*` / `satisfied*` members are gone from the root because the
+      // read is no longer deposit-shaped: a Ready-Made order collects a `FULL`,
+      // and a root field named `depositObligationId` holding a FULL id would be
+      // a contract that lies about what it carries.
       expect(Object.keys(schemaOf('AdminOrderPaymentsResponse').properties ?? {}).sort()).toEqual([
         'attempts',
-        'depositObligationId',
-        'depositStatus',
-        'expectedAmount',
-        'expectedCurrencyCode',
-        'expectedTransferReference',
+        'currentObligation',
         'orderCode',
         'orderId',
         'orderStatus',
+        'origin',
         'reconciliations',
-        'satisfiedAt',
-        'satisfiedByAttemptId',
       ]);
     });
 
@@ -509,7 +511,7 @@ describe('APP7-B04 — the published Admin payment contract', () => {
     });
 
     it('types every money field as a string', () => {
-      expect(schemaOf('AdminOrderPaymentsResponse').properties?.['expectedAmount']?.type).toBe(
+      expect(schemaOf('AdminPaymentObligationResponse').properties?.['expectedAmount']?.type).toBe(
         'string',
       );
       expect(schemaOf('AdminPaymentAttemptResponse').properties?.['amount']?.type).toBe('string');

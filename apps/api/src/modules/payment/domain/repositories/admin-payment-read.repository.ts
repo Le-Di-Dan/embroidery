@@ -23,15 +23,25 @@
  */
 import type {
   PaymentAttemptState,
+  PaymentObligationKind,
   PaymentObligationState,
   PaymentReconciliationAction,
 } from '@embroidery/database';
 
 export const ADMIN_PAYMENT_READ_REPOSITORY = Symbol('ADMIN_PAYMENT_READ_REPOSITORY');
 
-/** The DEPOSIT obligation row, as the Admin surface reports it. */
-export interface AdminDepositObligationRow {
+/**
+ * The live obligation row of one kind, as the Admin surface reports it.
+ *
+ * `kind` is carried rather than assumed by the caller. Until `APP12-A02-C1`
+ * this type was `AdminDepositObligationRow` and the one statement behind it
+ * hard-coded `kind = 'DEPOSIT'`, which is why the whole Admin payment vertical
+ * answered `ORDER_NOT_FOUND` for a Ready-Made order — an order that by
+ * `BR-029` has a `FULL` obligation and never a deposit.
+ */
+export interface AdminObligationRow {
   readonly id: string;
+  readonly kind: PaymentObligationKind;
   readonly status: PaymentObligationState;
   readonly amount: string;
   readonly currencyCode: string;
@@ -98,13 +108,25 @@ export interface AdminReconciliationRow {
 
 export interface AdminPaymentReadRepository {
   /**
-   * The live `DEPOSIT` obligation of one order, or nothing.
+   * The live obligation of one order **and one kind**, or nothing.
    *
    * "Live" matches `uq_payment_obligations__order_kind__live` — `PENDING` or
-   * `SATISFIED` — so at most one row can qualify and there is no "latest
-   * obligation" heuristic to invent.
+   * `SATISFIED` — so at most one row per kind can qualify. That partial unique
+   * index is the whole reason there is no "latest obligation", "highest id" or
+   * "newest `created_at`" arbiter anywhere in this file: after a `APP12-B03`
+   * shipping-fee correction the predecessor is `SUPERSEDED` and therefore not
+   * live, so the successor is the only row this returns, by construction rather
+   * than by an ordering rule a caller could get wrong.
+   *
+   * The kind is a **parameter**, not a constant, since `APP12-A02-C1`. It is
+   * chosen from the order's `origin` by the caller — never from which
+   * obligations happen to exist, which would make "this order has not been
+   * priced yet" indistinguishable from "this is not a Ready-Made order".
    */
-  findDepositObligation(orderId: string): Promise<AdminDepositObligationRow | undefined>;
+  findLiveObligation(
+    orderId: string,
+    kind: PaymentObligationKind,
+  ): Promise<AdminObligationRow | undefined>;
 
   /** Every attempt on one obligation, oldest first, `id` breaking a tie. */
   listAttempts(obligationId: string): Promise<AdminPaymentAttemptRow[]>;

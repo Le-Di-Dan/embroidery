@@ -35,11 +35,11 @@
  * token, digest or session secret anywhere in this document.
  */
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import type { OrderState } from '@embroidery/database';
+import type { OrderOrigin, OrderState } from '@embroidery/database';
 
 import { ORDER_ITEM_SUBJECT_KINDS } from '../../application/admin/admin-order.projection';
 import type { OrderItemSubjectKind } from '../../application/admin/admin-order.projection';
-import { PUBLISHED_ORDER_STATES } from './admin-order-queue.response';
+import { PUBLISHED_ORDER_ORIGINS, PUBLISHED_ORDER_STATES } from './admin-order-queue.response';
 
 const ORDER_ID_EXAMPLE = '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6081';
 const REQUEST_ID_EXAMPLE = '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071';
@@ -128,15 +128,17 @@ export class AdminOrderItemResponse {
   @ApiProperty({ example: 'VND', description: 'The frozen currency of this line.' })
   currencyCode!: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     format: 'uuid',
     example: APPROVAL_SNAPSHOT_ID_EXAMPLE,
     description:
       'The exact approval evidence that authorized this line (D7-07). Immutable, unlike the ' +
       'order’s own `currentApprovalSnapshotId`, which is an audited pointer that a ' +
-      'post-approval revision may move.',
+      'post-approval revision may move. Present exactly on a line of a `CUSTOM` order: a ' +
+      'Ready-Made line is a SKU the customer bought as it already was, so nothing was designed ' +
+      'and nothing was approved (`BR-031`), and `tg_order_items__origin_subject` nulls it.',
   })
-  approvalSnapshotId!: string;
+  approvalSnapshotId?: string;
 }
 
 export class AdminOrderDetailResponse {
@@ -149,29 +151,46 @@ export class AdminOrderDetailResponse {
   @ApiProperty({ enum: PUBLISHED_ORDER_STATES, example: 'AWAITING_DEPOSIT' })
   status!: OrderState;
 
-  @ApiProperty({ format: 'uuid', example: REQUEST_ID_EXAMPLE })
-  customRequestId!: string;
+  @ApiProperty({
+    enum: PUBLISHED_ORDER_ORIGINS,
+    example: 'CUSTOM',
+    description:
+      'How this order came into being (`COL-TBL043-12`). The only legitimate discriminator ' +
+      'between the two shapes below: which of the optional custom-chain fields are present is ' +
+      'a consequence of it, never a substitute for reading it.',
+  })
+  origin!: OrderOrigin;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    example: REQUEST_ID_EXAMPLE,
+    description: 'Present exactly when `origin` is `CUSTOM`.',
+  })
+  customRequestId?: string;
 
   @ApiProperty({ format: 'uuid', example: CUSTOMER_ID_EXAMPLE })
   customerId!: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     format: 'uuid',
     example: QUOTATION_VERSION_ID_EXAMPLE,
     description:
       'The exact accepted quotation version this order froze its commercial basis from ' +
-      '(REL-073). Never `quotations.current_version_id`, which is a mutable pointer.',
+      '(REL-073). Never `quotations.current_version_id`, which is a mutable pointer. Present ' +
+      'exactly when `origin` is `CUSTOM`: a Ready-Made order was never quoted, and its ' +
+      'commercial basis is the frozen SKU price on its own lines plus the shipping fee.',
   })
-  acceptedQuotationVersionId!: string;
+  acceptedQuotationVersionId?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     format: 'uuid',
     example: APPROVAL_SNAPSHOT_ID_EXAMPLE,
     description:
       'The order’s current approval snapshot (REL-074) — an audited pointer, reported as ' +
-      'stored. Each line carries its own immutable `approvalSnapshotId` beside it.',
+      'stored. Each line carries its own immutable `approvalSnapshotId` beside it. Present ' +
+      'exactly when `origin` is `CUSTOM`.',
   })
-  currentApprovalSnapshotId!: string;
+  currentApprovalSnapshotId?: string;
 
   @ApiProperty({
     example: '2550000.00',
@@ -188,6 +207,19 @@ export class AdminOrderDetailResponse {
   @ApiProperty({ format: 'date-time', example: '2026-08-20T09:00:00.000Z' })
   updatedAt!: string;
 
+  @ApiPropertyOptional({
+    format: 'date-time',
+    example: '2026-08-21T09:00:00.000Z',
+    description:
+      'When this Ready-Made order’s stock hold — and with it the window to pay — lapses. The ' +
+      'active reservation’s own committed `expires_at`, read rather than recomputed: it is ' +
+      'never `now` plus a window constant, never taken from a released or consumed ' +
+      'reservation, and never derived from the order’s timestamps. Absent on a `CUSTOM` order, ' +
+      'and absent once nothing is `RESERVED` — the hold lapsed, was released, or was consumed ' +
+      'at verification — which is exactly when a countdown must stop being shown.',
+  })
+  paymentDeadline?: string;
+
   @ApiProperty({
     type: [AdminOrderItemResponse],
     description: 'The frozen lines, in `position` order.',
@@ -200,14 +232,16 @@ export interface AdminOrderDetailPayload {
   readonly orderId: string;
   readonly code: string;
   readonly status: OrderState;
-  readonly customRequestId: string;
+  readonly origin: OrderOrigin;
+  readonly customRequestId: string | undefined;
   readonly customerId: string;
-  readonly acceptedQuotationVersionId: string;
-  readonly currentApprovalSnapshotId: string;
+  readonly acceptedQuotationVersionId: string | undefined;
+  readonly currentApprovalSnapshotId: string | undefined;
   readonly totalAmount: string;
   readonly currencyCode: string;
   readonly createdAt: string;
   readonly updatedAt: string;
+  readonly paymentDeadline: string | undefined;
   readonly items: readonly {
     readonly position: number;
     readonly subjectKind: OrderItemSubjectKind;
@@ -220,6 +254,6 @@ export interface AdminOrderDetailPayload {
     readonly unitPriceAmount: string;
     readonly lineTotalAmount: string;
     readonly currencyCode: string;
-    readonly approvalSnapshotId: string;
+    readonly approvalSnapshotId: string | undefined;
   }[];
 }

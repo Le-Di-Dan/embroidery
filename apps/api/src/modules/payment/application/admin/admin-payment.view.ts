@@ -31,8 +31,10 @@
  * verifies exactly as normally as one with five.
  */
 import type {
+  OrderOrigin,
   OrderState,
   PaymentAttemptState,
+  PaymentObligationKind,
   PaymentObligationState,
   PaymentReconciliationAction,
 } from '@embroidery/database';
@@ -96,19 +98,56 @@ export interface AdminReconciliationView {
   readonly createdAt: Date;
 }
 
+/**
+ * The one obligation this order is currently collected against
+ * (`APP12-A02-C1`).
+ *
+ * "Current" is `uq_payment_obligations__order_kind__live`, not a sort: after an
+ * `APP12-B03` shipping-fee correction the predecessor `FULL` is `SUPERSEDED`
+ * and therefore not live, so it cannot appear here and its attempts cannot be
+ * mistaken for the successor's. The attempts on this view are read from **this**
+ * obligation's id, which is what keeps the two apart at the source rather than
+ * by filtering afterwards.
+ */
+export interface AdminCurrentObligationView {
+  readonly obligationId: string;
+  /** Read off the row, never inferred from the order's origin a second time. */
+  readonly kind: PaymentObligationKind;
+  readonly status: PaymentObligationState;
+  /** The obligation's own frozen amount. Never a share recomputed from a quote. */
+  readonly expectedAmount: string;
+  readonly expectedCurrencyCode: string;
+  /**
+   * The memo this kind's transfer is paid against (`APP7-G01` §4).
+   *
+   * Built by the kind's own builder — `…DC` for a deposit, `…RM` for a balance,
+   * `…FL` for a Ready-Made full payment — so an operator reconciling a bank
+   * statement is comparing against the string the customer was actually given.
+   * Nothing persists it.
+   */
+  readonly expectedTransferReference: string;
+  readonly satisfiedByAttemptId: string | undefined;
+  readonly satisfiedAt: Date | undefined;
+}
+
 export interface AdminOrderPaymentsView {
   readonly orderId: string;
   readonly orderCode: string;
   readonly orderStatus: OrderState;
-  readonly depositObligationId: string;
-  readonly depositStatus: PaymentObligationState;
-  /** The obligation's own frozen amount. Never a share recomputed from a quote. */
-  readonly expectedAmount: string;
-  readonly expectedCurrencyCode: string;
-  /** `APP7-G01` §4, derived from the order code. Nothing persists it. */
-  readonly expectedTransferReference: string;
-  readonly satisfiedByAttemptId: string | undefined;
-  readonly satisfiedAt: Date | undefined;
+  /** `COL-TBL043-12` — what decides which obligation kind is collected here. */
+  readonly origin: OrderOrigin;
+  /**
+   * Absent when the order has no live obligation yet.
+   *
+   * The one case that produces it is a Ready-Made order still at
+   * `AWAITING_SHIPPING_FEE`: `BR-029` creates the `FULL` obligation **with** the
+   * first shipping fee, so before that there is genuinely nothing to collect.
+   * That is a priced-later order, not a missing one, and this surface says so
+   * rather than answering `ORDER_NOT_FOUND` — which is what it did before
+   * `APP12-A02-C1` and what made the Admin Ready-Made branch unbuildable.
+   */
+  readonly currentObligation: AdminCurrentObligationView | undefined;
+  /** Every attempt on `currentObligation`, oldest first. Empty when there is none. */
   readonly attempts: readonly AdminPaymentAttemptView[];
   readonly reconciliations: readonly AdminReconciliationView[];
 }

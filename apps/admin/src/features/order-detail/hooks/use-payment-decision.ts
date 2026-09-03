@@ -70,7 +70,7 @@ import {
 } from '../model/order-detail-failure';
 import {
   isAttemptAwaitingReview,
-  isDepositSettledFor,
+  isPaymentSettledFor,
   readPaymentDecision,
   type PaymentDecisionOutcome,
 } from '../model/payment-decision-outcome';
@@ -123,14 +123,14 @@ function outcomeFromPayments(
   if (attempt === undefined) return null;
   const base = {
     attemptStatus: attempt.status,
-    depositStatus: payments.depositStatus,
+    depositStatus: payments.currentObligation?.status ?? '',
     orderStatus: payments.orderStatus,
     // The write this describes happened on an earlier call whose response was
     // lost. Nothing was written twice, but this is not the contract's `replayed`
     // flag either — no second request was made.
     replayed: false,
   };
-  if (isDepositSettledFor(payments, attemptId)) {
+  if (isPaymentSettledFor(payments, attemptId)) {
     return { kind: 'verified', ...base };
   }
   if (isAttemptAwaitingReview(payments, attemptId)) {

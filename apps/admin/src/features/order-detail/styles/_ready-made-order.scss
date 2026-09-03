@@ -1,0 +1,112 @@
+// Admin order detail — the Ready-Made branch (`APP12-A02-C1`).
+//
+// A partial of its own beside `_order-detail-cards.scss` rather than an
+// addition to it: the shared card chrome is unchanged and is reused as-is, and
+// what lives here is only the handful of elements `913:337` and `914:361` draw
+// that the custom branch has no equivalent for — the omission note, the stock
+// deadline, the supersede warning, the fee refusal and the settled line.
+//
+// Every value is a design-system token. No literal colour, radius or spacing
+// step is introduced, so the branch cannot drift from the rest of the Admin app.
+
+@use '@embroidery/styles' as styles;
+
+// `BR-031` — the four custom-only sections are omitted, and the omission is
+// stated. Muted and small: it is a note about what is *not* here, and reading
+// as loudly as the facts above it would give absence more weight than presence.
+.order-card__omitted {
+  margin: 0;
+  padding: styles.spacing(12);
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-secondary;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+// `Giữ hàng đến` — the reservation's own committed instant. Tinted with the
+// warning tone `913:337` draws, because it is a deadline the operator is
+// working against; the label beside it carries the meaning, so the colour is
+// emphasis rather than the only signal.
+.order-card__deadline {
+  color: styles.$color-status-warning;
+  font-variant-numeric: tabular-nums;
+}
+
+// The successor warning on a fee correction (`914:361`). A note, not an error:
+// the operator is allowed to do this, and the sentence tells them what it
+// replaces.
+.order-card__warning {
+  margin: 0;
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-status-warning;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+}
+
+// `BR-028` — the fee is refused after settlement. Bordered in the error tone
+// with a titled sentence, because it states a rule and a path rather than a
+// transient failure.
+.order-card__refusal {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-status-error;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+.order-card__refusal-title {
+  margin: 0;
+  color: styles.$color-status-error;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.order-card__refusal-body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+// The empty state a Ready-Made order shows before its shipping fee, and the
+// "no attempt yet" line in the workbench. Both are ordinary states of a real
+// order, so they read as information rather than as a failure.
+.order-card__empty {
+  margin: 0;
+  padding: styles.spacing(16);
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.order-card__settled {
+  margin: 0;
+  color: styles.$color-status-success;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.order-card__error {
+  margin: 0;
+  color: styles.$color-status-error;
+  font-size: styles.$font-size-body-s;
+}
+
+.order-card__subsection {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  padding-top: styles.spacing(12);
+  border-top: 1px solid styles.$color-border-primary;
+}
+
+.order-card__subtitle {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+}

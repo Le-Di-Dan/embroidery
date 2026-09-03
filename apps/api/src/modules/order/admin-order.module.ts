@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@embroidery/persistence';
 
 import { IdentityModule } from '../identity/identity.module';
+import { InventoryModule } from '../inventory/inventory.module';
 import { ADMIN_ORDER_READ_REPOSITORY } from './domain/repositories/admin-order-read.repository';
 import { DrizzleAdminOrderReadRepository } from './infrastructure/persistence/drizzle-admin-order-read.repository';
 import { ReadAdminOrderDetail } from './application/admin/read-admin-order-detail.query';
@@ -39,8 +40,18 @@ import { AdminOrderController } from './presentation/admin-order.controller';
  *
  * It exports nothing. There are two entry points and both are HTTP operations.
  */
+/*
+ * `APP12-A02-C1` adds one import, `InventoryModule`, for the Ready-Made
+ * payment deadline. The detail read publishes the reservation's own committed
+ * `expires_at` and must take it from the canonical
+ * `SkuStockRepository.findActiveOrderReservation` — the same lock-free selector
+ * `APP12-B04` gives the customer — rather than recomputing a window or picking
+ * the newest reservation row. That is the precedent `ReadyMadeOrderAccessModule`
+ * already set for a public surface, so this follows it rather than inventing a
+ * second reservation-reading port with the same statement inside.
+ */
 @Module({
-  imports: [DatabaseModule, IdentityModule],
+  imports: [DatabaseModule, IdentityModule, InventoryModule],
   controllers: [AdminOrderController],
   providers: [
     { provide: ADMIN_ORDER_READ_REPOSITORY, useClass: DrizzleAdminOrderReadRepository },

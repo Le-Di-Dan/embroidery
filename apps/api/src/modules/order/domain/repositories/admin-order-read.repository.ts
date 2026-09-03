@@ -27,7 +27,7 @@
  * Nothing here multiplies, sums, rounds or re-derives a deposit: the persisted
  * amounts *are* the commercial truth (`APP7-B02` §4).
  */
-import type { OrderState } from '@embroidery/database';
+import type { OrderOrigin, OrderState } from '@embroidery/database';
 
 /** The keyset position of the last row of the previous page. */
 export interface AdminOrderQueuePosition {
@@ -38,6 +38,15 @@ export interface AdminOrderQueuePosition {
 export interface AdminOrderQueueFilter {
   /** Absent means "every state", not a default subset — B02 invents no triage set. */
   readonly statuses: readonly OrderState[] | undefined;
+  /**
+   * Absent means "every origin" (`APP12-A02-C1`).
+   *
+   * Applied in SQL against `orders.origin`, the immutable `COL-TBL043-12`
+   * discriminator, so a filtered page is a page the database built. Filtering
+   * rows after a keyset page is fetched would return short pages and a cursor
+   * that skips whatever the predicate removed.
+   */
+  readonly origins: readonly OrderOrigin[] | undefined;
 }
 
 export interface AdminOrderQueueQuery {
@@ -47,12 +56,29 @@ export interface AdminOrderQueueQuery {
   readonly limit: number;
 }
 
-/** The smallest order-owned set that identifies and triages one order. */
+/**
+ * The smallest order-owned set that identifies and triages one order.
+ *
+ * ### The custom chain is optional, and `origin` says when (`APP12-A02-C1`)
+ *
+ * `ck_orders__custom_chain_by_origin` makes `custom_request_id` `NOT NULL` on a
+ * `CUSTOM` row and `NULL` on a `READY_MADE` one — the database decides, not a
+ * caller. So the field is optional here and `origin` is the discriminator that
+ * tells a consumer which of the two shapes it is holding, on the
+ * `OrderLifecycle` precedent `APP12-B05` set for the write side.
+ *
+ * Until this correction the mapper threw on a `NULL`, which turned a legitimate
+ * Ready-Made row into an internal server error for the **whole page** — every
+ * custom row on it included.
+ */
 export interface AdminOrderQueueRow {
   readonly id: string;
   readonly code: string;
   readonly status: OrderState;
-  readonly customRequestId: string;
+  /** `COL-TBL043-12` — immutable, and the only legitimate discriminator. */
+  readonly origin: OrderOrigin;
+  /** Present exactly when `origin` is `CUSTOM`. */
+  readonly customRequestId: string | undefined;
   readonly customerId: string;
   readonly totalAmount: string;
   readonly currencyCode: string;
@@ -71,10 +97,16 @@ export interface AdminOrderQueueRow {
  * deliberately absent: they are LC-14 evidence written by transitions APP7 does
  * not own, and publishing a shape for them now would fix a contract before the
  * checkpoint that fills it exists.
+ *
+ * Both linkages are optional for the reason `customRequestId` is: the same
+ * CHECK constraint nulls all three together on a `READY_MADE` row, and
+ * `origin` on the base row says which shape this is.
  */
 export interface AdminOrderDetailRow extends AdminOrderQueueRow {
-  readonly acceptedQuotationVersionId: string;
-  readonly currentApprovalSnapshotId: string;
+  /** Present exactly when `origin` is `CUSTOM`. */
+  readonly acceptedQuotationVersionId: string | undefined;
+  /** Present exactly when `origin` is `CUSTOM`. */
+  readonly currentApprovalSnapshotId: string | undefined;
   readonly updatedAt: Date;
 }
 
@@ -97,7 +129,15 @@ export interface AdminOrderItemRow {
   readonly unitPriceAmount: string;
   readonly lineTotalAmount: string;
   readonly currencyCode: string;
-  readonly approvalSnapshotId: string;
+  /**
+   * The approval evidence that authorized this line, on a `CUSTOM` order.
+   *
+   * Absent on a Ready-Made line: `tg_order_items__origin_subject` reads
+   * `orders.origin` and requires it on a `CUSTOM` line only, because nothing
+   * was designed and nothing was approved — the customer bought a SKU that
+   * already existed (`BR-031`).
+   */
+  readonly approvalSnapshotId: string | undefined;
 }
 
 export const ADMIN_ORDER_READ_REPOSITORY = Symbol('ADMIN_ORDER_READ_REPOSITORY');
@@ -106,6 +146,13 @@ export interface AdminOrderReadRepository {
   /** One keyset page, newest first, over-fetched by one. */
   listQueue(query: AdminOrderQueueQuery): Promise<AdminOrderQueueRow[]>;
   findDetail(orderId: string): Promise<AdminOrderDetailRow | undefined>;
-  /** The order's lines in `position` order. Empty only for an order with none. */
-  loadItems(orderId: string): Promise<AdminOrderItemRow[]>;
+  /**
+   * The order's lines in `position` order. Empty only for an order with none.
+   *
+   * The origin is passed down rather than re-read: `findDetail` has already
+   * resolved it from the same immutable column, and a second query would let
+   * the two reads disagree about which shape the lines are being checked
+   * against.
+   */
+  loadItems(orderId: string, origin: OrderOrigin): Promise<AdminOrderItemRow[]>;
 }

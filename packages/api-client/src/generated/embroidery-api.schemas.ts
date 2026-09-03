@@ -1251,6 +1251,8 @@ export const AdminOrderCompletionResponseFromStatus = {
   IN_PRODUCTION: 'IN_PRODUCTION',
   PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
   AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  AWAITING_SHIPPING_FEE: 'AWAITING_SHIPPING_FEE',
+  AWAITING_PAYMENT: 'AWAITING_PAYMENT',
   READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
   DELIVERED: 'DELIVERED',
   COMPLETED: 'COMPLETED',
@@ -1271,6 +1273,8 @@ export const AdminOrderCompletionResponseStatus = {
   IN_PRODUCTION: 'IN_PRODUCTION',
   PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
   AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  AWAITING_SHIPPING_FEE: 'AWAITING_SHIPPING_FEE',
+  AWAITING_PAYMENT: 'AWAITING_PAYMENT',
   READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
   DELIVERED: 'DELIVERED',
   COMPLETED: 'COMPLETED',
@@ -1289,6 +1293,17 @@ export interface AdminOrderCompletionResponse {
   status: AdminOrderCompletionResponseStatus;
 }
 
+/**
+ * How this order came into being (`COL-TBL043-12`). The only legitimate discriminator between the two shapes below: which of the optional custom-chain fields are present is a consequence of it, never a substitute for reading it.
+ */
+export type AdminOrderDetailResponseOrigin =
+  (typeof AdminOrderDetailResponseOrigin)[keyof typeof AdminOrderDetailResponseOrigin];
+
+export const AdminOrderDetailResponseOrigin = {
+  CUSTOM: 'CUSTOM',
+  READY_MADE: 'READY_MADE',
+} as const;
+
 export type AdminOrderDetailResponseStatus =
   (typeof AdminOrderDetailResponseStatus)[keyof typeof AdminOrderDetailResponseStatus];
 
@@ -1298,6 +1313,8 @@ export const AdminOrderDetailResponseStatus = {
   IN_PRODUCTION: 'IN_PRODUCTION',
   PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
   AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  AWAITING_SHIPPING_FEE: 'AWAITING_SHIPPING_FEE',
+  AWAITING_PAYMENT: 'AWAITING_PAYMENT',
   READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
   DELIVERED: 'DELIVERED',
   COMPLETED: 'COMPLETED',
@@ -1318,8 +1335,8 @@ export const AdminOrderItemResponseSubjectKind = {
 } as const;
 
 export interface AdminOrderItemResponse {
-  /** The exact approval evidence that authorized this line (D7-07). Immutable, unlike the order’s own `currentApprovalSnapshotId`, which is an audited pointer that a post-approval revision may move. */
-  approvalSnapshotId: string;
+  /** The exact approval evidence that authorized this line (D7-07). Immutable, unlike the order’s own `currentApprovalSnapshotId`, which is an audited pointer that a post-approval revision may move. Present exactly on a line of a `CUSTOM` order: a Ready-Made line is a SKU the customer bought as it already was, so nothing was designed and nothing was approved (`BR-031`), and `tg_order_items__origin_subject` nulls it. */
+  approvalSnapshotId?: string;
   /** The frozen currency of this line. */
   currencyCode: string;
   /** The frozen customer-owned product. Present on `CUSTOMER_OWNED` lines only. */
@@ -1345,18 +1362,23 @@ export interface AdminOrderItemResponse {
 }
 
 export interface AdminOrderDetailResponse {
-  /** The exact accepted quotation version this order froze its commercial basis from (REL-073). Never `quotations.current_version_id`, which is a mutable pointer. */
-  acceptedQuotationVersionId: string;
+  /** The exact accepted quotation version this order froze its commercial basis from (REL-073). Never `quotations.current_version_id`, which is a mutable pointer. Present exactly when `origin` is `CUSTOM`: a Ready-Made order was never quoted, and its commercial basis is the frozen SKU price on its own lines plus the shipping fee. */
+  acceptedQuotationVersionId?: string;
   code: string;
   createdAt: string;
   currencyCode: string;
-  /** The order’s current approval snapshot (REL-074) — an audited pointer, reported as stored. Each line carries its own immutable `approvalSnapshotId` beside it. */
-  currentApprovalSnapshotId: string;
-  customRequestId: string;
+  /** The order’s current approval snapshot (REL-074) — an audited pointer, reported as stored. Each line carries its own immutable `approvalSnapshotId` beside it. Present exactly when `origin` is `CUSTOM`. */
+  currentApprovalSnapshotId?: string;
+  /** Present exactly when `origin` is `CUSTOM`. */
+  customRequestId?: string;
   customerId: string;
   /** The frozen lines, in `position` order. */
   items: AdminOrderItemResponse[];
   orderId: string;
+  /** How this order came into being (`COL-TBL043-12`). The only legitimate discriminator between the two shapes below: which of the optional custom-chain fields are present is a consequence of it, never a substitute for reading it. */
+  origin: AdminOrderDetailResponseOrigin;
+  /** When this Ready-Made order’s stock hold — and with it the window to pay — lapses. The active reservation’s own committed `expires_at`, read rather than recomputed: it is never `now` plus a window constant, never taken from a released or consumed reservation, and never derived from the order’s timestamps. Absent on a `CUSTOM` order, and absent once nothing is `RESERVED` — the hold lapsed, was released, or was consumed at verification — which is exactly when a countdown must stop being shown. */
+  paymentDeadline?: string;
   status: AdminOrderDetailResponseStatus;
   /** The frozen order total, transported exactly as stored. */
   totalAmount: string;
@@ -1375,6 +1397,8 @@ export const AdminOrderDispatchResponseFromStatus = {
   IN_PRODUCTION: 'IN_PRODUCTION',
   PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
   AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  AWAITING_SHIPPING_FEE: 'AWAITING_SHIPPING_FEE',
+  AWAITING_PAYMENT: 'AWAITING_PAYMENT',
   READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
   DELIVERED: 'DELIVERED',
   COMPLETED: 'COMPLETED',
@@ -1405,6 +1429,8 @@ export const AdminOrderDispatchResponseStatus = {
   IN_PRODUCTION: 'IN_PRODUCTION',
   PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
   AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  AWAITING_SHIPPING_FEE: 'AWAITING_SHIPPING_FEE',
+  AWAITING_PAYMENT: 'AWAITING_PAYMENT',
   READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
   DELIVERED: 'DELIVERED',
   COMPLETED: 'COMPLETED',
@@ -1429,16 +1455,6 @@ export interface AdminOrderDispatchResponse {
   status: AdminOrderDispatchResponseStatus;
 }
 
-export type AdminOrderPaymentsResponseDepositStatus =
-  (typeof AdminOrderPaymentsResponseDepositStatus)[keyof typeof AdminOrderPaymentsResponseDepositStatus];
-
-export const AdminOrderPaymentsResponseDepositStatus = {
-  PENDING: 'PENDING',
-  SATISFIED: 'SATISFIED',
-  CANCELLED: 'CANCELLED',
-  SUPERSEDED: 'SUPERSEDED',
-} as const;
-
 export type AdminOrderPaymentsResponseOrderStatus =
   (typeof AdminOrderPaymentsResponseOrderStatus)[keyof typeof AdminOrderPaymentsResponseOrderStatus];
 
@@ -1454,6 +1470,19 @@ export const AdminOrderPaymentsResponseOrderStatus = {
   ON_HOLD: 'ON_HOLD',
   CANCELLING: 'CANCELLING',
   CANCELLED: 'CANCELLED',
+  AWAITING_SHIPPING_FEE: 'AWAITING_SHIPPING_FEE',
+  AWAITING_PAYMENT: 'AWAITING_PAYMENT',
+} as const;
+
+/**
+ * How the order came into being (`COL-TBL043-12`), and therefore which obligation kind this surface collects: `CUSTOM` a `DEPOSIT`, `READY_MADE` a `FULL`. Published so a client branches on the order’s own discriminator rather than on which obligation it happens to find.
+ */
+export type AdminOrderPaymentsResponseOrigin =
+  (typeof AdminOrderPaymentsResponseOrigin)[keyof typeof AdminOrderPaymentsResponseOrigin];
+
+export const AdminOrderPaymentsResponseOrigin = {
+  CUSTOM: 'CUSTOM',
+  READY_MADE: 'READY_MADE',
 } as const;
 
 /**
@@ -1527,6 +1556,43 @@ export interface AdminPaymentAttemptResponse {
   updatedAt: string;
 }
 
+/**
+ * Which obligation this is, read off the row. `DEPOSIT` on a `CUSTOM` order and `FULL` on a `READY_MADE` one; `REMAINING` is never presented here, because APP9 collects it through the order’s own lifecycle.
+ */
+export type AdminPaymentObligationResponseKind =
+  (typeof AdminPaymentObligationResponseKind)[keyof typeof AdminPaymentObligationResponseKind];
+
+export const AdminPaymentObligationResponseKind = {
+  DEPOSIT: 'DEPOSIT',
+  REMAINING: 'REMAINING',
+  FULL: 'FULL',
+} as const;
+
+export type AdminPaymentObligationResponseStatus =
+  (typeof AdminPaymentObligationResponseStatus)[keyof typeof AdminPaymentObligationResponseStatus];
+
+export const AdminPaymentObligationResponseStatus = {
+  PENDING: 'PENDING',
+  SATISFIED: 'SATISFIED',
+  CANCELLED: 'CANCELLED',
+  SUPERSEDED: 'SUPERSEDED',
+} as const;
+
+export interface AdminPaymentObligationResponse {
+  /** The obligation’s own frozen amount — the figure a received transfer must match exactly. Never a share recomputed from a quotation, never a live catalog price, and for a Ready-Made `FULL` never re-derived from the merchandise subtotal plus the shipping fee. */
+  expectedAmount: string;
+  expectedCurrencyCode: string;
+  /** The exact memo the customer was told to put on the transfer: `ORD`, the order code body, then the kind’s suffix — `DC` for a deposit, `FL` for a Ready-Made full payment. Derived from the order, never stored and never accepted from a request. */
+  expectedTransferReference: string;
+  /** Which obligation this is, read off the row. `DEPOSIT` on a `CUSTOM` order and `FULL` on a `READY_MADE` one; `REMAINING` is never presented here, because APP9 collects it through the order’s own lifecycle. */
+  kind: AdminPaymentObligationResponseKind;
+  obligationId: string;
+  satisfiedAt?: string;
+  /** The one attempt that satisfied this obligation, once one has. */
+  satisfiedByAttemptId?: string;
+  status: AdminPaymentObligationResponseStatus;
+}
+
 export type AdminPaymentReconciliationResponseAction =
   (typeof AdminPaymentReconciliationResponseAction)[keyof typeof AdminPaymentReconciliationResponseAction];
 
@@ -1556,24 +1622,29 @@ export interface AdminPaymentReconciliationResponse {
 }
 
 export interface AdminOrderPaymentsResponse {
-  /** Every attempt on this deposit, oldest first, with a stable `id` tie-breaker. */
+  /** Every attempt on `currentObligation`, oldest first, with a stable `id` tie-breaker. Empty when there is no current obligation, and — because the list is keyed on that obligation’s id — never carrying an attempt made against a superseded predecessor. */
   attempts: AdminPaymentAttemptResponse[];
-  depositObligationId: string;
-  depositStatus: AdminOrderPaymentsResponseDepositStatus;
-  /** The DEPOSIT obligation’s own frozen amount — the figure a received transfer must match exactly. Never a share recomputed from a quotation and never a live catalog price. */
-  expectedAmount: string;
-  expectedCurrencyCode: string;
-  /** The exact memo the customer was told to put on the transfer: `ORD`, the order code body, then `DC`. Derived from the order, never stored and never accepted from a request. */
-  expectedTransferReference: string;
+  /** The obligation currently being collected, or **absent when there is nothing to collect yet**. The one case that produces the absence is a Ready-Made order still at `AWAITING_SHIPPING_FEE`: `BR-029` creates the `FULL` obligation with the first shipping fee, so before that the order is genuinely unpriced. That is a real order awaiting a price, not a missing one, and no provisional obligation, zero amount or placeholder transfer reference is fabricated to stand in for it. */
+  currentObligation?: AdminPaymentObligationResponse;
   orderCode: string;
   orderId: string;
   orderStatus: AdminOrderPaymentsResponseOrderStatus;
-  /** Every manual reconciliation recorded against this deposit, oldest first. */
+  /** How the order came into being (`COL-TBL043-12`), and therefore which obligation kind this surface collects: `CUSTOM` a `DEPOSIT`, `READY_MADE` a `FULL`. Published so a client branches on the order’s own discriminator rather than on which obligation it happens to find. */
+  origin: AdminOrderPaymentsResponseOrigin;
+  /** Every manual reconciliation recorded against the current obligation and its attempts, oldest first. Empty when there is no current obligation. */
   reconciliations: AdminPaymentReconciliationResponse[];
-  satisfiedAt?: string;
-  /** The one attempt that satisfied the deposit, once one has. */
-  satisfiedByAttemptId?: string;
 }
+
+/**
+ * How this order came into being (`COL-TBL043-12`), read from the immutable `origin` column. It is the **only** legitimate discriminator between the two order shapes: a consumer must not infer it from the status, from a missing `customRequestId` or from which payment obligation the order carries.
+ */
+export type AdminOrderQueueItemResponseOrigin =
+  (typeof AdminOrderQueueItemResponseOrigin)[keyof typeof AdminOrderQueueItemResponseOrigin];
+
+export const AdminOrderQueueItemResponseOrigin = {
+  CUSTOM: 'CUSTOM',
+  READY_MADE: 'READY_MADE',
+} as const;
 
 /**
  * The current LC-14 state, reported as stored.
@@ -1587,6 +1658,8 @@ export const AdminOrderQueueItemResponseStatus = {
   IN_PRODUCTION: 'IN_PRODUCTION',
   PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
   AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  AWAITING_SHIPPING_FEE: 'AWAITING_SHIPPING_FEE',
+  AWAITING_PAYMENT: 'AWAITING_PAYMENT',
   READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
   DELIVERED: 'DELIVERED',
   COMPLETED: 'COMPLETED',
@@ -1602,10 +1675,12 @@ export interface AdminOrderQueueItemResponse {
   createdAt: string;
   /** The frozen currency of `totalAmount`. */
   currencyCode: string;
-  /** The custom request this order was created from. One order per request (`uq_orders__request`), so this is also how the Admin screen navigates back. */
-  customRequestId: string;
+  /** The custom request this order was created from. One order per request (`uq_orders__request`), so this is also how the Admin screen navigates back. Present exactly when `origin` is `CUSTOM` — `ck_orders__custom_chain_by_origin` nulls it on a `READY_MADE` order, which was never designed and has no request behind it. */
+  customRequestId?: string;
   customerId: string;
   orderId: string;
+  /** How this order came into being (`COL-TBL043-12`), read from the immutable `origin` column. It is the **only** legitimate discriminator between the two order shapes: a consumer must not infer it from the status, from a missing `customRequestId` or from which payment obligation the order carries. */
+  origin: AdminOrderQueueItemResponseOrigin;
   /** The current LC-14 state, reported as stored. */
   status: AdminOrderQueueItemResponseStatus;
   /** The order total as frozen at creation, transported exactly as `numeric(14,2)` stores it. Never re-summed from the lines and never re-derived from a current price. */
@@ -1632,6 +1707,8 @@ export const AdminOrderTransitionResultResponseFromStatus = {
   IN_PRODUCTION: 'IN_PRODUCTION',
   PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
   AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  AWAITING_SHIPPING_FEE: 'AWAITING_SHIPPING_FEE',
+  AWAITING_PAYMENT: 'AWAITING_PAYMENT',
   READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
   DELIVERED: 'DELIVERED',
   COMPLETED: 'COMPLETED',
@@ -1663,6 +1740,8 @@ export const AdminOrderTransitionResultResponseStatus = {
   IN_PRODUCTION: 'IN_PRODUCTION',
   PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
   AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  AWAITING_SHIPPING_FEE: 'AWAITING_SHIPPING_FEE',
+  AWAITING_PAYMENT: 'AWAITING_PAYMENT',
   READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
   DELIVERED: 'DELIVERED',
   COMPLETED: 'COMPLETED',
@@ -4728,7 +4807,7 @@ export const PaymentDecisionResponseDepositStatus = {
 } as const;
 
 /**
- * The order’s state after the decision committed, read back rather than assumed. A verified deposit reports `DEPOSIT_PAID` and a verified balance `READY_FOR_DELIVERY`; a review reports the order unmoved.
+ * The order’s state after the decision committed, read back rather than assumed. A verified deposit reports `DEPOSIT_PAID`, a verified balance `READY_FOR_DELIVERY`, and a verified Ready-Made full payment `READY_FOR_DELIVERY`; a review reports the order unmoved — which for a Ready-Made order can be `AWAITING_PAYMENT`, a state this enum could not carry before `APP12-A02-C1`.
  */
 export type PaymentDecisionResponseOrderStatus =
   (typeof PaymentDecisionResponseOrderStatus)[keyof typeof PaymentDecisionResponseOrderStatus];
@@ -4745,6 +4824,8 @@ export const PaymentDecisionResponseOrderStatus = {
   ON_HOLD: 'ON_HOLD',
   CANCELLING: 'CANCELLING',
   CANCELLED: 'CANCELLED',
+  AWAITING_SHIPPING_FEE: 'AWAITING_SHIPPING_FEE',
+  AWAITING_PAYMENT: 'AWAITING_PAYMENT',
 } as const;
 
 export type PaymentDecisionResponseReconciliationAction =
@@ -4765,7 +4846,7 @@ export interface PaymentDecisionResponse {
   /** The state of that same obligation after the decision committed. `SATISFIED` on a match, unchanged on a review. It describes whichever obligation `depositObligationId` names, not the deposit specifically. */
   depositStatus: PaymentDecisionResponseDepositStatus;
   orderId: string;
-  /** The order’s state after the decision committed, read back rather than assumed. A verified deposit reports `DEPOSIT_PAID` and a verified balance `READY_FOR_DELIVERY`; a review reports the order unmoved. */
+  /** The order’s state after the decision committed, read back rather than assumed. A verified deposit reports `DEPOSIT_PAID`, a verified balance `READY_FOR_DELIVERY`, and a verified Ready-Made full payment `READY_FOR_DELIVERY`; a review reports the order unmoved — which for a Ready-Made order can be `AWAITING_PAYMENT`, a state this enum could not carry before `APP12-A02-C1`. */
   orderStatus: PaymentDecisionResponseOrderStatus;
   reconciliationAction: PaymentDecisionResponseReconciliationAction;
   /** True when this response reported a verification that had already committed — the retry of a call whose response was lost. Nothing was written a second time. */
@@ -6664,6 +6745,10 @@ export type AdminNotificationIntentReplay200 = ApiSuccessResponse & {
 
 export type AdminOrderListParams = {
   /**
+   * Repeatable. Omitted means every origin. Applied in SQL against the immutable `origin` column before the page is cut, so a filtered page is a full page and its cursor skips nothing.
+   */
+  origin?: AdminOrderListOriginItem[];
+  /**
    * Repeatable. Omitted means every state.
    */
   status?: AdminOrderListStatusItem[];
@@ -6678,6 +6763,14 @@ export type AdminOrderListParams = {
   cursor?: unknown;
 };
 
+export type AdminOrderListOriginItem =
+  (typeof AdminOrderListOriginItem)[keyof typeof AdminOrderListOriginItem];
+
+export const AdminOrderListOriginItem = {
+  CUSTOM: 'CUSTOM',
+  READY_MADE: 'READY_MADE',
+} as const;
+
 export type AdminOrderListStatusItem =
   (typeof AdminOrderListStatusItem)[keyof typeof AdminOrderListStatusItem];
 
@@ -6687,6 +6780,8 @@ export const AdminOrderListStatusItem = {
   IN_PRODUCTION: 'IN_PRODUCTION',
   PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
   AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  AWAITING_SHIPPING_FEE: 'AWAITING_SHIPPING_FEE',
+  AWAITING_PAYMENT: 'AWAITING_PAYMENT',
   READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
   DELIVERED: 'DELIVERED',
   COMPLETED: 'COMPLETED',

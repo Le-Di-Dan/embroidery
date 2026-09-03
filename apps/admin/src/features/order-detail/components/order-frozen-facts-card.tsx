@@ -34,6 +34,15 @@ const ADMIN_REQUEST_DETAIL_PREFIX = '/requests';
  * reconciling against the database does need a handle; a full UUID in a
  * definition row is simply unreadable. The custom request is the one that has a
  * screen behind it, so it is the one that is a link.
+ *
+ * ## This card is the **custom** order's
+ *
+ * `ReadyMadeFrozenFactsCard` is the Ready-Made one, and the screen picks
+ * between them on `order.origin`. The three custom-chain rows below are
+ * rendered only where their id exists, so this card cannot put an empty row or
+ * a fabricated identifier on screen if it is ever handed a Ready-Made order —
+ * but it is not the card that order should get, because a Ready-Made order's
+ * frozen facts are a different list (`913:337`), not this one with holes in it.
  */
 export function OrderFrozenFactsCard({ order }: OrderFrozenFactsCardProps) {
   return (
@@ -56,26 +65,35 @@ export function OrderFrozenFactsCard({ order }: OrderFrozenFactsCardProps) {
         <DefinitionRow label={COPY.fields.updatedAt}>
           <time dateTime={order.updatedAt}>{formatInstant(order.updatedAt)}</time>
         </DefinitionRow>
-        <DefinitionRow label={COPY.fields.request}>
-          <Link
-            className="order-card__link"
-            href={`${ADMIN_REQUEST_DETAIL_PREFIX}/${order.customRequestId}`}
-          >
-            {COPY.page.openRequest}
-          </Link>
-        </DefinitionRow>
+        {order.customRequestId === undefined ? null : (
+          <DefinitionRow label={COPY.fields.request}>
+            <Link
+              className="order-card__link"
+              href={`${ADMIN_REQUEST_DETAIL_PREFIX}/${order.customRequestId}`}
+            >
+              {COPY.page.openRequest}
+            </Link>
+          </DefinitionRow>
+        )}
         <DefinitionRow label={COPY.fields.customer} title={order.customerId}>
           {truncateIdentifier(order.customerId)}
         </DefinitionRow>
-        <DefinitionRow
-          label={COPY.fields.acceptedQuotationVersion}
-          title={order.acceptedQuotationVersionId}
-        >
-          {truncateIdentifier(order.acceptedQuotationVersionId)}
-        </DefinitionRow>
-        <DefinitionRow label={COPY.fields.approvalSnapshot} title={order.currentApprovalSnapshotId}>
-          {truncateIdentifier(order.currentApprovalSnapshotId)}
-        </DefinitionRow>
+        {order.acceptedQuotationVersionId === undefined ? null : (
+          <DefinitionRow
+            label={COPY.fields.acceptedQuotationVersion}
+            title={order.acceptedQuotationVersionId}
+          >
+            {truncateIdentifier(order.acceptedQuotationVersionId)}
+          </DefinitionRow>
+        )}
+        {order.currentApprovalSnapshotId === undefined ? null : (
+          <DefinitionRow
+            label={COPY.fields.approvalSnapshot}
+            title={order.currentApprovalSnapshotId}
+          >
+            {truncateIdentifier(order.currentApprovalSnapshotId)}
+          </DefinitionRow>
+        )}
       </dl>
     </section>
   );

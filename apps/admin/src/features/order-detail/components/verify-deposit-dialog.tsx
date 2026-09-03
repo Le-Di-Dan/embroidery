@@ -95,9 +95,24 @@ export function VerifyDepositDialog({
     decision.run(toVerifyBody(values));
   };
 
+  // The expected facts are the **current** obligation's, whichever kind it is
+  // (`APP12-A02-C1`): the deposit on a custom order, the FULL on a Ready-Made
+  // one. They are read from the server's obligation and never composed here —
+  // an amount this dialog derived would be the figure an operator then compares
+  // a real bank statement against.
+  //
+  // `undefined` is unreachable from the mounted path — the dialog opens only
+  // for an actionable attempt, which requires a `PENDING` obligation — but it
+  // is handled rather than asserted away, because the alternative is a
+  // reconciliation screen rendering `undefined` where an amount belongs.
+  const obligation = payments.currentObligation;
+  if (obligation === undefined) {
+    return null;
+  }
+
   const expectedAmount = formatAmountWithCurrency(
-    payments.expectedAmount,
-    payments.expectedCurrencyCode,
+    obligation.expectedAmount,
+    obligation.expectedCurrencyCode,
   );
 
   return (
@@ -125,7 +140,7 @@ export function VerifyDepositDialog({
             {expectedAmount}
           </DefinitionRow>
           <DefinitionRow label={COPY.deposit.expectedReference} testId="verify-expected-reference">
-            {payments.expectedTransferReference}
+            {obligation.expectedTransferReference}
           </DefinitionRow>
         </dl>
       </section>
@@ -197,7 +212,7 @@ export function VerifyDepositDialog({
       {settled ? (
         <ExpectedObservedTable
           expectedAmount={expectedAmount}
-          expectedReference={payments.expectedTransferReference}
+          expectedReference={obligation.expectedTransferReference}
           observedAmount={values.observedAmount}
           observedReference={values.observedTransferReference}
         />

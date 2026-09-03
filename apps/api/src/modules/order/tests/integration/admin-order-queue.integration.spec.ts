@@ -19,6 +19,7 @@ interface QueueItem {
   readonly orderId: string;
   readonly code: string;
   readonly status: string;
+  readonly origin: string;
   readonly customRequestId: string;
   readonly customerId: string;
   readonly totalAmount: string;
@@ -101,12 +102,17 @@ describe('APP7-B02 — the Admin order queue (integration)', () => {
       'customRequestId',
       'customerId',
       'orderId',
+      'origin',
       'status',
       'totalAmount',
     ]);
     expect(item?.orderId).toBe(seeded.orderId);
     expect(item?.code).toBe(seeded.code);
     expect(item?.status).toBe('AWAITING_DEPOSIT');
+    // `APP12-A02-C1` — a custom order still reports its origin and its whole
+    // custom chain. The widening made the chain optional in the *contract*; it
+    // did not make it absent on the rows that have one.
+    expect(item?.origin).toBe('CUSTOM');
     expect(item?.customRequestId).toBe(seeded.fixture.customRequestId);
     expect(item?.customerId).toBe(seeded.fixture.customerId);
     // The accepted quotation version's own total, frozen by the canonical

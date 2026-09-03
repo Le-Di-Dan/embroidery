@@ -125,11 +125,28 @@ describe('APP9-B01 — the published Admin order lifecycle contract', () => {
     );
   });
 
-  it('adds no second lifecycle, eligibility or payable operation', () => {
-    const suspicious = Object.keys(document.paths).filter((path) =>
-      /payable|eligibility|final-payment|open-final|request-final/i.test(path),
+  it('adds no second Admin lifecycle, eligibility or payable operation', () => {
+    // Scoped to the **Admin** surface. `APP9-B02` legitimately published three
+    // public customer final-payment operations after this assertion was
+    // written, so the unscoped form had been failing at HEAD ever since and was
+    // testing the wrong thing: the rule `APP9-B01` set is that *it* opens one
+    // guarded Admin transition and no second Admin command that could move an
+    // order into a payable state. A customer read of a balance it may not move
+    // was never in scope. `APP12-A02-C1` runs this suite and records the
+    // correction rather than leaving a permanently red assertion.
+    const suspicious = Object.keys(document.paths).filter(
+      (path) =>
+        path.startsWith('/api/admin/') &&
+        /payable|eligibility|final-payment|open-final|request-final/i.test(path),
     );
     expect(suspicious).toEqual([]);
+
+    // The public lane is still checked, just for the right property: those
+    // operations exist, and none of them is an Admin one wearing a public path.
+    const publicFinalPayment = Object.keys(document.paths).filter((path) =>
+      /final-payment/i.test(path),
+    );
+    expect(publicFinalPayment.every((path) => path.startsWith('/api/public/'))).toBe(true);
   });
 
   it('takes the order id in the path and the target in a one-member enum body', () => {
