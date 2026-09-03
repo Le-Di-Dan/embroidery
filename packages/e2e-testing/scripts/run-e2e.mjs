@@ -84,6 +84,21 @@ const APP12_A01 = ['app12-a01-chromium'];
 // under test — there the customer's, here the operator's — so the environment
 // is shared rather than duplicated.
 const APP12_A02 = ['app12-a02-chromium'];
+// APP12-H01 — the Wave-1 live security acceptance. The A02 topology exactly,
+// because the security journeys need the same commercial universe: a real
+// verified Ready-Made order to hold an ORDER_ACCESS grant, an authenticated
+// operator to price it, this run’s object storage for the evidence lane, and
+// the disposable database all of it writes to. Nothing is added to the
+// topology; only the subject differs — there the screens, here what they
+// refuse.
+const APP12_H01 = ['app12-h01-chromium'];
+// The same topology with the custom capability RELEASED, for the one journey
+// that cannot be proved with it withheld: that a real REQUEST_ACCESS grant and
+// a real ORDER_ACCESS grant cannot reach each other’s operations. It is a
+// separate run rather than a second project because the release state is read
+// once when the API composes its module graph, so one process cannot serve
+// both.
+const APP12_H01_WAVE2 = ['app12-h01-wave2-chromium'];
 
 /**
  * `--app4` (APP4-E01-H01) is not a Playwright mode.
@@ -217,60 +232,71 @@ function parseArgs(argv) {
   const app12A01 = flags.has('--app12-a01');
   // APP12-A02-C1: the Admin Ready-Made order branch. Rides the S03 topology.
   const app12A02 = flags.has('--app12-a02');
+  // APP12-H01: the live security acceptance, and its Wave-2-released sibling.
+  const app12H01Wave2 = flags.has('--app12-h01-wave2');
+  const app12H01 = flags.has('--app12-h01') || app12H01Wave2;
   // APP4-E01-H02: the browser tier, which IS a Playwright mode.
   const app4Browser = flags.has('--app4-browser') || app4R01 || app4R01C1 || app5E01 || app7E01;
   const full = flags.has('--full');
   const mode = app4
     ? 'app4'
-    : app12A02
-      ? 'app12-a02'
-      : app12A01
-        ? 'app12-a01'
-        : app12S03
-          ? 'app12-s03'
-          : app12S02
-            ? 'app12-s02'
-            : app12S01
-              ? 'app12-s01'
-              : app7E01
-                ? 'app7-e01'
-                : app5E01
-                  ? 'app5-e01'
-                  : app4Browser
-                    ? 'app4-browser'
-                    : app1
-                      ? 'app1'
-                      : full
-                        ? 'full'
-                        : 'smoke';
-  const projects = app12A02
-    ? APP12_A02
-    : app12A01
-      ? APP12_A01
-      : app12S03
-        ? APP12_S03
-        : app12S02
-          ? APP12_S02
-          : app12S01
-            ? APP12_S01
-            : app7E01
-              ? APP7_E01
-              : app5E01
-                ? APP5_E01
-                : app4R01C1
-                  ? APP4_R01_C1
-                  : app4R01
-                    ? APP4_R01
-                    : app4Browser
-                      ? APP4
-                      : app1
-                        ? APP1
-                        : full
-                          ? FULL
-                          : SMOKE;
+    : app12H01Wave2
+      ? 'app12-h01-wave2'
+      : app12H01
+        ? 'app12-h01'
+        : app12A02
+          ? 'app12-a02'
+          : app12A01
+            ? 'app12-a01'
+            : app12S03
+              ? 'app12-s03'
+              : app12S02
+                ? 'app12-s02'
+                : app12S01
+                  ? 'app12-s01'
+                  : app7E01
+                    ? 'app7-e01'
+                    : app5E01
+                      ? 'app5-e01'
+                      : app4Browser
+                        ? 'app4-browser'
+                        : app1
+                          ? 'app1'
+                          : full
+                            ? 'full'
+                            : 'smoke';
+  const projects = app12H01Wave2
+    ? APP12_H01_WAVE2
+    : app12H01
+      ? APP12_H01
+      : app12A02
+        ? APP12_A02
+        : app12A01
+          ? APP12_A01
+          : app12S03
+            ? APP12_S03
+            : app12S02
+              ? APP12_S02
+              : app12S01
+                ? APP12_S01
+                : app7E01
+                  ? APP7_E01
+                  : app5E01
+                    ? APP5_E01
+                    : app4R01C1
+                      ? APP4_R01_C1
+                      : app4R01
+                        ? APP4_R01
+                        : app4Browser
+                          ? APP4
+                          : app1
+                            ? APP1
+                            : full
+                              ? FULL
+                              : SMOKE;
   // The E01 suite is always host/Chromium; it cannot run in the container.
   const runner =
-    app1 || app4Browser || app12S01 || app12S02 || app12S03 || app12A02 || app12A01
+    app1 || app4Browser || app12S01 || app12S02 || app12S03 || app12A02 || app12A01 || app12H01
       ? 'host'
       : runnerArg
         ? runnerArg.split('=')[1]
@@ -296,6 +322,8 @@ function parseArgs(argv) {
     app12S02,
     app12A01,
     app12A02,
+    app12H01,
+    app12H01Wave2,
   };
 }
 
@@ -330,6 +358,8 @@ async function main() {
     app12S03,
     app12A01,
     app12A02,
+    app12H01,
+    app12H01Wave2,
   } = parseArgs(process.argv.slice(2));
 
   // APP7-E01-U01 owns its own lean topology and teardown and starts no browser
@@ -378,7 +408,7 @@ async function main() {
   // rather than to insert policy rows behind it. The Admin account it creates
   // is a by-product; nothing in the S02 suite logs in.
   const adminCredentials =
-    app1 || app4Browser || app12S02 || app12S03 || app12A01 || app12A02
+    app1 || app4Browser || app12S02 || app12S03 || app12A01 || app12A02 || app12H01
       ? createAdminCredentials(runId)
       : undefined;
   // The browser tier overrides one non-secret value: the canonical origin the
@@ -407,7 +437,7 @@ async function main() {
   // pepper, so the API would refuse to start and the failure would read as an
   // A01 defect. Per-run, synthetic and in-memory.
   const app4Secrets =
-    app4Browser || app12S01 || app12S02 || app12S03 || app12A02 || app12A01
+    app4Browser || app12S01 || app12S02 || app12S03 || app12A02 || app12A01 || app12H01
       ? { ...createApp4SecretConfig(runId), storefrontOrigin: config.baseUrls.storefront }
       : undefined;
   // `APP7-B03`'s merchant bank configuration is a module-scoped fail-fast
@@ -455,16 +485,31 @@ async function main() {
       log,
       withAdmin: adminCredentials,
       withMerchantBank: merchantBankEnv(merchant),
+      // The API's own half of the release decision (APP12-H01). The route gate
+      // and the operation gate are two enforcement points of one state, so a run
+      // that released the Storefront routes while the API withheld the
+      // operations would prove nothing about either. Only the H01 modes state
+      // it; every other mode leaves the API on its canonical withheld default.
+      ...(app12H01
+        ? { withApi: { CUSTOM_EMBROIDERY_RELEASE_ENABLED: app12H01Wave2 ? 'true' : 'false' } }
+        : {}),
       // APP12-S01: the Storefront renders the Ready-Made purchase state on the
       // server, so this is the first mode that has to configure that process at
       // all. Wave 2 is explicitly withheld — the purchase journeys are Wave-1
       // surfaces and must be proved with the custom capability off.
-      ...(app12S01 || app12S02 || app12S03 || app12A02
+      //
+      // `--app12-h01-wave2` is the one exception, and it is a security journey
+      // rather than a commerce one: `APP12-H01` has to prove that a **real**
+      // REQUEST_ACCESS grant and a **real** ORDER_ACCESS grant cannot reach each
+      // other's operations, and neither grant can exist unless the capability
+      // that mints it is released. The API reads the same value below, because a
+      // released route in front of a withheld operation would prove nothing.
+      ...(app12S01 || app12S02 || app12S03 || app12A02 || app12H01
         ? {
             withStorefront: {
               INTERNAL_API_BASE_URL: `http://localhost:${config.ports.api}/api`,
               STOREFRONT_PUBLIC_ORIGIN: config.baseUrls.storefront,
-              CUSTOM_EMBROIDERY_RELEASE_ENABLED: 'false',
+              CUSTOM_EMBROIDERY_RELEASE_ENABLED: app12H01Wave2 ? 'true' : 'false',
             },
           }
         : {}),
@@ -530,7 +575,7 @@ async function main() {
       app12A01Fixture = await seedS01Catalog({ databaseUrl: env.database.url, log });
     }
     let app12S02Fixture;
-    if (app12S02 || app12S03 || app12A02) {
+    if (app12S02 || app12S03 || app12A02 || app12H01) {
       const { seedS02Catalog } = await import('../support/app12/s02-checkout-fixture.mjs');
       app12S02Fixture = await seedS02Catalog({ databaseUrl: env.database.url, log });
     }
@@ -590,7 +635,7 @@ async function main() {
                 E2E_ADMIN_EMAIL: adminCredentials.email,
                 E2E_ADMIN_PASSWORD: adminCredentials.password,
               }
-            : app12S02 || app12S03 || app12A02
+            : app12S02 || app12S03 || app12A02 || app12H01
               ? {
                   // The seeded slugs and SKU ids, for the same reason. The SKU ids
                   // matter more here than in S01: the spec composes checkout
@@ -621,7 +666,7 @@ async function main() {
                   //
                   // The password travels the child environment only — never an
                   // argument, never a log line.
-                  ...(app12S03 || app12A02
+                  ...(app12S03 || app12A02 || app12H01
                     ? {
                         E2E_BASE_ADMIN: config.baseUrls.admin,
                         E2E_ADMIN_EMAIL: adminCredentials.email,

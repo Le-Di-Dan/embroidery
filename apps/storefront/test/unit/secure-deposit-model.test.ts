@@ -25,10 +25,7 @@ import {
   evidenceIntakeOpen,
   shouldReconcileDeposit,
 } from '../../src/features/secure-deposit-payment/model/deposit-payment-state';
-import {
-  formatExactAmount,
-  formatExactMoney,
-} from '../../src/features/secure-deposit-payment/model/exact-deposit-amount';
+import { formatExactAmount, formatExactMoney } from '../../src/shared/money/exact-money';
 import {
   initiateFailureOf,
   requiresEvidenceRefetch,

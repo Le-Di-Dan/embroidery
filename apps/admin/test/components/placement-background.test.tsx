@@ -25,6 +25,7 @@ import { ProductPlacementScreen } from '../../src/features/product-placement';
 import { PLACEMENT_COPY } from '../../src/features/product-placement/model/placement-copy';
 import { isEligibleBackground } from '../../src/features/product-placement/model/background-eligibility';
 import { makeProductDetail, productDetailEnvelope } from '../support/product-fixture';
+import { readFeatureSource } from '../support/feature-source';
 import {
   assetEnvelope,
   makeAssetPage,
@@ -171,10 +172,16 @@ describe('storage boundary', () => {
       expect(screen.getByRole('radio')).toBeInTheDocument();
     });
 
-    // The operation is not even on the client boundary, so authoring cannot
-    // depend on a route that requires the product to be published.
-    expect(actual['publicProductSideBackgroundGet']).toBeUndefined();
-    expect(actual['publicProductPlacementGet']).toBeUndefined();
+    // Both operations crossed the shared client boundary at `APP3-S02` for the
+    // Storefront studio stage, so their absence from the package is no longer
+    // what makes this true. Re-pointed by `APP12-H01` (FU-APP12-A01-01) at the
+    // Admin claim itself: authoring must not depend on a route that requires the
+    // product to be published, so this feature names neither operation.
+    const featureSource = readFeatureSource('product-placement');
+    expect(featureSource).not.toContain('publicProductSideBackgroundGet');
+    expect(featureSource).not.toContain('publicProductPlacementGet');
+    // Kept so the assertion still fails loudly if the mock stops resolving.
+    expect(typeof actual['adminProductPlacementGet']).toBe('function');
   });
 
   it('keeps picker tiles as placeholders after A01-C1', async () => {

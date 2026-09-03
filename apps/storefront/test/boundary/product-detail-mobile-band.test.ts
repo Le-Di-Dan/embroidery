@@ -14,19 +14,36 @@
  * smoke; jsdom computes no layout, so asserting pixels here would prove
  * nothing. What can be proved here is that the rule exists and is scoped.
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const SRC = join(__dirname, '..', '..', 'src');
-const DETAIL_SCSS = join(SRC, 'features', 'product-detail', 'styles', 'product-detail.scss');
+const DETAIL_STYLES_DIR = join(SRC, 'features', 'product-detail', 'styles');
+
+/**
+ * The feature's whole stylesheet, however many files it is written in.
+ *
+ * `APP12-H01` split `product-detail.scss` into an entry plus five responsibility
+ * partials (FU-APP12-S01-03), so a check that read the one file would now be
+ * asserting against a list of `@use` lines. Reading the directory keeps every
+ * rule below exactly as strict as it was, and makes it indifferent to how the
+ * feature chooses to divide its styles next.
+ */
+function readFeatureStyles(stylesDir: string): string {
+  return readdirSync(stylesDir)
+    .filter((file) => file.endsWith('.scss'))
+    .sort()
+    .map((file) => readFileSync(join(stylesDir, file), 'utf8'))
+    .join('\n');
+}
 const SHELL_SCSS = join(SRC, 'features', 'storefront-shell', 'styles', 'storefront-shell.scss');
 
-const detail = readFileSync(DETAIL_SCSS, 'utf8');
+const detail = readFeatureStyles(DETAIL_STYLES_DIR);
 const shell = readFileSync(SHELL_SCSS, 'utf8');
 
 /** The `@media (max-width: …)` block that carries the mobile band. */
 function mobileBlock(text: string): string {
-  const start = text.indexOf('@media (max-width: #{$bp-shell-wide - 1px})');
+  const start = text.search(/@media \(max-width: #\{(?:tokens\.)?\$bp-shell-wide - 1px\}\)/);
   if (start < 0) return '';
   return text.slice(start, text.indexOf('\n}', text.indexOf('\n  }', start)) + 2);
 }
@@ -41,11 +58,13 @@ describe('mobile content band', () => {
     expect(block).toContain('.product-detail');
     // 24 (approved) − 16 (shell) = the 8px inset, expressed as the arithmetic
     // rather than a magic number, so the intent survives a shell change.
-    expect(block).toMatch(/padding-inline:\s*\$detail-mobile-gutter - styles\.spacing\(16\);/);
+    expect(block).toMatch(
+      /padding-inline:\s*(?:tokens\.)?\$detail-mobile-gutter - styles\.spacing\(16\);/,
+    );
   });
 
   it('scopes the inset below the shell threshold, leaving tablet and desktop alone', () => {
-    expect(detail).toContain('@media (max-width: #{$bp-shell-wide - 1px})');
+    expect(detail).toMatch(/@media \(max-width: #\{(?:tokens\.)?\$bp-shell-wide - 1px\}\)/);
     expect(detail).toMatch(/\$bp-shell-wide:\s*768px;/);
   });
 
@@ -69,7 +88,7 @@ describe('mobile content band', () => {
 
   it('keeps the desktop and tablet story at the 640px measure', () => {
     expect(detail).toMatch(/\$story-measure-max:\s*640px;/);
-    expect(detail).toMatch(/max-width:\s*\$story-measure-max;/);
+    expect(detail).toMatch(/max-width:\s*(?:tokens\.)?\$story-measure-max;/);
   });
 
   it('does not constrain the lightbox to the page band', () => {

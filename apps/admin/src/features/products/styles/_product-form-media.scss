@@ -1,0 +1,135 @@
+// Admin product form — media editor and media rows.
+//
+// The ordered media list and its per-row controls: a different editing surface from the scalar fields above, with its own tile geometry.
+//
+// Split out of `product-form.scss` by `APP12-H01` (FU-APP12-A01-04), which
+// found the single file at 753 lines against the 400-line hard
+// limit (CLAUDE.md §6). The split is by responsibility, and the compiled CSS is
+// byte-identical to what the one file emitted: the entry stylesheet `@use`s the
+// parts in their original order, so no declaration changed place in the cascade.
+@use '@embroidery/styles' as styles;
+@use 'product-form-tokens' as tokens;
+@use 'product-form-shell';
+
+.product-media-editor__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: styles.spacing(12);
+}
+
+.product-media-editor__pick {
+  @extend %product-form-button;
+
+  border: 1px solid styles.$color-border-primary;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+
+  @media (max-width: #{tokens.$form-breakpoint - 1px}) {
+    width: 100%;
+  }
+}
+
+.product-media-editor__help {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-tertiary;
+}
+
+.product-media-editor__empty {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.product-media-editor__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+}
+
+.product-media-row {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-secondary;
+  min-width: 0;
+}
+
+.product-media-row__top {
+  display: flex;
+  align-items: flex-start;
+  gap: styles.spacing(12);
+  min-width: 0;
+}
+
+// An honest placeholder: there is no media-delivery contract, so no tile ever
+// renders real pixels and none is announced as an image.
+.product-media-row__placeholder {
+  flex: 0 0 auto;
+  width: tokens.$media-tile;
+  height: tokens.$media-tile;
+  border: 1px dashed styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+
+  @media (min-width: tokens.$form-breakpoint) {
+    width: tokens.$media-tile-wide;
+    height: tokens.$media-tile-wide;
+  }
+}
+
+.product-media-row__info {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.product-media-row__title {
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-primary;
+}
+
+.product-media-row__meta,
+.product-media-row__placeholder-note {
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-tertiary;
+}
+
+.product-media-row__role {
+  flex: 0 0 auto;
+  padding: styles.spacing(4) styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-secondary;
+  white-space: nowrap;
+}
+
+.product-media-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+}
+
+.product-media-row__action {
+  @extend %product-form-button;
+
+  padding: styles.spacing(12) styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+}
+
+// -------------------------------------------------------------- dialog ------

@@ -1,0 +1,173 @@
+// Admin product list — empty, unavailable, continuation and action states.
+//
+// Everything the list shows when it is not a list of products: empty, unavailable, the pagination continuation, and the create/edit affordances.
+//
+// Split out of `products.scss` by `APP12-H01` (FU-APP12-A01-04), which
+// found the single file at 536 lines against the 400-line hard
+// limit (CLAUDE.md §6). The split is by responsibility, and the compiled CSS is
+// byte-identical to what the one file emitted: the entry stylesheet `@use`s the
+// parts in their original order, so no declaration changed place in the cascade.
+@use '@embroidery/styles' as styles;
+@use 'products-tokens' as tokens;
+@use 'products-shell';
+
+.products__list-status {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.products__empty,
+.products__list-unavailable {
+  @extend %products-surface;
+
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  text-align: center;
+}
+
+.products__empty-title,
+.products__list-unavailable-title {
+  margin: 0;
+  font-size: styles.$font-size-body-l;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+}
+
+.products__empty-body,
+.products__list-unavailable-body {
+  margin: 0 auto;
+  max-width: styles.$layout-reading-max;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.products__list-unavailable-action {
+  @extend %products-control;
+
+  align-self: center;
+}
+
+// Continuation ----------------------------------------------------------------
+
+.product-continuation {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  align-items: stretch;
+
+  @media (min-width: tokens.$products-breakpoint) {
+    align-items: flex-start;
+  }
+}
+
+.product-continuation__error {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-status-error;
+  overflow-wrap: anywhere;
+}
+
+// Full content width on mobile (approved handoff 450:404 — Responsive).
+.product-continuation__action {
+  @extend %products-control;
+
+  width: 100%;
+
+  @media (min-width: tokens.$products-breakpoint) {
+    width: auto;
+  }
+}
+
+.product-continuation__spinner {
+  width: tokens.$spinner-size;
+  height: tokens.$spinner-size;
+  border: 2px solid styles.$color-border-secondary;
+  border-top-color: styles.$color-action-primary;
+  border-radius: 50%;
+
+  @include styles.motion-safe {
+    animation: product-spin 900ms linear infinite;
+  }
+}
+
+@keyframes product-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// --------------------------------- APP2-A03 staged entry points (521:284) ----
+//
+// Exactly two controls are restored now that the routes behind them exist:
+// `Tạo sản phẩm` in the header (and in the genuinely-empty state) and a
+// per-row `Chỉnh sửa`. No publication, archive or delete control joins them.
+
+.products__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: styles.spacing(12);
+}
+
+// One shape for both entry points. `min-height` keeps the approved 48px touch
+// target at every width, so the mobile action is never harder to hit than the
+// desktop one.
+%products-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: styles.$size-touch-target-min;
+  padding: styles.spacing(12) styles.spacing(24);
+  border-radius: styles.$radius-button;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.products__create,
+.products__empty-create {
+  @extend %products-action;
+
+  border: 1px solid styles.$color-action-primary;
+  background: styles.$color-action-primary;
+  color: styles.$color-background-primary;
+
+  &:hover {
+    background: styles.$color-action-hover;
+    border-color: styles.$color-action-hover;
+  }
+}
+
+.product-table__actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.product-table__edit,
+.product-card__edit {
+  @extend %products-action;
+
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+
+  &:hover {
+    border-color: styles.$color-action-primary;
+    color: styles.$color-action-primary;
+  }
+}
+
+// The status badge keeps the left edge; the action sits opposite it.
+.product-card__bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: styles.spacing(12);
+}

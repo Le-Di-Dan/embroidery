@@ -67,8 +67,9 @@ export const APP2_HISTORICAL_CATEGORIES: readonly App2HistoricalCategory[] = [
 ] as const;
 
 /** The slugs of the historical rows. Historical data, never a contract. */
-export const APP2_HISTORICAL_CATEGORY_SLUGS: readonly string[] =
-  APP2_HISTORICAL_CATEGORIES.map((category) => category.slug);
+export const APP2_HISTORICAL_CATEGORY_SLUGS: readonly string[] = APP2_HISTORICAL_CATEGORIES.map(
+  (category) => category.slug,
+);
 
 /** The status migration `0033` gave every row it inserted. */
 export const APP2_HISTORICAL_CATEGORY_STATUS = 'PUBLISHED' as const satisfies CategoryState;

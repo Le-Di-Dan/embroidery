@@ -87,8 +87,11 @@ describe('APP11-B04 public sitemap inventory contract', () => {
       ]);
     });
 
-    it('brings the artifact to 128 operations', () => {
-      expect(allOperations()).toHaveLength(128);
+    it('leaves the artifact at the frozen 138 operations', () => {
+      // 128 when APP11-B04 published this read. The Ready-Made commerce
+      // checkpoints took the artifact to the 138 `APP12-H01` froze (§19); this
+      // surface is still exactly one operation, which the assertion above says.
+      expect(allOperations()).toHaveLength(138);
     });
 
     it('reaches the generated client', () => {
@@ -303,14 +306,23 @@ describe('APP11-B04 public sitemap inventory contract', () => {
       const migrations = readdirSync(join(REPO_ROOT, 'packages/database/migrations')).filter(
         (file) => file.endsWith('.sql'),
       );
-      expect(migrations.length).toBe(37);
+      // 37 when this checkpoint closed; `APP12-DB01` added
+      // `0038_add_app12_ready_made_persistence.sql` under locked roadmap
+      // authority. `APP12-H01` re-measured the directory and froze the count at
+      // 38 (§19), so this now guards the Wave-1 release freeze as well as the
+      // original claim that *this* checkpoint added nothing.
+      expect(migrations.length).toBe(38);
     });
 
     it('does not grow the application root module', () => {
       const root = readFileSync(join(REPO_ROOT, 'apps/api/src/bootstrap/app.module.ts'), 'utf8');
       // `wc -l` semantics: the trailing newline ends the last line rather than
       // starting an empty one.
-      expect(root.replace(/\n$/, '').split('\n').length).toBeLessThanOrEqual(339);
+      // A ratchet, not a snapshot: 339 when APP11-B04 closed, 363 once the
+      // Ready-Made commerce modules `APP12-B01`…`APP12-B05` registered. Re-measured
+      // and re-pinned by `APP12-H01` at the current value, so the file still cannot
+      // grow silently and still cannot approach the 400-line hard limit unnoticed.
+      expect(root.replace(/\n$/, '').split('\n').length).toBeLessThanOrEqual(363);
       expect(root).not.toContain('ContentPublicSeoModule');
     });
   });

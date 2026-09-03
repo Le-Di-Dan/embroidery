@@ -226,7 +226,9 @@ function checkProhibitions(adr, authority, fail) {
 function checkNegations(rootDir, fail) {
   const migrations = migrationCount(rootDir);
   if (migrations !== FROZEN.migrations) {
-    fail(`migration count is ${String(migrations)}, expected ${String(FROZEN.migrations)} — APP6-G01 writes no SQL`);
+    fail(
+      `migration count is ${String(migrations)}, expected ${String(FROZEN.migrations)} — APP6-G01 writes no SQL`,
+    );
   }
   const scripts = rootScriptCount(rootDir);
   if (scripts !== FROZEN.rootScripts) {
@@ -247,7 +249,9 @@ function checkNegations(rootDir, fail) {
   }
   const figma = figmaApp06References(rootDir);
   if (figma !== FROZEN.figmaApp06References) {
-    fail(`the Figma registry carries ${String(figma)} APP_06 reference(s) — APP6-G01 draws nothing`);
+    fail(
+      `the Figma registry carries ${String(figma)} APP_06 reference(s) — APP6-G01 draws nothing`,
+    );
   }
   for (const key of ['designVersions', 'approvalSnapshots']) {
     const source = read(rootDir, key);
@@ -255,13 +259,22 @@ function checkNegations(rootDir, fail) {
       fail(`${CANONICAL_FILES[key]} is missing`);
       continue;
     }
-    for (const column of ['product_id', 'product_variant_id', 'product_side_id', 'embroidery_area_id']) {
+    for (const column of [
+      'product_id',
+      'product_variant_id',
+      'product_side_id',
+      'embroidery_area_id',
+    ]) {
       if (!declaresNotNull(source, column)) {
-        fail(`${CANONICAL_FILES[key]}: ${column} is no longer NOT NULL — that is APP6-DB01's change, not APP6-G01's`);
+        fail(
+          `${CANONICAL_FILES[key]}: ${column} is no longer NOT NULL — that is APP6-DB01's change, not APP6-G01's`,
+        );
       }
     }
     if (source.includes('customer_owned_product_id')) {
-      fail(`${CANONICAL_FILES[key]} already carries customer_owned_product_id — APP6-DB01 was executed early`);
+      fail(
+        `${CANONICAL_FILES[key]} already carries customer_owned_product_id — APP6-DB01 was executed early`,
+      );
     }
   }
   // The quotation module itself is delivered persistence (APP6-R00 §4); what
@@ -270,10 +283,17 @@ function checkNegations(rootDir, fail) {
   for (const [path, complaint] of [
     ['apps/api/src/modules/quotation/application', 'an APP6 quotation application layer'],
     ['apps/api/src/modules/quotation/infrastructure/http', 'an APP6 quotation HTTP surface'],
-    ['packages/database/src/seed/app6-policy-dataset.ts', 'the APP6 dataset reader (owned by APP6-B01)'],
-    ['apps/api/src/platform/policy/publish-app6-policy.use-case.ts', 'the APP6 policy publisher (owned by APP6-B01)'],
+    [
+      'packages/database/src/seed/app6-policy-dataset.ts',
+      'the APP6 dataset reader (owned by APP6-B01)',
+    ],
+    [
+      'apps/api/src/platform/policy/publish-app6-policy.use-case.ts',
+      'the APP6 policy publisher (owned by APP6-B01)',
+    ],
   ]) {
-    if (existsSync(join(rootDir, path))) fail(`${path} exists — APP6-G01 must not create ${complaint}`);
+    if (existsSync(join(rootDir, path)))
+      fail(`${path} exists — APP6-G01 must not create ${complaint}`);
   }
 }
 
@@ -302,13 +322,17 @@ function checkAgreementContent(rootDir, authority, fail) {
 
   // The fallback may be named as rejected; it may never be a required type.
   if (types.includes('DESIGN_APPROVAL_TERMS')) {
-    fail('DESIGN_APPROVAL_TERMS is a required agreement type — it is a workflow consent, not a policy');
+    fail(
+      'DESIGN_APPROVAL_TERMS is a required agreement type — it is a workflow consent, not a policy',
+    );
   }
 
   // The workflow consent must be stated as *not* one of the agreements.
   for (const type of ['PAYMENT_POLICY', 'RETURN_POLICY']) {
     if (!authority.includes(`exact design approval confirmation  !=  ${type}`)) {
-      fail(`${CANONICAL_FILES.authority} does not separate the exact-design confirmation from ${type}`);
+      fail(
+        `${CANONICAL_FILES.authority} does not separate the exact-design confirmation from ${type}`,
+      );
     }
   }
 
@@ -333,7 +357,8 @@ function checkAgreementContent(rootDir, authority, fail) {
       fail(`${type} has no repository path as its canonical source`);
     }
     for (const path of paths) {
-      if (!existsSync(join(rootDir, path))) fail(`${type} cites a canonical source that does not exist: ${path}`);
+      if (!existsSync(join(rootDir, path)))
+        fail(`${type} cites a canonical source that does not exist: ${path}`);
     }
     if (!new RegExp(`#### 5\\.6\\.\\d \`${type}\``).test(authority)) {
       fail(`${CANONICAL_FILES.authority} carries no §5.6 content block for ${type}`);
@@ -378,7 +403,8 @@ export function runChecks(rootDir = REPO_ROOT) {
   return failures;
 }
 
-const invokedDirectly = process.argv[1] !== undefined && process.argv[1].endsWith('check-app6-g01.mjs');
+const invokedDirectly =
+  process.argv[1] !== undefined && process.argv[1].endsWith('check-app6-g01.mjs');
 if (invokedDirectly) {
   const rootDir = process.argv[2] ?? REPO_ROOT;
   const failures = runChecks(rootDir);

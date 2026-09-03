@@ -79,6 +79,28 @@ const REDACTION_MARKERS = [
 const PASSWORD_SYMBOL = /[!#$%^&*+=?@]/;
 
 /**
+ * A **method call**: a dot, an identifier, an open parenthesis.
+ *
+ * A quoted schema is the one thing these reports write after the word `token`
+ * that is neither prose nor a credential — `token: z.string().regex(…)` is the
+ * *shape* of the field, and quoting it is the point. A credential cannot contain
+ * a member-access call, so this separates the two without exempting a file, a
+ * directory or a fenced block.
+ *
+ * Deliberately `.name(` rather than the looser `name(`: a password ending in an
+ * open parenthesis (`Aa1!abcdefgh(`) contains a bare call expression by that
+ * looser reading and would have been exempted. The dot is what makes it code.
+ *
+ * Narrowed here by `APP12-H01` closing `FU-APP12-S03-08`, which inherited two
+ * findings — `APP6-B04:93` and the `APP9-G01` row *quoting* it — that were both
+ * this false positive. `APP9-G01` recorded the two admissible fixes as
+ * "rewording that one APP6 line or narrowing the heuristic"; rewording would
+ * have made an accurate quotation of delivered source less accurate, so the
+ * heuristic is what moved.
+ */
+const METHOD_CALL = /\.[A-Za-z_$][\w$]*\(/;
+
+/**
  * Whether a token looks like a secret rather than an identifier.
  *
  * Identifiers in these documents are `SCREAMING_SNAKE`, `camelCase`, `kebab-id`,
@@ -88,6 +110,9 @@ const PASSWORD_SYMBOL = /[!#$%^&*+=?@]/;
  */
 export function looksLikeSecretValue(raw) {
   const value = raw.replace(/^[`'"]+/, '').replace(/[`'"]+[.,;:)]*$/, '');
+  if (METHOD_CALL.test(value)) {
+    return false;
+  }
   if (value.length < 8 || value.length > 256 || /\s/.test(value)) {
     return false;
   }

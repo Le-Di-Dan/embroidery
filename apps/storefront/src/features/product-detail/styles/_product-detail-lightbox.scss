@@ -1,0 +1,104 @@
+// Product Detail — full-screen lightbox.
+//
+// The viewport-level image viewer, its scrim and its on-scrim controls. `position: fixed`, so it belongs to the viewport rather than to the page band the shell defines.
+//
+// Split out of `product-detail.scss` by `APP12-H01` (FU-APP12-S01-03), which
+// found the single file at 555 lines against the 400-line hard
+// limit (CLAUDE.md §6). The split is by responsibility, and the compiled CSS is
+// byte-identical to what the one file emitted: the entry stylesheet `@use`s the
+// parts in their original order, so no declaration changed place in the cascade.
+@use '@embroidery/styles' as styles;
+@use 'product-detail-tokens' as tokens;
+
+// --- Lightbox ---------------------------------------------------------------
+
+.product-detail__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: styles.spacing(24);
+  background: tokens.$scrim-color;
+}
+
+.product-detail__dialog {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  align-items: center;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.product-detail__dialog-header {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(16);
+}
+
+.product-detail__dialog-title {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  color: tokens.$scrim-foreground;
+}
+
+.product-detail__dialog-control {
+  min-height: styles.$size-touch-target-min;
+  min-width: styles.$size-touch-target-min;
+  padding-inline: styles.spacing(16);
+  border: 0;
+  border-radius: styles.$radius-button;
+  background: tokens.$scrim-control-surface;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  color: tokens.$scrim-foreground;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid tokens.$scrim-foreground;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+.product-detail__dialog-stage-row {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(16);
+  max-width: 100%;
+}
+
+.product-detail__dialog-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+}
+
+.product-detail__dialog-image {
+  display: block;
+  max-width: 100%;
+  max-height: 70vh;
+  height: auto;
+  object-fit: contain;
+}
+
+.product-detail__dialog-position {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: tokens.$scrim-foreground-muted;
+}
+
+// Mobile stacks the previous/next controls under the image rather than pinching
+// the stage between them on a 390px screen.
+@media (max-width: #{tokens.$bp-detail-desktop - 1px}) {
+  .product-detail__dialog-stage-row {
+    flex-direction: column;
+  }
+}

@@ -107,7 +107,9 @@ describe('APP6-B08 — the published Admin design-version contract', () => {
         // `APP6-B09` delivered the exact-version send, so a sub-resource under
         // `/design-versions/` is no longer forbidden outright — only one is
         // permitted, and it is asserted by name below.
-        (path.includes('/design-versions/') && path !== `${DESIGN_VERSIONS_PATH}/{versionId}/send`),
+        (path.includes('/design-versions/') &&
+          path !== `${DESIGN_VERSIONS_PATH}/{versionId}` &&
+          path !== `${DESIGN_VERSIONS_PATH}/{versionId}/send`),
     );
     // `B10`/`B11` own the customer decision surfaces, and no checkpoint
     // publishes a design case or an Approval Snapshot as an addressable

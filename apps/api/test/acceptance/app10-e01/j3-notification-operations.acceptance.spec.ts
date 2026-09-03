@@ -108,9 +108,7 @@ describe('APP10-E01 · J3 notification operations', () => {
   const authed = () => ({ Cookie: context.adminCookie() });
 
   const list = (query = '') =>
-    request(context.server())
-      .get(`${ROUTES.list()}${query}`)
-      .set(authed());
+    request(context.server()).get(`${ROUTES.list()}${query}`).set(authed());
 
   const replay = (intentId: string) =>
     request(context.server()).post(ROUTES.replay(intentId)).set(authed());

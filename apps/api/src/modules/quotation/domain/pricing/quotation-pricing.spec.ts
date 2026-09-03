@@ -256,9 +256,7 @@ describe('draft pricing', () => {
     ).toMatch(/cannot be negative/);
 
     expect(
-      refusal(
-        draft({ manualAdjustmentAmount: '-99999999', adjustmentReason: 'Too generous' }),
-      ),
+      refusal(draft({ manualAdjustmentAmount: '-99999999', adjustmentReason: 'Too generous' })),
     ).toMatch(/below zero/);
   });
 

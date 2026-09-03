@@ -1,6 +1,6 @@
 import type { QuotationAcceptedResponse } from '@embroidery/api-client';
 
-import { formatExactMoney } from '../model/exact-money';
+import { formatExactMoney } from '../../../shared/money/exact-money';
 import { SECURE_QUOTATION_COPY as COPY } from '../model/secure-quotation-copy';
 
 /**

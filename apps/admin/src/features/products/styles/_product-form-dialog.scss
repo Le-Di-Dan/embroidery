@@ -1,0 +1,209 @@
+// Admin product form — dialogs and the asset picker.
+//
+// The modal frame and the asset picker it hosts. Layered above the page, with its own width ceilings and column geometry.
+//
+// Split out of `product-form.scss` by `APP12-H01` (FU-APP12-A01-04), which
+// found the single file at 753 lines against the 400-line hard
+// limit (CLAUDE.md §6). The split is by responsibility, and the compiled CSS is
+// byte-identical to what the one file emitted: the entry stylesheet `@use`s the
+// parts in their original order, so no declaration changed place in the cascade.
+@use '@embroidery/styles' as styles;
+@use 'product-form-tokens' as tokens;
+@use 'product-form-shell';
+
+.product-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: styles.spacing(16);
+  background: rgba(0, 0, 0, 0.45);
+  overflow-y: auto;
+}
+
+.product-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  width: 100%;
+  max-width: tokens.$dialog-narrow;
+  max-height: 100%;
+  padding: styles.spacing(24);
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+  overflow-y: auto;
+}
+
+.product-dialog--wide {
+  max-width: tokens.$dialog-max;
+}
+
+.product-dialog__title {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+}
+
+.product-dialog__body {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  min-height: 0;
+}
+
+.product-dialog__body-text {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.product-dialog__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: styles.spacing(12);
+}
+
+.product-dialog__actions,
+.product-picker__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+  margin-left: auto;
+}
+
+.product-dialog__primary {
+  @extend %product-form-button;
+
+  border: 1px solid styles.$color-action-primary;
+  background: styles.$color-action-primary;
+  color: styles.$color-background-primary;
+}
+
+.product-dialog__secondary {
+  @extend %product-form-button;
+
+  border: 1px solid styles.$color-border-primary;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+}
+
+// -------------------------------------------------------------- picker ------
+
+.product-picker__help,
+.product-picker__status,
+.product-picker__count {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-tertiary;
+}
+
+.product-picker__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: styles.spacing(12);
+
+  @media (min-width: tokens.$form-breakpoint) {
+    grid-template-columns: repeat(auto-fill, minmax(tokens.$picker-column, 1fr));
+  }
+}
+
+.product-picker__option {
+  min-width: 0;
+}
+
+.product-picker__label {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  height: 100%;
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-secondary;
+  cursor: pointer;
+
+  &:focus-within {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 1px;
+  }
+}
+
+.product-picker__thumb {
+  width: 100%;
+  height: tokens.$picker-thumb;
+  border: 1px dashed styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+}
+
+.product-picker__info {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: 0;
+}
+
+.product-picker__title {
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-primary;
+}
+
+.product-picker__meta,
+.product-picker__state,
+.product-picker__placeholder-note {
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-tertiary;
+}
+
+.product-picker__empty,
+.product-picker__unavailable {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: styles.spacing(8);
+}
+
+.product-picker__empty-title,
+.product-picker__unavailable-title {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+}
+
+.product-picker__empty-body,
+.product-picker__unavailable-body {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.product-picker__continuation {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: styles.spacing(8);
+}
+
+.product-picker__continuation-error {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-status-error;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-form *,
+  .product-dialog * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

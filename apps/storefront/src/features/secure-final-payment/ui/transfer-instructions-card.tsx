@@ -6,7 +6,7 @@ import type {
 } from '@embroidery/api-client';
 
 import { formatInstant } from '../model/display-format';
-import { formatExactAmount } from '../model/exact-final-amount';
+import { formatExactAmount } from '../../../shared/money/exact-money';
 import { SECURE_FINAL_PAYMENT_COPY as COPY } from '../model/final-payment-copy';
 import { CopyValueButton } from './copy-value-button';
 import { FinalPaymentNote } from './final-payment-note';

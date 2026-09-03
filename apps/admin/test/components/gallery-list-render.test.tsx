@@ -123,11 +123,12 @@ describe('the generated boundary', () => {
     // What remains absent from the package is asserted here, because for these
     // the absence is not a scheduling accident: no gallery media-byte operation
     // is exported at all, and the sitemap family has no delivered surface.
-    for (const neverExported of [
-      'publicGalleryEntryAsset',
-      'publicGalleryEntryMediaGet',
-      'publicSitemapEntryList',
-    ]) {
+    // `publicSitemapEntryList` left this list at `APP12-H01`: `APP11-B04`
+    // delivered it and the Storefront's `sitemap.ts` is its approved consumer,
+    // so its presence on the shared package is scheduling, not an escape. That
+    // this screen does not reach it is asserted against this feature's own
+    // source, in `test/boundary/gallery-list-source.test.ts`.
+    for (const neverExported of ['publicGalleryEntryAsset', 'publicGalleryEntryMediaGet']) {
       expect(actual[neverExported]).toBeUndefined();
     }
   });

@@ -41,7 +41,7 @@ import { useEffect, useRef } from 'react';
 
 import type { ReadyMadeOrderCreatedResponse } from '@embroidery/api-client';
 
-import { formatExactMoney } from '../../ready-made-purchase/model/purchase-money';
+import { formatExactMoney } from '../../../shared/money/exact-money';
 import { buildStorefrontProductDetailPath } from '../../storefront-shell';
 import { READY_MADE_CHECKOUT_COPY } from '../model/ready-made-checkout-copy';
 

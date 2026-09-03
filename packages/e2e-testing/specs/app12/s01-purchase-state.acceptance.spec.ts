@@ -86,17 +86,13 @@ for (const viewport of VIEWPORTS) {
 
       // Nothing is preselected, and the action is unavailable.
       await expect(panel(page).getByRole('radio', { checked: true })).toHaveCount(0);
-      await expect(
-        panel(page).getByRole('button', { name: COPY.continue }),
-      ).toBeDisabled();
+      await expect(panel(page).getByRole('button', { name: COPY.continue })).toBeDisabled();
       await expect(panel(page).getByRole('link', { name: COPY.continue })).toHaveCount(0);
 
       // Choosing only the first axis binds the approved error to the second.
       await choose(page, COPY.variantLegend, 'Trắng');
       await expect(group(page, COPY.sizeLegend)).toContainText(COPY.sizeRequired);
-      await expect(
-        panel(page).getByRole('button', { name: COPY.continue }),
-      ).toBeDisabled();
+      await expect(panel(page).getByRole('button', { name: COPY.continue })).toBeDisabled();
 
       // Completing the selection resolves the SKU and its overridden price.
       await choose(page, COPY.sizeLegend, 'M');
@@ -166,7 +162,9 @@ for (const viewport of VIEWPORTS) {
       await choose(page, COPY.sizeLegend, 'M');
       await panel(page).getByRole('button', { name: 'Tăng số lượng' }).click();
 
-      const href = await panel(page).getByRole('link', { name: COPY.continue }).getAttribute('href');
+      const href = await panel(page)
+        .getByRole('link', { name: COPY.continue })
+        .getAttribute('href');
       expect(href).not.toBeNull();
       const url = new URL(href ?? '', 'http://localhost');
       expect(url.pathname).toBe(`/mua-hang/${PURCHASABLE}`);

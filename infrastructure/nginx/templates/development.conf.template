@@ -52,21 +52,24 @@ server {
     listen 8080;
     server_name ${STOREFRONT_HOST};
 
-    add_header X-Content-Type-Options nosniff always;
-    add_header Referrer-Policy strict-origin-when-cross-origin always;
-    add_header X-Frame-Options SAMEORIGIN always;
-    add_header X-Request-ID $effective_request_id always;
+    include /etc/nginx/conf.d/includes/security-headers.conf;
 
     location = /healthz {
-        # add_header in a location replaces server-level headers; acceptable
-        # for an infrastructure health endpoint that must never be cached.
+        # A location that declares any add_header of its own inherits none from the
+        # server, so the shared set is re-included rather than lost.
+        include /etc/nginx/conf.d/includes/security-headers.conf;
         add_header Cache-Control "no-store" always;
-        add_header X-Request-ID $effective_request_id always;
         include /etc/nginx/conf.d/includes/proxy-headers.conf;
         proxy_pass http://storefront_upstream;
     }
 
     location /api/ {
+        include /etc/nginx/conf.d/includes/security-headers.conf;
+        # The API answers JSON and binary attachments, never a document that loads a
+        # subresource, so its policy grants nothing at all. `frame-ancestors 'none'`
+        # is stricter than the apps' SAMEORIGIN on purpose: no API response is ever
+        # meant to be framed, including an evidence image.
+        add_header Content-Security-Policy "default-src 'none'; frame-ancestors 'none'" always;
         include /etc/nginx/conf.d/includes/proxy-headers.conf;
         proxy_pass http://api_upstream;
     }
@@ -81,14 +84,11 @@ server {
     listen 8080;
     server_name ${ADMIN_HOST};
 
-    add_header X-Content-Type-Options nosniff always;
-    add_header Referrer-Policy strict-origin-when-cross-origin always;
-    add_header X-Frame-Options SAMEORIGIN always;
-    add_header X-Request-ID $effective_request_id always;
+    include /etc/nginx/conf.d/includes/security-headers.conf;
 
     location = /healthz {
+        include /etc/nginx/conf.d/includes/security-headers.conf;
         add_header Cache-Control "no-store" always;
-        add_header X-Request-ID $effective_request_id always;
         include /etc/nginx/conf.d/includes/proxy-headers.conf;
         proxy_pass http://admin_upstream;
     }
@@ -98,12 +98,24 @@ server {
     # ceiling and the longer timeouts. Every other /api/ route below keeps the
     # http-level defaults (20m, 60s, buffering on).
     location = /api/admin/assets/upload {
+        include /etc/nginx/conf.d/includes/security-headers.conf;
+        # The API answers JSON and binary attachments, never a document that loads a
+        # subresource, so its policy grants nothing at all. `frame-ancestors 'none'`
+        # is stricter than the apps' SAMEORIGIN on purpose: no API response is ever
+        # meant to be framed, including an evidence image.
+        add_header Content-Security-Policy "default-src 'none'; frame-ancestors 'none'" always;
         include /etc/nginx/conf.d/includes/proxy-headers.conf;
         include /etc/nginx/conf.d/includes/upload-proxy.conf;
         proxy_pass http://api_upstream;
     }
 
     location /api/ {
+        include /etc/nginx/conf.d/includes/security-headers.conf;
+        # The API answers JSON and binary attachments, never a document that loads a
+        # subresource, so its policy grants nothing at all. `frame-ancestors 'none'`
+        # is stricter than the apps' SAMEORIGIN on purpose: no API response is ever
+        # meant to be framed, including an evidence image.
+        add_header Content-Security-Policy "default-src 'none'; frame-ancestors 'none'" always;
         include /etc/nginx/conf.d/includes/proxy-headers.conf;
         proxy_pass http://api_upstream;
     }

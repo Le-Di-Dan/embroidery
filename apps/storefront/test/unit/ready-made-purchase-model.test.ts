@@ -7,10 +7,7 @@
  * what the continue URL is allowed to carry.
  */
 import { buildPurchaseContinueHref } from '../../src/features/ready-made-purchase/model/purchase-continue-url';
-import {
-  formatExactAmount,
-  formatExactMoney,
-} from '../../src/features/ready-made-purchase/model/purchase-money';
+import { formatExactAmount, formatExactMoney } from '../../src/shared/money/exact-money';
 import {
   resolveVariantSubject,
   toReadyMadePurchaseView,

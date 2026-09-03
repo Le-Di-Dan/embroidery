@@ -131,6 +131,7 @@ export async function startEnvironment({
   config,
   log,
   withAdmin,
+  withApi,
   withApp4,
   withMerchantBank,
   withStorefront,
@@ -150,6 +151,11 @@ export async function startEnvironment({
   const appModuleEnv = {
     ...(withApp4 ?? {}),
     ...(withMerchantBank ?? {}),
+    // Release state, when a mode has one to state (APP12-H01). It belongs here
+    // rather than beside the API service because the staff-bootstrap CLI builds
+    // the same `AppModule`, and a mode whose two processes disagreed about
+    // which capabilities exist would fail in a way nobody could read.
+    ...(withApi ?? {}),
   };
   const hasAppModuleEnv = Object.keys(appModuleEnv).length > 0;
   // Browser origins the API must accept for state-changing staff requests

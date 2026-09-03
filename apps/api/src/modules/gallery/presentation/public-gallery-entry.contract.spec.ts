@@ -180,7 +180,12 @@ describe('APP11-B03 public gallery contract', () => {
       const migrations = readdirSync(join(REPO_ROOT, 'packages/database/migrations')).filter(
         (file) => file.endsWith('.sql'),
       );
-      expect(migrations.length).toBe(37);
+      // 37 when this checkpoint closed; `APP12-DB01` added
+      // `0038_add_app12_ready_made_persistence.sql` under locked roadmap
+      // authority. `APP12-H01` re-measured the directory and froze the count at
+      // 38 (§19), so this now guards the Wave-1 release freeze as well as the
+      // original claim that *this* checkpoint added nothing.
+      expect(migrations.length).toBe(38);
     });
 
     it('introduces no per-image alt text anywhere in the Gallery schema family', () => {

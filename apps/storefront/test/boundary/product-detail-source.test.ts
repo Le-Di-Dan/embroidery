@@ -15,7 +15,24 @@ import { dirname, join } from 'node:path';
 const SRC = join(__dirname, '..', '..', 'src');
 const FEATURE_DIR = join(SRC, 'features', 'product-detail');
 const ROUTE_DIR = join(SRC, 'app', 'san-pham', '[slug]');
-const STYLESHEET = join(FEATURE_DIR, 'styles', 'product-detail.scss');
+const STYLES_DIR = join(FEATURE_DIR, 'styles');
+
+/**
+ * The feature's whole stylesheet, however many files it is written in.
+ *
+ * `APP12-H01` split `product-detail.scss` into an entry plus five responsibility
+ * partials (FU-APP12-S01-03), so a check that read the one file would now be
+ * asserting against a list of `@use` lines. Reading the directory keeps every
+ * rule below exactly as strict as it was, and makes it indifferent to how the
+ * feature chooses to divide its styles next.
+ */
+function readFeatureStyles(stylesDir: string): string {
+  return readdirSync(stylesDir)
+    .filter((file) => file.endsWith('.scss'))
+    .sort()
+    .map((file) => readFileSync(join(stylesDir, file), 'utf8'))
+    .join('\n');
+}
 
 /**
  * Comments explain why a rule exists and therefore quote the very things these
@@ -57,7 +74,7 @@ const routeFiles = collect(ROUTE_DIR, /\.tsx$/)
   .filter((path) => dirname(path) === ROUTE_DIR)
   .map((path) => ({ path, text: readFileSync(path, 'utf8') }));
 const allCode = codeOnly([...sources, ...routeFiles].map((file) => file.text).join('\n'));
-const scss = readFileSync(STYLESHEET, 'utf8');
+const scss = readFeatureStyles(STYLES_DIR);
 const scssCode = codeOnly(scss);
 
 describe('product-detail API boundary', () => {
@@ -225,7 +242,7 @@ describe('rendering boundary', () => {
 describe('style contract', () => {
   it('caps the story measure at the corrected 640px', () => {
     expect(scss).toMatch(/\$story-measure-max:\s*640px;/);
-    expect(scssCode).toMatch(/max-width:\s*\$story-measure-max;/);
+    expect(scssCode).toMatch(/max-width:\s*(?:tokens\.)?\$story-measure-max;/);
     // Not the foundation's 720px reading width: the approved measure is 640.
     expect(scssCode).not.toContain('layout-reading-max');
   });

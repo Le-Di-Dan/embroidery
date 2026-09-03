@@ -1,0 +1,107 @@
+// Admin product list — the desktop table and its media cell.
+//
+// The wide-viewport presentation: the table, its caption, its header and body cells, and the small media glyph each row carries.
+//
+// Split out of `products.scss` by `APP12-H01` (FU-APP12-A01-04), which
+// found the single file at 536 lines against the 400-line hard
+// limit (CLAUDE.md §6). The split is by responsibility, and the compiled CSS is
+// byte-identical to what the one file emitted: the entry stylesheet `@use`s the
+// parts in their original order, so no declaration changed place in the cascade.
+@use '@embroidery/styles' as styles;
+@use 'products-tokens' as tokens;
+
+.product-media {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: tokens.$media-tile;
+  height: tokens.$media-tile;
+  color: styles.$color-text-tertiary;
+  background: styles.$color-background-secondary;
+  border-radius: styles.$radius-md;
+}
+
+.product-media__glyph {
+  font-size: styles.$font-size-caption;
+  line-height: 1;
+}
+
+// Desktop table ---------------------------------------------------------------
+
+.product-table {
+  display: none;
+
+  @media (min-width: tokens.$products-breakpoint) {
+    display: table;
+    width: 100%;
+    border-collapse: collapse;
+    overflow: hidden;
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-md;
+    table-layout: fixed;
+  }
+}
+
+.product-table__caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.product-table thead th {
+  height: tokens.$field-height;
+  padding: 0 styles.spacing(16);
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+  letter-spacing: 0.01em;
+  text-align: left;
+  color: styles.$color-text-secondary;
+  background: styles.$color-background-secondary;
+  border-bottom: 1px solid styles.$color-border-primary;
+}
+
+.product-table tbody th,
+.product-table tbody td {
+  padding: styles.spacing(12) styles.spacing(16);
+  text-align: left;
+  vertical-align: middle;
+  font-weight: styles.$font-weight-regular;
+  border-top: 1px solid styles.$color-border-primary;
+}
+
+.product-table tbody tr:first-child th,
+.product-table tbody tr:first-child td {
+  border-top: 0;
+}
+
+.product-table__category {
+  width: tokens.$category-column;
+  font-size: styles.$font-size-caption;
+  letter-spacing: 0.01em;
+  color: styles.$color-text-secondary;
+}
+
+.product-table__status {
+  width: tokens.$status-column;
+}
+
+.product-table__product-cell {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(12);
+  min-width: 0;
+}
+
+.product-table__name {
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-primary;
+  overflow-wrap: anywhere;
+}
+
+// Mobile cards ----------------------------------------------------------------

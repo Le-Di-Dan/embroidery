@@ -13,6 +13,23 @@ import { join } from 'node:path';
 const FEATURE_DIR = join(process.cwd(), 'src', 'features', 'ready-made-purchase');
 const PRODUCT_DETAIL_DIR = join(process.cwd(), 'src', 'features', 'product-detail');
 
+/**
+ * A feature's whole stylesheet, however many files it is written in.
+ *
+ * `APP12-H01` split `product-detail.scss` into an entry plus five responsibility
+ * partials (FU-APP12-S01-03), so reading the one file would now find a list of
+ * `@use` lines rather than the declaration this check is about. Reading the
+ * directory keeps the assertion exactly as strict and makes it indifferent to
+ * how that feature divides its styles next.
+ */
+function readFeatureStyles(stylesDir: string): string {
+  return readdirSync(stylesDir)
+    .filter((file) => file.endsWith('.scss'))
+    .sort()
+    .map((file) => readFileSync(join(stylesDir, file), 'utf8'))
+    .join('\n');
+}
+
 function walk(dir: string): readonly string[] {
   return readdirSync(dir).flatMap((entry) => {
     const path = join(dir, entry);
@@ -189,7 +206,7 @@ describe('design fidelity', () => {
       join(FEATURE_DIR, 'styles', '_ready-made-purchase-tokens.scss'),
       'utf8',
     );
-    const detail = readFileSync(join(PRODUCT_DETAIL_DIR, 'styles', 'product-detail.scss'), 'utf8');
+    const detail = readFeatureStyles(join(PRODUCT_DETAIL_DIR, 'styles'));
     const measure = /\$story-measure-max:\s*(\d+px)/.exec(detail)?.[1];
     expect(measure).toBe('640px');
     expect(panel).toContain(`$panel-measure-max: ${String(measure)}`);

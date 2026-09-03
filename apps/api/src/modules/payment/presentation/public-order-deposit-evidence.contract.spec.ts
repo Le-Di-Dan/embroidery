@@ -235,26 +235,55 @@ describe('APP7-B05 — the published transfer-evidence contract', () => {
     it('publishes no evidence DELETE, PATCH, PUT or replace anywhere', () => {
       // Append-only (`APP7-G01` §7.2). There is no surface to remove, replace,
       // detach, rebind or reorder evidence — for a customer or for anyone else.
+      //
+      // Stated as "no mutating verb" rather than as "exactly `post`", which is
+      // what it said before `APP7-B06` published the Admin evidence *read*. A
+      // `GET` takes nothing away from append-only; `delete`, `patch` and `put`
+      // are the verbs the rule exists to forbid, and `APP12-H01` re-measured the
+      // artifact to confirm none of them exists on any evidence path.
+      const MUTATING = ['delete', 'patch', 'put'];
       for (const [path, item] of Object.entries(document.paths)) {
         if (!/evidence/i.test(path)) continue;
-        expect(Object.keys(item).sort()).toEqual(['post']);
+        expect(Object.keys(item).filter((method) => MUTATING.includes(method))).toEqual([]);
+        expect(Object.keys(item).sort()).toEqual(
+          Object.keys(item)
+            .filter((method) => method === 'get' || method === 'post')
+            .sort(),
+        );
       }
     });
 
-    it('publishes no evidence binary, preview or content route', () => {
-      // `APP7-B06` owns Admin binary delivery. B05 adds metadata and status only.
-      const evidencePaths = Object.keys(document.paths).filter((path) => /evidence/i.test(path));
-      expect(evidencePaths.sort()).toEqual([UPLOAD_PATH, STATUS_PATH].sort());
-      for (const path of evidencePaths) {
+    it('publishes no public evidence binary, preview or content route', () => {
+      // `APP7-B06` owns Admin binary delivery and delivered exactly one address
+      // for it after this checkpoint closed. What B05 claims — and what stays
+      // true — is that the **public** evidence surface is metadata and status
+      // only, with no byte stream a customer can address. Narrowed to that by
+      // `APP12-H01`; the Admin side is fenced by the test below.
+      const publicEvidencePaths = Object.keys(document.paths).filter(
+        (path) => /evidence/i.test(path) && path.startsWith('/api/public/'),
+      );
+      expect(publicEvidencePaths.sort()).toEqual([UPLOAD_PATH, STATUS_PATH].sort());
+      for (const path of publicEvidencePaths) {
         expect(path).not.toMatch(/content|preview|thumbnail|download|file/i);
       }
     });
 
-    it('publishes no Admin evidence operation and no provider route', () => {
-      const forbidden = Object.keys(document.paths).filter((path) =>
-        /admin.*evidence|evidence.*admin|webhook|provider|reconcil/i.test(path),
+    it('publishes no provider route, and exactly one Admin evidence address', () => {
+      // The provider half is absolute and unchanged: no webhook, no callback, no
+      // reconciliation endpoint exists anywhere, because `APP7-G01` makes a
+      // browser redirect and a provider callback incapable of verifying a
+      // payment. The Admin half was `[]` when B05 closed and is now exactly the
+      // one read `APP7-B06` delivered — named by `APP12-H01` so a second Admin
+      // evidence operation still fails here.
+      const providerRoutes = Object.keys(document.paths).filter((path) =>
+        /webhook|provider|reconcil/i.test(path),
       );
-      expect(forbidden).toEqual([]);
+      expect(providerRoutes).toEqual([]);
+
+      const adminEvidence = Object.keys(document.paths).filter((path) =>
+        /admin.*evidence|evidence.*admin/i.test(path),
+      );
+      expect(adminEvidence).toEqual(['/api/admin/payment-evidence/{evidenceId}/content']);
     });
 
     it('takes no locator in either path, so nothing can be enumerated by URL', () => {

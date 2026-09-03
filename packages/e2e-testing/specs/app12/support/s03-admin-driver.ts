@@ -99,8 +99,18 @@ export async function createS03AdminDriver(
   const page = await context.newPage();
 
   await page.goto('/login');
-  await page.locator(LOGIN.emailInput).fill(credentials.email);
-  await page.locator(LOGIN.passwordInput).fill(credentials.password);
+  // Filled under `toPass`, because the inputs are React-controlled and a fill
+  // that lands before hydration is overwritten when the client takes over the
+  // DOM — the submit then carries empty credentials and the run fails on a
+  // missing logout button with both fields blank. Asserting the values stuck
+  // is what makes the submit below meaningful.
+  await expect(async () => {
+    await page.locator(LOGIN.emailInput).fill(credentials.email);
+    await page.locator(LOGIN.passwordInput).fill(credentials.password);
+    await expect(page.locator(LOGIN.emailInput)).not.toHaveValue('');
+    await expect(page.locator(LOGIN.passwordInput)).not.toHaveValue('');
+  }).toPass({ timeout: 30_000 });
+
   await page.getByRole('button', { name: LOGIN.submitName }).click();
   await expect(page.getByRole('button', { name: LOGIN.logoutName })).toBeVisible();
 

@@ -1,0 +1,160 @@
+// Admin product form — fields, validation, saving and failure states.
+//
+// One field control and everything that reports on it: the validation summary, the saving state, the failure panel, and the two politely announced status regions.
+//
+// Split out of `product-form.scss` by `APP12-H01` (FU-APP12-A01-04), which
+// found the single file at 753 lines against the 400-line hard
+// limit (CLAUDE.md §6). The split is by responsibility, and the compiled CSS is
+// byte-identical to what the one file emitted: the entry stylesheet `@use`s the
+// parts in their original order, so no declaration changed place in the cascade.
+@use '@embroidery/styles' as styles;
+@use 'product-form-tokens' as tokens;
+
+.product-field {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  min-width: 0;
+}
+
+.product-field__label {
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-regular;
+  color: styles.$color-text-primary;
+}
+
+.product-field__control {
+  width: 100%;
+  min-height: tokens.$control-height;
+  padding: styles.spacing(12) styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-input;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-body-m;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 1px;
+  }
+
+  &[aria-invalid='true'] {
+    border-color: styles.$color-status-error;
+  }
+}
+
+.product-field__control--textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.product-field__help {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-tertiary;
+}
+
+// Error text replaces help text rather than joining it; both at once buries the
+// reason the field is invalid.
+.product-field__error {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-status-error;
+}
+
+// ------------------------------------------------- validation and status ----
+
+.product-validation {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-status-error;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-secondary;
+}
+
+.product-validation__title {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-status-error;
+}
+
+.product-validation__list {
+  margin: 0;
+  padding-left: styles.spacing(24);
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+}
+
+.product-validation__item {
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-primary;
+}
+
+.product-saving {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-status-info;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-secondary;
+}
+
+.product-saving__title {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+}
+
+.product-saving__help {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-secondary;
+}
+
+.product-form__failure {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: styles.spacing(8);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-status-error;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-secondary;
+}
+
+.product-form__failure-title {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+}
+
+.product-form__failure-body {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+// Visually hidden but announced — the polite save/create confirmations.
+.product-form__sr-status,
+.product-media-editor__sr-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+// ------------------------------------------------------- metadata rail ------

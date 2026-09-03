@@ -124,6 +124,7 @@ export { DISPATCHABLE_FROM, isLegalOrderTransition } from './order/order-transit
 export type { OrderChain } from './order/order-chain.guard';
 export { OrderChainGuard } from './order/order-chain.guard';
 export { DrizzleOrderRepository } from './order/drizzle-order.repository';
+export { DrizzleOrderCancellationRepository } from './order/drizzle-order-cancellation.repository';
 export { DrizzleOrderShippingRepository } from './order/drizzle-order-shipping.repository';
 export { OrderPersistenceModule } from './order/order-persistence.module';
 

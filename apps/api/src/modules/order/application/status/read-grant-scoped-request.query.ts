@@ -59,6 +59,7 @@ import {
   type CatalogSubjectPort,
 } from '../../../catalog/domain/repositories/catalog-subject.port';
 import type { CustomRequestId } from '../../domain/repositories/custom-request.repository';
+import { requestSubjectOf } from '../../../customer/domain/grant/grant-subject';
 import {
   CUSTOM_REQUEST_STATUS_REPOSITORY,
   type CustomRequestStatusAsset,
@@ -116,7 +117,7 @@ export class ReadGrantScopedRequest {
       return { outcome: 'RATE_LIMITED', retryAfterSeconds: admission.retryAfterSeconds };
     }
 
-    const requestId = admission.link.customRequestId as CustomRequestId;
+    const requestId = requestSubjectOf(admission.link) as CustomRequestId;
     const row = await this.requests.findRequest(requestId);
     if (row === undefined) {
       throw secureLinkUnavailable();

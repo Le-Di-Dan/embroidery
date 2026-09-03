@@ -78,9 +78,7 @@ export function requireNoOpenCase(existing: CustomerMergeCase | undefined): void
 }
 
 /** The case addressed by the path, proven to exist. */
-export function requireMergeCase(
-  mergeCase: CustomerMergeCase | undefined,
-): CustomerMergeCase {
+export function requireMergeCase(mergeCase: CustomerMergeCase | undefined): CustomerMergeCase {
   if (mergeCase === undefined) {
     throw new CustomerMergeError('MERGE_CASE_NOT_FOUND');
   }

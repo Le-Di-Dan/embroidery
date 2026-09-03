@@ -58,11 +58,9 @@ import { IdempotencyStore, TransactionManager, type IdempotencyKey } from '@embr
 import { AuditClock } from '../../../../platform/audit-context/audit-clock';
 import { RequestContextService } from '../../../../platform/request-context/request-context.service';
 import { StepUpEvidenceResolver } from '../../../customer/application/step-up-evidence.resolver';
-import type { CustomerId } from '../../../customer/domain/repositories/customer.repository';
 import { isLegalRequestTransition } from '../../../order/domain/lifecycle/request-transitions';
 import {
   CUSTOM_REQUEST_REPOSITORY,
-  type CustomRequestId,
   type CustomRequestRepository,
 } from '../../../order/domain/repositories/custom-request.repository';
 import {
@@ -190,10 +188,7 @@ export class ApproveDesignVersionUseCase {
         // evidence is derived from the grant's customer — no challenge id is
         // accepted from the body — so a caller cannot present someone else's
         // proof of presence, a challenge for another purpose, or a stale one.
-        const stepUpEvidence = await this.stepUp.resolve(
-          target.grant.customerId as CustomerId,
-          now,
-        );
+        const stepUpEvidence = await this.stepUp.resolve(target.grant.customerId, now);
         if (stepUpEvidence === undefined) {
           throw designDecisionError('REVERIFICATION_REQUIRED');
         }
@@ -236,11 +231,7 @@ export class ApproveDesignVersionUseCase {
 
     // Assembled before any write, so an unresolvable label refuses on a clean
     // transaction rather than after the version has already moved.
-    const evidence = await this.evidence.resolve(
-      version,
-      target.request.requestId as CustomRequestId,
-      customerId,
-    );
+    const evidence = await this.evidence.resolve(version, target.request.requestId, customerId);
 
     // `TR-LC08-04`'s decision record. The repository guards the move on
     // `SENT_FOR_REVIEW`, which is what makes first-decision-wins true under the
@@ -282,7 +273,7 @@ export class ApproveDesignVersionUseCase {
     });
 
     const transitioned = await this.requests.transition({
-      id: target.request.requestId as CustomRequestId,
+      id: target.request.requestId,
       to: APPROVED,
       // Not the customer. `TR-LC11-09`'s actor is the system, because the move
       // is a consequence of this transaction committing rather than a command
@@ -337,5 +328,4 @@ export class ApproveDesignVersionUseCase {
       }),
     };
   }
-
 }

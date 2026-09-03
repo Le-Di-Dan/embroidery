@@ -83,7 +83,8 @@ export async function createApp7Evidence(databaseUrl) {
       count(sql`SELECT COUNT(*)::int AS count FROM orders
                 WHERE custom_request_id = ${customRequestId}`),
 
-    readOrder: (orderId) => one(sql`SELECT *, ${sql.raw(CURRENCY_ALIAS)} FROM orders WHERE id = ${orderId}`),
+    readOrder: (orderId) =>
+      one(sql`SELECT *, ${sql.raw(CURRENCY_ALIAS)} FROM orders WHERE id = ${orderId}`),
 
     /**
      * The order id behind a customer-visible code.
@@ -98,7 +99,9 @@ export async function createApp7Evidence(databaseUrl) {
     },
 
     listOrderItems: (orderId) =>
-      many(sql`SELECT *, ${sql.raw(CURRENCY_ALIAS)} FROM order_items WHERE order_id = ${orderId} ORDER BY position ASC`),
+      many(
+        sql`SELECT *, ${sql.raw(CURRENCY_ALIAS)} FROM order_items WHERE order_id = ${orderId} ORDER BY position ASC`,
+      ),
 
     countOrderItems: (orderId) =>
       count(sql`SELECT COUNT(*)::int AS count FROM order_items WHERE order_id = ${orderId}`),
@@ -118,7 +121,9 @@ export async function createApp7Evidence(databaseUrl) {
                ORDER BY kind ASC`),
 
     readObligation: (obligationId) =>
-      one(sql`SELECT *, ${sql.raw(CURRENCY_ALIAS)} FROM payment_obligations WHERE id = ${obligationId}`),
+      one(
+        sql`SELECT *, ${sql.raw(CURRENCY_ALIAS)} FROM payment_obligations WHERE id = ${obligationId}`,
+      ),
 
     findObligation: (orderId, kind) =>
       one(sql`SELECT *, ${sql.raw(CURRENCY_ALIAS)} FROM payment_obligations
@@ -130,7 +135,8 @@ export async function createApp7Evidence(databaseUrl) {
       many(sql`SELECT *, ${sql.raw(CURRENCY_ALIAS)} FROM payment_attempts WHERE payment_obligation_id = ${obligationId}
                ORDER BY created_at ASC, id ASC`),
 
-    readAttempt: (attemptId) => one(sql`SELECT *, ${sql.raw(CURRENCY_ALIAS)} FROM payment_attempts WHERE id = ${attemptId}`),
+    readAttempt: (attemptId) =>
+      one(sql`SELECT *, ${sql.raw(CURRENCY_ALIAS)} FROM payment_attempts WHERE id = ${attemptId}`),
 
     countAttempts: (obligationId) =>
       count(sql`SELECT COUNT(*)::int AS count FROM payment_attempts

@@ -117,14 +117,18 @@ describe('APP7-B06 — the published Admin transfer-evidence contract', () => {
           .map(([method]) => `${method.toUpperCase()} ${path}`),
       );
 
-    // Three, and the other two predate this checkpoint: `APP3-A01`'s placement
-    // background and `APP5-B06`'s request attachment, each contextual to its own
-    // aggregate in exactly the way this is contextual to a payment attempt's
-    // evidence association. B06 adds the third and no fourth.
+    // Four, and every one is contextual to a single aggregate in exactly the way
+    // this one is contextual to a payment attempt's evidence association:
+    // `APP3-A01`'s placement background, `APP5-B06`'s request attachment, B06's
+    // own evidence content, and `APP11-B02`'s gallery rendition — the one added
+    // after this checkpoint closed. `APP12-H01` re-measured the artifact and
+    // named it rather than relaxing the fence, so a fifth Admin byte stream, or
+    // any generic "download"/"thumbnail" address, still fails here.
     expect(adminBinaries.sort()).toEqual(
       [
         `GET ${CONTENT_PATH}`,
         'GET /api/admin/custom-requests/{requestId}/assets/{assetId}/content',
+        'GET /api/admin/gallery-assets/{assetId}/{rendition}',
         'GET /api/admin/products/{productId}/sides/{sideId}/background',
       ].sort(),
     );

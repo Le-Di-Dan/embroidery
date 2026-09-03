@@ -29,6 +29,10 @@ export default {
   testTimeout: 300_000,
   maxWorkers: 1,
   transform: {
-    '^.+\.ts$': ['ts-jest', {}],
+    // The key is a regex *source string*, so the dot needs a real escaped
+    // backslash. `'\.'` in a JS string is just `.`, which made the pattern
+    // `^.+.ts$` — matching `foo.ts`, but also `fooXts`. Closed by `APP12-H01`
+    // (FU-APP12-S03-C1-03); the intent was always a literal dot.
+    '^.+\\.ts$': ['ts-jest', {}],
   },
 };

@@ -90,14 +90,16 @@ describe('APP5-B06 — the published Admin request-asset contract', () => {
           .map(([method]) => `${method.toUpperCase()} ${path}`),
       );
 
-    // Three, and the other two are contextual in exactly the way this is:
-    // `APP3-A01`'s placement background belongs to a product side, and
-    // `APP7-B06`'s transfer screenshot belongs to a payment attempt's evidence
-    // association. This checkpoint still adds one and only one, and none of the
-    // three is a generic binary or a companion "download"/"thumbnail" address.
+    // Four, and every other one is contextual in exactly the way this is:
+    // `APP3-A01`'s placement background belongs to a product side, `APP7-B06`'s
+    // transfer screenshot to a payment attempt's evidence association, and
+    // `APP11-B02`'s rendition to a single gallery asset. This checkpoint still
+    // adds one and only one, and none of the four is a generic binary or a
+    // companion "download"/"thumbnail" address. Re-measured by `APP12-H01`.
     expect(adminBinaries.sort()).toEqual(
       [
         `GET ${CONTENT_PATH}`,
+        'GET /api/admin/gallery-assets/{assetId}/{rendition}',
         'GET /api/admin/payment-evidence/{evidenceId}/content',
         'GET /api/admin/products/{productId}/sides/{sideId}/background',
       ].sort(),

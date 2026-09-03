@@ -22,6 +22,7 @@ import { adminCustomRequestList } from '@embroidery/api-client';
 import { CustomRequestQueueScreen } from '../../src/features/custom-request-queue';
 import { CUSTOM_REQUEST_QUEUE_COPY } from '../../src/features/custom-request-queue/model/custom-request-queue-copy';
 import { makeApiClientError } from '../support/api-error';
+import { readFeatureSource } from '../support/feature-source';
 import {
   makeQueueItem,
   makeQueuePage,
@@ -73,14 +74,27 @@ describe('the generated boundary', () => {
   it('reaches no APP5 moderation or detail operation from this screen', () => {
     const actual = jest.requireActual<Record<string, unknown>>('@embroidery/api-client');
 
-    // Not merely unused: they are not on the curated boundary at all, so the
-    // queue could not call one even by a careless import.
-    for (const withheld of [
+    // All three crossed the curated boundary with `APP5-B04`/`APP5-A02`, whose
+    // approved consumer is the request *detail* screen — so their absence from
+    // the shared package stopped being what makes this true. `APP12-H01`
+    // (FU-APP12-A01-01) re-points the check at the claim that was always the one
+    // about this screen: the queue feature names none of them. Nothing is
+    // relaxed — an import anywhere under the feature still fails.
+    //
+    // The old list also asked about `adminCustomRequestNoteAppend`, which has
+    // never existed under that name; the operation is `adminCustomRequestAppendNote`,
+    // so that third assertion was passing on a typo. Corrected here.
+    const featureSource = readFeatureSource('custom-request-queue');
+    for (const moderationOperation of [
       'adminCustomRequestDetail',
       'adminCustomRequestTransition',
-      'adminCustomRequestNoteAppend',
+      'adminCustomRequestAppendNote',
     ]) {
-      expect(actual[withheld]).toBeUndefined();
+      expect(actual[moderationOperation]).toEqual(expect.any(Function));
+      // Whole identifier, not a substring: the queue legitimately holds a route
+      // helper called `adminCustomRequestDetailRoute`, and a `toContain` would
+      // read that as a call to the operation.
+      expect(featureSource).not.toMatch(new RegExp(`\\b${moderationOperation}\\b`));
     }
   });
 });

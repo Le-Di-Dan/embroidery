@@ -3,7 +3,7 @@
 import type { CustomerDepositResponse, DepositAttemptResponse } from '@embroidery/api-client';
 
 import { formatInstant } from '../model/display-format';
-import { formatExactAmount } from '../model/exact-deposit-amount';
+import { formatExactAmount } from '../../../shared/money/exact-money';
 import { SECURE_DEPOSIT_COPY as COPY } from '../model/secure-deposit-copy';
 import { CopyValueButton } from './copy-value-button';
 import { DepositNote } from './deposit-note';

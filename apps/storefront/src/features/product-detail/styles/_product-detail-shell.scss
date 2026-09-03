@@ -1,0 +1,121 @@
+// Product Detail — page shell, content band and breadcrumb.
+//
+// The page container, the feature-local mobile band APP2-S02-C1 measured, and the two mutually exclusive ways back up the tree.
+//
+// Split out of `product-detail.scss` by `APP12-H01` (FU-APP12-S01-03), which
+// found the single file at 555 lines against the 400-line hard
+// limit (CLAUDE.md §6). The split is by responsibility, and the compiled CSS is
+// byte-identical to what the one file emitted: the entry stylesheet `@use`s the
+// parts in their original order, so no declaration changed place in the cascade.
+@use '@embroidery/styles' as styles;
+@use 'product-detail-tokens' as tokens;
+
+.product-detail {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(32);
+  padding-block: styles.spacing(24);
+}
+
+// Feature-local mobile content band (APP2-S02-C1).
+//
+// The approved mobile frame places Product Detail content in a 342px band at a
+// 24px gutter; the APP1 shell's own mobile gutter is 16px, which left the page
+// 358px wide. Widening the shell would move the Homepage, Discover and every
+// other route to satisfy one screen's authority, so Product Detail insets
+// *itself* by the missing 8px instead — the narrowest mechanism that makes the
+// measured gutter 24 and the measured content 342.
+//
+// Scoped below the shell's own threshold, so the tablet and desktop bands stay
+// exactly as the shell defines them. The lightbox is unaffected: its scrim is
+// `position: fixed` and belongs to the viewport, not to this band.
+@media (max-width: #{tokens.$bp-shell-wide - 1px}) {
+  .product-detail {
+    padding-inline: tokens.$detail-mobile-gutter - styles.spacing(16);
+  }
+
+  // The swipe strip's scroll viewport is the content band itself, anchored to
+  // the gutter as the approved mobile frame draws it. Without this the strip
+  // hugs its thumbnails, so a short gallery sits centred and a long one decides
+  // its own left edge — and the "viewport" would be whatever the content
+  // happened to measure rather than the band.
+  .product-detail__thumbnails {
+    width: 100%;
+  }
+}
+
+// --- Breadcrumb / back ------------------------------------------------------
+
+.product-detail__breadcrumb {
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.product-detail__crumbs {
+  display: none;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.product-detail__crumb {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(8);
+
+  // The separator is decorative, so it is drawn rather than written: a literal
+  // "/" in the DOM would be announced between every crumb.
+  & + &::before {
+    content: '';
+    width: 1px;
+    height: 12px;
+    background: styles.$color-border-primary;
+  }
+
+  a {
+    // The crumbs are real navigation, so they carry the locked touch target
+    // rather than being inline text you have to aim at.
+    display: inline-flex;
+    align-items: center;
+    min-height: styles.$size-touch-target-min;
+    color: styles.$color-text-secondary;
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+      text-decoration: underline;
+    }
+  }
+
+  &[aria-current='page'] {
+    color: styles.$color-text-primary;
+  }
+}
+
+.product-detail__back-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: styles.$size-touch-target-min;
+  color: styles.$color-text-secondary;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+// Desktop and tablet show the trail; mobile shows the single back link.
+// `display: none` removes the other from the accessibility tree too, so
+// assistive technology hears exactly one route back rather than two.
+@media (min-width: tokens.$bp-detail-desktop) {
+  .product-detail__crumbs {
+    display: flex;
+  }
+
+  .product-detail__back-link {
+    display: none;
+  }
+}

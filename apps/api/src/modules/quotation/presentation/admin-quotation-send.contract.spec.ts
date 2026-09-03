@@ -113,12 +113,26 @@ function properties(schema: Schema, seen = new Set<string>()): [string, Schema][
 }
 
 describe('APP6-B03 published send surface', () => {
-  it('publishes exactly one send operation, at the version it freezes', () => {
-    const sends = allOperations().filter((operation) => operation.path.endsWith('/send'));
+  it('publishes exactly one quotation send operation, at the version it freezes', () => {
+    // `APP6-B09` later published the design-version send, which is a different
+    // aggregate in a different module and is fenced by its own contract suite.
+    // Narrowed by `APP12-H01` from "one send in the artifact" to "one send on
+    // the quotation surface", which is what B03 actually owns and what stays
+    // true: a second quotation send route would still fail here.
+    const quotationSends = allOperations().filter(
+      (operation) => operation.path.endsWith('/send') && operation.path.includes('/quotations/'),
+    );
 
-    expect(sends).toEqual([
+    expect(quotationSends).toEqual([
       { method: 'post', path: SEND_PATH, operationId: 'adminQuotation_sendVersion' },
     ]);
+
+    expect(
+      allOperations()
+        .filter((operation) => operation.path.endsWith('/send'))
+        .map((operation) => operation.operationId)
+        .sort(),
+    ).toEqual(['adminCustomRequestDesignVersion_send', 'adminQuotation_sendVersion']);
   });
 
   it('keeps the four accepted APP6-B01/B02 operation ids byte-identical', () => {

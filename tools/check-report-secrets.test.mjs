@@ -116,6 +116,25 @@ test('distinguishes secret-shaped values from identifiers', () => {
   }
 });
 
+test('a quoted schema is code, not a credential', () => {
+  // `APP12-H01` / `FU-APP12-S03-08`. Reports quote the delivered Zod shape of a
+  // token field, and the value that follows the word `token` is then a call
+  // expression. Both inherited findings were exactly this.
+  for (const value of [
+    'z.string().regex(/^[A-Za-z0-9_-]{43}$/)',
+    'z.object({token:z.string()}).strict()',
+  ]) {
+    assert.equal(looksLikeSecretValue(value), false, `schema/code: ${value}`);
+  }
+
+  // The exemption must stay narrow: a credential that merely *ends* in a
+  // parenthesis, or contains one without a preceding identifier, is still a
+  // credential.
+  for (const value of ['Aa1!abcdefgh(', '(Synthetic0Example', 'Aa1!secret(x)']) {
+    assert.equal(looksLikeSecretValue(value), true, `still secret-shaped: ${value}`);
+  }
+});
+
 test('rejects tracked secret-bearing files but allows the example env', () => {
   assert.deepEqual(
     findTrackedSecretFiles([

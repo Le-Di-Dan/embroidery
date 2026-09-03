@@ -126,7 +126,9 @@ export function DesignReviewContent({ review, controller, headingRef }: DesignRe
         {title}
       </h1>
       <p className="secure-design-review__subtitle">
-        {subtitle === '' ? COPY.subtitles.review(review.version, formatReviewDate(review.sentAt)) : subtitle}
+        {subtitle === ''
+          ? COPY.subtitles.review(review.version, formatReviewDate(review.sentAt))
+          : subtitle}
       </p>
 
       {renderAlert()}

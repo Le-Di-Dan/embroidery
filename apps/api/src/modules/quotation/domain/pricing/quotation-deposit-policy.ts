@@ -28,8 +28,7 @@ export interface QuotationDepositPolicy {
 const FULL_PERCENT = 100n * 100n;
 
 export type DepositPolicyParse =
-  | { readonly ok: true; readonly policy: QuotationDepositPolicy }
-  | { readonly ok: false };
+  { readonly ok: true; readonly policy: QuotationDepositPolicy } | { readonly ok: false };
 
 /** Parses a published policy value, or reports that it is unusable. */
 export function parseQuotationDepositPolicy(value: unknown): DepositPolicyParse {

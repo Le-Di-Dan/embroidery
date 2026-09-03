@@ -29,6 +29,7 @@ import {
 } from '../../../customer/application/authorize-secure-link.service';
 import type { NetworkReadableRequest } from '../../../customer/infrastructure/rate-limit/public-network-key.service';
 import type { CustomRequestId } from '../../../order/domain/repositories/custom-request.repository';
+import { requestSubjectOf } from '../../../customer/domain/grant/grant-subject';
 import { MERCHANT_BANK_CONFIG, type MerchantBankConfig } from '../../config/merchant-bank.config';
 import { buildBankTransferQrPayload } from '../../domain/deposit/bank-transfer-qr.payload';
 import { finalPaymentError } from '../../domain/final-payment/final-payment.errors';
@@ -67,7 +68,7 @@ export class DeliverFinalPaymentQr {
     }
 
     const target = await this.targets.resolve(
-      admission.link.customRequestId as CustomRequestId,
+      requestSubjectOf(admission.link) as CustomRequestId,
       REMAINING,
     );
 

@@ -28,7 +28,11 @@ import type {
   CustomerQuotationResponse,
 } from '@embroidery/api-client';
 
-import { formatExactMoney, formatExactPercent, isZeroAmount } from './exact-money';
+import {
+  formatExactMoney,
+  formatExactPercent,
+  isZeroAmount,
+} from '../../../shared/money/exact-money';
 import { SECURE_QUOTATION_COPY as COPY } from './secure-quotation-copy';
 import type { QuoteUiState } from './secure-quotation-state';
 

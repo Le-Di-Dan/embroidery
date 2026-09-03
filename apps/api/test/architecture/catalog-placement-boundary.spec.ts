@@ -91,8 +91,20 @@ describe('the Design → Catalog placement boundary', () => {
   });
 
   it('10 — no write-side or auth dependency leaked into the read boundary', () => {
+    // The read boundary keeps the full rule. It needs a `DatabaseExecutor` and
+    // nothing else, so all three would be a leak.
     for (const leaked of ['IdentityModule', 'AuditModule', 'AssetModule']) {
       expect(moduleImports(READ_MODULE)).not.toMatch(new RegExp(`\\b${leaked}\\b`));
+    }
+
+    // The Design module keeps the two that are actually about authority.
+    // `AssetModule` left this list at `APP12-H01` (FU-APP12-S03-C1-02): APP3-B06B
+    // imports it for the `ASSET_REPOSITORY` **port** it exports — a read port,
+    // declared and explained at the import — so the rule as written had come to
+    // forbid a delivered, documented dependency rather than a leak. What the
+    // clause protects on this side is that a *design* module never acquires
+    // staff identity or the audit writer, and that is unchanged.
+    for (const leaked of ['IdentityModule', 'AuditModule']) {
       expect(moduleImports(DESIGN_MODULE)).not.toMatch(new RegExp(`\\b${leaked}\\b`));
     }
   });

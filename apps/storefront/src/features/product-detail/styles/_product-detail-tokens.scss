@@ -1,0 +1,50 @@
+// Product Detail — feature-scoped styles (APP2-S02). Design source:
+// FIG-S02-PRODUCT-DETAIL-{DESKTOP,TABLET,MOBILE,MEDIA-EMPTY,MEDIA-ERROR,
+// LIGHTBOX-*} (file BQwqV8GdfUIELvsQDB1UQE, 529:2225 / 529:2431 / 529:2575 /
+// 532:3 / 532:105 / 533:3 / 533:26), approved under
+// FIG-APPROVAL-APP2-S02-G01-PRODUCT-DETAIL-001, corrected by APP2-S02-G01-C1.
+// Colour, type, radius, spacing and control size come from @embroidery/styles;
+// the few values with no shared token are local literals, documented inline.
+//
+// Measured live from the approved frames:
+//   desktop 1440 — gutter 80, story measure 640
+//   tablet  1024 — gutter 48, story measure 640
+//   mobile   390 — gutter 24, content 342 (the story measure IS the content)
+//
+// The approved shell owns the page container (max 1200px with its own padding),
+// so the page renders inside that band rather than the 1440-frame's 1280.
+
+@use '@embroidery/styles' as styles;
+
+// Local layout breakpoint, aligned with the discovery feature and the shell's
+// own threshold: the audited tablet frame IS 1024, so 1025+ is the desktop tier.
+$bp-detail-desktop: 1025px;
+
+// The shell widens its own content gutter at this width (storefront-shell.scss
+// `$bp-footer`). Mirrored rather than imported because it is another feature's
+// internal constant; the value is asserted by a boundary test so the two cannot
+// drift apart silently.
+$bp-shell-wide: 768px;
+
+// The approved mobile content band (APP2-S02-G01-C1, frame 529:2575): a 24px
+// gutter and a 342px content width at 390.
+$detail-mobile-gutter: styles.spacing(24);
+
+// The approved readable measure (APP2-S02-G01-C1, UI03 08 – Accessibility:
+// "cột chữ ≤ 640px (~75 ký tự)"). Deliberately NOT `styles.$layout-reading-max`,
+// which is 720px: the foundation's general reading width and this page's
+// approved story measure are different numbers, and silently using the token
+// would widen the column past the value the correction locked.
+$story-measure-max: 640px;
+
+// Local composition constants (no shared token).
+$line-height-snug: 1.35;
+$line-height-body: 1.6;
+$stage-min-height: 320px;
+// The lightbox scrim and its on-scrim control surface. GAP-D02: the design
+// system defines no scrim token, so these mirror the values the approved
+// UI03/S02 frames themselves use rather than inventing a new palette entry.
+$scrim-color: rgba(20, 18, 18, 0.92);
+$scrim-control-surface: rgba(255, 255, 255, 0.14);
+$scrim-foreground: #ffffff;
+$scrim-foreground-muted: rgba(255, 255, 255, 0.8);

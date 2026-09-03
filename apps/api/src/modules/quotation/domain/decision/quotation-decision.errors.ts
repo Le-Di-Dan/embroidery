@@ -87,9 +87,7 @@ export class QuotationDecisionError extends Error {
   }
 }
 
-export function quotationDecisionError(
-  failure: QuotationDecisionFailure,
-): QuotationDecisionError {
+export function quotationDecisionError(failure: QuotationDecisionFailure): QuotationDecisionError {
   return new QuotationDecisionError(failure);
 }
 

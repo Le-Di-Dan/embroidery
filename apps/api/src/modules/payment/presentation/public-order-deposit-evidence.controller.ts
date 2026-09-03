@@ -141,6 +141,28 @@ interface HeaderSettableResponse {
   TransferEvidenceListResponse,
   TransferEvidenceItemResponse,
 )
+/**
+ * `/deposit/` in this path is a historical label, not authority
+ * (`APP12-H01`, closing `FU-APP12-B04-02` as `CLOSED_ACCEPTED_LEGACY_PATH`).
+ *
+ * Accurate when `APP7-B05` published the lane and `DEPOSIT` was the only payable
+ * obligation; `APP9-B02` then made `REMAINING` payable and `APP12-B04` §22
+ * routed the Ready-Made `FULL` obligation through this same lane. The segment
+ * now reads `deposit` while serving three kinds, and is misleading to a human
+ * and to nothing else.
+ *
+ * `EvidenceAttemptAuthorizer` decides admission and reads neither the URL nor a
+ * caller-supplied kind: it re-establishes the grant under its row lock, walks
+ * that grant's own subject to exactly one order, and requires the named
+ * attempt's obligation to hang off *that* order, for **either** `CST-039` kind.
+ * No branch in the lane tests for `DEPOSIT` and none tests the request path. So
+ * the segment is neither payment-kind authority (the order's obligation rows
+ * decide that) nor authorization authority (where the walk arrives decides that).
+ *
+ * Not renamed, by Product Owner directive: the two operation ids are accepted,
+ * published, consumed by the generated client and named in the release matrix,
+ * so reissuing them is a contract change rather than a cleanup.
+ */
 @Controller('public/orders/deposit/evidence')
 export class PublicOrderDepositEvidenceController {
   constructor(

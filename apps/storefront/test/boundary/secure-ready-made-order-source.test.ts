@@ -185,14 +185,18 @@ describe('money — §15, §16', () => {
 
   it('composes no payable total from the subtotal and the fee', () => {
     // The two supporting rows are rendered; they are never added. A `+` between
-    // two amount-bearing expressions is the shape this forbids, and the amount
-    // module has no arithmetic operator applied to money at all.
-    const amountModule = codeOnly(
-      readFileSync(join(FEATURE_DIR, 'model', 'exact-order-amount.ts'), 'utf8'),
-    );
-    expect(amountModule).not.toMatch(/\b(amount|total|fee|subtotal)\w*\s*[+*/-]\s*\w/i);
-    // And nowhere in the feature are the two supporting rows added together.
+    // two amount-bearing expressions is the shape this forbids.
+    //
+    // `exact-order-amount.ts` was this feature's own copy of the exact-money
+    // formatter and was scanned here. `APP12-H01` consolidated the five copies
+    // into `src/shared/money/exact-money.ts` (FU-APP12-S01-02 / FU-APP12-S03-05)
+    // and moved this half of the guard with it, into
+    // `test/boundary/shared-money-source.test.ts` — which applies the same rule
+    // plus an arithmetic scan to the shared module. What stays here is the claim
+    // that is about *this feature*: nowhere in it are the two supporting rows
+    // added together.
     expect(featureCode).not.toMatch(/merchandiseSubtotal\s*\+|\+\s*feeAmount/);
+    expect(featureCode).not.toMatch(/\b(amount|total|fee|subtotal)\w*\s*\+\s*\w/i);
   });
 
   it('reads the payable figure from the obligation, never from the order row', () => {

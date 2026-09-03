@@ -1,0 +1,70 @@
+// Product Detail — loading, error, reduced motion and the discover card link.
+//
+// The states the page can be in other than loaded, the motion opt-out, and the one selector APP2-S02 hands to the discovery card.
+//
+// Split out of `product-detail.scss` by `APP12-H01` (FU-APP12-S01-03), which
+// found the single file at 555 lines against the 400-line hard
+// limit (CLAUDE.md §6). The split is by responsibility, and the compiled CSS is
+// byte-identical to what the one file emitted: the entry stylesheet `@use`s the
+// parts in their original order, so no declaration changed place in the cascade.
+@use '@embroidery/styles' as styles;
+@use 'product-detail-tokens' as tokens;
+
+// --- Loading and error ------------------------------------------------------
+
+.product-detail__error-heading {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-semibold;
+  color: styles.$color-text-primary;
+}
+
+.product-detail__error-body {
+  margin: 0;
+  max-width: tokens.$story-measure-max;
+  font-size: styles.$font-size-body-m;
+  line-height: tokens.$line-height-body;
+  color: styles.$color-text-secondary;
+}
+
+.product-detail__error-retry {
+  align-self: flex-start;
+  min-height: styles.$size-touch-target-min;
+  padding-inline: styles.spacing(24);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-background-primary;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-m;
+  color: styles.$color-text-primary;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}
+
+// --- Reduced motion ---------------------------------------------------------
+
+@media (prefers-reduced-motion: reduce) {
+  .product-detail *,
+  .product-detail__scrim * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+// --- Discover card link (APP2-S02 handoff) ----------------------------------
+
+// The S01 card became a single link to this page. Its layout, spacing and
+// content are unchanged; only the affordances a real link must carry are added.
+.discover__card {
+  color: inherit;
+  text-decoration: none;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 4px;
+  }
+}

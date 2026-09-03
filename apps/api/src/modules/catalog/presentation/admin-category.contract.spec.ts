@@ -30,6 +30,7 @@ import {
 import { CATEGORY_TRANSITION_ACTIONS } from '../domain/admin-category.policy';
 import {
   WAVE1_RELEASED_PUBLIC_OPERATIONS,
+  SCOPE_GATED_PUBLIC_OPERATIONS,
   WAVE2_WITHHELD_PUBLIC_OPERATIONS,
 } from '../../../platform/release-gate/wave2-operation-authority';
 
@@ -145,13 +146,13 @@ describe('the published Admin category surface', () => {
     expect(OPENAPI.paths[COLLECTION]?.['delete']).toBeUndefined();
   });
 
-  it('leaves the artifact at 133 operations, with the public count unchanged at 44', () => {
+  it('leaves the artifact at 138 operations, with the public count unchanged at 49', () => {
     const operations = allOperations();
 
-    expect(operations).toHaveLength(133);
+    expect(operations).toHaveLength(138);
     expect(
       operations.filter(({ operation: op }) => op.operationId?.startsWith('public')),
-    ).toHaveLength(44);
+    ).toHaveLength(49);
   });
 
   it('reaches the generated client as four callable operations', () => {
@@ -282,17 +283,37 @@ describe('authentication and the release gate', () => {
   });
 
   /**
-   * C02 published no public operation, so the Wave-2 matrix must be exactly what
-   * `APP12-C01` left: 31 withheld, 13 released, 44 public in the artifact.
+   * C02 published no public operation, so the Wave-2 matrix must be exactly the
+   * one the release authority carries. The three numbers were 31 / 13 / 0 when
+   * this was written; `APP12-B04` moved the secure-link resolver and the two
+   * halves of the evidence lane out of the withheld set into `SCOPE_GATED`
+   * (their wave is a property of the resolved grant, not of the operation), and
+   * `APP12-B01`…`APP12-B04` released the Ready-Made surface. `APP12-H01`
+   * re-measured them against the artifact rather than assuming: the three sets
+   * partition the 49 public operations exactly, with nothing unclassified and
+   * nothing classified twice, which is the invariant this test is really for.
    */
-  it('leaves the Wave-2 public matrix at 31 DENY / 13 ALLOW', () => {
-    expect(WAVE2_WITHHELD_PUBLIC_OPERATIONS.size).toBe(31);
-    expect(WAVE1_RELEASED_PUBLIC_OPERATIONS.size).toBe(13);
-    expect(
-      [...WAVE2_WITHHELD_PUBLIC_OPERATIONS, ...WAVE1_RELEASED_PUBLIC_OPERATIONS].filter((id) =>
-        id.startsWith('admin'),
-      ),
-    ).toEqual([]);
+  it('leaves the Wave-2 public matrix at 28 DENY / 18 ALLOW / 3 SCOPE_GATED', () => {
+    expect(WAVE2_WITHHELD_PUBLIC_OPERATIONS.size).toBe(28);
+    expect(WAVE1_RELEASED_PUBLIC_OPERATIONS.size).toBe(18);
+    expect(SCOPE_GATED_PUBLIC_OPERATIONS.size).toBe(3);
+
+    // The partition, checked rather than implied by the three sizes summing to
+    // 49: an operation missing from all three would be unclassified release
+    // surface, and one in two of them would make the gate's answer depend on
+    // lookup order.
+    const classified = [
+      ...WAVE2_WITHHELD_PUBLIC_OPERATIONS,
+      ...WAVE1_RELEASED_PUBLIC_OPERATIONS,
+      ...SCOPE_GATED_PUBLIC_OPERATIONS,
+    ];
+    const published = allOperations()
+      .map(({ operation: op }) => op.operationId)
+      .filter((id): id is string => id !== undefined && id.startsWith('public'));
+
+    expect(new Set(classified).size).toBe(classified.length);
+    expect([...classified].sort()).toEqual([...published].sort());
+    expect(classified.filter((id) => id.startsWith('admin'))).toEqual([]);
   });
 
   /** The error vocabulary is closed and every code is documented on a route. */

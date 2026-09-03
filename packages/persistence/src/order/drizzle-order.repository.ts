@@ -26,6 +26,7 @@ import type {
   TransitionOrderInput,
 } from './order.repository';
 import type { OrderLifecycle } from './order-lifecycle';
+import { DrizzleOrderCancellationRepository } from './drizzle-order-cancellation.repository';
 import { DrizzleOrderShippingRepository } from './drizzle-order-shipping.repository';
 import { OrderChainGuard } from './order-chain.guard';
 import { applyOrderTransition } from './order-transition-write';
@@ -41,6 +42,7 @@ export class DrizzleOrderRepository extends DrizzleRepository implements OrderRe
     executor: DatabaseExecutor,
     private readonly chain: OrderChainGuard,
     private readonly shipping: DrizzleOrderShippingRepository,
+    private readonly cancellations: DrizzleOrderCancellationRepository,
     private readonly outbox: OutboxEventStore,
   ) {
     super(executor);
@@ -91,11 +93,11 @@ export class DrizzleOrderRepository extends DrizzleRepository implements OrderRe
     grantId?: string | undefined;
     stepUpChallengeId?: string | undefined;
   }): Promise<void> {
-    return this.shipping.openCancellationRequest(input);
+    return this.cancellations.openCancellationRequest(input);
   }
 
   resolveCancellationRequest(id: string, approved: boolean, adminId: string): Promise<void> {
-    return this.shipping.resolveCancellationRequest(id, approved, adminId);
+    return this.cancellations.resolveCancellationRequest(id, approved, adminId);
   }
 
   loadShippingDetail(id: OrderId): Promise<ShippingDetail | undefined> {

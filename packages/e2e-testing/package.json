@@ -30,7 +30,9 @@
     "e2e:debug": "node scripts/run-e2e.mjs --debug",
     "e2e:report": "playwright show-report playwright-report",
     "e2e:install": "playwright install",
-    "clean": "rimraf test-results playwright-report .e2e-state coverage"
+    "clean": "rimraf test-results playwright-report .e2e-state coverage",
+    "e2e:app12:h01": "node scripts/run-e2e.mjs --app12-h01",
+    "e2e:app12:h01:wave2": "node scripts/run-e2e.mjs --app12-h01-wave2"
   },
   "dependencies": {
     "@embroidery/database": "workspace:*",

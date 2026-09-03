@@ -5,7 +5,7 @@ import { useState } from 'react';
 import type { PublicPriceResponse } from '@embroidery/api-client';
 
 import { buildPurchaseContinueHref } from '../model/purchase-continue-url';
-import { formatExactMoney } from '../model/purchase-money';
+import { formatExactMoney } from '../../../shared/money/exact-money';
 import type { ReadyMadePurchaseResult } from '../model/purchase-projection';
 import {
   clampQuantity,

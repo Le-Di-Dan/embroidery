@@ -1,0 +1,28 @@
+// Admin product form/detail — feature-scoped styles (APP2-A03).
+//
+// Design source: FIG-ADMIN-PRODUCT-DRAFT-DESKTOP-{DEFAULT,VALIDATION,SAVING}
+// (434:20, 436:37, 436:140), FIG-ADMIN-PRODUCT-MEDIA-SELECT-DESKTOP (437:73)
+// and FIG-ADMIN-PRODUCT-DRAFT-MOBILE-DEFAULT (438:90), approved under
+// FIG-APPROVAL-APP2-A03-G01-PRODUCT-FORM-001, plus the normative handoff
+// 521:284. Colour, type, radius and spacing come from @embroidery/styles.
+//
+// Mobile-first: the base is the single-column 390 frame, and the two-column
+// composition (form + read-only metadata rail, no publication rail) applies
+// from the shell breakpoint upward.
+
+@use '@embroidery/styles' as styles;
+
+// Shared with the shell, the asset library and the product list so the Admin
+// surfaces switch layout at one threshold; the design system defers breakpoints
+// (FU-A16).
+$form-breakpoint: 1024px;
+
+// Screen-specific composition constants (no shared token; not a token system).
+$rail-width: 320px;
+$media-tile: 48px;
+$media-tile-wide: 64px;
+$control-height: 48px;
+$picker-column: 190px;
+$picker-thumb: 120px;
+$dialog-max: 880px;
+$dialog-narrow: 480px;

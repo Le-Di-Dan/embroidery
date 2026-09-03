@@ -32,6 +32,7 @@ import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../database.module';
 import { DrizzleOrderRepository } from './drizzle-order.repository';
 import { DrizzleOrderOriginAdapter } from './drizzle-order-origin.adapter';
+import { DrizzleOrderCancellationRepository } from './drizzle-order-cancellation.repository';
 import { DrizzleOrderShippingRepository } from './drizzle-order-shipping.repository';
 import { DrizzleReadyMadeOrderRepository } from './drizzle-ready-made-order.repository';
 import { OrderChainGuard } from './order-chain.guard';
@@ -44,6 +45,7 @@ import { READY_MADE_ORDER_REPOSITORY } from './ready-made-order.repository';
   providers: [
     OrderChainGuard,
     DrizzleOrderShippingRepository,
+    DrizzleOrderCancellationRepository,
     { provide: ORDER_REPOSITORY, useClass: DrizzleOrderRepository },
     // APP12-B02 — the second origin's writer, and the one-column origin fact
     // Inventory's eligibility gate depends on.

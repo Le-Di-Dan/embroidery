@@ -71,11 +71,18 @@ describe('generated client boundary', () => {
     expect(typeof apiClient.adminProductPlacementReplace).toBe('function');
   });
 
-  it('withholds the public placement read from the client boundary', () => {
-    expect((apiClient as Record<string, unknown>)['publicProductPlacementGet']).toBeUndefined();
-    expect(
-      (apiClient as Record<string, unknown>)['publicProductSideBackgroundGet'],
-    ).toBeUndefined();
+  it('never reaches the public placement or side-background read from this screen', () => {
+    // Both crossed the shared client boundary at `APP3-S02`, whose approved
+    // consumer is the Storefront studio stage — so asking the package about them
+    // stopped being the right question. Re-pointed by `APP12-H01`
+    // (FU-APP12-A01-01) at the claim that was always the Admin one: authoring a
+    // placement must not depend on a route that requires the product to be
+    // published, and this screen therefore names neither operation. Checked over
+    // the feature's own sources, so an import anywhere in it still fails.
+    for (const source of [...sources.map(({ text }) => text), routeSource]) {
+      expect(source).not.toContain('publicProductPlacementGet');
+      expect(source).not.toContain('publicProductSideBackgroundGet');
+    }
   });
 
   it('reaches the API only through the generated operations', () => {

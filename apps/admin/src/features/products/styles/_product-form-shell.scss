@@ -1,0 +1,211 @@
+// Admin product form — page shell, header, columns and actions.
+//
+// The two-column composition above the form breakpoint, the header and its subtitle pair, and the shared primary/secondary button shapes.
+//
+// Split out of `product-form.scss` by `APP12-H01` (FU-APP12-A01-04), which
+// found the single file at 753 lines against the 400-line hard
+// limit (CLAUDE.md §6). The split is by responsibility, and the compiled CSS is
+// byte-identical to what the one file emitted: the entry stylesheet `@use`s the
+// parts in their original order, so no declaration changed place in the cascade.
+@use '@embroidery/styles' as styles;
+@use 'product-form-tokens' as tokens;
+
+.product-form {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  padding: styles.spacing(24) styles.spacing(16);
+
+  @media (min-width: tokens.$form-breakpoint) {
+    gap: styles.spacing(24);
+    padding: styles.spacing(32);
+  }
+}
+
+.product-form__header {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+
+  @media (min-width: tokens.$form-breakpoint) {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: styles.spacing(24);
+  }
+}
+
+.product-form__heading {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  min-width: 0;
+}
+
+.product-form__title {
+  margin: 0;
+  font-size: styles.$font-size-heading-m;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+  overflow-wrap: anywhere;
+
+  @media (min-width: tokens.$form-breakpoint) {
+    font-size: styles.$font-size-display-m;
+    font-weight: styles.$font-weight-semibold;
+  }
+}
+
+.product-form__subtitle {
+  margin: 0;
+  max-width: styles.$layout-reading-max;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+// Exactly one subtitle is ever rendered; `display: none` also removes the other
+// from the accessibility tree, so neither is announced twice.
+.product-form__subtitle--wide {
+  display: none;
+
+  @media (min-width: tokens.$form-breakpoint) {
+    display: block;
+  }
+}
+
+.product-form__subtitle--narrow {
+  display: block;
+
+  @media (min-width: tokens.$form-breakpoint) {
+    display: none;
+  }
+}
+
+.product-form__header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+}
+
+.product-form__body {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+
+  @media (min-width: tokens.$form-breakpoint) {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: styles.spacing(24);
+  }
+}
+
+.product-form__column {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  min-width: 0;
+  flex: 1 1 auto;
+
+  @media (min-width: tokens.$form-breakpoint) {
+    gap: styles.spacing(24);
+  }
+}
+
+.product-form__group {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  margin: 0;
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+  min-width: 0;
+
+  @media (min-width: tokens.$form-breakpoint) {
+    gap: styles.spacing(16);
+    padding: styles.spacing(24);
+  }
+}
+
+.product-form__group-title {
+  margin: 0;
+  padding: 0;
+  font-size: styles.$font-size-body-l;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+
+  @media (min-width: tokens.$form-breakpoint) {
+    font-size: styles.$font-size-heading-s;
+  }
+}
+
+.product-form__actions {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+
+  @media (min-width: tokens.$form-breakpoint) {
+    flex-direction: row;
+  }
+}
+
+.product-form__note {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-tertiary;
+}
+
+.product-form__status {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+// Shared button shapes. `min-height` is the approved 48px touch target on
+// mobile; both keep it at every width so pointer targets never shrink.
+%product-form-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: styles.$size-touch-target-min;
+  padding: styles.spacing(12) styles.spacing(24);
+  border-radius: styles.$radius-button;
+  font-family: inherit;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.product-form__primary {
+  @extend %product-form-button;
+
+  border: 1px solid styles.$color-action-primary;
+  background: styles.$color-action-primary;
+  color: styles.$color-background-primary;
+
+  &:hover:not(:disabled) {
+    background: styles.$color-action-hover;
+    border-color: styles.$color-action-hover;
+  }
+}
+
+.product-form__secondary {
+  @extend %product-form-button;
+
+  border: 1px solid styles.$color-border-primary;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+
+  &:hover:not(:disabled) {
+    border-color: styles.$color-action-primary;
+    color: styles.$color-action-primary;
+  }
+}
+
+// ---------------------------------------------------------------- fields ----

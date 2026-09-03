@@ -85,14 +85,16 @@ describe('quotation.deposit policy parsing', () => {
   });
 
   it('refuses a split that does not describe one whole quotation', () => {
-    expect(parseQuotationDepositPolicy({ depositPercent: 40, remainingPercent: 50 }).ok).toBe(false);
+    expect(parseQuotationDepositPolicy({ depositPercent: 40, remainingPercent: 50 }).ok).toBe(
+      false,
+    );
   });
 
   it('refuses a missing, non-numeric or out-of-range share rather than guessing', () => {
     expect(parseQuotationDepositPolicy({ remainingPercent: 60 }).ok).toBe(false);
-    expect(
-      parseQuotationDepositPolicy({ depositPercent: '40', remainingPercent: 60 }).ok,
-    ).toBe(false);
+    expect(parseQuotationDepositPolicy({ depositPercent: '40', remainingPercent: 60 }).ok).toBe(
+      false,
+    );
     expect(parseQuotationDepositPolicy({ depositPercent: 140, remainingPercent: -40 }).ok).toBe(
       false,
     );
@@ -120,9 +122,7 @@ describe('quotation code', () => {
     // source that only produced them must be resampled, not folded.
     let call = 0;
     const biased = (size: number): Buffer =>
-      Buffer.from(
-        Array.from({ length: size }, () => (call++ < size ? 250 : 0)),
-      );
+      Buffer.from(Array.from({ length: size }, () => (call++ < size ? 250 : 0)));
 
     expect(generateQuotationCode(biased)).toMatch(QUOTATION_CODE_PATTERN);
   });

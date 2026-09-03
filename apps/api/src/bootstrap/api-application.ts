@@ -37,5 +37,12 @@ export async function createApiApplication(
   const app = await NestFactory.create<NestExpressApplication>(AppModule, options);
   app.setGlobalPrefix(GLOBAL_ROUTE_PREFIX);
   app.set('trust proxy', TRUSTED_PROXY_HOPS);
+  // Express answers every request with `X-Powered-By: Express` unless this is
+  // disabled (`APP12-H01` §12). It names the framework — and so the advisory
+  // feed to read — to any caller who sends one request, and no client, gateway
+  // or test reads it. Set here rather than at the gateway so the API is not
+  // announcing itself on a topology where something forwards it unchanged, and
+  // so the OpenAPI generator, which reuses this factory, behaves identically.
+  app.set('x-powered-by', false);
   return app;
 }

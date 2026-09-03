@@ -1,0 +1,67 @@
+// Admin product form — the read-only publication rail.
+//
+// The side rail of facts about the product that the form reports but does not edit.
+//
+// Split out of `product-form.scss` by `APP12-H01` (FU-APP12-A01-04), which
+// found the single file at 753 lines against the 400-line hard
+// limit (CLAUDE.md §6). The split is by responsibility, and the compiled CSS is
+// byte-identical to what the one file emitted: the entry stylesheet `@use`s the
+// parts in their original order, so no declaration changed place in the cascade.
+@use '@embroidery/styles' as styles;
+@use 'product-form-tokens' as tokens;
+
+.product-rail {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  min-width: 0;
+
+  @media (min-width: tokens.$form-breakpoint) {
+    flex: 0 0 tokens.$rail-width;
+    width: tokens.$rail-width;
+    gap: styles.spacing(24);
+  }
+}
+
+.product-rail__card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: styles.spacing(12);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+
+  @media (min-width: tokens.$form-breakpoint) {
+    gap: styles.spacing(16);
+    padding: styles.spacing(24);
+  }
+}
+
+.product-rail__title {
+  margin: 0;
+  font-size: styles.$font-size-body-l;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+
+  @media (min-width: tokens.$form-breakpoint) {
+    font-size: styles.$font-size-heading-s;
+  }
+}
+
+.product-rail__value {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+  overflow-wrap: anywhere;
+}
+
+.product-rail__note {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-tertiary;
+}
+
+// --------------------------------------------------------------- media ------

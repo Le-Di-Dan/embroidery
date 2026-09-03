@@ -202,9 +202,7 @@ describe('READY_FOR_DELIVERY — a fee increase the customer has not acknowledge
   beforeEach(() => {
     detailMock.mockResolvedValue(atStatus('READY_FOR_DELIVERY'));
     shippingReadMock.mockResolvedValue(envelope(makeShippingDetail()));
-    shippingSaveMock.mockRejectedValue(
-      apiRefusal(409, 'SHIPPING_FEE_ACKNOWLEDGEMENT_REQUIRED'),
-    );
+    shippingSaveMock.mockRejectedValue(apiRefusal(409, 'SHIPPING_FEE_ACKNOWLEDGEMENT_REQUIRED'));
   });
 
   it('renders the approved refusal and offers the operator no way to consent for the customer', async () => {

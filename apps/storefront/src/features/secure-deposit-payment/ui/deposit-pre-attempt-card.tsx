@@ -2,7 +2,7 @@
 
 import type { CustomerDepositResponse } from '@embroidery/api-client';
 
-import { formatExactAmount } from '../model/exact-deposit-amount';
+import { formatExactAmount } from '../../../shared/money/exact-money';
 import { SECURE_DEPOSIT_COPY as COPY } from '../model/secure-deposit-copy';
 import type { NoticeableInitiateFailure } from '../model/deposit-failure';
 import { DepositNote } from './deposit-note';

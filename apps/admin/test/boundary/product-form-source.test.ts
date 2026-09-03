@@ -128,10 +128,29 @@ describe('product feature source boundaries', () => {
 });
 
 describe('withheld operations stay off the client boundary', () => {
-  const boundary = readFileSync(
-    join(__dirname, '..', '..', '..', '..', 'packages', 'api-client', 'src', 'index.ts'),
-    'utf8',
+  /**
+   * The curated boundary, read as the whole of what the package root exports.
+   *
+   * `index.ts` used to hold every export in one list; it passed the 400-line
+   * source limit and was split into per-domain barrels it now re-exports with
+   * `export * from './<domain>'`. Reading only `index.ts` therefore found a list
+   * of module names and no operation at all — which is why these two assertions
+   * were red at entry HEAD (FU-APP12-A01-01). `APP12-H01` follows the
+   * re-exports, so the subject is once again the boundary a consumer actually
+   * sees, and both rules below are exactly as strict as they were.
+   */
+  const apiClientSrc = join(__dirname, '..', '..', '..', '..', 'packages', 'api-client', 'src');
+  const rootBarrel = readFileSync(join(apiClientSrc, 'index.ts'), 'utf8');
+  const reExported = [...rootBarrel.matchAll(/export \* from '\.\/([\w-]+)';/g)].map(
+    (match) => match[1],
   );
+  // A root barrel that re-exported nothing would make every `not.toContain`
+  // below pass vacuously.
+  expect(reExported.length).toBeGreaterThan(0);
+  const boundary = [
+    rootBarrel,
+    ...reExported.map((name) => readFileSync(join(apiClientSrc, `${String(name)}.ts`), 'utf8')),
+  ].join('\n');
 
   it('exports exactly the four operations A03 owns, plus the A02 list', () => {
     for (const operation of [

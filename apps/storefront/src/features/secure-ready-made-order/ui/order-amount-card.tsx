@@ -5,7 +5,7 @@ import type {
   ReadyMadeOrderAccessResponse,
 } from '@embroidery/api-client';
 
-import { formatExactAmount, formatExactMoney } from '../model/exact-order-amount';
+import { formatExactAmount, formatExactMoney } from '../../../shared/money/exact-money';
 import { ORDER_ACCESS_COPY as COPY } from '../model/order-access-copy';
 import { CopyValueButton } from './copy-value-button';
 

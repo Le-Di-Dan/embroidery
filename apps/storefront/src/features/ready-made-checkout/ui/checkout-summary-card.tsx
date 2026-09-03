@@ -28,7 +28,7 @@
  * in flight (`909:271`), which is a different statement — and even that is a
  * courtesy, not the correctness boundary (§21).
  */
-import { formatExactMoney } from '../../ready-made-purchase/model/purchase-money';
+import { formatExactMoney } from '../../../shared/money/exact-money';
 import { multiplyExactAmount } from '../model/checkout-money';
 import type { CheckoutSelection } from '../model/checkout-selection';
 import { itemVariantLine, READY_MADE_CHECKOUT_COPY } from '../model/ready-made-checkout-copy';

@@ -1,0 +1,70 @@
+// Admin product list — the narrow-viewport card list.
+//
+// The same rows presented as cards below the list breakpoint. A separate presentation of one dataset, not a variant of the table.
+//
+// Split out of `products.scss` by `APP12-H01` (FU-APP12-A01-04), which
+// found the single file at 536 lines against the 400-line hard
+// limit (CLAUDE.md §6). The split is by responsibility, and the compiled CSS is
+// byte-identical to what the one file emitted: the entry stylesheet `@use`s the
+// parts in their original order, so no declaration changed place in the cascade.
+@use '@embroidery/styles' as styles;
+@use 'products-tokens' as tokens;
+
+.product-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  @media (min-width: tokens.$products-breakpoint) {
+    display: none;
+  }
+}
+
+.product-card {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  padding: styles.spacing(12);
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+}
+
+.product-card__top {
+  display: flex;
+  flex-direction: row;
+  gap: styles.spacing(12);
+}
+
+.product-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: 0;
+}
+
+.product-card__name {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-primary;
+  overflow-wrap: anywhere;
+}
+
+.product-card__category {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  letter-spacing: 0.01em;
+  color: styles.$color-text-secondary;
+}
+
+.product-card__bottom {
+  display: flex;
+}
+
+// Status ----------------------------------------------------------------------
+
+// A text label with a decorative dot. Colour is never the only signal
+// (approved handoff 450:404).

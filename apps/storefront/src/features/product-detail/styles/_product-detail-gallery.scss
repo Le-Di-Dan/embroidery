@@ -1,0 +1,128 @@
+// Product Detail — gallery stage and thumbnails.
+//
+// The in-page image viewer: the stage, its empty and error messages, and the thumbnail strip that drives it. The full-screen viewer is a separate concern in a separate file.
+//
+// Split out of `product-detail.scss` by `APP12-H01` (FU-APP12-S01-03), which
+// found the single file at 555 lines against the 400-line hard
+// limit (CLAUDE.md §6). The split is by responsibility, and the compiled CSS is
+// byte-identical to what the one file emitted: the entry stylesheet `@use`s the
+// parts in their original order, so no declaration changed place in the cascade.
+@use '@embroidery/styles' as styles;
+@use 'product-detail-tokens' as tokens;
+
+// --- Gallery ----------------------------------------------------------------
+
+.product-detail__gallery {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  align-items: center;
+}
+
+.product-detail__stage-trigger {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 4px;
+  }
+}
+
+.product-detail__stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: tokens.$stage-min-height;
+  padding: styles.spacing(16);
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+}
+
+.product-detail__stage-image {
+  display: block;
+  max-width: 100%;
+  // Natural ratio, never a fixed crop. APP2-B04 publishes no image dimensions,
+  // so any aspect-ratio here would be fabricated — and would crop artwork the
+  // approved authority requires to be shown whole (`contain`, 541:3).
+  height: auto;
+  max-height: 70vh;
+  object-fit: contain;
+}
+
+.product-detail__stage-message {
+  margin: 0;
+  max-width: tokens.$story-measure-max;
+  text-align: center;
+  font-size: styles.$font-size-body-m;
+  line-height: tokens.$line-height-body;
+  color: styles.$color-text-secondary;
+}
+
+.product-detail__zoom-hint {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+// --- Thumbnails -------------------------------------------------------------
+
+.product-detail__thumbnails {
+  display: flex;
+  gap: styles.spacing(12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  // Mobile scrolls the strip horizontally rather than wrapping it or letting it
+  // widen the page. The overflow lives here, so the document never gains a
+  // horizontal scrollbar.
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.product-detail__thumbnail-item {
+  flex: 0 0 auto;
+}
+
+.product-detail__thumbnail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  width: styles.spacing(64);
+  height: styles.spacing(64);
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+
+  // Selection is a border plus `aria-current`, never colour alone.
+  &[aria-current='true'] {
+    border-color: styles.$color-text-primary;
+  }
+}
+
+.product-detail__thumbnail-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-detail__thumbnail-fallback {
+  padding: styles.spacing(4);
+  font-size: styles.$font-size-body-s;
+  text-align: center;
+  color: styles.$color-text-secondary;
+}

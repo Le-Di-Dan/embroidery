@@ -30,6 +30,7 @@ import { PUBLIC_CATEGORY_CACHE_CONTROL } from '../domain/public-category.policy'
 import { PUBLIC_CATEGORY_ERROR_CODES } from '../domain/public-category.errors';
 import {
   WAVE1_RELEASED_PUBLIC_OPERATIONS,
+  SCOPE_GATED_PUBLIC_OPERATIONS,
   WAVE2_WITHHELD_PUBLIC_OPERATIONS,
 } from '../../../platform/release-gate/wave2-operation-authority';
 
@@ -128,16 +129,17 @@ describe('the published category inventory operation', () => {
     expect(publicCategoryWrites).toEqual([]);
   });
 
-  it('leaves the artifact at 133 operations, 44 of them public', () => {
+  it('leaves the artifact at 138 operations, 49 of them public', () => {
     const operations = allOperations();
 
-    // 129 at `APP12-C01`, plus the four Admin category operations `APP12-C02`
-    // added. The public count is deliberately unchanged: C02 published no
-    // public operation at all.
-    expect(operations).toHaveLength(133);
+    // 133 when C02 closed; the Ready-Made commerce checkpoints `APP12-B01`…
+    // `APP12-B05` and `APP12-A02-C1` brought it to 138 / 49, which is the
+    // baseline `APP12-H01` re-measured and froze. This read is still not one of
+    // the additions: the assertion below is what says so.
+    expect(operations).toHaveLength(138);
     expect(
       operations.filter(({ operation }) => operation.operationId?.startsWith('public')),
-    ).toHaveLength(44);
+    ).toHaveLength(49);
   });
 
   it('reaches the generated client as a callable read', () => {
@@ -281,8 +283,17 @@ describe('what the checkpoint refuses to add', () => {
     expect(code).not.toContain('DrizzleCategoryRepository');
   });
 
-  it('publishes no Ready-Made order contract', () => {
-    expect(JSON.stringify(OPENAPI)).not.toContain('READY_MADE');
+  /**
+   * Narrowed by `APP12-H01` from "the artifact contains no `READY_MADE`" to
+   * "*this surface* contains none". The original fence was C01's, written when
+   * Ready-Made did not exist anywhere; `APP12-B01`…`APP12-B05` then delivered
+   * it under locked roadmap authority, so the artifact-wide form asserts a fact
+   * the system has deliberately stopped having. What C01 was actually
+   * protecting — that a public *category* read never becomes an order surface —
+   * is unchanged and is what is checked here.
+   */
+  it('publishes no Ready-Made order contract on the category surface', () => {
+    expect(JSON.stringify(OPENAPI.paths[CATEGORIES])).not.toContain('READY_MADE');
   });
 
   it('declares one error code and the documented cache policy', () => {
@@ -298,9 +309,20 @@ describe('release-gate classification', () => {
     expect(WAVE2_WITHHELD_PUBLIC_OPERATIONS.has('publicCategory_list')).toBe(false);
   });
 
-  it('leaves the withheld set at 31, secure-link resolution included', () => {
-    expect(WAVE2_WITHHELD_PUBLIC_OPERATIONS.size).toBe(31);
-    expect(WAVE1_RELEASED_PUBLIC_OPERATIONS.size).toBe(13);
-    expect(WAVE2_WITHHELD_PUBLIC_OPERATIONS.has('publicSecureLink_resolve')).toBe(true);
+  /**
+   * `publicSecureLink_resolve` left the withheld set at `APP12-B04` and was not
+   * released by doing so: it now serves both waves through one operation, so its
+   * wave is a property of the resolved grant rather than of the operation, and
+   * `GrantScopeReleaseGate` refuses a `REQUEST_ACCESS` scope inside the
+   * resolution path with the same indistinguishable `SECURE_LINK_UNAVAILABLE`.
+   * The assertion follows it into `SCOPE_GATED` rather than being dropped.
+   */
+  it('leaves the withheld set at 28, with secure-link resolution scope-gated', () => {
+    expect(WAVE2_WITHHELD_PUBLIC_OPERATIONS.size).toBe(28);
+    expect(WAVE1_RELEASED_PUBLIC_OPERATIONS.size).toBe(18);
+    expect(SCOPE_GATED_PUBLIC_OPERATIONS.size).toBe(3);
+    expect(WAVE2_WITHHELD_PUBLIC_OPERATIONS.has('publicSecureLink_resolve')).toBe(false);
+    expect(WAVE1_RELEASED_PUBLIC_OPERATIONS.has('publicSecureLink_resolve')).toBe(false);
+    expect(SCOPE_GATED_PUBLIC_OPERATIONS.has('publicSecureLink_resolve')).toBe(true);
   });
 });

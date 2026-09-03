@@ -1,11 +1,14 @@
 /**
- * Shipping and cancellation persistence for AGG-15 (TBL-046..TBL-049).
+ * Shipping persistence for AGG-15 (TBL-046..TBL-048).
  *
  * Split from `DrizzleOrderRepository` by responsibility: the order's own
  * lifecycle is one concern, and fulfilment — address, freeze, dispatch
- * snapshot, fee acknowledgement, cancellation review — is another. Both still
- * serve the single `OrderRepository` contract, so the aggregate keeps one
- * public API and no table gains a repository of its own (DB7 §10.1).
+ * snapshot, fee acknowledgement — is another. `APP12-H01` took the split one
+ * step further (FU-APP12-B05-02): cancellation review answers a different
+ * question from a shipment's, touches only `order_cancellation_requests`, and
+ * now lives in {@link DrizzleOrderCancellationRepository}. All three still serve
+ * the single `OrderRepository` contract, so the aggregate keeps one public API
+ * and no table gains a repository of its own (DB7 §10.1).
  *
  * Carries **G-DB7-24** (GRD-017, shipping frozen at dispatch) and the
  * dispatch half of **G-DB7-37** (GRD-016).
@@ -42,7 +45,6 @@ const {
   shippingDetails,
   shippingSnapshots,
   shippingFeeAcknowledgements,
-  orderCancellationRequests,
 } = schema;
 
 const CURRENCY = 'VND';
@@ -330,59 +332,6 @@ export class DrizzleOrderShippingRepository extends DrizzleRepository {
         .limit(1);
 
       return row === undefined ? undefined : toShippingFeeAcknowledgement(row);
-    });
-  }
-
-  async openCancellationRequest(input: {
-    id: string;
-    orderId: OrderId;
-    stage: string;
-    initiator: string;
-    reason: string;
-    grantId?: string | undefined;
-    stepUpChallengeId?: string | undefined;
-  }): Promise<void> {
-    return this.run('openCancellationRequest', async () => {
-      await this.db.insert(orderCancellationRequests).values({
-        id: input.id,
-        orderId: input.orderId,
-        stage: input.stage,
-        initiator: input.initiator,
-        status: 'PENDING',
-        reason: input.reason,
-        grantId: input.grantId ?? null,
-        stepUpChallengeId: input.stepUpChallengeId ?? null,
-      });
-    });
-  }
-
-  async resolveCancellationRequest(id: string, approved: boolean, adminId: string): Promise<void> {
-    return this.run('resolveCancellationRequest', async () => {
-      const now = new Date();
-      const rows = await this.db
-        .update(orderCancellationRequests)
-        .set({
-          status: approved ? 'APPROVED' : 'DENIED',
-          decidedByAdminId: adminId,
-          decidedAt: now,
-          updatedAt: now,
-        })
-        .where(
-          and(
-            eq(orderCancellationRequests.id, id),
-            // Only a pending request may be decided: re-deciding would
-            // overwrite the record of what was actually decided.
-            eq(orderCancellationRequests.status, 'PENDING'),
-          ),
-        )
-        .returning({ id: orderCancellationRequests.id });
-
-      if (rows.length === 0) {
-        throw notFoundError(
-          'OrderRepository.resolveCancellationRequest',
-          'That cancellation request is not pending.',
-        );
-      }
     });
   }
 

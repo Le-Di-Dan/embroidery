@@ -221,6 +221,52 @@ export default defineConfig({
         viewport: { width: 1440, height: 900 },
       },
     },
+    // APP12-H01 — the Wave-1 live security acceptance.
+    //
+    // Two projects, one topology. The Admin origin is the baseURL because the
+    // authenticated operator screens are half the subject; the customer's secure
+    // surface runs in its own context on the Storefront origin, which is how a
+    // real ORDER_ACCESS grant gets exercised against a real order.
+    //
+    // Every secret-bearing artifact is off, for the reason `APP12-S03` records:
+    // a trace, a HAR or a video of these journeys would capture a live
+    // ORDER_ACCESS token in a request body and write it to disk. Screenshots are
+    // off too — the journeys assert, they do not illustrate.
+    {
+      name: 'app12-h01-chromium',
+      // Named files, not a prefix glob: `h01-wave2-scope` is the sibling project's
+      // and must not run in a world where the custom capability is withheld.
+      testMatch: [
+        '**/app12/h01-admin-security.acceptance.spec.ts',
+        '**/app12/h01-secure-security.acceptance.spec.ts',
+        '**/app12/h01-grant-death.acceptance.spec.ts',
+      ],
+      use: {
+        ...devices['Desktop Chrome'],
+        ...chromiumLaunch,
+        baseURL: ADMIN_URL,
+        viewport: { width: 1440, height: 900 },
+        trace: 'off',
+        video: 'off',
+        screenshot: 'off',
+      },
+    },
+    // The same journeys' Wave-2 sibling: one file, run only with the custom
+    // capability released, proving the two grant scopes cannot reach each
+    // other's operations.
+    {
+      name: 'app12-h01-wave2-chromium',
+      testMatch: '**/app12/h01-wave2-*.acceptance.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        ...chromiumLaunch,
+        baseURL: STOREFRONT_URL,
+        viewport: { width: 1440, height: 900 },
+        trace: 'off',
+        video: 'off',
+        screenshot: 'off',
+      },
+    },
     {
       name: 'app7-e01-chromium',
       testMatch: '**/app7/*.acceptance.spec.ts',

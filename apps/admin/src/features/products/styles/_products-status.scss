@@ -1,0 +1,58 @@
+// Admin product list — publication status pills.
+//
+// The four publication states as pills, shared by the table and the card list, so neither owns them.
+//
+// Split out of `products.scss` by `APP12-H01` (FU-APP12-A01-04), which
+// found the single file at 536 lines against the 400-line hard
+// limit (CLAUDE.md §6). The split is by responsibility, and the compiled CSS is
+// byte-identical to what the one file emitted: the entry stylesheet `@use`s the
+// parts in their original order, so no declaration changed place in the cascade.
+@use '@embroidery/styles' as styles;
+@use 'products-tokens' as tokens;
+
+.product-status {
+  display: inline-flex;
+  align-items: center;
+  gap: styles.spacing(8);
+  padding: styles.spacing(4) styles.spacing(12);
+  font-size: styles.$font-size-caption;
+  letter-spacing: 0.01em;
+  color: styles.$color-text-primary;
+  background: styles.$color-background-secondary;
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-md;
+  white-space: nowrap;
+}
+
+.product-status__dot {
+  flex: none;
+  width: styles.spacing(8);
+  height: styles.spacing(8);
+  border-radius: 50%;
+  background: styles.$color-text-tertiary;
+}
+
+.product-status--published {
+  border-color: styles.$color-status-success;
+
+  .product-status__dot {
+    background: styles.$color-status-success;
+  }
+}
+
+.product-status--draft {
+  border-color: styles.$color-status-warning;
+
+  .product-status__dot {
+    background: styles.$color-status-warning;
+  }
+}
+
+// The approved frames carry no archived row; archived and unrecognised states
+// use the neutral border and dot rather than an invented colour.
+.product-status--archived,
+.product-status--unknown {
+  border-color: styles.$color-border-secondary;
+}
+
+// Collection states -----------------------------------------------------------

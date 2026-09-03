@@ -1,0 +1,161 @@
+// Admin product list — page shell, header and filters.
+//
+// The page container, its header and subtitle pair, the announced status region, and the filter row above the list.
+//
+// Split out of `products.scss` by `APP12-H01` (FU-APP12-A01-04), which
+// found the single file at 536 lines against the 400-line hard
+// limit (CLAUDE.md §6). The split is by responsibility, and the compiled CSS is
+// byte-identical to what the one file emitted: the entry stylesheet `@use`s the
+// parts in their original order, so no declaration changed place in the cascade.
+@use '@embroidery/styles' as styles;
+@use 'products-tokens' as tokens;
+
+.products {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  padding: styles.spacing(24);
+
+  @media (min-width: tokens.$products-breakpoint) {
+    gap: styles.spacing(24);
+    padding: styles.spacing(32);
+  }
+}
+
+.products__header {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+.products__title {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-semibold;
+  color: styles.$color-text-primary;
+
+  @media (min-width: tokens.$products-breakpoint) {
+    font-size: styles.$font-size-heading-l;
+  }
+}
+
+.products__subtitle {
+  margin: 0;
+  max-width: styles.$layout-reading-max;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+
+  @media (min-width: tokens.$products-breakpoint) {
+    font-size: styles.$font-size-body-m;
+  }
+}
+
+// The approved frames carry different subtitles at 390 and 1440. Exactly one is
+// rendered at a time: `display: none` removes the other from the accessibility
+// tree as well as from view, so nothing is announced twice.
+.products__subtitle--wide {
+  display: none;
+
+  @media (min-width: tokens.$products-breakpoint) {
+    display: block;
+  }
+}
+
+.products__subtitle--narrow {
+  @media (min-width: tokens.$products-breakpoint) {
+    display: none;
+  }
+}
+
+// Visually hidden but still exposed to assistive tech.
+.products__sr-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+// Shared control shape --------------------------------------------------------
+
+%products-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: styles.spacing(8);
+  min-height: styles.$size-touch-target-min;
+  padding: styles.spacing(8) styles.spacing(24);
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-button;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+%products-surface {
+  padding: styles.spacing(24);
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+}
+
+// Filters ---------------------------------------------------------------------
+
+.product-filters {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+
+  @media (min-width: tokens.$products-breakpoint) {
+    flex-direction: row;
+    gap: styles.spacing(16);
+  }
+}
+
+.product-filter {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+
+  @media (min-width: tokens.$products-breakpoint) {
+    flex: none;
+    width: tokens.$desktop-field-width;
+  }
+}
+
+// The label is always visible — never a placeholder standing in for it.
+.product-filter__label {
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-primary;
+}
+
+// Native `<select>`: the platform picker and chevron, correct keyboard and
+// screen-reader behaviour, and no interaction code of our own.
+.product-filter__control {
+  width: 100%;
+  height: tokens.$field-height;
+  padding: 0 styles.spacing(16);
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-m;
+  color: styles.$color-text-primary;
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-input;
+  cursor: pointer;
+}
+
+// Media placeholder -----------------------------------------------------------
+
+// Never an `<img>`: APP2 has no media-delivery contract, so there is no URL to
+// point at and a private original must never be addressed from a browser.

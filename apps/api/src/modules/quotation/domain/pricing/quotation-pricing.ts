@@ -87,7 +87,9 @@ function readAmount(
   text: string,
   label: string,
   allowNegative: boolean,
-): { readonly ok: true; readonly amount: VndAmount } | { readonly ok: false; readonly reason: string } {
+):
+  | { readonly ok: true; readonly amount: VndAmount }
+  | { readonly ok: false; readonly reason: string } {
   const amount = parseVndAmount(text);
   if (amount === undefined) {
     return { ok: false, reason: `${label} is not an amount this system can price.` };
@@ -114,7 +116,11 @@ export function computeDraftPricing(
 
   for (const [index, line] of input.lineItems.entries()) {
     const position = index + 1;
-    const unitPrice = readAmount(line.unitPriceAmount, `Line ${String(position)} unit price`, false);
+    const unitPrice = readAmount(
+      line.unitPriceAmount,
+      `Line ${String(position)} unit price`,
+      false,
+    );
     if (!unitPrice.ok) {
       return invalid(unitPrice.reason);
     }

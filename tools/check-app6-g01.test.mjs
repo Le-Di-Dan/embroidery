@@ -34,9 +34,13 @@ function rootWith(edits = {}) {
     cpSync(join(REPO_ROOT, relative), join(dir, relative));
   }
   // The negation half counts real migration files.
-  cpSync(join(REPO_ROOT, 'packages/database/migrations'), join(dir, 'packages/database/migrations'), {
-    recursive: true,
-  });
+  cpSync(
+    join(REPO_ROOT, 'packages/database/migrations'),
+    join(dir, 'packages/database/migrations'),
+    {
+      recursive: true,
+    },
+  );
   // The `APP6-G01-C1` rules resolve each agreement's canonical source on disk, so
   // the sources the authority package cites have to be here to be resolvable.
   for (const relative of [
@@ -71,16 +75,25 @@ describe('check-app6-g01', () => {
   });
 
   it('catches a dataset that drifts from the ADR', () => {
-    refuses({ dataset: (text) => text.replace('"validityDays": 7', '"validityDays": 30') }, 'validityDays');
+    refuses(
+      { dataset: (text) => text.replace('"validityDays": 7', '"validityDays": 30') },
+      'validityDays',
+    );
   });
 
   it('catches an ADR fact table that drifts from the dataset', () => {
-    refuses({ adr: (text) => text.replace('| `depositPercent` | `40` |', '| `depositPercent` | `50` |') }, 'depositPercent');
+    refuses(
+      { adr: (text) => text.replace('| `depositPercent` | `40` |', '| `depositPercent` | `50` |') },
+      'depositPercent',
+    );
   });
 
   it('catches a required agreement type quietly dropped', () => {
     refuses(
-      { dataset: (text) => text.replace('["PAYMENT_POLICY", "RETURN_POLICY"]', '["PAYMENT_POLICY"]') },
+      {
+        dataset: (text) =>
+          text.replace('["PAYMENT_POLICY", "RETURN_POLICY"]', '["PAYMENT_POLICY"]'),
+      },
       'requiredAgreementTypes',
     );
   });
@@ -100,7 +113,10 @@ describe('check-app6-g01', () => {
 
   it('catches the sync-state prohibition being deleted', () => {
     refuses(
-      { authority: (text) => text.replace('No follow-up "sync state" API', 'A follow-up sync endpoint') },
+      {
+        authority: (text) =>
+          text.replace('No follow-up "sync state" API', 'A follow-up sync endpoint'),
+      },
       'sync state',
     );
   });
@@ -110,26 +126,59 @@ describe('check-app6-g01', () => {
   });
 
   it('catches the COP dimension rule being deleted', () => {
-    refuses({ adr: (text) => text.replaceAll('copied from', 'derived by any means from') }, 'bounds');
+    refuses(
+      { adr: (text) => text.replaceAll('copied from', 'derived by any means from') },
+      'bounds',
+    );
   });
 
   it('catches an unlocked decision', () => {
-    refuses({ register: (text) => text.replace('`SECURE_LINK_UNAVAILABLE`. | LOCKED |', '`SECURE_LINK_UNAVAILABLE`. | PROPOSED |') }, 'not LOCKED');
+    refuses(
+      {
+        register: (text) =>
+          text.replace(
+            '`SECURE_LINK_UNAVAILABLE`. | LOCKED |',
+            '`SECURE_LINK_UNAVAILABLE`. | PROPOSED |',
+          ),
+      },
+      'not LOCKED',
+    );
   });
 
   it('catches a ruling dropped from the decision row', () => {
-    refuses({ register: (text) => text.replace('**(PO-05) Client-side review rendering**', '**Client-side review rendering**') }, 'PO-05');
+    refuses(
+      {
+        register: (text) =>
+          text.replace(
+            '**(PO-05) Client-side review rendering**',
+            '**Client-side review rendering**',
+          ),
+      },
+      'PO-05',
+    );
   });
 
   it('catches the DB01 contract being changed in only one place', () => {
-    refuses({ adr: (text) => text.replace('DB01_SCHEMA_CONTRACT = CORE_XOR_PLUS_DESIGN_VERSION_PLACEMENT_LABELS', 'DB01_SCHEMA_CONTRACT = CORE_XOR_ONLY') }, 'DB01_SCHEMA_CONTRACT');
+    refuses(
+      {
+        adr: (text) =>
+          text.replace(
+            'DB01_SCHEMA_CONTRACT = CORE_XOR_PLUS_DESIGN_VERSION_PLACEMENT_LABELS',
+            'DB01_SCHEMA_CONTRACT = CORE_XOR_ONLY',
+          ),
+      },
+      'DB01_SCHEMA_CONTRACT',
+    );
   });
 
   it('catches the schema change being made early', () => {
     refuses(
       {
         designVersions: (text) =>
-          text.replace("idReference('embroidery_area_id').notNull()", "idReference('embroidery_area_id')"),
+          text.replace(
+            "idReference('embroidery_area_id').notNull()",
+            "idReference('embroidery_area_id')",
+          ),
       },
       'embroidery_area_id',
     );
@@ -155,7 +204,8 @@ describe('check-app6-g01', () => {
   it('catches secret-bearing material added to the policy dataset', () => {
     refuses(
       {
-        dataset: (text) => text.replace('"validityDays": 7', '"validityDays": 7,\n        "signingSecret": "x"'),
+        dataset: (text) =>
+          text.replace('"validityDays": 7', '"validityDays": 7,\n        "signingSecret": "x"'),
       },
       'secret-bearing',
     );
@@ -165,7 +215,10 @@ describe('check-app6-g01', () => {
     refuses(
       {
         dataset: (text) =>
-          text.replace('["PAYMENT_POLICY", "RETURN_POLICY"]', '["PAYMENT_POLICY", "RETURN_POLICY", "DESIGN_APPROVAL_TERMS"]'),
+          text.replace(
+            '["PAYMENT_POLICY", "RETURN_POLICY"]',
+            '["PAYMENT_POLICY", "RETURN_POLICY", "DESIGN_APPROVAL_TERMS"]',
+          ),
       },
       'DESIGN_APPROVAL_TERMS',
     );
@@ -173,7 +226,10 @@ describe('check-app6-g01', () => {
 
   it('catches the exact-design separation being deleted', () => {
     refuses(
-      { authority: (text) => text.replace('exact design approval confirmation  !=  RETURN_POLICY', '') },
+      {
+        authority: (text) =>
+          text.replace('exact design approval confirmation  !=  RETURN_POLICY', ''),
+      },
       'RETURN_POLICY',
     );
   });
@@ -182,7 +238,10 @@ describe('check-app6-g01', () => {
     refuses(
       {
         authority: (text) =>
-          text.replace('| **NORMALIZED** from structured rules — no approved prose exists |', '| Product-Owner-supplied later |'),
+          text.replace(
+            '| **NORMALIZED** from structured rules — no approved prose exists |',
+            '| Product-Owner-supplied later |',
+          ),
       },
       'defers agreement content',
     );
@@ -190,19 +249,29 @@ describe('check-app6-g01', () => {
 
   it('catches a canonical source that does not exist on disk', () => {
     refuses(
-      { authority: (text) => text.replace('`docs/04-BUSINESS-RULES.md` BR-004', '`docs/99-NOT-A-FILE.md` BR-004') },
+      {
+        authority: (text) =>
+          text.replace('`docs/04-BUSINESS-RULES.md` BR-004', '`docs/99-NOT-A-FILE.md` BR-004'),
+      },
       'does not exist',
     );
   });
 
   it('catches a required type with no published content block', () => {
     refuses(
-      { authority: (text) => text.replace('#### 5.6.2 `RETURN_POLICY`', '#### 5.6.2 Return terms') },
+      {
+        authority: (text) => text.replace('#### 5.6.2 `RETURN_POLICY`', '#### 5.6.2 Return terms'),
+      },
       'no §5.6 content block for RETURN_POLICY',
     );
   });
 
   it('catches a roadmap that never records the outcome', () => {
-    refuses({ phase: (text) => text.replace('NEXT CHECKPOINT = APP6-DB01', 'NEXT CHECKPOINT = APP6-G01') }, 'next checkpoint');
+    refuses(
+      {
+        phase: (text) => text.replace('NEXT CHECKPOINT = APP6-DB01', 'NEXT CHECKPOINT = APP6-G01'),
+      },
+      'next checkpoint',
+    );
   });
 });

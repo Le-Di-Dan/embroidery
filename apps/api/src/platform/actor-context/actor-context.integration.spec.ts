@@ -231,11 +231,26 @@ describe('actor context over HTTP', () => {
 });
 
 /** Recursively lists non-spec `.ts` files under `directory` containing `needle`. */
+/**
+ * Directory names that hold test material rather than production code.
+ *
+ * `APP12-H01` (FU-APP12-S03-C1-02). The filter below excluded `*.spec.ts` but
+ * not the fixtures and world-builders that sit beside them under a `tests/`
+ * directory without `.spec.` in the name — so as soon as two of those
+ * legitimately constructed an actor context (`sku-fixture.ts`,
+ * `quotation-send-context.ts`), a function called `productionFilesCalling`
+ * started returning test files and the allowlist failed. Excluding the
+ * directories makes the function mean what it is named, which is what the rule
+ * was always about: **production** code may bind an actor only after verifying a
+ * credential. The allowlist itself is untouched and still exhaustive.
+ */
+const TEST_DIRECTORIES = new Set(['test', 'tests', '__tests__', '__fixtures__']);
+
 function productionFilesCalling(directory: string, needle: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = join(directory, entry.name);
     if (entry.isDirectory()) {
-      return productionFilesCalling(path, needle);
+      return TEST_DIRECTORIES.has(entry.name) ? [] : productionFilesCalling(path, needle);
     }
     if (!entry.name.endsWith('.ts') || entry.name.includes('.spec.')) {
       return [];

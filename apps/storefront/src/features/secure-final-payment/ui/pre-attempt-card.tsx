@@ -2,7 +2,7 @@
 
 import type { CustomerFinalPaymentResponse } from '@embroidery/api-client';
 
-import { formatExactAmount } from '../model/exact-final-amount';
+import { formatExactAmount } from '../../../shared/money/exact-money';
 import { SECURE_FINAL_PAYMENT_COPY as COPY } from '../model/final-payment-copy';
 import type { NoticeableInitiateFailure } from '../model/final-payment-failure';
 import { FinalPaymentNote } from './final-payment-note';

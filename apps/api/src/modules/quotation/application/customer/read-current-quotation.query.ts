@@ -82,6 +82,7 @@ import {
   type CustomRequestQuotationPointerPort,
 } from '../../../order/domain/repositories/custom-request-quotation-pointer.port';
 import type { CustomRequestId } from '../../../order/domain/repositories/custom-request.repository';
+import { requestSubjectOf } from '../../../customer/domain/grant/grant-subject';
 import {
   QUOTATION_REPOSITORY,
   type QuotationId,
@@ -122,7 +123,7 @@ export class ReadCurrentQuotation {
       return { outcome: 'RATE_LIMITED', retryAfterSeconds: admission.retryAfterSeconds };
     }
 
-    const requestId = admission.link.customRequestId as CustomRequestId;
+    const requestId = requestSubjectOf(admission.link) as CustomRequestId;
     const pointer = await this.requests.findQuotationPointer(requestId);
     // Absent request row, or a request the workshop has not sent a quotation
     // for. One answer, and it is the same one a stranger's token gets.

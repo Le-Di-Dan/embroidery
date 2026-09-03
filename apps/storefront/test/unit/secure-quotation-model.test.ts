@@ -13,7 +13,7 @@ import {
   formatExactMoney,
   formatExactPercent,
   isZeroAmount,
-} from '../../src/features/secure-quotation/model/exact-money';
+} from '../../src/shared/money/exact-money';
 import {
   decisionFailureOf,
   endsSecureSession,
