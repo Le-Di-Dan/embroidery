@@ -6,7 +6,7 @@ import {
   type AdminProductPublicationReadinessResponse,
   type AdminProductPublicationResponse,
   type AdminProductSummaryResponse,
-  type PublicCategoryInventoryItemResponse,
+  type AdminCategoryListItemResponse,
 } from '@embroidery/api-client';
 
 /**
@@ -175,35 +175,55 @@ export function publicationEnvelope(result: AdminProductPublicationResponse) {
 }
 
 /**
- * The category inventory the Admin product screens read (`APP12-C01-C1`).
+ * The category inventory the Admin product screens read (`APP12-A01`).
+ *
+ * Now the **Admin** shape: `adminCategory_list` is the single inventory for
+ * both the authoring options and the list filter, so every row carries its
+ * lifecycle state, its published-product count and its concurrency token.
  *
  * Arbitrary fixture values, deliberately **not** the four categories migration
- * `0033` seeded. A test that asserted those would make this file a second place
- * the store's taxonomy is declared, which is the defect that correction removed.
+ * `0033` seeded. A test that asserted those would make this file a second
+ * place the store's taxonomy is declared, which is the defect `APP12-C01-C1`
+ * removed.
+ *
+ * One published, one archived — the two states the repoint is actually about:
+ * the form must offer only the first, and the filter must offer both.
  */
-export const CATEGORY_FIXTURES: readonly PublicCategoryInventoryItemResponse[] = [
-  { slug: 'mu-luoi-trai', name: 'Mũ lưỡi trai', isIndexable: true, displayOrder: 7 },
-  { slug: 'tui-vai', name: 'Túi vải', isIndexable: false, displayOrder: 8 },
+export const CATEGORY_FIXTURES: readonly AdminCategoryListItemResponse[] = [
+  makeCategory(),
+  makeCategory({
+    id: '019c0000-0000-7000-8000-0000000022b2',
+    slug: 'tui-vai',
+    name: 'Túi vải',
+    status: 'ARCHIVED',
+    isIndexable: false,
+    displayOrder: 8,
+    archivedAt: '2026-09-02T00:00:00.000Z',
+  }),
 ];
 
 export function makeCategory(
-  overrides: Partial<PublicCategoryInventoryItemResponse> = {},
-): PublicCategoryInventoryItemResponse {
+  overrides: Partial<AdminCategoryListItemResponse> = {},
+): AdminCategoryListItemResponse {
   return {
+    id: '019c0000-0000-7000-8000-0000000022b1',
     slug: 'mu-luoi-trai',
     name: 'Mũ lưỡi trai',
+    status: 'PUBLISHED',
     isIndexable: true,
     displayOrder: 7,
+    publishedProductCount: 0,
+    updatedAt: '2026-09-01T00:00:00.000Z',
     ...overrides,
   };
 }
 
 export function categoryEnvelope(
-  items: readonly PublicCategoryInventoryItemResponse[] = CATEGORY_FIXTURES,
+  items: readonly AdminCategoryListItemResponse[] = CATEGORY_FIXTURES,
 ) {
   return {
     success: true,
-    code: 'PUBLIC_CATEGORY_LIST_READ',
+    code: 'ADMIN_CATEGORY_LIST_READ',
     message: 'ok',
     data: { items: [...items] },
     meta: { requestId: 'req-1', timestamp: '2026-09-01T00:00:00.000Z' },

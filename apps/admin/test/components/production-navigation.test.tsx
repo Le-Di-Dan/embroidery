@@ -46,6 +46,8 @@ it('adds exactly one entry, and no inventory entry with it', () => {
     'overview',
     'assets',
     'products',
+    // `APP12-A01` inserted category management between the catalog surfaces.
+    'categories',
     // `APP11-A01` appended the gallery beside the catalog surfaces.
     'gallery',
     'design-templates',

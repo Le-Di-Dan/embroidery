@@ -1,0 +1,25 @@
+// Admin category management — the feature's stylesheet entry (APP12-A01).
+//
+// Design source: FIG-APP12-A04-CATEGORY-LIST-DESKTOP (915:342) and
+// FIG-APP12-A04-CATEGORY-FORM-STATES (916:343) in file BQwqV8GdfUIELvsQDB1UQE,
+// page APP_12, approved under FIG-APPROVAL-APP12-D01-PO-001.
+//
+// Every colour, radius, size and space in the partials below is a token from
+// @embroidery/styles, read back from the variables the approved nodes bind.
+// Nothing is an eyeballed value and no token was added: this is the Product
+// list/form language applied to a second record type, not a taxonomy design
+// system.
+//
+// Split by responsibility rather than by line count (CLAUDE.md §6): the page
+// shell, the table, the form panel and the two refusal surfaces are four things
+// that change for four different reasons. `main.scss` composes this entry only.
+//
+// Admin is desktop operator tooling (D01 §L: no 390 category design). The base
+// stacks the panel under the table so the screen stays usable while the shell
+// drawer is in play at 1024, and the two-column composition the 1440 frame
+// draws applies from the wide threshold upward.
+
+@use 'category-shell';
+@use 'category-table';
+@use 'category-panel';
+@use 'category-refusal';

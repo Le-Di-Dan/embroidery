@@ -1,0 +1,99 @@
+// The category page shell: header, body columns, list states (APP12-A01).
+//
+// Design source: FIG-APP12-A04-CATEGORY-LIST-DESKTOP (915:342).
+
+@use '@embroidery/styles' as styles;
+@use 'category-tokens' as tokens;
+
+.categories {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  padding: styles.spacing(24);
+
+  @media (min-width: tokens.$categories-breakpoint) {
+    gap: styles.spacing(24);
+    padding: styles.spacing(32);
+  }
+}
+
+// Page header + action (915:368).
+.categories__header {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+
+  @media (min-width: tokens.$categories-breakpoint) {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.categories__head {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: 0;
+}
+
+.categories__title {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-semibold;
+  color: styles.$color-text-primary;
+
+  @media (min-width: tokens.$categories-breakpoint) {
+    font-size: styles.$font-size-heading-m;
+  }
+}
+
+.categories__subtitle {
+  margin: 0;
+  max-width: styles.$layout-reading-max;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.categories__body {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+
+  @media (min-width: tokens.$categories-wide) {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+.categories__list {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  min-width: 0;
+}
+
+// 915:426 — the BR-034 note under the table.
+.categories__footnote {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-tertiary;
+}
+
+.categories__state {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  align-items: flex-start;
+  padding: styles.spacing(24);
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+
+  p {
+    margin: 0;
+  }
+}

@@ -34,6 +34,7 @@
 @use '../features/production-job/styles/production-job';
 @use '../features/gallery-list/styles/gallery-list';
 @use '../features/gallery-editor/styles/gallery-editor';
+@use '../features/categories/styles/categories';
 
 // Browser normalization: predictable box model.
 *,

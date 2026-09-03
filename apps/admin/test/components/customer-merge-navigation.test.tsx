@@ -27,6 +27,8 @@ it('adds no navigation entry for the merge workflow', () => {
     'overview',
     'assets',
     'products',
+    // `APP12-A01` inserted category management between the catalog surfaces.
+    'categories',
     // `APP11-A01` appended the gallery beside the catalog surfaces.
     'gallery',
     'design-templates',

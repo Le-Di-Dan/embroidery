@@ -76,6 +76,21 @@ export const PRODUCT_FORM_COPY = {
     categoryLabel: 'Danh mục sản phẩm',
     categoryHelp: 'Chọn một danh mục để sản phẩm xuất hiện đúng nhóm.',
     categoryPlaceholder: 'Chọn danh mục',
+    /**
+     * The product's category is no longer assignable (`APP12-A01`).
+     *
+     * Shown when the category a product is already filed under has since been
+     * drafted back or archived, so it is not among the options. The real name
+     * is interpolated — the record has a category, and denying it with
+     * `Không xác định`, or quietly moving the product to another one, would
+     * both be lies. Reassignment is the operator's, through this same select.
+     */
+    categoryUnassignable: (name: string): string =>
+      'Danh mục hiện tại "' +
+      name +
+      '" không còn nhận sản phẩm mới. Chọn danh mục khác trước khi lưu.',
+    /** The same situation when the inventory has no row for the stored slug at all. */
+    categoryMissing: 'Danh mục hiện tại không còn tồn tại. Chọn danh mục khác trước khi lưu.',
     priceLabel: 'Giá cơ bản',
     priceHelp: 'Số nguyên đồng, không dấu phân cách. Để trống nếu chưa xác định giá.',
   },

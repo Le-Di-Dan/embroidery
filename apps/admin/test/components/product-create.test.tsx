@@ -12,14 +12,13 @@ import {
   createUser,
   waitFor,
 } from '@embroidery/frontend-testing';
-import { adminProductCreate, adminProductUpdate, publicCategoryList } from '@embroidery/api-client';
+import { adminProductCreate, adminProductUpdate, adminCategoryList } from '@embroidery/api-client';
 
 import { ProductCreateScreen } from '../../src/features/products/components/product-create-screen';
 import { PRODUCT_FORM_COPY } from '../../src/features/products/model/product-form-copy';
 import { makeApiClientError } from '../support/api-error';
 import {
   categoryEnvelope,
-  CATEGORY_FIXTURES,
   makeProductDetail,
   productDetailEnvelope,
 } from '../support/product-fixture';
@@ -29,13 +28,14 @@ jest.mock('@embroidery/api-client', () => ({
   ...jest.requireActual<Record<string, unknown>>('@embroidery/api-client'),
   adminProductCreate: jest.fn(),
   adminProductUpdate: jest.fn(),
-  publicCategoryList: jest.fn(),
+  adminCategoryList: jest.fn(),
 }));
 
 const createMock = adminProductCreate as jest.MockedFunction<typeof adminProductCreate>;
 const updateMock = adminProductUpdate as jest.MockedFunction<typeof adminProductUpdate>;
-// The form's category options are the database inventory (`APP12-C01-C1`).
-const categoryMock = publicCategoryList as jest.MockedFunction<typeof publicCategoryList>;
+// The form's category options are the Admin inventory, filtered to the
+// assignable (PUBLISHED) rows (`APP12-A01`).
+const categoryMock = adminCategoryList as jest.MockedFunction<typeof adminCategoryList>;
 
 // `jest.mock` is hoisted above every const, so the mock router is read back from
 // the mocked module at test time rather than captured in a binding the factory
@@ -55,7 +55,7 @@ beforeEach(() => {
 });
 
 async function fillValidDraft() {
-  // The options arrive from `publicCategoryList`; selecting before they render
+  // The options arrive from `adminCategoryList`; selecting before they render
   // would fail for a reason that has nothing to do with what is being tested.
   await waitFor(() => {
     expect(
@@ -106,46 +106,10 @@ describe('create mode fields', () => {
     }
   });
 
-  it('offers one option per category the database publishes, labelled by row name', async () => {
-    renderWithProviders(<ProductCreateScreen />);
-    const select = screen.getByLabelText(PRODUCT_FORM_COPY.fields.categoryLabel);
-
-    await waitFor(() => {
-      expect([...select.querySelectorAll('option')].map((option) => option.value)).toEqual([
-        '',
-        'mu-luoi-trai',
-        'tui-vai',
-      ]);
-    });
-    expect([...select.querySelectorAll('option')].map((option) => option.textContent)).toEqual([
-      PRODUCT_FORM_COPY.fields.categoryPlaceholder,
-      'Mũ lưỡi trai',
-      'Túi vải',
-    ]);
-  });
-
-  it('offers a category the build never knew, with no source change', async () => {
-    categoryMock.mockResolvedValue(
-      categoryEnvelope([
-        ...CATEGORY_FIXTURES,
-        {
-          slug: 'danh-muc-moi',
-          name: 'Danh mục hoàn toàn mới',
-          isIndexable: true,
-          displayOrder: 9,
-        },
-      ]),
-    );
-    renderWithProviders(<ProductCreateScreen />);
-    const select = screen.getByLabelText(PRODUCT_FORM_COPY.fields.categoryLabel);
-
-    await waitFor(() => {
-      expect([...select.querySelectorAll('option')].map((option) => option.value)).toContain(
-        'danh-muc-moi',
-      );
-    });
-    expect(select.textContent).toContain('Danh mục hoàn toàn mới');
-  });
+  // The category-option assertions moved to `product-category-repoint.test.tsx`
+  // at `APP12-A01`: the options are now a *filtered* view of the Admin
+  // inventory, and the interesting claim is which states are offered here and
+  // which are offered to the list filter — one file, so the contrast is visible.
 
   it('offers the placeholder alone, never a remembered list, when the read fails', async () => {
     categoryMock.mockRejectedValue(new Error('boom'));

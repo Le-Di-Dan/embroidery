@@ -181,6 +181,28 @@ export default defineConfig({
         screenshot: 'off',
       },
     },
+    // APP12-A01 — Admin dynamic category management.
+    //
+    // Admin-only: the baseURL is the Admin origin and no Storefront page is
+    // opened, because A01 changes no Storefront source. Serial and
+    // single-worker, because every journey writes real taxonomy and audit
+    // history into the one disposable database — parallel workers would race
+    // each other for the same slugs, which are globally unique across every
+    // lifecycle state.
+    //
+    // The viewport is 1440, the Admin desktop the frames are drawn at; the
+    // 1024 case resizes within its own journey rather than duplicating the
+    // project, because D01 introduces no second Admin breakpoint.
+    {
+      name: 'app12-a01-chromium',
+      testMatch: '**/app12/a01-*.acceptance.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        ...chromiumLaunch,
+        baseURL: ADMIN_URL,
+        viewport: { width: 1440, height: 900 },
+      },
+    },
     {
       name: 'app7-e01-chromium',
       testMatch: '**/app7/*.acceptance.spec.ts',

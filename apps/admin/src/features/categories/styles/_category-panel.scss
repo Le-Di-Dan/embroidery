@@ -1,0 +1,134 @@
+// The category form panel and its controls (APP12-A01; 916:347, 916:370).
+
+@use '@embroidery/styles' as styles;
+@use 'category-tokens' as tokens;
+
+// Form panel (916:347 / 916:370 / 916:391) ------------------------------------
+
+.category-panel {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  // The frame draws 20px (916:347). There is no `spacing(20)`: the approved
+  // scale steps 16 -> 24, so this takes the nearest approved step rather than
+  // an off-scale literal, which would be a second spacing system.
+  padding: styles.spacing(24);
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+
+  @media (min-width: tokens.$categories-wide) {
+    width: tokens.$panel-width;
+  }
+}
+
+.category-panel__head {
+  display: flex;
+  gap: styles.spacing(16);
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+// 916:392 — the panel is headed by the category's own name.
+.category-panel__title {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-semibold;
+  color: styles.$color-text-primary;
+  overflow-wrap: anywhere;
+}
+
+.category-panel__close {
+  padding: 0;
+  font: inherit;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.category-panel__notice {
+  margin: 0;
+  padding: styles.spacing(12);
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+  background: styles.$color-background-secondary;
+  border-radius: styles.$radius-sm;
+}
+
+.category-panel__error {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-status-error;
+}
+
+.category-panel__fields {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.category-panel__actions {
+  display: flex;
+  gap: styles.spacing(12);
+}
+
+// 916:359 — indexability checkbox.
+.category-checkbox {
+  display: flex;
+  gap: styles.spacing(8);
+  align-items: center;
+  margin-bottom: styles.spacing(12);
+}
+
+.category-checkbox__box {
+  flex: 0 0 auto;
+  margin: 0;
+  accent-color: styles.$color-action-primary;
+}
+
+.category-checkbox__label {
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-primary;
+}
+
+// Buttons — the DS Button's Primary and Secondary states (183:46 / 183:50).
+.category-button {
+  display: inline-flex;
+  flex: 1 1 auto;
+  gap: styles.spacing(8);
+  align-items: center;
+  justify-content: center;
+  // The approved 44px minimum touch target, kept on desktop too.
+  min-height: 44px;
+  padding: styles.spacing(12) styles.spacing(24);
+  font-family: inherit;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-button;
+  cursor: pointer;
+
+  &:disabled {
+    color: styles.$color-text-tertiary;
+    cursor: not-allowed;
+  }
+}
+
+// The DS Button Primary (183:46). The label token is the page canvas rather
+// than a dedicated inverse token: the foundation publishes no `text-inverse`,
+// and this is the pairing the Product form already uses.
+.category-button--primary {
+  color: styles.$color-background-primary;
+  background: styles.$color-action-primary;
+  border-color: styles.$color-action-primary;
+
+  &:disabled {
+    color: styles.$color-background-primary;
+    opacity: 0.6;
+  }
+}

@@ -1,0 +1,73 @@
+// The category table (APP12-A01; 915:374), in the Product list table language.
+
+@use '@embroidery/styles' as styles;
+
+// Table (915:374) -------------------------------------------------------------
+
+.category-table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+}
+
+.category-table__caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.category-table thead th {
+  padding: styles.spacing(12) styles.spacing(16);
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-regular;
+  text-align: left;
+  color: styles.$color-text-secondary;
+  background: styles.$color-background-secondary;
+}
+
+.category-table tbody th,
+.category-table tbody td {
+  padding: styles.spacing(12) styles.spacing(16);
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-regular;
+  text-align: left;
+  vertical-align: middle;
+  color: styles.$color-text-primary;
+  border-top: 1px solid styles.$color-border-primary;
+  overflow-wrap: anywhere;
+}
+
+// The selected row, so the panel beside the table is visibly *about* a row.
+// Not the only cue: the row button also carries `aria-current`.
+.category-table__row--selected {
+  background: styles.$color-background-secondary;
+}
+
+// 915:382 — the row's name is the control that opens the form, drawn in the
+// action colour. A real button with the anchor's affordance, because it opens a
+// panel rather than navigating.
+.category-table__name {
+  padding: 0;
+  font: inherit;
+  color: styles.$color-action-primary;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.category-table__slug,
+.category-table__indexable {
+  color: styles.$color-text-secondary;
+}

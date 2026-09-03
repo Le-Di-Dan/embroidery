@@ -52,3 +52,13 @@
   border-color: styles.$color-status-error;
   color: styles.$color-status-error;
 }
+
+// `muted` — a closed record, receding rather than alarming (`APP12-A01`).
+//
+// Bound to `Color/Text/Tertiary`, which is what `915:421` (the archived
+// category badge) binds. Distinct from the base `neutral`, which uses
+// `Color/Border/Secondary` for a record that has not started yet.
+.admin-status--muted {
+  border-color: styles.$color-text-tertiary;
+  color: styles.$color-text-tertiary;
+}

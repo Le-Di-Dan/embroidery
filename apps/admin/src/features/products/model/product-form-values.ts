@@ -16,7 +16,7 @@
  */
 import type { AdminProductDetailResponse } from '@embroidery/api-client';
 
-import { isCategorySlugShape } from './category-slug-shape';
+import { isCategorySlugShape } from '../../categories';
 import { hasSelectionChanged, selectionFromDetailMedia } from './product-media-selection';
 import { inputToPriceAmount, priceAmountToInput } from './product-price';
 

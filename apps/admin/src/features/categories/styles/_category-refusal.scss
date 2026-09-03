@@ -1,0 +1,79 @@
+// The archive refusal and the version-conflict alert (APP12-A01; 916:393).
+
+@use '@embroidery/styles' as styles;
+
+// Archive refusal (916:393) ---------------------------------------------------
+
+.category-refusal {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(16);
+  background: styles.$color-background-secondary;
+  border: 1px solid styles.$color-status-error;
+  border-radius: styles.$radius-sm;
+}
+
+.category-refusal__title {
+  display: flex;
+  gap: styles.spacing(8);
+  align-items: center;
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  color: styles.$color-status-error;
+}
+
+.category-refusal__body {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.category-refusal__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: styles.spacing(12) styles.spacing(24);
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+  text-decoration: none;
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-button;
+}
+
+// Version conflict ------------------------------------------------------------
+//
+// Not drawn: `CATEGORY_VERSION_CONFLICT` has no frame. Rendered in the refusal
+// language above so the two read as one screen, tinted `warning` rather than
+// `error` — nothing was lost, and the operator still has every choice.
+
+.category-conflict {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(16);
+  background: styles.$color-background-secondary;
+  border: 1px solid styles.$color-status-warning;
+  border-radius: styles.$radius-sm;
+}
+
+.category-conflict__title {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+}
+
+.category-conflict__body {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.category-conflict__actions {
+  display: flex;
+  gap: styles.spacing(12);
+}

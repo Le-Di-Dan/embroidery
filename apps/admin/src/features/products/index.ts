@@ -20,7 +20,11 @@ export { useProductDetailQuery } from './hooks/use-product-detail-query';
 export { PRODUCT_COPY } from './model/product-copy';
 export { PRODUCT_FORM_COPY } from './model/product-form-copy';
 export { productQueryKeys, PRODUCT_LIST_PAGE_SIZE } from './model/product-query-keys';
-export { normalizeProductFilters, type ProductFilters } from './model/product-filters';
+export {
+  normalizeProductFilters,
+  toFilterSearchString,
+  type ProductFilters,
+} from './model/product-filters';
 
 // The server-only prefetch service is deliberately NOT re-exported here: it
 // imports `next/headers`, and this module is reachable from Client Components.

@@ -29,6 +29,16 @@ import { useId } from 'react';
  */
 export interface AdminTextFieldProps {
   readonly label: string;
+  /**
+   * A short qualifier rendered beside the label, not inside the control.
+   *
+   * Added by `APP12-A01` for the locked category slug (`916:379`), where the
+   * frame states *why* a disabled control is disabled next to its name. A
+   * disabled input with no stated reason is a dead end, and putting the reason
+   * only in the help text below leaves the label itself looking arbitrary.
+   * Optional and additive: every existing caller renders exactly as before.
+   */
+  readonly labelSuffix?: string;
   readonly value: string;
   readonly onChange: (value: string) => void;
   readonly help?: string;
@@ -42,6 +52,7 @@ export interface AdminTextFieldProps {
 
 export function AdminTextField({
   label,
+  labelSuffix,
   value,
   onChange,
   help,
@@ -60,6 +71,9 @@ export function AdminTextField({
     <div className={invalid ? 'admin-field admin-field--error' : 'admin-field'}>
       <label className="admin-field__label" htmlFor={id}>
         {label}
+        {labelSuffix === undefined ? null : (
+          <span className="admin-field__label-suffix">{labelSuffix}</span>
+        )}
       </label>
       <input
         id={id}

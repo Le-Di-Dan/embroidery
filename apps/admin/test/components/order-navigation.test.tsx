@@ -41,6 +41,8 @@ it('places orders after requests, following the sequence an order travels', () =
     'overview',
     'assets',
     'products',
+    // `APP12-A01` inserted category management between the catalog surfaces.
+    'categories',
     // `APP11-A01` appended the gallery beside the catalog surfaces.
     'gallery',
     'design-templates',

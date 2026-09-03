@@ -1,0 +1,14 @@
+// Composition constants for the category screens (APP12-A01).
+//
+// Screen-specific geometry, not design tokens: each is a layout decision this
+// feature owns, and none of them belongs in @embroidery/styles.
+
+// Shared with the shell, the asset library and the product list so every Admin
+// surface switches layout at one threshold; the design system defers
+// breakpoints (FU-A16).
+$categories-breakpoint: 1024px;
+
+// The panel width the form frames draw (916:344 / 916:367 / 916:388).
+$panel-width: 460px;
+// Two-column layout only makes sense once the table still has a usable width.
+$categories-wide: 1360px;

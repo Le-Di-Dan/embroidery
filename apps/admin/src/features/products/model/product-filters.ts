@@ -12,7 +12,7 @@
 import { AdminProductListStatus } from '@embroidery/api-client';
 import type { AdminProductListParams } from '@embroidery/api-client';
 
-import { CATEGORY_SLUG_PATTERN } from './category-slug-shape';
+import { CATEGORY_SLUG_PATTERN } from '../../categories';
 import type { ProductCategory } from '../services/category-inventory.service';
 import { PRODUCT_COPY } from './product-copy';
 
@@ -59,12 +59,25 @@ export const PRODUCT_STATUS_FILTER_OPTIONS: readonly ProductFilterOption<Product
 ];
 
 /**
- * The category filter options: "all" first, then one per category the database
- * currently publishes (`APP12-C01-C1`).
+ * The category filter options: "all" first, then one per category that exists —
+ * draft, published and archived alike (`APP12-A01`).
  *
  * A function of the inventory rather than a constant, because a constant is
- * exactly what this correction removed. The order is the API's; the labels are
+ * exactly what `APP12-C01-C1` removed. The order is the API's; the labels are
  * the rows' own names.
+ *
+ * ## Why this one is not narrowed to the published set
+ *
+ * The product **form** offers only assignable categories, because it is
+ * choosing where a product will live. This control is doing the opposite job:
+ * it is finding products that already live somewhere. A product filed under a
+ * category the operator has since archived is still a real product with a real
+ * category, and dropping that option from the filter would make it unfindable
+ * by the only fact that distinguishes it. `APP12-C02` made archived-category
+ * filtering valid deliberately, and this is the control that uses it.
+ *
+ * The value is `category.slug` and the label is `category.name`, so the wire
+ * key is unchanged and no status ever appears in the request.
  *
  * While the inventory is loading or unavailable the caller passes `[]`, which
  * yields the "all" option alone — a truthful control that filters nothing rather

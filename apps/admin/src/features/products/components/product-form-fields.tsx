@@ -2,7 +2,11 @@
 
 import { useId } from 'react';
 
-import { toProductCategoryOptions } from '../model/product-category-options';
+import {
+  currentCategoryName,
+  isOfferedCategory,
+  toProductCategoryOptions,
+} from '../model/product-category-options';
 import { PRODUCT_FORM_COPY } from '../model/product-form-copy';
 import type { ProductFormValues, ProductValidationErrors } from '../model/product-form-values';
 import type { ProductCategory } from '../services/category-inventory.service';
@@ -14,12 +18,14 @@ interface ProductFormFieldsProps {
   /** Create mode renders three fields; price belongs to edit mode only. */
   readonly showPrice: boolean;
   /**
-   * The category inventory, from `GET /api/public/categories` (`APP12-C01-C1`).
+   * The whole category inventory, from `adminCategory_list` (`APP12-A01`).
    *
-   * Passed in rather than fetched here: this component renders and owns no data.
-   * An empty array — inventory still loading, or unreadable — renders the
-   * placeholder alone, which is a truthful "no category can be chosen right now"
-   * rather than a remembered list of four.
+   * Every lifecycle state arrives; this component offers only the assignable
+   * ones as options and uses the rest to describe a product whose category has
+   * since left that set. Passed in rather than fetched here: this component
+   * renders and owns no data. An empty array — inventory still loading, or
+   * unreadable — renders the placeholder alone, which is a truthful "no
+   * category can be chosen right now" rather than a remembered list of four.
    */
   readonly categories: readonly ProductCategory[];
   readonly onChange: (patch: Partial<ProductFormValues>) => void;
@@ -51,6 +57,7 @@ export function ProductFormFields({
   const descriptionId = useId();
   const categoryId = useId();
   const priceId = useId();
+  const strandedNotice = strandedCategoryNotice(categories, values.categorySlug);
 
   return (
     <>
@@ -127,6 +134,11 @@ export function ProductFormFields({
           >
             {errors.categorySlug ?? PRODUCT_FORM_COPY.fields.categoryHelp}
           </p>
+          {strandedNotice === null ? null : (
+            <p className="product-field__error" id={`${categoryId}-stranded`} role="alert">
+              {strandedNotice}
+            </p>
+          )}
         </div>
       </fieldset>
 
@@ -161,4 +173,35 @@ export function ProductFormFields({
       ) : null}
     </>
   );
+}
+
+/**
+ * The notice for a product whose stored category is no longer assignable
+ * (`APP12-A01`), or `null` when there is nothing to say.
+ *
+ * A category can leave the assignable set after products are already filed
+ * under it — `APP12-C02` can archive one whose products were since
+ * unpublished, and a published category cannot be re-drafted but an operator
+ * can archive it. The stored slug is then absent from the select, which would
+ * silently show the placeholder as if the product had never had a category.
+ *
+ * So the real name is named. Four things this deliberately does not do:
+ * it does not render `UNKNOWN`, it does not map to a fallback such as
+ * `Khác` — there is no fallback category — it does not auto-select another
+ * option, and it does not mutate the product. Reassignment goes through the
+ * ordinary select and the ordinary save, which is the Product update contract.
+ *
+ * An empty slug is not stranded: that is a draft nobody has categorised yet,
+ * and the required-field validation already speaks for it.
+ */
+function strandedCategoryNotice(
+  categories: readonly ProductCategory[],
+  categorySlug: string,
+): string | null {
+  if (categorySlug === '' || categories.length === 0) return null;
+  if (isOfferedCategory(categories, categorySlug)) return null;
+  const name = currentCategoryName(categories, categorySlug);
+  return name === undefined
+    ? PRODUCT_FORM_COPY.fields.categoryMissing
+    : PRODUCT_FORM_COPY.fields.categoryUnassignable(name);
 }

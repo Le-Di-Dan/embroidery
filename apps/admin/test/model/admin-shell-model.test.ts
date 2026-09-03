@@ -14,6 +14,7 @@ import {
 } from '../../src/features/admin-shell/model/admin-shell-nav';
 import { ADMIN_SHELL_COPY } from '../../src/features/admin-shell/model/admin-shell-copy';
 import { ADMIN_ASSETS_ROUTE } from '../../src/features/assets/model/asset-route';
+import { ADMIN_CATEGORIES_ROUTE } from '../../src/features/categories/model/category-route';
 import { ADMIN_CUSTOMER_ACCESS_ROUTE } from '../../src/features/customer-access-support/model/customer-access-route';
 import { ADMIN_REQUESTS_ROUTE } from '../../src/features/custom-request-queue/model/custom-request-queue-route';
 import { ADMIN_DESIGN_TEMPLATES_ROUTE } from '../../src/features/design-templates/model/design-template-route';
@@ -29,6 +30,8 @@ const IMPLEMENTED_ADMIN_ROUTES = [
   AUTHENTICATED_HOME_ROUTE,
   ADMIN_ASSETS_ROUTE,
   ADMIN_PRODUCTS_ROUTE,
+  // `APP12-A01` — the category management screen, at `(protected)/categories`.
+  ADMIN_CATEGORIES_ROUTE,
   // `APP11-A01` — the gallery list, at `(protected)/gallery`. Its nav entry
   // shipped without being listed here, which left this assertion red at
   // `APP11-A02`’s entry HEAD; the destination is recorded now.

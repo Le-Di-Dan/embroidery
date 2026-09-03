@@ -1,68 +1,66 @@
 /**
- * Feature service seam over the category inventory read (`APP12-C01-C1`).
+ * Feature service seam over the category inventory the Product screens read
+ * (`APP12-A01`).
  *
  * The browser Axios instance is injected here so hooks and components never
  * touch Axios, a URL or the generated tree directly (FRONTEND_CONVENTIONS §8).
  * Every failure leaves this module as a `ProductApiError` carrying only the
  * normalized envelope, so no raw transport error reaches React state.
  *
- * ## Why the Admin reads the *public* category operation
+ * ## Why this now reads the Admin operation, not the public one
  *
- * Because the semantics match exactly, and duplicating a backend read without a
- * reason is how two answers to one question appear.
+ * `APP12-C01-C1` pointed these screens at `GET /api/public/categories`, and
+ * recorded exactly why that had to change here: at that moment every category
+ * row was `PUBLISHED`, because nothing in the application could create one in
+ * any other state, so the public read and the Admin read were the same set.
  *
- * `CategoryResolver` — the one place a `categorySlug` becomes a `category_id` on
- * the Admin write path — accepts a category only when its row is `PUBLISHED`.
- * So the set of categories a product may be filed under *is* the set
- * `GET /api/public/categories` returns: published and not archived. Offering the
- * operator a wider list would offer options the write path refuses.
+ * `APP12-C02` ended that. Draft and archived categories now exist, and two
+ * Product needs appear with them:
  *
- * The read carries no customer data and no secret — a category's slug, name,
- * indexability and display order are the same facts the Storefront renders to
- * anonymous visitors — so reading it from an authenticated Admin screen leaks
- * nothing.
+ * - the **filter** must be able to name an archived category, or the products
+ *   left behind under one become unfindable — `APP12-C02` made
+ *   archived-category filtering valid deliberately;
+ * - the **form** must offer only what the write path accepts, which is the
+ *   published set and nothing wider.
  *
- * ## What must change at `APP12-C02`, and why it is not needed yet
+ * One read serves both. `adminCategory_list` carries each row's `status`, so
+ * the two audiences are a filter over one answer rather than two operations
+ * asking one question twice. Narrowing it here instead would give the filter
+ * the form's answer.
  *
- * `APP12-C02` introduces category creation, publication and archival, and with
- * them the first `DRAFT` and `ARCHIVED` categories this system can actually
- * hold. Two Admin needs appear at that moment and not before:
- *
- * - a management list that shows draft and archived categories;
- * - a Product **filter** able to name an archived category, so an operator can
- *   still find the products left behind under one.
- *
- * Both want `GET /api/admin/categories`, which `APP12-C02` owns. Adding it here
- * would be adding an operation with no reachable state behind it: today every
- * category row is `PUBLISHED`, because nothing in the application can create one
- * in any other state. `APP12-C02` must add that read and repoint this screen's
- * filter at it.
+ * The read is authenticated Admin data, and it is the same read the category
+ * management screen makes; nothing about a category is a secret.
  */
-import { publicCategoryList, normalizeApiClientError } from '@embroidery/api-client';
-import type { PublicCategoryInventoryItemResponse } from '@embroidery/api-client';
+import { normalizeApiClientError } from '@embroidery/api-client';
+import type { AdminCategoryListItemResponse } from '@embroidery/api-client';
 
-import { getBrowserApiClient } from '../../../config/browser-api-client';
+import { fetchAdminCategories, isCategoryApiError } from '../../categories';
 import { ProductApiError } from '../model/product-failure';
 
-/** One category an Admin product may be filed under, exactly as published. */
-export type ProductCategory = PublicCategoryInventoryItemResponse;
+/** One category, in whatever lifecycle state it currently holds. */
+export type ProductCategory = AdminCategoryListItemResponse;
 
 /**
- * The current category inventory, in the server's `display_order` ordering.
+ * The complete taxonomy, in the server's `displayOrder` then `slug` ordering.
  *
  * The order is not re-sorted here or anywhere downstream: it is the operator's
  * own editorial authority, and a second sort would be the one that quietly won.
+ *
+ * The category feature's own error is re-wrapped as a `ProductApiError` at this
+ * boundary so the product screens keep exactly one failure type to handle. The
+ * normalized envelope is carried across unchanged rather than re-normalized:
+ * `normalizeApiClientError` reads an Axios error, and by here the transport
+ * error is already gone — re-running it would flatten a classified failure into
+ * an unknown one.
  */
 export async function fetchCategoryInventory(
   signal?: AbortSignal,
 ): Promise<readonly ProductCategory[]> {
   try {
-    const body = await publicCategoryList({
-      instance: getBrowserApiClient(),
-      ...(signal === undefined ? {} : { config: { signal } }),
-    });
-    return body.data.items;
+    return await fetchAdminCategories(signal);
   } catch (error: unknown) {
-    throw new ProductApiError(normalizeApiClientError(error));
+    throw new ProductApiError(
+      isCategoryApiError(error) ? error.normalized : normalizeApiClientError(error),
+    );
   }
 }

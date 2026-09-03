@@ -83,3 +83,15 @@
   font-size: styles.$font-size-body-s;
   color: styles.$color-status-error;
 }
+
+// The optional label qualifier (`APP12-A01`, `916:379`).
+//
+// Caption-sized and tertiary, so it reads as a note on the label rather than a
+// second label. It carries meaning — the reason a control is disabled — so it
+// is inside the `<label>` and therefore part of the control's accessible name.
+.admin-field__label-suffix {
+  margin-left: styles.spacing(8);
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-regular;
+  color: styles.$color-text-tertiary;
+}

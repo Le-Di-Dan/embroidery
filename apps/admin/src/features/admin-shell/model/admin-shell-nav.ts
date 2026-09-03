@@ -1,5 +1,6 @@
 import { AUTHENTICATED_HOME_ROUTE } from '../../../config/routes';
 import { ADMIN_ASSETS_ROUTE, ASSET_COPY } from '../../assets';
+import { ADMIN_CATEGORIES_ROUTE, CATEGORY_COPY } from '../../categories';
 import { ADMIN_CUSTOMER_ACCESS_ROUTE, CUSTOMER_ACCESS_COPY } from '../../customer-access-support';
 import { ADMIN_REQUESTS_ROUTE, CUSTOM_REQUEST_QUEUE_COPY } from '../../custom-request-queue';
 import { ADMIN_DESIGN_TEMPLATES_ROUTE, DESIGN_TEMPLATE_COPY } from '../../design-templates';
@@ -31,6 +32,12 @@ export interface AdminNavItem {
  * put orders after requests — the sequence an order actually travels —
  * production after orders (`780:22`), and support last (`732:9`).
  *
+ * `APP12-A01` adds `Danh mục` between `Sản phẩm` and `Bộ sưu tập`, which is
+ * exactly where `915:353` draws it. One array entry: nothing is renamed,
+ * reordered, regrouped or removed, and the resulting order matches the approved
+ * sidebar item for item (`APP12-D01` §R — an additive entry is not an
+ * architecture change).
+ *
  * `Bộ sưu tập` sits beside the catalog rather than at the end: it is a
  * merchandising surface over published work, so it belongs with assets and
  * products and not among the operational queues. `APP11-D01` records that the
@@ -52,6 +59,7 @@ export const ADMIN_PRIMARY_NAV: readonly AdminNavItem[] = [
   { id: 'overview', label: 'Tổng quan', href: AUTHENTICATED_HOME_ROUTE },
   { id: 'assets', label: ASSET_COPY.page.title, href: ADMIN_ASSETS_ROUTE },
   { id: 'products', label: PRODUCT_COPY.page.title, href: ADMIN_PRODUCTS_ROUTE },
+  { id: 'categories', label: CATEGORY_COPY.page.title, href: ADMIN_CATEGORIES_ROUTE },
   { id: 'gallery', label: GALLERY_LIST_COPY.page.navLabel, href: ADMIN_GALLERY_ROUTE },
   {
     id: 'design-templates',

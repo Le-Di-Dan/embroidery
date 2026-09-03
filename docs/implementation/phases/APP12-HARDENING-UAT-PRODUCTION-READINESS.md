@@ -7,7 +7,7 @@ ROADMAP_STATUS         = LOCKED
 ROADMAP_LOCK           = LOCKED
 IMPLEMENTATION_STARTED = true
 CHECKPOINTS            = 38
-NEXT                   = APP12-A01
+NEXT                   = APP12-A02
 CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
                          APP12-G02-C1 (2026-09-01, 1/1 — no C2)
                          APP12-C01-C1 (2026-09-01, 1/1 — no C2)
@@ -254,7 +254,7 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | 6 | `APP12-C01` | Dynamic public category contract and inventory read | `COMPLETE_AFTER_C1` |
 | 6·C1 | `APP12-C01-C1` | Database category source-of-truth correction | `COMPLETE` |
 | 7 | `APP12-C02` | Admin category management authority (**MANDATORY**) | `COMPLETE` |
-| 8 | `APP12-A01` | Admin category management UI (**MANDATORY**) | **`NEXT`** |
+| 8 | `APP12-A01` | Admin category management UI (**MANDATORY**) | `COMPLETE` |
 | 9 | `APP12-C03` | Storefront dynamic category discovery, breadcrumb, CTA, sitemap, gate reconciliation | `COMPLETE` |
 | 10 | `APP12-G03` | Representative UAT dataset | `NOT_STARTED` |
 | 11 | `APP12-B01` | Public purchasable SKU projection | `COMPLETE_AFTER_C1` |
@@ -269,7 +269,7 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | 17·C1 | `APP12-S02-C1` | Pre-hydration checkout safety | `COMPLETE` |
 | 18 | `APP12-S03` | Secure order surface `/truy-cap/don-hang` | `COMPLETE_AFTER_C1` |
 | 18·C1 | `APP12-S03-C1` | `ORDER_ACCESS` notification routing | `COMPLETE` |
-| 19 | `APP12-A02` | Admin Ready-Made order branch UI | `NOT_STARTED` |
+| 19 | `APP12-A02` | Admin Ready-Made order branch UI | **`NEXT`** |
 | 20 | `APP12-H01` | Authorization and security audit (Wave 1) | `NOT_STARTED` |
 | 21 | `APP12-H02` | Production deployment and configuration readiness | `NOT_STARTED` |
 | 22 | `APP12-H03` | Observability and alerting (build) | `NOT_STARTED` |

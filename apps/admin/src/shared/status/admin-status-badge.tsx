@@ -29,8 +29,15 @@
  * carries the stored token for tests and styling.
  */
 
-/** The five tints, each backed by an existing Admin status token. */
-export type AdminStatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'error';
+/**
+ * The six tints, each backed by an existing token — no tint introduces a colour.
+ *
+ * `muted` was added by `APP12-A01` for the archived-category badge, which
+ * `915:421` binds to `Color/Text/Tertiary`. It is a recessive grey, not a
+ * warning: it marks a record that has been closed rather than one that needs
+ * attention. Additive, so no existing caller changes.
+ */
+export type AdminStatusTone = 'neutral' | 'muted' | 'info' | 'success' | 'warning' | 'error';
 
 export interface AdminStatusBadgeProps {
   /** The stored contract value, or `UNKNOWN` when this build has no label. */

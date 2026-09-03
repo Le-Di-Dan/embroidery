@@ -7,13 +7,14 @@
  * the reset assertions meaningful rather than a restatement of the query key.
  */
 import { createUser, renderWithProviders, screen, waitFor } from '@embroidery/frontend-testing';
-import { adminProductList, publicCategoryList } from '@embroidery/api-client';
+import { adminProductList, adminCategoryList } from '@embroidery/api-client';
 
 import { ProductListScreen } from '../../src/features/products/components/product-list-screen';
 import { PRODUCT_COPY } from '../../src/features/products/model/product-copy';
 import {
   categoryEnvelope,
   CATEGORY_FIXTURES,
+  makeCategory,
   makeProduct,
   makeProductPage,
   productEnvelope,
@@ -36,7 +37,7 @@ jest.mock('next/navigation', () => {
 jest.mock('@embroidery/api-client', () => ({
   ...jest.requireActual<Record<string, unknown>>('@embroidery/api-client'),
   adminProductList: jest.fn(),
-  publicCategoryList: jest.fn(),
+  adminCategoryList: jest.fn(),
 }));
 
 import * as navigation from 'next/navigation';
@@ -44,8 +45,9 @@ import * as navigation from 'next/navigation';
 const navState = (navigation as unknown as { __state: { search: string } }).__state;
 const navRouter = (navigation as unknown as { __router: { replace: jest.Mock } }).__router;
 const listMock = adminProductList as jest.MockedFunction<typeof adminProductList>;
-// The category chips are the database inventory (`APP12-C01-C1`).
-const categoryMock = publicCategoryList as jest.MockedFunction<typeof publicCategoryList>;
+// The filter chips are the Admin inventory, in every lifecycle state
+// (`APP12-A01`).
+const categoryMock = adminCategoryList as jest.MockedFunction<typeof adminCategoryList>;
 
 const DRAFT = makeProduct({ productId: 'p-1', name: 'Gấu bông thêu tay', status: 'DRAFT' });
 
@@ -102,12 +104,12 @@ describe('filter controls', () => {
     categoryMock.mockResolvedValue(
       categoryEnvelope([
         ...CATEGORY_FIXTURES,
-        {
+        makeCategory({
+          id: '019c0000-0000-7000-8000-0000000022b9',
           slug: 'danh-muc-moi',
           name: 'Danh mục hoàn toàn mới',
-          isIndexable: true,
           displayOrder: 9,
-        },
+        }),
       ]),
     );
     renderWithProviders(<ProductListScreen />);
