@@ -14,7 +14,7 @@
  * nowhere in this module.
  */
 import type { ContactKind } from '@embroidery/database';
-import type { DeliverySecretKind } from '@embroidery/notification-delivery';
+import type { DeliverySecretKind, SecureLinkLanding } from '@embroidery/notification-delivery';
 
 import type { IntentId } from './repositories/notification-intent.repository';
 
@@ -70,6 +70,25 @@ export interface NotificationRequest {
   readonly templateVersion: number;
   readonly reference: NotificationReference;
   readonly secretKind: DeliverySecretKind;
+  /**
+   * Which Storefront landing a `SECURE_LINK_TOKEN` opens (`APP12-S03-C1`).
+   *
+   * Mandatory for a secure link and absent for a verification code. It is a
+   * closed typed value, never a path: this module composes no URL and must not
+   * become a place where one can be injected. The URL is rendered by the worker
+   * from a closed table, and this field only says which row of it applies.
+   *
+   * Like the secret, it is caller-supplied — but unlike the recipient it cannot
+   * be attacker-influenced, because the one caller that sets it derives it from
+   * the persisted grant row rather than from a request
+   * ({@link SecureGrantNotifier}).
+   *
+   * It is deliberately **not** part of the idempotency tuple and **not** in
+   * `params`. The business decision to notify is the same decision regardless
+   * of where the link lands, and `notification_intents.params` stays the closed
+   * reference union it has always been.
+   */
+  readonly secureLinkLanding?: SecureLinkLanding | undefined;
   /** The one raw code or token. Never persisted, never logged by this module. */
   readonly secret: string;
   readonly issuedAt: Date;

@@ -47,6 +47,23 @@ export const NOTIFICATION_DELIVERY_FAILURES = [
    * what happens to any delivery that existed before it.
    */
   'NOTIFICATION_LINK_ORIGIN_UNAVAILABLE',
+  /**
+   * The sealed delivery is a secure link but names no landing this build can
+   * route (`APP12-S03-C1`).
+   *
+   * Separate from `NOTIFICATION_LINK_ORIGIN_UNAVAILABLE` because the two are
+   * different operator tasks: a missing origin is configuration an operator can
+   * publish, while a missing landing is a payload sealed by a build that did not
+   * yet name one. Reporting the second as the first would send an operator to
+   * `STOREFRONT_PUBLIC_ORIGIN`, which is already correct.
+   *
+   * Deterministic, and therefore terminal: the ciphertext is immutable, so a
+   * later attempt opens the same payload and finds the same gap. Failing here
+   * rather than defaulting is the point — a default would compose a link to
+   * whichever surface was listed first, and half of those would be refused as
+   * wrong-scope by the page the customer landed on.
+   */
+  'NOTIFICATION_LINK_LANDING_UNAVAILABLE',
 ] as const;
 
 export type NotificationDeliveryFailure = (typeof NOTIFICATION_DELIVERY_FAILURES)[number];
@@ -84,6 +101,9 @@ const WORKER_CLASS: Readonly<Record<NotificationDeliveryFailure, WorkerErrorClas
   NOTIFICATION_MATERIAL_EXPIRED: 'JOB_INVARIANT_VIOLATION',
   NOTIFICATION_CHANNEL_MISMATCH: 'JOB_INVARIANT_VIOLATION',
   NOTIFICATION_INTENT_UNRESOLVABLE: 'JOB_INVARIANT_VIOLATION',
+  // The payload opened and was well-formed; what it lacks is a routable
+  // landing, which is a defect in what was sealed rather than in the sealing.
+  NOTIFICATION_LINK_LANDING_UNAVAILABLE: 'JOB_PAYLOAD_INVALID',
 };
 
 export function isRetryableDeliveryFailure(failure: NotificationDeliveryFailure): boolean {

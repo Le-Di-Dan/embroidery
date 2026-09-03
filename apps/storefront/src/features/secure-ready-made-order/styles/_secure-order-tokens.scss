@@ -1,0 +1,107 @@
+// Secure Ready-Made order — the geometry the approved frames measure to.
+//
+// Design source: FIG-APP12-S03-ORDER-ACCESS-{DESKTOP,MOBILE,STATES}
+// (file BQwqV8GdfUIELvsQDB1UQE, page APP_12, section 910:257 / 911:304,
+// nodes 910:258 · 911:305 · 911:366), approved under
+// FIG-APPROVAL-APP12-D01-PO-001.
+//
+// Measured live from the approved frames:
+//   desktop 1440 — content 1280 wide inside an 80 gutter (910:283 / 910:284);
+//                  main 836 beside a 420 aside with a 24 gap (910:290 /
+//                  910:291 / 910:292); cards 24 padding, radius 24 (910:293)
+//   mobile   390 — one column inside a 24 gutter, 342 wide (911:368 / 911:375);
+//                  the QR card sits between the amount and the transfer details
+//                  (911:415 above 911:390) rather than in an aside
+//   QR           — 280 module box (910:327 / 911:417)
+//   highlight    — 24 padding, radius 16, amount 32px (910:295 / 910:297)
+//   pill         — 12/6 padding, fully rounded (910:286)
+//   note band    — 16 padding, radius 16 (910:335)
+//
+// Colour, type, radius and spacing come from @embroidery/styles. The frames use
+// a handful of steps the shared scale does not define; each is a documented
+// local literal, following the APP4-S02 / APP7-S01 / APP9-S01 precedent —
+// inventing scale steps would change a shared foundation to suit one screen.
+// GLOBAL_TOKENS_ADDED = 0 and GLOBAL_TOKENS_MODIFIED = 0 for this checkpoint,
+// as 917:549 requires of the whole package.
+//
+// This file holds values only. It emits no rules, so every partial may `@use`
+// it without duplicating a single declaration into the bundle.
+
+@use '@embroidery/styles' as styles;
+
+// Mirrored from secure-link-access.scss, which mirrors storefront-shell.scss.
+// One breakpoint governs the whole route; a second would let the transfer band's
+// stacked form and the shell's gutter switch at widths nobody tests together.
+$bp-shell-wide: 768px;
+
+// Approved content geometry (910:283 / 910:290).
+$content-max: 1280px;
+$stack-gap: styles.spacing(24);
+$stack-gap-tight: styles.spacing(12);
+
+// Approved column geometry (910:291 / 910:292).
+$columns-gap: styles.spacing(24);
+$aside-width: 420px;
+
+// Approved card geometry (910:293 / 910:306 / 910:330).
+$card-padding: styles.spacing(24);
+$card-padding-mobile: styles.spacing(16);
+$card-gap: styles.spacing(16);
+$card-radius: 24px; // no shared step above 16
+
+// Approved highlight geometry (910:295).
+$highlight-padding: styles.spacing(24);
+$highlight-radius: 16px;
+$highlight-gap: 4px;
+
+// Approved fact-row geometry (910:298 / 910:308).
+$row-gap: styles.spacing(12);
+
+// Approved pill geometry (910:286).
+$pill-padding-block: 6px;
+$pill-padding-inline: styles.spacing(12);
+$pill-gap: styles.spacing(8);
+
+// Approved note geometry (910:335).
+$note-padding: styles.spacing(16);
+$note-radius: 16px;
+$note-gap: 10px;
+
+// The banking face. Neither the account number nor the transfer reference may be
+// read with an ambiguous 0/O or 1/l, so both are set in the platform's own
+// monospace stack — a documented local literal for the same reason the off-scale
+// steps are: `@embroidery/styles` locks two brand families, and adding a third to
+// the shared foundation is a design-system decision, not one screen's.
+$mono-family: ui-monospace, 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+
+// Approved control geometry, reusing the DS Button box (183:50).
+$button-padding-block: styles.spacing(12);
+$button-padding-inline: styles.spacing(24);
+$button-radius: 16px;
+
+// Approved QR geometry (910:327 / 911:417).
+$qr-module-box: 280px;
+$qr-frame-radius: 16px;
+
+// Approved evidence geometry (910:333).
+$dropzone-padding: styles.spacing(24);
+$dropzone-radius: 16px;
+$evidence-glyph: 44px;
+$evidence-gap: 14px;
+
+// Approved dialog geometry, reusing the APP6-D01 step-up frame.
+$dialog-width: 560px;
+
+// The accessibility specification's minimum touch target (D01 §N).
+$touch-target-min: 44px;
+
+$line-height-snug: 1.35;
+$line-height-body: 1.5;
+
+// Type steps the frames use that the shared scale does not define.
+$font-size-highlight-amount: 32px; // 910:297
+$font-size-highlight-amount-mobile: 28px; // 911:381
+$font-size-card-title: 24px; // 910:294
+$font-size-card-title-mobile: 20px; // 911:378
+$font-size-title-mobile: 26px; // 911:370
+$font-size-micro: 11px; // fine print

@@ -14,13 +14,16 @@ import {
   ENVELOPE_IV_BYTES,
   ENVELOPE_KEY_BYTES,
   NOTIFICATION_DELIVERY_ENVELOPE_KEY_ENV,
+  SECURE_LINK_LANDINGS,
   isDeliveryEnvelope,
   isDeliverySecretKind,
+  isSecureLinkLanding,
   loadEnvelopeKey,
   openDeliveryEnvelope,
   parseEnvelopeKey,
   sealDeliveryEnvelope,
   type DeliveryPayload,
+  type SecureLinkLanding,
 } from '../../src/index';
 
 const ENV_NAME = NOTIFICATION_DELIVERY_ENVELOPE_KEY_ENV;
@@ -32,9 +35,22 @@ const KEY_B = Buffer.alloc(ENVELOPE_KEY_BYTES, 0x22).toString('base64');
 const keyA = parseEnvelopeKey(KEY_A, ENV_NAME);
 const keyB = parseEnvelopeKey(KEY_B, ENV_NAME);
 
+/**
+ * A payload for either secret kind, already carrying whatever that kind
+ * requires.
+ *
+ * A secure link must name a landing and a verification code must not, so the
+ * default is derived from `secretKind` rather than fixed — a fixture that
+ * hard-coded one would make half the round-trip cases untestable without
+ * per-case overrides.
+ */
 function payload(overrides: Partial<DeliveryPayload> = {}): DeliveryPayload {
+  const secretKind = overrides.secretKind ?? 'VERIFICATION_CODE';
+  const landing: Partial<DeliveryPayload> =
+    secretKind === 'SECURE_LINK_TOKEN' ? { secureLinkLanding: 'REQUEST_ACCESS' } : {};
   return {
     secretKind: 'VERIFICATION_CODE',
+    ...landing,
     originNotificationIntentId: 'intent-0001',
     channel: 'EMAIL',
     normalizedRecipient: 'someone@vidu.com',
@@ -148,6 +164,61 @@ describe('sealDeliveryEnvelope', () => {
     expect(() => sealDeliveryEnvelope(keyA, rogue)).toThrow(/Unknown delivery secret kind/);
   });
 
+  describe('the secure-link landing (APP12-S03-C1)', () => {
+    it.each(SECURE_LINK_LANDINGS)('round-trips a %s link', (secureLinkLanding) => {
+      const original = payload({ secretKind: 'SECURE_LINK_TOKEN', secureLinkLanding });
+      expect(openDeliveryEnvelope(keyA, sealDeliveryEnvelope(keyA, original))).toEqual(original);
+    });
+
+    it('refuses to seal a secure link that names no landing', () => {
+      // The moment the fact becomes unrecoverable: after this call nothing
+      // downstream has a grant table to ask where the token points.
+      const { secureLinkLanding: _dropped, ...rest } = payload({ secretKind: 'SECURE_LINK_TOKEN' });
+
+      expect(() => sealDeliveryEnvelope(keyA, rest as DeliveryPayload)).toThrow(
+        /must name its landing/,
+      );
+    });
+
+    it('refuses to seal a secure link whose landing is not a known one', () => {
+      const rogue = payload({
+        secretKind: 'SECURE_LINK_TOKEN',
+        secureLinkLanding: 'ACCOUNT_ACCESS' as SecureLinkLanding,
+      });
+
+      expect(() => sealDeliveryEnvelope(keyA, rogue)).toThrow(/must name its landing/);
+    });
+
+    it('refuses to seal a verification code that carries a landing', () => {
+      // A code becomes no URL, so a landing on one means the caller confused the
+      // two secrets — which is worth failing on rather than ignoring.
+      const rogue = payload({ secureLinkLanding: 'ORDER_ACCESS' });
+
+      expect(() => sealDeliveryEnvelope(keyA, rogue)).toThrow(/Only a secure-link delivery/);
+    });
+
+    it('leaks the landing no further than the ciphertext', () => {
+      const original = payload({
+        secretKind: 'SECURE_LINK_TOKEN',
+        secureLinkLanding: 'ORDER_ACCESS',
+      });
+
+      expect(JSON.stringify(sealDeliveryEnvelope(keyA, original))).not.toContain('ORDER_ACCESS');
+    });
+
+    it('still opens an envelope sealed before landings existed', () => {
+      // An `APP4-B08` manual replay copies historical ciphertext byte-identically.
+      // Rejecting it here would turn every one of those into an unreadable
+      // envelope; the missing landing is refused at rendering time instead.
+      const legacy = openDeliveryEnvelope(
+        keyA,
+        sealDeliveryEnvelope(keyA, payload({ secretKind: 'VERIFICATION_CODE' })),
+      );
+
+      expect(legacy.secureLinkLanding).toBeUndefined();
+    });
+  });
+
   it('refuses a random source that returns the wrong nonce length', () => {
     expect(() => sealDeliveryEnvelope(keyA, payload(), () => randomBytes(8))).toThrow(
       /12-byte nonce/,
@@ -224,6 +295,15 @@ describe('contract guards', () => {
     expect(isDeliverySecretKind('SECURE_LINK_TOKEN')).toBe(true);
     expect(isDeliverySecretKind('PASSWORD_RESET')).toBe(false);
     expect(isDeliverySecretKind(1)).toBe(false);
+  });
+
+  it('recognises exactly the two locked landings', () => {
+    expect([...SECURE_LINK_LANDINGS]).toEqual(['REQUEST_ACCESS', 'ORDER_ACCESS']);
+    expect(isSecureLinkLanding('REQUEST_ACCESS')).toBe(true);
+    expect(isSecureLinkLanding('ORDER_ACCESS')).toBe(true);
+    expect(isSecureLinkLanding('ACCOUNT_ACCESS')).toBe(false);
+    expect(isSecureLinkLanding('/truy-cap')).toBe(false);
+    expect(isSecureLinkLanding(undefined)).toBe(false);
   });
 
   it('recognises a well-formed envelope', () => {

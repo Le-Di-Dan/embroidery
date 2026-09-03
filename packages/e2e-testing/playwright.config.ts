@@ -153,6 +153,34 @@ export default defineConfig({
       testMatch: '**/app12/s02-*.acceptance.spec.ts',
       use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: STOREFRONT_URL },
     },
+    // APP12-S03 — the secure Ready-Made order surface. The S02 topology plus an
+    // Admin origin, because the customer's screen only moves when an operator
+    // writes: the run drives the delivered Admin operations from a second real
+    // session while the first watches the page.
+    //
+    // Serial and single-worker for the reason S02 is, doubled: each journey
+    // creates real commercial history and the expiry journey runs the real
+    // sweep, which claims from the whole queue — parallel workers would claim
+    // each other's jobs.
+    //
+    // **`trace`, `video` and HAR are off, and that is a security control rather
+    // than a performance one.** The first navigation of every journey carries
+    // the raw `ORDER_ACCESS` token in the URL fragment; a trace or a video would
+    // record it into an artifact that outlives the disposable database the rest
+    // of the run is so careful to drop. Screenshots are taken only after the
+    // fragment has been stripped, which each journey asserts before it takes one.
+    {
+      name: 'app12-s03-chromium',
+      testMatch: '**/app12/s03-*.acceptance.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        ...chromiumLaunch,
+        baseURL: STOREFRONT_URL,
+        trace: 'off',
+        video: 'off',
+        screenshot: 'off',
+      },
+    },
     {
       name: 'app7-e01-chromium',
       testMatch: '**/app7/*.acceptance.spec.ts',

@@ -10,7 +10,7 @@
  * `metadataBase` for that reason, and public Open Graph is *requested* by each
  * public page rather than inherited.
  *
- * This file asserts the consequence for all nine private routes at once: each
+ * This file asserts the consequence for all ten private routes at once: each
  * declares `noindex`, and none carries a canonical URL, an `og:url` or an
  * `og:image` — including the five whose directives `APP11-G01` had not verified.
  *
@@ -45,14 +45,18 @@ beforeEach(() => {
 });
 
 /**
- * The nine private routes whose metadata is a static object.
+ * The ten private routes whose metadata is a static object.
  *
  * `/mua-hang/[slug]` joined them at `APP12-S02`. It is a **dynamic** segment
  * whose metadata is nevertheless a static object, and deliberately so: a
  * checkout title derived from the Product, the SKU or the quantity would put
- * per-customer state into a browser history and a shared screenshot. So it is
- * driven here exactly like the eight static routes, and the same three
- * assertions apply — `noindex`, no canonical, no Open Graph.
+ * per-customer state into a browser history and a shared screenshot.
+ *
+ * `/truy-cap/don-hang` joined them at `APP12-S03` under the same rule, and it
+ * is the strongest case for it: the route's whole subject arrives in a URL
+ * fragment the server never receives, so there is nothing request-shaped for a
+ * static object to have captured — no order code, no amount, no status, and
+ * above all no token. The last assertion below is what proves it.
  */
 const STATIC_PRIVATE_ROUTES: readonly [string, () => Promise<{ metadata: Metadata }>][] = [
   ['/truy-cap', () => import('../../src/app/truy-cap/page')],
@@ -60,6 +64,7 @@ const STATIC_PRIVATE_ROUTES: readonly [string, () => Promise<{ metadata: Metadat
   ['/truy-cap/duyet-thiet-ke', () => import('../../src/app/truy-cap/duyet-thiet-ke/page')],
   ['/truy-cap/thanh-toan', () => import('../../src/app/truy-cap/thanh-toan/page')],
   ['/truy-cap/thanh-toan-con-lai', () => import('../../src/app/truy-cap/thanh-toan-con-lai/page')],
+  ['/truy-cap/don-hang', () => import('../../src/app/truy-cap/don-hang/page')],
   ['/xac-minh-lien-he', () => import('../../src/app/xac-minh-lien-he/page')],
   ['/yeu-cau/moi', () => import('../../src/app/yeu-cau/moi/page')],
   ['/yeu-cau/da-gui', () => import('../../src/app/yeu-cau/da-gui/page')],

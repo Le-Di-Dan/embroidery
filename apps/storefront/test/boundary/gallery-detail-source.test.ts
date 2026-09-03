@@ -70,6 +70,9 @@ const ROUTES_AT_S05 = [
   '/san-pham/[slug]/thiet-ke',
   '/truy-cap',
   '/truy-cap/bao-gia',
+  // Added by `APP12-S03` — the secure Ready-Made order surface, the one route
+  // it adds.
+  '/truy-cap/don-hang',
   '/truy-cap/duyet-thiet-ke',
   '/truy-cap/thanh-toan',
   '/truy-cap/thanh-toan-con-lai',
@@ -109,10 +112,10 @@ const detailCode = codeOnly(
 );
 
 describe('gallery detail route boundary', () => {
-  it('keeps its own route, and the Storefront now serves nineteen', () => {
+  it('keeps its own route, and the Storefront now serves twenty', () => {
     expect(existsSync(ROUTE_FILE)).toBe(true);
     expect(routeSegments()).toEqual(ROUTES_AT_S05);
-    expect(routeSegments()).toHaveLength(19);
+    expect(routeSegments()).toHaveLength(20);
   });
 
   it.each(REJECTED_DETAIL_ALIASES)('creates no /%s detail alias or redirect', (alias) => {

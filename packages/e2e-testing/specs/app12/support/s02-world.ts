@@ -91,7 +91,7 @@ function checkoutUrl(skuId: string | undefined, quantity: string): string {
  * scope — two orders on one challenge is an `IDEMPOTENCY_CONFLICT` by design,
  * and a run that reused one would be measuring that instead of what it meant to.
  */
-async function verifyContact(page: Page): Promise<void> {
+async function verifyContact(page: Page): Promise<string> {
   contactSeed += 1;
   const driver = createS01Driver(page);
   const address = `app12-s02-${String(contactSeed)}@vidu.test`;
@@ -141,6 +141,13 @@ async function verifyContact(page: Page): Promise<void> {
   await driver.submitCode();
 
   await expect(page.getByText(COPY.verified)).toBeVisible();
+
+  // Returned so a consumer that must re-verify the **same** contact can do so.
+  // `APP12-S03`'s step-up re-verifies the customer who placed the order, not a
+  // new one, and a different address would prove nothing: the server would
+  // still refuse the initiation it was meant to authorize. Synthetic
+  // `@vidu.test`, never logged.
+  return address;
 }
 
 /**
@@ -293,6 +300,38 @@ export async function closeS02World(label: string): Promise<void> {
 /** The commercial evidence reader. Counts and safe columns only. */
 export function s02Evidence(): any {
   return evidence;
+}
+
+/**
+ * The run's worker control, for a consumer that needs the delivery it produced.
+ *
+ * `APP12-S03` opens the secure order surface from the **real** `ORDER_ACCESS`
+ * link this worker delivered, so it needs the recording adapter this module
+ * already owns rather than a second runtime beside it — two worker contexts on
+ * one database would claim each other's jobs and neither suite could say which
+ * one ran.
+ *
+ * It is an accessor and not the secret: the caller still has to ask the control
+ * for `secureLinkOf`, whose contract is in-memory navigation and nothing else.
+ */
+export function s02Worker(): any {
+  return worker;
+}
+
+/**
+ * The run's in-process worker runtime, for a consumer that needs a capability
+ * the **job queue** cannot reach.
+ *
+ * `s02Worker().runOnce()` claims from the queue, which is the whole worker for
+ * event-driven jobs. The Ready-Made reservation-expiry sweep is not one: it is a
+ * sequential runtime loop (`ReservationExpiryRuntimeService`), so no job is ever
+ * enqueued for it and no amount of draining will run it. `APP12-S03`'s expiry
+ * journey therefore resolves the real `ExpireReadyMadeReservationsUseCase` out
+ * of this context and calls it — the same class, the same repositories and the
+ * same transaction the loop uses, differing only in who decides *when*.
+ */
+export function s02Runtime(): any {
+  return runtime;
 }
 
 export {

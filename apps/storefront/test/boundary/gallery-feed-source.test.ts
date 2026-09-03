@@ -88,6 +88,10 @@ const ROUTES_AT_S05 = [
   '/san-pham/[slug]/thiet-ke',
   '/truy-cap',
   '/truy-cap/bao-gia',
+  // Added by `APP12-S03` — the secure Ready-Made order surface, the one route
+  // it adds. It is the exact path `APP12-G01` §2.2 reserved when it refused to
+  // block the `/truy-cap` prefix wholesale.
+  '/truy-cap/don-hang',
   '/truy-cap/duyet-thiet-ke',
   '/truy-cap/thanh-toan',
   '/truy-cap/thanh-toan-con-lai',
@@ -126,10 +130,10 @@ const galleryCode = codeOnly(
 );
 
 describe('gallery feed route boundary', () => {
-  it('serves the feed route, and the Storefront serves nineteen in total', () => {
+  it('serves the feed route, and the Storefront serves twenty in total', () => {
     expect(existsSync(ROUTE_FILE)).toBe(true);
     expect(routeSegments()).toEqual(ROUTES_AT_S05);
-    expect(routeSegments()).toHaveLength(19);
+    expect(routeSegments()).toHaveLength(20);
   });
 
   it('has the entry detail route APP11-S03 owns, beneath the feed', () => {

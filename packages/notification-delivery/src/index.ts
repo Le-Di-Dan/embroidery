@@ -19,11 +19,14 @@ export {
   DELIVERY_SECRET_KINDS,
   isDeliveryEnvelope,
   isDeliverySecretKind,
+  isSecureLinkLanding,
+  SECURE_LINK_LANDINGS,
 } from './delivery-envelope.contract';
 export type {
   DeliveryEnvelope,
   DeliveryPayload,
   DeliverySecretKind,
+  SecureLinkLanding,
 } from './delivery-envelope.contract';
 
 export {

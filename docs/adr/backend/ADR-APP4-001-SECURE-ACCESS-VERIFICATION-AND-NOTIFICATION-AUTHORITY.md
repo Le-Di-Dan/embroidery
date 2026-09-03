@@ -249,6 +249,14 @@ report on a token it never read.
 | Storefront — secure-link landing | `/truy-cap` |
 | Admin — customer access support | `/support/customer-access` |
 
+> **APP12 amendment (`APP12-S03-C1`).** APP4 delivered one grant scope, so it
+> named one landing. `APP12-DB01` added the second and last scope,
+> `ORDER_ACCESS`, and `APP12-S03` delivered its surface at
+> `/truy-cap/don-hang`. The row above is unchanged and remains the
+> `REQUEST_ACCESS` landing; the landing is now selected per scope rather than
+> assumed, and `APP12` owns the second value. Each surface refuses the other
+> scope's token with the one indistinguishable `SECURE_LINK_UNAVAILABLE`.
+
 Checked at this checkpoint: the Storefront owns `/`, `/kham-pha`,
 `/san-pham/[slug]` and `/healthz`; the Admin owns `/login`, `/healthz` and the
 `(protected)` group `assets`, `products`, `design-templates`. **None of the three
@@ -585,6 +593,14 @@ The customer-visible form is:
 ```text
 https://<storefront-origin>/truy-cap#t=<opaque-token>
 ```
+
+**APP12 amendment (`APP12-S03-C1`).** The path is chosen from the grant's own
+persisted `scope_kind` — `REQUEST_ACCESS` → `/truy-cap`,
+`ORDER_ACCESS` → `/truy-cap/don-hang` — and an unknown scope composes no URL
+at all. The scope is carried to the renderer inside the sealed delivery payload,
+so the delivery job still consults no grant table (§6.5); it is never parsed out
+of the token, and no path string crosses that boundary. Everything below is
+unchanged and applies to both landings.
 
 Rules:
 

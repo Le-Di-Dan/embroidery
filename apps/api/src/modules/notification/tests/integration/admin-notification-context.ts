@@ -382,6 +382,13 @@ async function seedTerminalDelivery(
         templateVersion: 1,
         reference: input.reference,
         secretKind: input.secretKind,
+        // `APP12-S03-C1`. A secure link must name a landing or the codec refuses
+        // to seal it. These suites are about replay, binding and refusal rather
+        // than about routing, so the scope APP4 delivered is the right default —
+        // and stating it here keeps every replay fixture byte-comparable.
+        ...(input.secretKind === 'SECURE_LINK_TOKEN'
+          ? { secureLinkLanding: 'REQUEST_ACCESS' as const }
+          : {}),
         secret: input.secret,
         issuedAt: new Date('2026-08-15T08:00:00.000Z'),
         expiresAt: new Date('2099-01-01T00:00:00.000Z'),

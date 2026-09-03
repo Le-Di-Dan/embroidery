@@ -1,0 +1,77 @@
+// Secure Ready-Made order — the step-up overlay.
+//
+// The scrim and the dialog box the APP4 verification cards are mounted into.
+// The cards themselves are `contact-verification`'s and are styled there; this
+// file owns only the frame around them, which is why it is short and why
+// nothing here restyles a verification control.
+
+@use '@embroidery/styles' as styles;
+@use './secure-order-tokens' as tokens;
+
+.secure-order {
+  &__scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: styles.spacing(16);
+    overflow-y: auto;
+    background: styles.$color-overlay-scrim;
+  }
+
+  &__dialog {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(16);
+    width: 100%;
+    max-width: tokens.$dialog-width;
+    max-height: 100%;
+    padding: tokens.$card-padding;
+    overflow-y: auto;
+    background: styles.$color-surface-primary;
+    border-radius: tokens.$card-radius;
+  }
+
+  &__dialog-title {
+    margin: 0;
+    font-size: styles.$font-size-heading-s;
+    font-weight: styles.$font-weight-bold;
+    line-height: tokens.$line-height-snug;
+    color: styles.$color-text-primary;
+
+    // Focus lands here first, so the customer reads what is being asked of them
+    // before their fingers are on the field that answers it.
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 4px;
+    }
+  }
+
+  &__dialog-body {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-primary;
+  }
+
+  &__dialog-note {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-secondary;
+  }
+
+  &__step-up {
+    width: 100%;
+  }
+
+  &__dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: styles.spacing(12);
+    justify-content: flex-end;
+    width: 100%;
+  }
+}

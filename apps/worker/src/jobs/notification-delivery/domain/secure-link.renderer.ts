@@ -4,8 +4,21 @@
  * One function, one string:
  *
  * ```text
- * <storefront-origin>/truy-cap#t=<opaque-token>
+ * <storefront-origin><landing-path>#t=<opaque-token>
  * ```
+ *
+ * ### The landing is chosen, not assumed (`APP12-S03-C1`)
+ *
+ * There are two grant scopes and two Storefront surfaces, and each surface
+ * refuses the other scope's token. A renderer with one hard-coded path is
+ * therefore not "simpler" — it is a renderer that is wrong for one of the two
+ * scopes, which is how `ORDER_ACCESS` links reached the custom-request page and
+ * were refused there as wrong-scope.
+ *
+ * The landing arrives already decided, from the sealed payload, and is looked up
+ * in a closed table. This function accepts no path and builds none: an arbitrary
+ * string cannot be routed here, and a scope with no table entry produces no URL
+ * at all rather than a plausible wrong one.
  *
  * ### Why the fragment is the whole point
  *
@@ -31,9 +44,11 @@
  * decrypted delivery when the attempt ends. Nothing persists it, logs it or
  * returns it upward.
  */
+import type { SecureLinkLanding } from '@embroidery/notification-delivery';
+
 import {
   SECURE_LINK_FRAGMENT_PREFIX,
-  SECURE_LINK_LANDING_PATH,
+  SECURE_LINK_LANDING_PATHS,
 } from '../config/storefront-origin.config';
 
 /**
@@ -45,7 +60,22 @@ import {
  * assigning `hash` would re-encode the token's base64url characters
  * inconsistently across Node versions, and the landing page compares what it
  * reads to the 43-character accepted form.
+ *
+ * `landing` is the grant scope the token was issued under, carried from the
+ * issuing side inside the ciphertext. It is validated rather than trusted: the
+ * type says the set is closed, and the guard says so again at runtime, because
+ * the value has just come out of JSON. An unknown one throws, so the delivery
+ * fails without a URL instead of sending the customer somewhere their token
+ * does not open.
  */
-export function renderSecureLinkUrl(origin: string, rawToken: string): string {
-  return `${origin}${SECURE_LINK_LANDING_PATH}${SECURE_LINK_FRAGMENT_PREFIX}${rawToken}`;
+export function renderSecureLinkUrl(
+  origin: string,
+  rawToken: string,
+  landing: SecureLinkLanding,
+): string {
+  const path = SECURE_LINK_LANDING_PATHS[landing];
+  if (path === undefined) {
+    throw new Error('Unknown secure-link landing: refusing to compose a link.');
+  }
+  return `${origin}${path}${SECURE_LINK_FRAGMENT_PREFIX}${rawToken}`;
 }

@@ -27,7 +27,7 @@
  *
  * ### The shape rules exist to protect the fragment
  *
- * The link is composed as `<origin>/truy-cap#t=<token>`. An origin carrying its
+ * The link is composed as `<origin><landing>#t=<token>`. An origin carrying its
  * own query or fragment would put the token after an existing `#`, turning the
  * fragment into `#foo?t=…` or dropping it entirely; an origin with a path would
  * produce a route that does not exist; credentials in the authority would put a
@@ -35,10 +35,30 @@
  * discovered in a customer's inbox.
  */
 
+import type { SecureLinkLanding } from '@embroidery/notification-delivery';
+
 export const STOREFRONT_PUBLIC_ORIGIN_ENV = 'STOREFRONT_PUBLIC_ORIGIN';
 
-/** The one route a secure link lands on (IMP-D049 PO-05, `route.storefront.secureLinkLanding`). */
-export const SECURE_LINK_LANDING_PATH = '/truy-cap';
+/**
+ * Where each grant scope's secure link lands (`APP12-S03-C1`).
+ *
+ * A closed table keyed by {@link SecureLinkLanding}, not a path parameter: the
+ * only paths a secure link may ever carry are the two written here, and neither
+ * the API, the envelope nor a caller can introduce a third. `Record` rather
+ * than a lookup with a default, so adding a grant scope fails to compile until
+ * somebody decides where it lands — a default would silently route the new
+ * scope to an existing surface, which is the exact defect this table replaces.
+ *
+ * `REQUEST_ACCESS` is IMP-D049 PO-05 (`route.storefront.secureLinkLanding`),
+ * unchanged. `ORDER_ACCESS` is the Ready-Made order surface `APP12-S03`
+ * delivered; before this correction its links were composed with the
+ * `REQUEST_ACCESS` path, which the order surface does not serve and the
+ * custom-request surface refuses as wrong-scope.
+ */
+export const SECURE_LINK_LANDING_PATHS: Readonly<Record<SecureLinkLanding, string>> = {
+  REQUEST_ACCESS: '/truy-cap',
+  ORDER_ACCESS: '/truy-cap/don-hang',
+};
 
 /** The fragment parameter the landing page reads (`secure_link.fragmentParameter`). */
 export const SECURE_LINK_FRAGMENT_PREFIX = '#t=';

@@ -23,6 +23,7 @@
 import { newId } from '@embroidery/database';
 import { sql } from 'drizzle-orm';
 
+import { OrderAccessGrantIssuer } from '../../application/order-access-grant.issuer';
 import { SecureGrantIssuer } from '../../application/secure-grant.issuer';
 import { StepUpWindow } from '../../application/step-up-window.service';
 import { SECURE_GRANT_POLICY_KEY } from '../../domain/grant/secure-grant-policy';
@@ -71,16 +72,27 @@ export class ScriptedTokenMinter extends SecureLinkTokenMinter {
   }
 }
 
-/** One verified customer and one request its grants may bind to. */
+/** One verified customer, one request and one order its grants may bind to. */
 export interface GrantFixture {
   readonly customerId: CustomerId;
   readonly customRequestId: string;
+  /**
+   * A `READY_MADE` order, for the second grant scope (`APP12-DB01`).
+   *
+   * Fixture scaffolding in the same sense as the Custom Request beside it:
+   * `secure_access_grants.order_id` carries a real FK, so an `ORDER_ACCESS`
+   * grant cannot exist without a row to point at, and this module does not and
+   * must not create orders.
+   */
+  readonly orderId: string;
   readonly contactPointId: string;
   readonly normalizedValue: string;
 }
 
 export interface GrantTestContext extends VerificationTestContext {
   readonly grants: SecureGrantIssuer;
+  /** The `ORDER_ACCESS` sibling (`APP12-B04`), resolved from the same container. */
+  readonly orderGrants: OrderAccessGrantIssuer;
   readonly stepUp: StepUpWindow;
   readonly repository: SecureAccessGrantRepository;
   readonly tokens: ScriptedTokenMinter;
@@ -114,6 +126,7 @@ export async function createGrantContext(options: GrantStartOptions): Promise<Gr
   return {
     ...base,
     grants: base.get<SecureGrantIssuer>(SecureGrantIssuer),
+    orderGrants: base.get<OrderAccessGrantIssuer>(OrderAccessGrantIssuer),
     stepUp: base.get<StepUpWindow>(StepUpWindow),
     repository: base.get<SecureAccessGrantRepository>(SECURE_ACCESS_GRANT_REPOSITORY),
     tokens,
@@ -136,6 +149,7 @@ async function seedTarget(context: VerificationTestContext, suffix: string): Pro
   const customerId = newId();
   const contactPointId = newId();
   const customRequestId = newId();
+  const orderId = newId();
   const normalizedValue = `grant-${customerId}@example.com`;
 
   await db.execute(sql`
@@ -154,10 +168,20 @@ async function seedTarget(context: VerificationTestContext, suffix: string): Pro
     insert into custom_requests (id, code, customer_id, status)
     values (${customRequestId}, ${`REQ-${customRequestId}`}, ${customerId}, 'NEW')
   `);
+  // Fixture scaffolding — not an `APP12-B02` purchase. The Ready-Made creation
+  // command reserves stock, freezes a line and issues the grant itself; what an
+  // `ORDER_ACCESS` grant needs from it is one row with a real id, and building
+  // the rest through raw SQL would read as though this were a real order.
+  await db.execute(sql`
+    insert into orders (id, code, origin, customer_id, status, total_amount, currency_code)
+    values (${orderId}, ${`ORD-${orderId}`}, 'READY_MADE', ${customerId},
+            'AWAITING_SHIPPING_FEE', '0.00', 'VND')
+  `);
 
   return {
     customerId: customerId as CustomerId,
     customRequestId,
+    orderId,
     contactPointId,
     normalizedValue,
   };

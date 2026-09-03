@@ -202,6 +202,7 @@ describe('notification intake (integration)', () => {
         templateKey: 'secure-link.request-access',
         reference: { kind: 'SECURE_ACCESS_GRANT', grantId: newId() },
         secretKind: 'SECURE_LINK_TOKEN',
+        secureLinkLanding: 'ORDER_ACCESS',
         secret: 'synthetic-token-value-0001',
       }),
     );
@@ -211,5 +212,28 @@ describe('notification intake (integration)', () => {
     const params = intent?.['params'] as Record<string, unknown>;
     expect(Object.keys(params['reference'] as object).sort()).toEqual(['grantId', 'kind']);
     expect(JSON.stringify(intent)).not.toContain('synthetic-token-value-0001');
+    // `APP12-S03-C1` — the landing travels with the secret, so like the secret
+    // it reaches no column an operator screen reads.
+    expect(JSON.stringify(intent)).not.toContain('ORDER_ACCESS');
+  });
+
+  it('refuses to seal a secure link that names no landing', async () => {
+    // `APP12-S03-C1`. The intake is the last seam that can still know where a
+    // token points, so an omission has to stop here rather than become a link
+    // to whichever surface happened to be hard-coded.
+    await expect(
+      useCase.request(
+        request({
+          sourceEventId: 'grant-0002',
+          templateKey: 'secure-link.request-access',
+          reference: { kind: 'SECURE_ACCESS_GRANT', grantId: newId() },
+          secretKind: 'SECURE_LINK_TOKEN',
+          secret: 'synthetic-token-value-0002',
+        }),
+      ),
+    ).rejects.toThrow(/must name its landing/);
+
+    expect(await intentRows()).toHaveLength(0);
+    expect(await outboxRows()).toHaveLength(0);
   });
 });

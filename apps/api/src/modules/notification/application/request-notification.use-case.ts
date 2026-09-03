@@ -103,6 +103,15 @@ export class RequestNotificationUseCase {
         channel: input.channel,
         normalizedRecipient: input.normalizedRecipient,
         secret: input.secret,
+        // `APP12-S03-C1`. Sealed with the secret and nowhere else: it says which
+        // surface the token opens, so it is exactly as sensitive as knowing the
+        // token names an order rather than a request, and `params` — which is
+        // readable by every operator screen — stays the closed reference union.
+        // The codec refuses a link without one and a code with one, so the two
+        // callers cannot get this wrong silently.
+        ...(input.secureLinkLanding === undefined
+          ? {}
+          : { secureLinkLanding: input.secureLinkLanding }),
         issuedAt: input.issuedAt.toISOString(),
         expiresAt: input.expiresAt.toISOString(),
       });

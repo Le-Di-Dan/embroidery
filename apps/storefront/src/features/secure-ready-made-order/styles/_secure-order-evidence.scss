@@ -1,0 +1,119 @@
+// Secure Ready-Made order — optional transfer evidence (910:330…910:334).
+//
+// The intake tile, the quota counter and the submitted list. Kept apart from the
+// page frame because the section is the one part of this route with a form
+// control in it, and a change to an upload affordance should not be able to move
+// the vertical rhythm of a payment page.
+
+@use '@embroidery/styles' as styles;
+@use './secure-order-tokens' as tokens;
+
+.secure-order {
+  &__evidence-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: styles.spacing(12);
+    align-items: center;
+    width: 100%;
+  }
+
+  // The server's own count, never a client tally. Set in the banking face so a
+  // `2 / 5` cannot be misread as a date or a fraction of money.
+  &__quota {
+    margin-inline-start: auto;
+    font-family: tokens.$mono-family;
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-secondary;
+  }
+
+  // 910:333 — the dashed intake tile.
+  &__uploader {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(12);
+    align-items: flex-start;
+    width: 100%;
+    padding: tokens.$dropzone-padding;
+    background: styles.$color-surface-secondary;
+    border: 1px dashed styles.$color-border-secondary;
+    border-radius: tokens.$dropzone-radius;
+  }
+
+  &__uploader-label {
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-semibold;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-primary;
+  }
+
+  // The native control, left native. A custom-styled file input is the classic
+  // way to lose keyboard operability and the browser's own file dialog, and this
+  // is a payment surface — there is nothing here worth that trade.
+  &__uploader-input {
+    min-height: tokens.$touch-target-min;
+    max-width: 100%;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-primary;
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 2px;
+    }
+  }
+
+  &__evidence-list {
+    display: flex;
+    flex-direction: column;
+    gap: tokens.$evidence-gap;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  // No per-row action: the set is append-only by contract, so a disabled bin
+  // icon would invite the customer to wonder why it does nothing (§21).
+  &__evidence-item {
+    display: flex;
+    gap: styles.spacing(12);
+    align-items: flex-start;
+    width: 100%;
+    padding: styles.spacing(12);
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-xs;
+  }
+
+  &__evidence-glyph {
+    flex: none;
+    width: tokens.$evidence-glyph;
+    height: tokens.$evidence-glyph;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: styles.$color-surface-secondary;
+    border-radius: styles.$radius-xs;
+    font-size: styles.$font-size-body-m;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__evidence-body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: styles.spacing(4);
+    align-items: flex-start;
+    min-width: 0;
+  }
+
+  &__evidence-meta {
+    font-family: tokens.$mono-family;
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-secondary;
+  }
+
+  &__evidence-note {
+    font-size: styles.$font-size-caption;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-secondary;
+  }
+}

@@ -302,15 +302,10 @@ export type {
 // One operation, released consumer-driven: `APP12-B02` delivered it, and until
 // `/mua-hang/[slug]` existed there was no approved surface behind it.
 //
-// ### `publicReadyMadeOrder_current` is deliberately absent
-//
-// It is the **secure order surface**'s read, opened by an `ORDER_ACCESS` token
-// the customer receives by notification. `APP12-S03` owns that route and will
-// release it here when it lands. Publishing it now would put a token-carrying
-// read on the boundary with no screen to present it, which is exactly the
-// "capability nobody reviewed" this barrel's release rule exists to prevent —
-// and would make it that much easier for a checkout to reach for the order it
-// just created instead of stopping where the token stops (`APP12-S02` §23).
+// `publicReadyMadeOrder_current` was withheld here until `APP12-S03` landed, so
+// that a checkout could not reach for the order it had just created instead of
+// stopping where the token stops (`APP12-S02` §23). It is released in its own
+// block below, beside the rest of the secure order surface.
 //
 // ### The challenge is the idempotency scope, not a header
 //
@@ -337,4 +332,79 @@ export type {
   ReadyMadeOrderCreatedResponse,
   ReadyMadeOrderSubtotalResponse,
   ReadyMadeOrderAccessBootstrapResponse,
+} from './generated/embroidery-api.schemas';
+
+// The secure Ready-Made order surface (`APP12-B04`, `APP12-B04-C1`), consumed
+// by `APP12-S03` on the one `/truy-cap/don-hang` route.
+//
+// Four operations released together, consumer-driven, because they are one
+// screen: the order projection decides the lifecycle, and the three FULL
+// operations are reachable only from the one state that projection reports as
+// payable. Releasing the read without the obligation, or the obligation without
+// the read, would put half a surface on the boundary.
+//
+// ### Every one of the four is authorized by the same fragment token
+//
+// The token travels in a request **body** and never in a path, a query or a
+// header, so it cannot reach a gateway or proxy access log
+// (`ADR-APP4-001` §11). Each of the four runs the whole grant chain itself —
+// policy, the secure-link limiter, grant resolution, then the customer-safe
+// projection — which is precisely why a consumer must **not** chain
+// `publicSecureLinkResolve` in front of one: doing so authorizes the same
+// bearer twice, spends the same abuse budget twice, and returns no fact the
+// call does not already carry (`APP12-S03` §7).
+//
+// ### `ReadyMadeOrderAccessResponseTerminationReason` is the expiry authority
+//
+// It is exported as a **value** enum, not merely as a type, because the one
+// legitimate client-side reading of "this order expired rather than being
+// cancelled" is `terminationReason === RESERVATION_EXPIRED`. The field is spread
+// rather than assigned, so an ordinary cancellation publishes no key at all. A
+// consumer that instead parsed a free-text reason, or compared a deadline
+// against its own clock, would be running a second lifecycle in the browser —
+// which `APP12-S03` §13 and §29 forbid outright.
+//
+// ### No amount crosses inbound, and none is composed outbound
+//
+// None of the three FULL bodies carries an amount, a reference, an obligation
+// kind or an order id: the server derives all of them. `fullPaymentAmount` and
+// `payableTotal` are the obligation's own frozen figures as decimal **strings**,
+// and the contract states plainly that the total "is not re-derived from" the
+// subtotal and the fee beside it. A consumer adds nothing.
+//
+// ### The QR is bytes, and evidence is the deposit lane's route
+//
+// `publicOrderFullPaymentQr` answers PNG bytes generated per request and stored
+// nowhere. Transfer evidence has **no** Ready-Made operation of its own:
+// `APP12-B04` widened `APP7-B05`'s evidence authorizer to accept a `FULL`
+// attempt rather than publishing a second endpoint, so a consumer reuses
+// `publicOrderDepositEvidenceUpload` / `_status` — already on this boundary —
+// and keeps the deposit wording out of its own copy.
+export {
+  publicReadyMadeOrderCurrent,
+  publicOrderFullPaymentCurrent,
+  publicOrderFullPaymentInitiate,
+  publicOrderFullPaymentQr,
+} from './generated/embroidery-api';
+export {
+  ReadyMadeOrderAccessResponseStatus,
+  ReadyMadeOrderAccessResponseTerminationReason,
+  ReadyMadeOrderPaymentResponseStatus,
+  CustomerFullPaymentResponseFullPaymentStatus,
+  CustomerFullPaymentResponseOrderStatus,
+  FullPaymentAttemptResponseMethod,
+  FullPaymentAttemptResponseStatus,
+} from './generated/embroidery-api.schemas';
+export type {
+  ReadReadyMadeOrderBody,
+  ReadyMadeOrderAccessResponse,
+  ReadyMadeOrderDeliveryResponse,
+  ReadyMadeOrderItemResponse,
+  ReadyMadeOrderPaymentResponse,
+  ReadFullPaymentBody,
+  InitiateFullPaymentAttemptBody,
+  FullPaymentQrBody,
+  CustomerFullPaymentResponse,
+  FullPaymentBankInstructionsResponse,
+  FullPaymentAttemptResponse,
 } from './generated/embroidery-api.schemas';

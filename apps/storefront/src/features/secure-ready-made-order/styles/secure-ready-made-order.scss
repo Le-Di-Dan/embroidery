@@ -1,0 +1,15 @@
+// Secure Ready-Made order — the feature's stylesheet entry (APP12-S03).
+//
+// Composition only. Four partials, split by responsibility rather than by line
+// count: the page frame, the QR panel, the evidence section, and the step-up
+// overlay. The 400-line cap applies to SCSS exactly as it does to TypeScript,
+// and this feature is bounded from the start rather than split after the fact.
+//
+// `_secure-order-tokens.scss` emits no rules, so every partial may `@use` it
+// without duplicating a declaration into the bundle.
+
+@use './secure-order-layout';
+@use './secure-order-facts';
+@use './secure-order-qr';
+@use './secure-order-evidence';
+@use './secure-order-dialog';

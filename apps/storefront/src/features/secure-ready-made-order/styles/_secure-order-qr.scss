@@ -1,0 +1,69 @@
+// Secure Ready-Made order — the QR panel (910:325…910:329 / 911:415…911:419).
+//
+// The panel is one component rendered into two approved slots — the desktop
+// aside and the mobile position between the amount and the transfer details —
+// so this file styles the panel and `_secure-order-layout.scss` owns which slot
+// is displayed. Splitting it that way is what keeps the responsive rule in one
+// place instead of two that could disagree about which QR is on screen.
+
+@use '@embroidery/styles' as styles;
+@use './secure-order-tokens' as tokens;
+
+.secure-order {
+  &__qr {
+    display: flex;
+    flex-direction: column;
+    gap: tokens.$card-gap;
+    align-items: flex-start;
+    width: 100%;
+    padding: tokens.$card-padding-mobile;
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: tokens.$card-radius;
+
+    @media (min-width: tokens.$bp-shell-wide) {
+      padding: tokens.$card-padding;
+    }
+  }
+
+  // 910:327 — a fixed 280 module box. Fixed rather than fluid because a QR that
+  // scales below its module size stops being scannable, and the panel is allowed
+  // to be the widest thing in a narrow column rather than to shrink the code.
+  &__qr-frame {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: tokens.$qr-module-box;
+    aspect-ratio: 1;
+    margin-inline: auto;
+    overflow: hidden;
+    background: styles.$color-surface-secondary;
+    border-radius: tokens.$qr-frame-radius;
+  }
+
+  &__qr-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+
+    // The server renders true square modules; letting the browser smooth them
+    // when the box is not an exact multiple of the module size is what makes a
+    // code fail to scan at some widths and not others.
+    image-rendering: pixelated;
+    object-fit: contain;
+  }
+
+  &__qr-placeholder {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(12);
+    align-items: center;
+    justify-content: center;
+    padding: styles.spacing(16);
+    font-size: styles.$font-size-body-s;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-secondary;
+    text-align: center;
+  }
+}

@@ -7,6 +7,7 @@ import {
   loadCustomEmbroideryReleaseConfig,
   type CustomEmbroideryReleaseConfig,
 } from '../../config/custom-embroidery-release.config';
+import { LoggingModule } from '../logging/logging.module';
 import { StructuredLogger } from '../logging/structured-logger.service';
 import { CustomCapabilityReleaseGuard } from './custom-capability-release.guard';
 
@@ -38,8 +39,19 @@ import { CustomCapabilityReleaseGuard } from './custom-capability-release.guard'
  * an operator who mistyped `True` would keep turning the capability on and keep
  * watching nothing happen. The variable's *name* appears in the log; its value
  * appears only as the boolean it resolved to.
+ *
+ * ## Why `LoggingModule` is imported even though it is `@Global()`
+ *
+ * A global module is global only once something in the graph has imported it.
+ * The running application imports it from `AppModule`, so the omission was
+ * invisible there — but every integration context that boots a feature module
+ * without the whole application could not compose this factory at all, and
+ * `CustomerModule` imports this module. Declaring the dependency here is a
+ * no-op for the running application and makes the module self-sufficient
+ * wherever it is composed.
  */
 @Module({
+  imports: [LoggingModule],
   providers: [
     {
       provide: CUSTOM_EMBROIDERY_RELEASE_CONFIG,

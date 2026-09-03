@@ -504,6 +504,8 @@ describe('verification and secure access persistence (integration)', () => {
           'customRequestId',
           'expiresAt',
           'id',
+          // `APP12-B04` added the second scope's subject to the summary.
+          'orderId',
           'scopeKind',
           'status',
         ]);

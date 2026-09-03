@@ -117,6 +117,61 @@ describe('APP4-W01 notification delivery — success paths', () => {
     expect(await secretAppears(context.disposable, secret)).toEqual([]);
   });
 
+  it('sends an ORDER_ACCESS link to the Ready-Made order surface', async () => {
+    // `APP12-S03-C1`. The defect this replaces was invisible at this level:
+    // the link was well-formed, absolute, fragment-carried and completely
+    // undeliverable, because `/truy-cap` refuses an `ORDER_ACCESS` token as
+    // wrong-scope and shows the same unavailable card as a forged one.
+    const secret = `synthetic-${newId()}`;
+    await seedDelivery(context, {
+      secret,
+      channel: 'EMAIL',
+      secretKind: 'SECURE_LINK_TOKEN',
+      secureLinkLanding: 'ORDER_ACCESS',
+    });
+
+    await context.runOnce();
+
+    const link = context.adapter.records()[0]?.secureLinkUrl ?? '';
+    expect(link).toBe(`${TEST_STOREFRONT_ORIGIN}/truy-cap/don-hang#t=${secret}`);
+
+    // Same carrier rules as the other scope: nothing a server could log.
+    const [beforeFragment, fragment] = link.split('#');
+    expect(beforeFragment).toBe(`${TEST_STOREFRONT_ORIGIN}/truy-cap/don-hang`);
+    expect(beforeFragment).not.toContain(secret);
+    expect(fragment).toBe(`t=${secret}`);
+    expect(await secretAppears(context.disposable, secret)).toEqual([]);
+  });
+
+  it('refuses a secure link that names no landing rather than guessing one', async () => {
+    // The shape an `APP4-B08` replay of pre-correction ciphertext produces.
+    // Nothing is sent: composing `/truy-cap` by default is exactly the defect,
+    // and half of those deliveries would land a customer on a page that refuses
+    // their own token.
+    const secret = `synthetic-${newId()}`;
+    const seeded = await seedDelivery(context, {
+      secret,
+      channel: 'EMAIL',
+      secretKind: 'SECURE_LINK_TOKEN',
+      secureLinkLanding: null,
+    });
+
+    await context.runOnce();
+
+    expect(context.adapter.records()).toEqual([]);
+    expect(await deliveryAttempts(context.disposable, seeded.intentId)).toEqual([
+      {
+        channel: 'EMAIL',
+        outcome: 'FAILED_TERMINAL',
+        errorClass: 'NOTIFICATION_LINK_LANDING_UNAVAILABLE',
+        providerMessageRef: null,
+      },
+    ]);
+    // Terminal on the first attempt: the ciphertext is immutable, so waiting
+    // cannot supply what it never carried.
+    expect(await secretAppears(context.disposable, secret)).toEqual([]);
+  });
+
   it('renders no link for a verification code, leaving code delivery unchanged', async () => {
     // The regression guard for the §13 rule "do not alter verification-code
     // delivery semantics": the renderer is reached only by the secure-link

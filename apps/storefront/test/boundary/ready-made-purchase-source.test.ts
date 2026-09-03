@@ -105,17 +105,21 @@ describe('read-only by construction', () => {
   });
 
   it('composes the checkout address without owning the route behind it', () => {
-    // S01 composes `/mua-hang/[slug]` and stops; `APP12-S02` built it, and the
-    // assertion moved with the fact rather than being deleted — the panel must
-    // still contain no page of its own, and `/truy-cap/don-hang` is still
-    // `APP12-S03`'s and must still not exist.
+    // S01 composes `/mua-hang/[slug]` and stops. `APP12-S02` built that route
+    // and `APP12-S03` built `/truy-cap/don-hang`; both assertions moved with the
+    // fact rather than being deleted, and what they guard is now stricter than
+    // the absence they replaced — each is exactly **one** page, owned by the
+    // checkpoint that declared it, and this panel still owns neither.
     const routes = walk(join(process.cwd(), 'src', 'app'));
     expect(routes.filter((path) => path.includes('mua-hang'))).toEqual([
       join(process.cwd(), 'src', 'app', 'mua-hang', '[slug]', 'page.tsx'),
     ]);
-    expect(routes.filter((path) => path.includes('don-hang'))).toEqual([]);
-    // Nothing in this feature reaches into the route it links to.
+    expect(routes.filter((path) => path.includes('don-hang'))).toEqual([
+      join(process.cwd(), 'src', 'app', 'truy-cap', 'don-hang', 'page.tsx'),
+    ]);
+    // Nothing in this feature reaches into either route it links toward.
     expect(allCode).not.toContain('ready-made-checkout');
+    expect(allCode).not.toContain('secure-ready-made-order');
   });
 
   it('adds no second release flag', () => {

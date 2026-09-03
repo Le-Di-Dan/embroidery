@@ -26,6 +26,7 @@ import {
   DELIVERY_ENVELOPE_VERSION,
   isDeliveryEnvelope,
   isDeliverySecretKind,
+  isSecureLinkLanding,
   type DeliveryEnvelope,
   type DeliveryPayload,
 } from './delivery-envelope.contract';
@@ -36,6 +37,9 @@ export const ENVELOPE_IV_BYTES = 12;
 
 /** The `node:crypto` cipher name behind `DELIVERY_ENVELOPE_ALGORITHM`. */
 const CIPHER = 'aes-256-gcm';
+
+/** The secret kind that becomes a URL, and the only one a landing applies to. */
+const SECURE_LINK_TOKEN = 'SECURE_LINK_TOKEN';
 
 export type RandomBytesSource = (size: number) => Buffer;
 
@@ -53,6 +57,19 @@ export function sealDeliveryEnvelope(
 ): DeliveryEnvelope {
   if (!isDeliverySecretKind(payload.secretKind)) {
     throw new Error(`Unknown delivery secret kind: refusing to seal.`);
+  }
+  // `APP12-S03-C1`. Checked here, at the one place a payload becomes
+  // ciphertext, because this is the last moment anything can still know what
+  // the secret is for: after the seal the fact is unreadable without the key,
+  // and the worker that opens it has no grant table to recover it from. A link
+  // sealed without a landing would be undeliverable to any correct route, and a
+  // code carrying one would mean the caller confused the two secrets.
+  if (payload.secretKind === SECURE_LINK_TOKEN) {
+    if (!isSecureLinkLanding(payload.secureLinkLanding)) {
+      throw new Error('A secure-link delivery must name its landing: refusing to seal.');
+    }
+  } else if (payload.secureLinkLanding !== undefined) {
+    throw new Error('Only a secure-link delivery may name a landing: refusing to seal.');
   }
   const iv = random(ENVELOPE_IV_BYTES);
   if (iv.length !== ENVELOPE_IV_BYTES) {
@@ -135,6 +152,14 @@ function isSealedPayload(value: unknown): value is DeliveryPayload {
   }
   const record = value as Record<string, unknown>;
   if (!isDeliverySecretKind(record['secretKind'])) {
+    return false;
+  }
+  // Absent is accepted — an envelope sealed before `APP12-S03-C1` has no
+  // landing and must still open, or an `APP4-B08` replay of one would become
+  // an unreadable envelope rather than a link with a missing destination.
+  // Present-but-unknown is not: that is a payload this build cannot route.
+  const landing = record['secureLinkLanding'];
+  if (landing !== undefined && !isSecureLinkLanding(landing)) {
     return false;
   }
   return PAYLOAD_STRING_FIELDS.every((field) => typeof record[field] === 'string');

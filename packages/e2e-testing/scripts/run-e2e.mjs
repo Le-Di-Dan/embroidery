@@ -64,6 +64,12 @@ const APP12_S01 = ['app12-s01-chromium'];
 // the first Storefront mode that writes commercial rows, so it runs only
 // against the disposable database the orchestrator drops afterwards.
 const APP12_S02 = ['app12-s02-chromium'];
+// APP12-S03 — the secure Ready-Made order surface. The S02 topology plus an
+// authenticated Admin session, because the customer's screen only moves when an
+// operator writes: the run drives the delivered Admin operations from a second
+// real session while the browser watches the page. It also needs this run's
+// object storage, because the evidence journey uploads a real image.
+const APP12_S03 = ['app12-s03-chromium'];
 
 /**
  * `--app4` (APP4-E01-H01) is not a Playwright mode.
@@ -190,48 +196,55 @@ function parseArgs(argv) {
   // APP12-S02: the same Playwright mode family, with the APP4 secret material
   // and the browser tier's in-process runtime the verification lane needs.
   const app12S02 = flags.has('--app12-s02');
+  // APP12-S03: the same Playwright mode family as S02, plus the Admin origin and
+  // this run's object storage.
+  const app12S03 = flags.has('--app12-s03');
   // APP4-E01-H02: the browser tier, which IS a Playwright mode.
   const app4Browser = flags.has('--app4-browser') || app4R01 || app4R01C1 || app5E01 || app7E01;
   const full = flags.has('--full');
   const mode = app4
     ? 'app4'
-    : app12S02
-      ? 'app12-s02'
-      : app12S01
-        ? 'app12-s01'
-        : app7E01
-          ? 'app7-e01'
-          : app5E01
-            ? 'app5-e01'
-            : app4Browser
-              ? 'app4-browser'
-              : app1
-                ? 'app1'
-                : full
-                  ? 'full'
-                  : 'smoke';
-  const projects = app12S02
-    ? APP12_S02
-    : app12S01
-      ? APP12_S01
-      : app7E01
-        ? APP7_E01
-        : app5E01
-          ? APP5_E01
-          : app4R01C1
-            ? APP4_R01_C1
-            : app4R01
-              ? APP4_R01
+    : app12S03
+      ? 'app12-s03'
+      : app12S02
+        ? 'app12-s02'
+        : app12S01
+          ? 'app12-s01'
+          : app7E01
+            ? 'app7-e01'
+            : app5E01
+              ? 'app5-e01'
               : app4Browser
-                ? APP4
+                ? 'app4-browser'
                 : app1
-                  ? APP1
+                  ? 'app1'
                   : full
-                    ? FULL
-                    : SMOKE;
+                    ? 'full'
+                    : 'smoke';
+  const projects = app12S03
+    ? APP12_S03
+    : app12S02
+      ? APP12_S02
+      : app12S01
+        ? APP12_S01
+        : app7E01
+          ? APP7_E01
+          : app5E01
+            ? APP5_E01
+            : app4R01C1
+              ? APP4_R01_C1
+              : app4R01
+                ? APP4_R01
+                : app4Browser
+                  ? APP4
+                  : app1
+                    ? APP1
+                    : full
+                      ? FULL
+                      : SMOKE;
   // The E01 suite is always host/Chromium; it cannot run in the container.
   const runner =
-    app1 || app4Browser || app12S01 || app12S02
+    app1 || app4Browser || app12S01 || app12S02 || app12S03
       ? 'host'
       : runnerArg
         ? runnerArg.split('=')[1]
@@ -253,6 +266,7 @@ function parseArgs(argv) {
     app7E01,
     app7QrScan,
     app12S01,
+    app12S03,
     app12S02,
   };
 }
@@ -285,6 +299,7 @@ async function main() {
     app7QrScan,
     app12S01,
     app12S02,
+    app12S03,
   } = parseArgs(process.argv.slice(2));
 
   // APP7-E01-U01 owns its own lean topology and teardown and starts no browser
@@ -333,7 +348,7 @@ async function main() {
   // rather than to insert policy rows behind it. The Admin account it creates
   // is a by-product; nothing in the S02 suite logs in.
   const adminCredentials =
-    app1 || app4Browser || app12S02 ? createAdminCredentials(runId) : undefined;
+    app1 || app4Browser || app12S02 || app12S03 ? createAdminCredentials(runId) : undefined;
   // The browser tier overrides one non-secret value: the canonical origin the
   // API renders secure links against. The generated default is an unresolvable
   // `.invalid` host — correct for the lean H01 mode, which never opens a
@@ -355,7 +370,7 @@ async function main() {
   // contexts share the one pepper set and envelope key the API HTTP process was
   // started with.
   const app4Secrets =
-    app4Browser || app12S01 || app12S02
+    app4Browser || app12S01 || app12S02 || app12S03
       ? { ...createApp4SecretConfig(runId), storefrontOrigin: config.baseUrls.storefront }
       : undefined;
   // `APP7-B03`'s merchant bank configuration is a module-scoped fail-fast
@@ -407,7 +422,7 @@ async function main() {
       // server, so this is the first mode that has to configure that process at
       // all. Wave 2 is explicitly withheld — the purchase journeys are Wave-1
       // surfaces and must be proved with the custom capability off.
-      ...(app12S01 || app12S02
+      ...(app12S01 || app12S02 || app12S03
         ? {
             withStorefront: {
               INTERNAL_API_BASE_URL: `http://localhost:${config.ports.api}/api`,
@@ -460,8 +475,13 @@ async function main() {
     // catalog. The seeder refuses any database that is not `embroidery_db7_*`,
     // which is what keeps the run's **commercial** rows — orders, reservations,
     // grants — off the shared development stack (`APP12-S02` §43, §44).
+    // APP12-S03 rides the same seeder, deliberately. It needs one purchasable
+    // Product with stock, which is exactly what the S02 catalog already is, and
+    // a second near-identical fixture would be duplication with no acceptance
+    // value. The rows keep their `app12-s02-e2e` prefix, which is accurate: they
+    // *are* the S02 fixture, borrowed.
     let app12S02Fixture;
-    if (app12S02) {
+    if (app12S02 || app12S03) {
       const { seedS02Catalog } = await import('../support/app12/s02-checkout-fixture.mjs');
       app12S02Fixture = await seedS02Catalog({ databaseUrl: env.database.url, log });
     }
@@ -508,7 +528,7 @@ async function main() {
               E2E_APP12_S01_UNBUYABLE_SLUG: app12S01Fixture.unbuyableSlug,
               E2E_APP12_S01_CATEGORY_SLUG: app12S01Fixture.categorySlug,
             }
-          : app12S02
+          : app12S02 || app12S03
             ? {
                 // The seeded slugs and SKU ids, for the same reason. The SKU ids
                 // matter more here than in S01: the spec composes checkout
@@ -529,6 +549,24 @@ async function main() {
                 // The in-process `AppModule` composes the deposit module, so it
                 // needs the same four merchant values the API HTTP process got.
                 ...merchantBankEnv(merchant),
+                // APP12-S03 only, and all three for reasons S02 does not have:
+                //
+                // - the Admin origin and credentials, because the customer's
+                //   screen only moves when an operator writes, and the run has
+                //   to log in as one through the real form;
+                // - this run's object storage, because the evidence journey
+                //   uploads a real image and the in-process worker inspects it.
+                //
+                // The password travels the child environment only — never an
+                // argument, never a log line.
+                ...(app12S03
+                  ? {
+                      E2E_BASE_ADMIN: config.baseUrls.admin,
+                      E2E_ADMIN_EMAIL: adminCredentials.email,
+                      E2E_ADMIN_PASSWORD: adminCredentials.password,
+                      ...objectStorageEnv(config.storage),
+                    }
+                  : {}),
               }
             : {};
     exitCode =

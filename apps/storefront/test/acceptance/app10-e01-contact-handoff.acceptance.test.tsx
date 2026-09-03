@@ -41,20 +41,21 @@ const GROUP_NAME = 'Kết nối';
  * failing at 14 before S05 touched anything — a pre-existing defect this
  * checkpoint found rather than caused, recorded in the S05 report §R.
  *
- * Eighteen: `/`, `/kham-pha`, `/bo-suu-tap`, `/bo-suu-tap/[slug]`,
+ * Twenty: `/`, `/kham-pha`, `/bo-suu-tap`, `/bo-suu-tap/[slug]`,
  * `/san-pham/[slug]`, `/san-pham/[slug]/thiet-ke`, `/dich-vu`,
  * `/cau-hoi-thuong-gap`, `/cua-hang`, `/chinh-sach/[slug]`,
- * `/xac-minh-lien-he`, `/yeu-cau/moi`, `/yeu-cau/da-gui`, `/truy-cap`,
- * `/truy-cap/bao-gia`, `/truy-cap/duyet-thiet-ke`, `/truy-cap/thanh-toan` and
+ * `/xac-minh-lien-he`, `/yeu-cau/moi`, `/yeu-cau/da-gui`, `/mua-hang/[slug]`,
+ * `/truy-cap`, `/truy-cap/bao-gia`, `/truy-cap/don-hang`,
+ * `/truy-cap/duyet-thiet-ke`, `/truy-cap/thanh-toan` and
  * `/truy-cap/thanh-toan-con-lai`.
  *
  * What the assertion is for is unchanged and still holds: the handoff added
- * none of these and adds none. Every one of the seven new routes — six from
- * APP11, plus `APP12-S02`'s checkout — belongs to a
- * checkpoint that declared it, and `robots.ts`/`sitemap.ts` are metadata routes
- * that are deliberately not counted as pages.
+ * none of these and adds none. Every one of the eight new routes — six from
+ * APP11, plus `APP12-S02`'s checkout and `APP12-S03`'s secure order surface —
+ * belongs to a checkpoint that declared it, and `robots.ts`/`sitemap.ts` are
+ * metadata routes that are deliberately not counted as pages.
  */
-const STOREFRONT_ROUTE_COUNT = 19;
+const STOREFRONT_ROUTE_COUNT = 20;
 
 function setConfig(zalo: string | undefined, messenger: string | undefined) {
   if (zalo === undefined) {

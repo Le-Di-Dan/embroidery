@@ -1,0 +1,215 @@
+// Secure Ready-Made order — facts, pills, notes and controls.
+//
+// The *values and affordances* half of the route, split from the page frame so
+// neither file approaches the 400-line cap and so a change to a copy button
+// cannot move the page's vertical rhythm. Everything here is shared by several
+// cards: the description-list fact rows, the status pill vocabulary, the note
+// band, the DS button box and the copy control.
+
+@use '@embroidery/styles' as styles;
+@use './secure-order-tokens' as tokens;
+
+.secure-order {
+  &__facts {
+    display: flex;
+    flex-direction: column;
+    gap: tokens.$stack-gap-tight;
+    width: 100%;
+    margin: 0;
+  }
+
+  // 910:298 — label left, value right, a rule between them on wide screens.
+  &__fact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: tokens.$row-gap;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+
+    &--accent {
+      padding: styles.spacing(12);
+      background: styles.$color-surface-secondary;
+      border-radius: styles.$radius-xs;
+    }
+  }
+
+  &__fact-label {
+    font-size: styles.$font-size-body-s;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-secondary;
+  }
+
+  &__fact-value {
+    display: flex;
+    flex-wrap: wrap;
+    gap: tokens.$row-gap;
+    align-items: center;
+    margin: 0;
+    font-size: styles.$font-size-body-m;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-primary;
+  }
+
+  // 910:319 / 910:323 — the two values that must not be misread.
+  &__account,
+  &__reference {
+    font-family: tokens.$mono-family;
+    font-weight: styles.$font-weight-semibold;
+    letter-spacing: 0.02em;
+  }
+
+  // 910:286 — symbol, label, tone. Never colour alone (917:424).
+  &__pill {
+    display: inline-flex;
+    gap: tokens.$pill-gap;
+    align-items: center;
+    padding: tokens.$pill-padding-block tokens.$pill-padding-inline;
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-secondary;
+    border-radius: 999px;
+    font-size: styles.$font-size-body-s;
+    line-height: 1;
+    color: styles.$color-text-primary;
+
+    &--neutral {
+      border-color: styles.$color-border-secondary;
+    }
+
+    &--waiting {
+      border-color: styles.$color-status-warning;
+    }
+
+    &--progress {
+      border-color: styles.$color-status-info;
+    }
+
+    &--success {
+      border-color: styles.$color-status-success;
+    }
+
+    &--danger {
+      border-color: styles.$color-status-error;
+    }
+  }
+
+  &__pill-symbol {
+    flex: none;
+    font-weight: styles.$font-weight-bold;
+  }
+
+  // 910:335 — the note band, shared by every aside, caveat and warning.
+  &__note {
+    display: flex;
+    gap: tokens.$note-gap;
+    align-items: flex-start;
+    width: 100%;
+    margin: 0;
+    padding: tokens.$note-padding;
+    background: styles.$color-surface-secondary;
+    border: 1px solid styles.$color-border-secondary;
+    border-radius: tokens.$note-radius;
+    font-size: styles.$font-size-body-s;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-secondary;
+
+    &--info {
+      border-color: styles.$color-status-info;
+    }
+
+    &--warning {
+      border-color: styles.$color-status-warning;
+    }
+
+    &--danger {
+      border-color: styles.$color-status-error;
+    }
+  }
+
+  &__note-symbol {
+    flex: none;
+    font-weight: styles.$font-weight-bold;
+  }
+
+  &__note-text {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  // Reuses the DS Button box (183:50): 44px minimum target, 16 radius.
+  &__button {
+    display: inline-flex;
+    gap: styles.spacing(8);
+    align-items: center;
+    justify-content: center;
+    min-height: tokens.$touch-target-min;
+    padding: tokens.$button-padding-block tokens.$button-padding-inline;
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: tokens.$button-radius;
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-semibold;
+    line-height: 1.2;
+    color: styles.$color-text-primary;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      border-color: styles.$color-action-primary;
+    }
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 2px;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    &--primary {
+      background: styles.$color-action-primary;
+      border-color: styles.$color-action-primary;
+      color: styles.$color-surface-primary;
+
+      &:hover:not(:disabled) {
+        background: styles.$color-action-hover;
+        border-color: styles.$color-action-hover;
+      }
+    }
+  }
+
+  &__copy {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  &__copy-button {
+    display: inline-flex;
+    gap: styles.spacing(4);
+    align-items: center;
+    justify-content: center;
+    min-height: tokens.$touch-target-min;
+    padding: styles.spacing(4) styles.spacing(12);
+    background: transparent;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-xs;
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-secondary;
+    cursor: pointer;
+
+    &:hover {
+      border-color: styles.$color-action-primary;
+      color: styles.$color-text-primary;
+    }
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 2px;
+    }
+  }
+
+  &__copy-symbol {
+    flex: none;
+  }
+}

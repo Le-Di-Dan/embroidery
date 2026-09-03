@@ -23,9 +23,11 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { TransactionManager } from '@embroidery/persistence';
 import {
+  isSecureLinkLanding,
   openDeliveryEnvelope,
   type DeliveryEnvelope,
   type DeliverySecretKind,
+  type SecureLinkLanding,
 } from '@embroidery/notification-delivery';
 
 import { WorkerDeliveryEnvelopeKeyProvider } from '../config/delivery-envelope-key.provider';
@@ -38,7 +40,7 @@ import {
   type NotificationChannel,
   type NotificationChannelPort,
 } from '../domain/channel/notification-channel.port';
-import { NotificationDeliveryError } from '../domain/delivery-failure';
+import { NotificationDeliveryError, isRetryableDeliveryFailure } from '../domain/delivery-failure';
 import type { NotificationDeliveryFailure } from '../domain/delivery-failure';
 import type { NotificationDeliveryPolicy } from '../domain/notification-delivery-policy';
 import {
@@ -207,6 +209,12 @@ export class NotificationDeliveryUseCase {
       normalizedRecipient: payload.normalizedRecipient,
       secretKind: payload.secretKind,
       secret: payload.secret,
+      // Carried through unchanged. The codec has already refused an envelope
+      // whose landing is present but unknown, so what survives here is either a
+      // routable landing or the absence `renderSecureLink` refuses.
+      ...(payload.secureLinkLanding === undefined
+        ? {}
+        : { secureLinkLanding: payload.secureLinkLanding }),
       issuedAt,
       expiresAt,
     };
@@ -231,18 +239,23 @@ export class NotificationDeliveryUseCase {
     let secureLinkUrl: string | undefined;
     try {
       secureLinkUrl = this.renderSecureLink(opened);
-    } catch {
+    } catch (error: unknown) {
       // Returned rather than thrown, so it settles through the same evidence
       // path as a transport refusal. A throw here would escape `attempt` after
       // `beginProcessing` had already run, leaving an intent in `PROCESSING`
       // with no attempt row explaining why — the one failure mode this class is
-      // arranged to make impossible. The cause is dropped, as everywhere else on
-      // this path.
-      return {
-        outcome: 'FAILED',
-        retryable: true,
-        failure: 'NOTIFICATION_LINK_ORIGIN_UNAVAILABLE',
-      };
+      // arranged to make impossible.
+      //
+      // Only the *class* is taken from the error, never its message: the two
+      // things that can fail here are a missing landing, which names itself, and
+      // the origin provider, whose throw is the configuration gap. Retryability
+      // comes from the taxonomy rather than from a literal, so the two cannot
+      // disagree about whether waiting could help.
+      const failure =
+        error instanceof NotificationDeliveryError
+          ? error.failure
+          : ('NOTIFICATION_LINK_ORIGIN_UNAVAILABLE' as const);
+      return { outcome: 'FAILED', retryable: isRetryableDeliveryFailure(failure), failure };
     }
 
     try {
@@ -271,7 +284,15 @@ export class NotificationDeliveryUseCase {
     if (opened.secretKind !== SECURE_LINK_TOKEN) {
       return undefined;
     }
-    return renderSecureLinkUrl(this.storefrontOrigin.require(), opened.secret);
+    // `APP12-S03-C1`. Re-guarded rather than assumed: the value reached this
+    // process as JSON, and an envelope sealed before landings existed carries
+    // none at all. There is no default — the two surfaces refuse each other's
+    // tokens, so guessing would deliver a link that cannot open.
+    const landing: unknown = opened.secureLinkLanding;
+    if (!isSecureLinkLanding(landing)) {
+      throw new NotificationDeliveryError('NOTIFICATION_LINK_LANDING_UNAVAILABLE');
+    }
+    return renderSecureLinkUrl(this.storefrontOrigin.require(), opened.secret, landing);
   }
 
   /** The atomic durable effect: the evidence row and the intent state together. */
@@ -317,6 +338,8 @@ interface OpenedDelivery {
   readonly normalizedRecipient: string;
   readonly secretKind: string;
   readonly secret: string;
+  /** Present on a `SECURE_LINK_TOKEN` sealed by `APP12-S03-C1` or later. */
+  readonly secureLinkLanding?: SecureLinkLanding;
   readonly issuedAt: Date;
   readonly expiresAt: Date;
 }

@@ -103,6 +103,9 @@ describe('APP11-E01 — Storefront route authority', () => {
     '/san-pham/[slug]/thiet-ke',
     '/truy-cap',
     '/truy-cap/bao-gia',
+    // `APP12-S03` — the secure Ready-Made order surface. The one route that
+    // checkpoint adds, and the path `APP12-G01` §2.2 reserved.
+    '/truy-cap/don-hang',
     '/truy-cap/duyet-thiet-ke',
     '/truy-cap/thanh-toan',
     '/truy-cap/thanh-toan-con-lai',
@@ -111,7 +114,7 @@ describe('APP11-E01 — Storefront route authority', () => {
     '/yeu-cau/moi',
   ];
 
-  it('ships exactly the nineteen pages the Storefront serves today', () => {
+  it('ships exactly the twenty pages the Storefront serves today', () => {
     expect(collectPageRoutes(APP_ROUTER_ROOT).sort()).toEqual(EXPECTED_ROUTES);
   });
 

@@ -12,10 +12,16 @@
  * 3. with the capability released, the gate stops interfering with all seven.
  *
  * (2) includes the two traps `APP12-RELEASE-WAVE-AUTHORITY.md` names: blocking
- * the `/truy-cap` prefix wholesale would take the future `/truy-cap/don-hang`
- * with it (§2.2), and blocking the `/san-pham` family would take the Ready-Made
- * entry point with it (§2.1). Both are asserted as explicit non-denials, so the
- * cheap wrong implementation cannot pass.
+ * the `/truy-cap` prefix wholesale would take `/truy-cap/don-hang` with it
+ * (§2.2), and blocking the `/san-pham` family would take the Ready-Made entry
+ * point with it (§2.1). Both are asserted as explicit non-denials, so the cheap
+ * wrong implementation cannot pass.
+ *
+ * Both were listed as *future* Wave-1 routes until the checkpoints that own
+ * them landed — `/mua-hang/[slug]` at `APP12-S02` and `/truy-cap/don-hang` at
+ * `APP12-S03`. They are now ordinary members of `WAVE1_ROUTES`, which is a
+ * stricter assertion than the one it replaced: the gate must leave a route that
+ * really exists reachable, not merely leave room for one that does not.
  */
 import proxy from '../../src/proxy';
 import {
@@ -54,13 +60,16 @@ const WAVE1_ROUTES = [
   '/chinh-sach/giao-hang',
   '/xac-minh-lien-he',
   '/truy-cap',
+  // Delivered by `APP12-S02` and `APP12-S03`. Both were asserted here as
+  // *future* Wave-1 routes before they existed, precisely so the cheap wrong
+  // gate — blocking the `/truy-cap` or `/san-pham` prefix wholesale — could not
+  // pass; now they are real, and the same assertion covers them unchanged.
+  '/mua-hang/ao-thun-co-tron',
+  '/truy-cap/don-hang',
   '/healthz',
   '/robots.txt',
   '/sitemap.xml',
 ];
-
-/** Wave-1 routes that do not exist yet. The gate must leave room for them. */
-const FUTURE_WAVE1_ROUTES = ['/mua-hang/ao-thun-co-tron', '/truy-cap/don-hang'];
 
 /** A `NextRequest`-shaped stand-in carrying only what the proxy reads. */
 function requestFor(pathname: string): Parameters<typeof proxy>[0] {
@@ -115,10 +124,6 @@ describe('the Wave-2 route policy', () => {
     expect(isWithheldWave2Route('/yeu-cau/moi/')).toBe(true);
     expect(isWithheldWave2Route('/YEU-CAU/MOI')).toBe(true);
   });
-
-  it('leaves room for the Wave-1 routes that do not exist yet', () => {
-    expect(FUTURE_WAVE1_ROUTES.filter(isWithheldWave2Route)).toEqual([]);
-  });
 });
 
 describe('the release gate with the capability withheld', () => {
@@ -141,10 +146,6 @@ describe('the release gate with the capability withheld', () => {
   });
 
   it.each(WAVE1_ROUTES)('leaves %s reachable', (pathname) => {
-    expect(isDenied(pathname)).toBe(false);
-  });
-
-  it.each(FUTURE_WAVE1_ROUTES)('leaves the future Wave-1 route %s reachable', (pathname) => {
     expect(isDenied(pathname)).toBe(false);
   });
 

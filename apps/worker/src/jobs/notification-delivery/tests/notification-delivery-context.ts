@@ -20,7 +20,7 @@
  *
  * Test-only. Build-excluded via `src/**` + `tests/**`.
  */
-import { randomBytes } from 'node:crypto';
+import { createCipheriv, randomBytes } from 'node:crypto';
 
 import { Test } from '@nestjs/testing';
 import type { TestingModule } from '@nestjs/testing';
@@ -30,6 +30,8 @@ import { createDisposableDatabase } from '@embroidery/database/testing';
 import { PolicyConfigurationRepository, TransactionManager } from '@embroidery/persistence';
 import { WorkerJobQueueRepository } from '@embroidery/persistence';
 import {
+  DELIVERY_ENVELOPE_ALGORITHM,
+  DELIVERY_ENVELOPE_VERSION,
   NOTIFICATION_DELIVERY_ENVELOPE_KEY_ENV,
   parseEnvelopeKey,
   sealDeliveryEnvelope,
@@ -297,6 +299,15 @@ export interface SeedOptions {
   readonly channel?: string;
   readonly secret: string;
   readonly secretKind?: DeliveryPayload['secretKind'];
+  /**
+   * The landing a `SECURE_LINK_TOKEN` names (`APP12-S03-C1`).
+   *
+   * Defaults to `REQUEST_ACCESS` for a secure link, so every case written
+   * before landings existed keeps sealing the envelope it always sealed. Pass
+   * `null` to seal a link with **no** landing — the shape an `APP4-B08` replay
+   * of pre-correction ciphertext produces.
+   */
+  readonly secureLinkLanding?: DeliveryPayload['secureLinkLanding'] | null;
   readonly issuedAt?: Date;
   readonly expiresAt?: Date;
   /** Overrides the ciphertext's lineage id, as an `APP4-B08` replay would. */
@@ -306,6 +317,38 @@ export interface SeedOptions {
   readonly status?: string;
   /** Seeds the intent alone, with no delivery event. */
   readonly skipEvent?: boolean;
+}
+
+/**
+ * Seals a payload the way the delivered codec does — except that it will also
+ * seal one the codec now refuses.
+ *
+ * Test-only, and it exists for exactly one case: an envelope sealed **before**
+ * `APP12-S03-C1` added the landing. `sealDeliveryEnvelope` cannot produce one
+ * any more, and it must not be able to; but an `APP4-B08` manual replay copies
+ * historical ciphertext byte-identically, so the worker still has to meet one.
+ * Reproducing the old seal is the only way to prove what it does when it does.
+ *
+ * Everything else routes through the delivered codec, so this reimplements no
+ * behaviour under test — only the absence of one check.
+ */
+function sealForTest(key: EnvelopeKey, payload: DeliveryPayload): DeliveryEnvelope {
+  if (payload.secretKind !== 'SECURE_LINK_TOKEN' || payload.secureLinkLanding !== undefined) {
+    return sealDeliveryEnvelope(key, payload);
+  }
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', key.bytes, iv);
+  const ciphertext = Buffer.concat([
+    cipher.update(JSON.stringify(payload), 'utf8'),
+    cipher.final(),
+  ]);
+  return {
+    version: DELIVERY_ENVELOPE_VERSION,
+    algorithm: DELIVERY_ENVELOPE_ALGORITHM,
+    iv: iv.toString('base64url'),
+    ciphertext: ciphertext.toString('base64url'),
+    authTag: cipher.getAuthTag().toString('base64url'),
+  };
 }
 
 /** Seeds one B01-shaped intent and its delivery event. */
@@ -332,14 +375,25 @@ export async function seedDelivery(
     `,
   );
 
+  const secretKind = options.secretKind ?? 'VERIFICATION_CODE';
+  // `??` would be wrong here: `null` is the deliberate 'seal it without a
+  // landing' request, and `??` treats it as absent.
+  const landing =
+    secretKind === 'SECURE_LINK_TOKEN' && options.secureLinkLanding === undefined
+      ? 'REQUEST_ACCESS'
+      : secretKind === 'SECURE_LINK_TOKEN'
+        ? options.secureLinkLanding
+        : undefined;
+
   const envelope =
     options.envelope ??
-    sealDeliveryEnvelope(context.envelopeKey, {
-      secretKind: options.secretKind ?? 'VERIFICATION_CODE',
+    sealForTest(context.envelopeKey, {
+      secretKind,
       originNotificationIntentId: options.originIntentId ?? intentId,
       channel,
       normalizedRecipient: channel === 'EMAIL' ? 'recipient@example.com' : '+84900000001',
       secret: options.secret,
+      ...(landing === null || landing === undefined ? {} : { secureLinkLanding: landing }),
       issuedAt: issuedAt.toISOString(),
       expiresAt: expiresAt.toISOString(),
     });
