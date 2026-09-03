@@ -60,15 +60,26 @@ ENV NODE_ENV=production
 # to `dist`, so they are compiled before `next build` runs. Omitting it here
 # would leave the production image unbuildable while dev worked.
 RUN pnpm --filter "@embroidery/storefront^..." build
-# The public browser origin (IMP-D050 / APP4-B05), needed at BUILD time as well
-# as at run time since APP11-S04: the root layout resolves `metadataBase` from it,
-# and `next build` prerenders the statically generated segments — so the export
-# step reads it exactly as a request would.
+# The public browser origin (IMP-D050 / APP4-B05). Optional at build time since
+# `APP12-H02`, and required at run time exactly as before.
 #
-# Declared with NO default, deliberately. A placeholder here would be the
-# fallback the SEO authority forbids, silently baking one host into an image run
-# against another; without one the image build fails closed with the same message
-# a misconfigured request produces. Supply it explicitly:
+# APP11-S04 needed it here because `next build` prerendered the statically
+# generated segments, so the export step resolved `metadataBase` and every
+# canonical URL and read this variable exactly as a request would. H02's nonce
+# CSP made every route render per request (see `apps/storefront/src/app/layout.tsx`),
+# which removed that build-time read: measured by building this stage with the
+# argument omitted, which now succeeds where it used to fail.
+#
+# The consequence is worth stating, because it is an improvement rather than a
+# loosening: a Storefront image is no longer origin-specific, so one build can be
+# promoted across environments instead of being rebuilt per host. Nothing became
+# permissive — `getStorefrontPublicOrigin` still has no default and no fallback,
+# so a container started without the variable answers 500 on `/sitemap.xml` and
+# `/robots.txt` with "STOREFRONT_PUBLIC_ORIGIN is not set" rather than publishing
+# a guessed host. Verified against this image.
+#
+# Still declared with NO default: a placeholder would be the fallback the SEO
+# authority forbids. Supply it explicitly when a build should bake one:
 #
 #   docker build --build-arg STOREFRONT_PUBLIC_ORIGIN=https://... -f ... .
 #
@@ -77,6 +88,38 @@ RUN pnpm --filter "@embroidery/storefront^..." build
 # build arguments are recorded in the image history.
 ARG STOREFRONT_PUBLIC_ORIGIN
 ENV STOREFRONT_PUBLIC_ORIGIN=${STOREFRONT_PUBLIC_ORIGIN}
+# The three PUBLIC values Next INLINES into the client bundle at build time
+# (`APP12-H02` §14/§15).
+#
+# They were missing here, and that was a real defect rather than an omission of
+# convenience. `readContactHandoffConfig` reads
+# `process.env.NEXT_PUBLIC_ZALO_CONTACT_URL` as a static member expression
+# precisely so Next can substitute it — which means the substitution happens
+# during `next build`, from the environment of the *builder*. With no build
+# argument the builder saw nothing, `undefined` was compiled into the bundle,
+# and no amount of runtime environment on the container could ever bring the
+# footer's contact dock back. The development stack hid it completely: `next dev`
+# re-reads the environment per request, so the same variables passed at run time
+# worked there and only there.
+#
+# Changing any of these therefore REQUIRES A REBUILD. That is Next.js behaviour,
+# not a repository choice, and it is why they are build arguments rather than
+# container environment.
+#
+# All three are non-secret by construction — every visitor reads them in the page
+# source — so passing them as build arguments leaks nothing. Never do this with a
+# secret: build arguments are recorded in the image history.
+#
+# The two contact URLs have NO default, deliberately: unset means "omit that
+# CTA", which is the delivered fail-closed behaviour (`APP10-I01`). The API base
+# path defaults to the documented gateway path because the browser must call the
+# API same-origin whatever else is configured.
+ARG NEXT_PUBLIC_ZALO_CONTACT_URL
+ENV NEXT_PUBLIC_ZALO_CONTACT_URL=${NEXT_PUBLIC_ZALO_CONTACT_URL}
+ARG NEXT_PUBLIC_MESSENGER_CONTACT_URL
+ENV NEXT_PUBLIC_MESSENGER_CONTACT_URL=${NEXT_PUBLIC_MESSENGER_CONTACT_URL}
+ARG NEXT_PUBLIC_API_BASE_PATH=/api
+ENV NEXT_PUBLIC_API_BASE_PATH=${NEXT_PUBLIC_API_BASE_PATH}
 RUN pnpm --filter @embroidery/storefront build
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,56 @@
+# The asynchronous worker (NestJS application context).
+#
+# It publishes NO HTTP surface, so it has no Service and no HTTP probe. That is
+# deliberate rather than missing: `APP12-H02` §9 forbids inventing an HTTP
+# worker endpoint solely to satisfy a Kubernetes probe, and the delivered
+# worker's own health contract is process liveness — a fatal handler calls
+# `process.exit(1)` and the container is restarted by the kubelet. A real
+# liveness endpoint arrives with the queue/broker decision (open decision
+# IMP-O003), which owns what "the worker is working" even means.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: embroidery-worker
+  labels: { app.kubernetes.io/name: embroidery, app.kubernetes.io/component: worker }
+spec:
+  # One replica, deliberately. The delivered worker claims jobs without a
+  # broker; a second replica would be a concurrency decision IMP-O003 has not
+  # taken, not a capacity win.
+  replicas: 1
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels: { app.kubernetes.io/name: embroidery, app.kubernetes.io/component: worker }
+  strategy:
+    # Recreate, not RollingUpdate: with one claiming process and no broker, an
+    # overlapping old and new pod is exactly the double-claim the queue decision
+    # has not yet made safe.
+    type: Recreate
+  template:
+    metadata:
+      labels: { app.kubernetes.io/name: embroidery, app.kubernetes.io/component: worker }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile: { type: RuntimeDefault }
+      # The worker finishes the job it holds before it goes; the kubelet waits
+      # this long before SIGKILL.
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: worker
+          image: embroidery/worker:REPLACED_BY_OVERLAY
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: { name: embroidery-config }
+            - secretRef: { name: embroidery-secrets }
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { memory: 768Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ['ALL'] }
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+      volumes: [{ name: tmp, emptyDir: {} }]

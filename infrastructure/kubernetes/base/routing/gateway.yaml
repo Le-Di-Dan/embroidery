@@ -1,0 +1,42 @@
+# The production edge (`APP12-H02` §21/§22/§24).
+#
+# Gateway API, not `ingress-nginx`. That is a locked architectural decision, not
+# a preference: `SYSTEM_ARCHITECTURE.md` §13 and `docs/12-DECISION-LOG.md` D-036
+# both state "Kubernetes production will use the Gateway API and Kubernetes
+# Services. `ingress-nginx` will not be used."
+#
+# The concrete Gateway API **controller** remains an open decision requiring an
+# ADR, so `gatewayClassName` is a per-environment external release value rather
+# than a choice this repository makes. H02 delivers the routing contract; the
+# controller that implements it is `EXTERNAL_RELEASE_VALUE_REQUIRED`.
+#
+# The development Nginx gateway (`infrastructure/nginx`) is not this and never
+# was: D-036 says so explicitly. It stays the development edge.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: embroidery
+  labels: { app.kubernetes.io/name: embroidery, app.kubernetes.io/component: gateway }
+spec:
+  # Overlay-supplied. No default: a guessed controller is a Gateway that either
+  # never programs or programs on the wrong one.
+  gatewayClassName: REPLACED_BY_OVERLAY
+  listeners:
+    # Plain HTTP exists only to redirect. Every HTTPRoute bound to it carries a
+    # `RequestRedirect` filter to https (see `redirect.yaml`); no application
+    # traffic is ever served from it.
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: REPLACED_BY_OVERLAY
+      allowedRoutes: { namespaces: { from: Same } }
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: REPLACED_BY_OVERLAY
+      tls:
+        mode: Terminate
+        # Created out of band by the operator. A production private key is never
+        # committed (`base/config/secret-contract.md`).
+        certificateRefs: [{ kind: Secret, name: embroidery-tls }]
+      allowedRoutes: { namespaces: { from: Same } }

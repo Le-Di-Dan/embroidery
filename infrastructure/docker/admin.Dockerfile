@@ -58,6 +58,17 @@ ENV NODE_ENV=production
 # Same reason as the dev stage: the Admin's workspace dependencies resolve to
 # `dist`, so they are compiled before `next build` runs.
 RUN pnpm --filter "@embroidery/admin^..." build
+# The one PUBLIC value Next INLINES into the client bundle at build time
+# (`APP12-H02` §14). `browser-api-client.ts` reads it as a static member
+# expression so Next can substitute it, which means the substitution happens
+# here, from the builder's environment — not at run time from the container's.
+# Changing it requires a rebuild; that is Next.js behaviour, not a choice.
+#
+# Non-secret: it is a same-origin path every staff browser already sends. It
+# defaults to the documented gateway path rather than being left empty, because
+# the browser must reach the API same-origin whatever else is configured.
+ARG NEXT_PUBLIC_API_BASE_PATH=/api
+ENV NEXT_PUBLIC_API_BASE_PATH=${NEXT_PUBLIC_API_BASE_PATH}
 RUN pnpm --filter @embroidery/admin build
 
 # ---------------------------------------------------------------------------

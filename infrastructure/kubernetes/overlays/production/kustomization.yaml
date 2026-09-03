@@ -1,0 +1,67 @@
+# Production overlay (`APP12-H02` §6).
+#
+# Every value that differs between environments is set here, and every value
+# that must come from outside the repository is left empty for the release
+# preflight (`node tools/check-release-config.mjs production`) to refuse. There
+# is no production hostname, no merchant account, no credential and no image
+# digest committed: those are `EXTERNAL_RELEASE_VALUE_REQUIRED` (§44), and this
+# file makes their absence a failed deploy rather than a silent default.
+#
+# The image tags below are placeholders that a release sets to an immutable
+# reference (git SHA or digest). `latest` is rejected by the preflight — a
+# mutable tag is not a release identity, because the thing it names can change
+# under a running deployment and no rollback can name what was there before.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: embroidery-production
+
+resources:
+  - ../../base
+
+# Release identity. Replaced per release, e.g.
+#   kustomize edit set image embroidery/api=registry.example/embroidery/api:<sha>
+images:
+  - name: embroidery/api
+    newTag: REPLACE_WITH_IMMUTABLE_RELEASE_REF
+  - name: embroidery/worker
+    newTag: REPLACE_WITH_IMMUTABLE_RELEASE_REF
+  - name: embroidery/storefront
+    newTag: REPLACE_WITH_IMMUTABLE_RELEASE_REF
+  - name: embroidery/admin
+    newTag: REPLACE_WITH_IMMUTABLE_RELEASE_REF
+
+patches:
+  - path: gateway-patch.yaml
+  - path: route-hostnames-patch.yaml
+
+# Non-secret release configuration. Merged over `base/config/configmap.yaml`.
+configMapGenerator:
+  - name: embroidery-config
+    behavior: merge
+    literals:
+      # EXTERNAL_RELEASE_VALUE_REQUIRED — the real canonical customer origin.
+      # Empty, not `https://example.com`: a placeholder that parses is a
+      # placeholder that deploys.
+      - STOREFRONT_PUBLIC_ORIGIN=
+      - STAFF_ALLOWED_ORIGINS=
+      - DESIGN_SESSION_ALLOWED_ORIGINS=
+      - OBJECT_STORAGE_ENDPOINT=
+      - OBJECT_STORAGE_ORIGINALS_BUCKET=
+      - OBJECT_STORAGE_DERIVATIVES_BUCKET=
+      # EXTERNAL_RELEASE_VALUE_REQUIRED — the real merchant bank account. A
+      # staging value here would print someone else's account on a customer's
+      # deposit screen and encode it into the QR they scan.
+      - PAYMENT_MERCHANT_BANK_BIN=
+      - PAYMENT_MERCHANT_ACCOUNT_NUMBER=
+      - PAYMENT_MERCHANT_ACCOUNT_NAME=
+      - PAYMENT_MERCHANT_BANK_DISPLAY_NAME=
+      # Wave 1. Stated explicitly rather than inherited: the runtime is
+      # fail-closed when this is absent, but a deployment that does not say
+      # which wave it is releasing is a deployment nobody can review.
+      - CUSTOM_EMBROIDERY_RELEASE_ENABLED=false
+      - NODE_ENV=production
+      - STAFF_SESSION_COOKIE_SECURE=true
+      - DESIGN_SESSION_COOKIE_SECURE=true
+      - DATABASE_SSL_MODE=require
+      - API_DOCS_ENABLED=false

@@ -27,6 +27,40 @@ import '../styles/main.scss';
  * The title and description stay as the app-wide fallback every route already
  * overrides.
  */
+/**
+ * Every document route renders per request (`APP12-H02` §19/§20).
+ *
+ * This is a **CSP requirement**, not a data-freshness one, and the framework
+ * mechanism behind it was measured rather than assumed.
+ *
+ * The nonce that makes `script-src` safe is minted per response in
+ * `src/proxy.ts`. Next.js 16.2.10 applies it by reading the
+ * `content-security-policy` **request** header inside `parseRequestHeaders`
+ * (`next/dist/server/app-render/app-render.js`) and stamping the extracted
+ * value onto each `<script>` the renderer emits. A statically prerendered route
+ * never reaches that renderer at request time: its HTML was written at build
+ * time, when no nonce existed. Measured on this build before this export was
+ * added — a static `/truy-cap/don-hang` answered a response nonce in its header
+ * and `0` nonced script tags in its body, while a dynamic `/` answered `23`
+ * carrying the exact response nonce.
+ *
+ * There is no cache-bypass path: nothing in `base-server` inspects the CSP
+ * header, so a nonce does not opt a route into dynamic rendering on its own.
+ * The choice was therefore between serving prerendered pages whose inline RSC
+ * payload the policy blocks — a page that does not hydrate — and rendering them
+ * per request. Weakening `script-src` back to `'unsafe-inline'` for the static
+ * set was the third option and is the one §20 forbids.
+ *
+ * The cost is bounded and known: the routes this changes from static are the
+ * content and secure-shell pages, which fetch nothing — they cost one React SSR
+ * pass, not an I/O round trip — and the data-backed routes were already
+ * dynamic. `generateStaticParams` on `/chinh-sach/[slug]` still runs and still
+ * declares its four slugs; it simply no longer prerenders them. Measurement of
+ * the actual cost belongs to `APP12-H05`, which owns performance; H02 records
+ * it rather than trading security away for it.
+ */
+export const dynamic = 'force-dynamic';
+
 export function generateMetadata(): Metadata {
   return {
     // Resolved when the metadata is generated, never at module load. A static

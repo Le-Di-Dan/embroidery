@@ -1,0 +1,43 @@
+# The production deployment model (`APP12-H02`).
+#
+# Base + environment overlays, composed with **kustomize**, which is not a new
+# dependency: it is built into `kubectl` (`kubectl apply -k`, Kustomize v5.4.2
+# in `kubectl` v1.31.4). H02 §6 says not to introduce Helm/Kustomize if an
+# existing mechanism already owns composition — none did, this directory was
+# empty and reserved — and §6 then asks for the smallest dependency-free
+# Kubernetes-native shape. `kubectl -k` is that shape: no controller, no
+# templating language, no binary to install.
+#
+# ## What is deliberately NOT here
+#
+# PostgreSQL, object storage and any queue/broker. `SYSTEM_ARCHITECTURE.md` §13
+# lists stateful topology as "subject to an ADR", and no ADR has been taken —
+# so a StatefulSet invented here would silently lock a decision the architecture
+# reserves, and H02 §5 forbids moving persistence between in-cluster and managed
+# in either direction. The applications reach both through configuration
+# (`DATABASE_URL`, `OBJECT_STORAGE_ENDPOINT`), which is address-agnostic by
+# construction: the same manifests run against a managed service or an
+# in-cluster one once that ADR exists.
+#
+# The staging overlay adds disposable in-cluster instances of both, clearly
+# labelled as test scaffolding, so the deployment model can be proved end to end
+# without pre-empting the decision.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+labels:
+  - includeSelectors: false
+    pairs:
+      app.kubernetes.io/part-of: embroidery
+
+resources:
+  - config/configmap.yaml
+  - workloads/api.yaml
+  - workloads/worker.yaml
+  - workloads/storefront.yaml
+  - workloads/admin.yaml
+  - workloads/migrate-job.yaml
+  - routing/gateway.yaml
+  - routing/httproute-storefront.yaml
+  - routing/httproute-admin.yaml
+  - routing/redirect.yaml

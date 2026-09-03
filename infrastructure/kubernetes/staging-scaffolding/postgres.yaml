@@ -1,0 +1,78 @@
+# Disposable PostgreSQL for staging proof only. See README.md — this is NOT
+# production topology and is not durable.
+apiVersion: v1
+kind: Service
+metadata:
+  name: embroidery-postgres
+  labels: { app.kubernetes.io/component: postgres, embroidery.local/disposable: 'true' }
+spec:
+  selector: { app.kubernetes.io/component: postgres }
+  ports: [{ name: postgres, port: 5432, targetPort: postgres }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: embroidery-postgres
+  labels: { app.kubernetes.io/component: postgres, embroidery.local/disposable: 'true' }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app.kubernetes.io/component: postgres } }
+  strategy: { type: Recreate }
+  template:
+    metadata:
+      labels: { app.kubernetes.io/component: postgres, embroidery.local/disposable: 'true' }
+    spec:
+      containers:
+        - name: postgres
+          # The exact reviewed patch the development stack pins (ADR-DB1-001),
+          # so staging and development cannot drift onto different engines.
+          image: postgres:16.14-alpine
+          # TLS is on, with a per-run self-signed certificate, because the
+          # application refuses to run otherwise — and refusing is correct.
+          # `assertProductionSafety` rejects `DATABASE_SSL_MODE=disable` whenever
+          # `NODE_ENV=production`, and staging runs production-mode images by
+          # definition. Turning the guard off for staging would have proved a
+          # configuration production can never use; giving the disposable server
+          # a certificate proves the one it does.
+          args:
+            - '-c'
+            - 'ssl=on'
+            - '-c'
+            - 'ssl_cert_file=/etc/postgres-tls/tls.crt'
+            - '-c'
+            - 'ssl_key_file=/etc/postgres-tls/tls.key'
+          ports: [{ name: postgres, containerPort: 5432 }]
+          env:
+            # `--locale=C --encoding=UTF8` is the documented baseline
+            # (ADR-DB1-001): technical identifiers compare bytewise, independent
+            # of the image's locale library. `assertDatabaseBaseline` checks it,
+            # so a staging database initialised without it fails the migration
+            # Job rather than building every text index under the wrong rules.
+            - { name: POSTGRES_INITDB_ARGS, value: '--locale=C --encoding=UTF8' }
+            - { name: POSTGRES_DB, value: embroidery }
+            - { name: POSTGRES_USER, value: embroidery }
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                { secretKeyRef: { name: embroidery-staging-postgres, key: POSTGRES_PASSWORD } }
+            - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
+            - { name: TZ, value: UTC }
+          readinessProbe:
+            exec: { command: ['pg_isready', '-U', 'embroidery', '-d', 'embroidery'] }
+            periodSeconds: 5
+            failureThreshold: 12
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { memory: 1Gi }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+            - { name: tls, mountPath: /etc/postgres-tls, readOnly: true }
+      # emptyDir, never a PVC: this database is disposable by design and a
+      # persistent claim would advertise a durability this makes no claim to.
+      # PostgreSQL refuses to start if its private key is group- or
+      # world-readable. A projected Secret is owned by root, so `0640` with the
+      # container's group is the mode it accepts.
+      securityContext: { fsGroup: 70 }
+      volumes:
+        - { name: data, emptyDir: {} }
+        - name: tls
+          secret: { secretName: embroidery-staging-postgres-tls, defaultMode: 0640 }

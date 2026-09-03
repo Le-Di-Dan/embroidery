@@ -1,0 +1,34 @@
+# The staging Gateway: a controller the disposable cluster actually runs, and
+# two hostnames under test control.
+#
+# `gatewayClassName` names the controller installed in the disposable staging
+# cluster. Production leaves it empty on purpose — the concrete controller is an
+# open decision requiring an ADR (`SYSTEM_ARCHITECTURE.md` §13) — so this value
+# proves the *routing contract* works against a real Gateway API implementation
+# without this repository choosing the production one.
+#
+# `*.embroidery.local` is a test-controlled name resolved by the smoke harness,
+# never a real domain and never a production brand domain (§24).
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: embroidery
+spec:
+  gatewayClassName: nginx
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: '*.embroidery.local'
+      allowedRoutes: { namespaces: { from: Same } }
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: '*.embroidery.local'
+      tls:
+        mode: Terminate
+        # A temporary self-signed certificate generated per run and destroyed
+        # with the cluster. Clearly labelled staging-simulation evidence: it is
+        # NOT evidence of a production certificate (§21).
+        certificateRefs: [{ kind: Secret, name: embroidery-tls }]
+      allowedRoutes: { namespaces: { from: Same } }

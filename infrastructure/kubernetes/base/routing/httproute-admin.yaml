@@ -1,0 +1,54 @@
+# Admin canonical origin routing (`APP12-H02` §24).
+#
+# `/api` is matched as well as `/`, because the staff browser calls the API
+# same-origin through this host (`NEXT_PUBLIC_API_BASE_PATH=/api`) and the
+# NestJS API owns the matching global prefix `api`, so gateway and upstream
+# paths are identical (`GET /api/health`). Gateway API resolves overlapping
+# path matches by specificity — the longer prefix wins — so `/api` reaches the
+# API and everything else reaches the Admin.
+#
+# ## Strict-Transport-Security
+#
+# Set here, on routes bound to the **https** listener only, and nowhere else
+# (`APP12-H02` §22). HSTS asserted over plain HTTP is ignored by browsers and
+# would be a claim with no evidence behind it; the development Nginx gateway
+# therefore still declares none, and says so in its own security-headers
+# include. Setting it at the edge rather than in the applications also means it
+# survives whatever the applications do, instead of being a header the real
+# ingress could strip.
+#
+# `max-age=31536000` is one year — the value a browser must be able to trust for
+# HSTS to be worth anything.
+#
+# `includeSubDomains` is deliberately ABSENT and `preload` more deliberately
+# still. Both are commitments about a DNS zone this repository does not own:
+# `includeSubDomains` forces HTTPS on every sibling name under the apex,
+# including ones that are not part of this system, and `preload` is effectively
+# irreversible. The real canonical domain is an external release value
+# (`APP12-H02` §44), so the domain owner takes those two decisions at release,
+# not this file in advance.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: embroidery-admin
+  labels: { app.kubernetes.io/name: embroidery, app.kubernetes.io/component: admin }
+spec:
+  parentRefs: [{ name: embroidery, sectionName: https }]
+  hostnames: ['REPLACED_BY_OVERLAY']
+  rules:
+    - matches: [{ path: { type: PathPrefix, value: /api } }]
+      backendRefs: [{ name: embroidery-api, port: 4000 }]
+      filters:
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            set:
+              - name: Strict-Transport-Security
+                value: max-age=31536000
+    - matches: [{ path: { type: PathPrefix, value: / } }]
+      backendRefs: [{ name: embroidery-admin, port: 3001 }]
+      filters:
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            set:
+              - name: Strict-Transport-Security
+                value: max-age=31536000

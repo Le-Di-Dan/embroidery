@@ -1,0 +1,52 @@
+# Disposable MinIO for staging proof only. See README.md — this is NOT
+# production topology and is not durable.
+apiVersion: v1
+kind: Service
+metadata:
+  name: embroidery-minio
+  labels: { app.kubernetes.io/component: minio, embroidery.local/disposable: 'true' }
+spec:
+  selector: { app.kubernetes.io/component: minio }
+  ports: [{ name: s3, port: 9000, targetPort: s3 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: embroidery-minio
+  labels: { app.kubernetes.io/component: minio, embroidery.local/disposable: 'true' }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app.kubernetes.io/component: minio } }
+  strategy: { type: Recreate }
+  template:
+    metadata:
+      labels: { app.kubernetes.io/component: minio, embroidery.local/disposable: 'true' }
+    spec:
+      containers:
+        - name: minio
+          # The exact reviewed release the development stack and the contract
+          # suite pin (ADR-APP2-001): an S3-compatible store changes behaviour
+          # between releases.
+          image: minio/minio:RELEASE.2025-04-08T15-41-24Z
+          args: ['server', '/data']
+          ports: [{ name: s3, containerPort: 9000 }]
+          env:
+            # Seeded from the same disposable values the applications receive,
+            # so one Secret is the single source for both sides of the pair.
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                { secretKeyRef: { name: embroidery-secrets, key: OBJECT_STORAGE_ACCESS_KEY_ID } }
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                {
+                  secretKeyRef: { name: embroidery-secrets, key: OBJECT_STORAGE_SECRET_ACCESS_KEY },
+                }
+          readinessProbe:
+            httpGet: { path: /minio/health/live, port: s3 }
+            periodSeconds: 5
+            failureThreshold: 12
+          resources:
+            requests: { cpu: 50m, memory: 256Mi }
+            limits: { memory: 1Gi }
+          volumeMounts: [{ name: data, mountPath: /data }]
+      volumes: [{ name: data, emptyDir: {} }]

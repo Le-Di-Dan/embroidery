@@ -1,0 +1,79 @@
+# Non-secret runtime configuration shared by every workload (`APP12-H02` §6/§16).
+#
+# Everything here is PUBLIC_CONFIG or INTERNAL_CONFIG in the H02 classification:
+# an address, a port, a policy switch or a customer-visible fact. Nothing in this
+# object is a credential, and nothing that is a credential may be moved into it —
+# `Secret` is the only home for those, referenced by name and created out of
+# band (see `base/config/secret-contract.md`).
+#
+# The values below are the *shape*, not the release. Every one is replaced by an
+# environment overlay; a value that must differ per environment and has no safe
+# default is left as the empty string so the release preflight
+# (`tools/check-release-config.mjs`) refuses the deploy instead of a workload
+# starting against a placeholder.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: embroidery-config
+data:
+  NODE_ENV: 'production'
+
+  # --- Public origin authority (IMP-D050, `FU-APP11-S04-01` / `FU-APP12-S03-06`)
+  # ONE value, TWO consumers: the Storefront resolves `metadataBase`, canonical
+  # URLs, robots.txt and sitemap.xml from it, and the worker composes every
+  # absolute secure link with it. They are configured from this single key so a
+  # canonical tag and a customer's secure link can never name different hosts.
+  # No default and deliberately empty here: production must supply it, and a
+  # localhost fallback would silently publish the wrong host.
+  STOREFRONT_PUBLIC_ORIGIN: ''
+
+  # --- Wave-2 release control (`APP12-G02`, H02 §12)
+  # Explicit, never inherited. The runtime is fail-closed when the variable is
+  # absent, but a deployment that does not *state* the release decision is a
+  # deployment nobody can review. Wave 1 ships `false`.
+  CUSTOM_EMBROIDERY_RELEASE_ENABLED: 'false'
+
+  # --- Internal addressing (cluster-local; never a browser-visible value)
+  INTERNAL_API_BASE_URL: 'http://embroidery-api:4000/api'
+  API_PORT: '4000'
+
+  # --- Browser-visible API path. Same-origin through the gateway, always.
+  NEXT_PUBLIC_API_BASE_PATH: '/api'
+
+  # --- Staff session and CSRF policy (ADR-APP1-001)
+  # `STAFF_SESSION_COOKIE_SECURE` must be `true` wherever the edge is HTTPS: the
+  # `__Host-` cookie prefix requires it and the API fails startup without it.
+  STAFF_SESSION_COOKIE_SECURE: 'true'
+  STAFF_ALLOWED_ORIGINS: ''
+  DESIGN_SESSION_ALLOWED_ORIGINS: ''
+  DESIGN_SESSION_COOKIE_SECURE: 'true'
+
+  # --- Database connection shape. The URL itself is a SECRET (it embeds the
+  # password) and lives in the Secret; only its non-credential policy is here.
+  DATABASE_SSL_MODE: 'require'
+  DATABASE_EXPECTED_MAJOR: '16'
+
+  # --- Object storage. Endpoint and bucket names are addresses, not secrets;
+  # the access key and its secret live in the Secret.
+  OBJECT_STORAGE_PROVIDER: 's3'
+  OBJECT_STORAGE_ENDPOINT: ''
+  OBJECT_STORAGE_REGION: 'us-east-1'
+  OBJECT_STORAGE_FORCE_PATH_STYLE: 'true'
+  OBJECT_STORAGE_ORIGINALS_BUCKET: ''
+  OBJECT_STORAGE_DERIVATIVES_BUCKET: ''
+
+  # --- Merchant bank account (APP7-G01 §3). Sensitive OPERATIONAL CONFIG, not a
+  # credential: every value is printed on the customer's own deposit screen and
+  # encoded into the transfer QR they scan. Marking a customer-visible fact as a
+  # secret would be false, so it is configuration — but it is still supplied per
+  # environment, because a staging deploy must never encode a real account.
+  PAYMENT_MERCHANT_BANK_BIN: ''
+  PAYMENT_MERCHANT_ACCOUNT_NUMBER: ''
+  PAYMENT_MERCHANT_ACCOUNT_NAME: ''
+  PAYMENT_MERCHANT_BANK_DISPLAY_NAME: ''
+
+  # --- Observability (APP0-B05). Production defaults: no stack in a log line.
+  LOG_LEVEL: 'info'
+  LOG_STACK_ENABLED: 'false'
+  # Swagger UI is unauthenticated. Never on in production.
+  API_DOCS_ENABLED: 'false'

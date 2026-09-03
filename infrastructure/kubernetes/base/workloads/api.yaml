@@ -1,0 +1,84 @@
+# The business API (NestJS). Stateless, replicated, fronted by a Service.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: embroidery-api
+  labels: { app.kubernetes.io/name: embroidery, app.kubernetes.io/component: api }
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels: { app.kubernetes.io/name: embroidery, app.kubernetes.io/component: api }
+  strategy:
+    type: RollingUpdate
+    # Never fewer healthy pods than the current replica count during a rollout,
+    # and never more than one extra: a bad revision cannot take the API down
+    # because the old pods are only removed once the new ones report ready.
+    rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }
+  template:
+    metadata:
+      labels: { app.kubernetes.io/name: embroidery, app.kubernetes.io/component: api }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: api
+          # Replaced per overlay with an immutable digest/SHA reference. The
+          # literal tag here is a placeholder the kustomize `images:` transformer
+          # overwrites; no overlay may resolve to `latest`.
+          image: embroidery/api:REPLACED_BY_OVERLAY
+          imagePullPolicy: IfNotPresent
+          ports: [{ name: http, containerPort: 4000 }]
+          envFrom:
+            - configMapRef: { name: embroidery-config }
+            # No `optional: true`, deliberately: a missing Secret must leave the
+            # pod unschedulable rather than start the API with no database URL,
+            # no envelope key and no peppers.
+            - secretRef: { name: embroidery-secrets }
+          # Liveness is process health only — it must not depend on the
+          # database, or a brief database blip would restart every API pod and
+          # turn a recoverable incident into a crash loop.
+          livenessProbe:
+            httpGet: { path: /api/health, port: http }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          # Readiness DOES depend on the database: `/api/health/readiness`
+          # answers 503 when the pool is down, which is exactly when this
+          # instance should leave rotation without being killed.
+          readinessProbe:
+            httpGet: { path: /api/health/readiness, port: http }
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          # Startup is where a slow first boot is tolerated (bucket verification
+          # runs before the server listens), so liveness can stay aggressive.
+          startupProbe:
+            httpGet: { path: /api/health, port: http }
+            periodSeconds: 5
+            failureThreshold: 30
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { memory: 768Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ['ALL'] }
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+      # `readOnlyRootFilesystem` needs a writable /tmp; an emptyDir keeps it
+      # per-pod and non-persistent.
+      volumes: [{ name: tmp, emptyDir: {} }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: embroidery-api
+  labels: { app.kubernetes.io/name: embroidery, app.kubernetes.io/component: api }
+spec:
+  selector: { app.kubernetes.io/name: embroidery, app.kubernetes.io/component: api }
+  ports: [{ name: http, port: 4000, targetPort: http }]

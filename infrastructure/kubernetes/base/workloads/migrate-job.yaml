@@ -1,0 +1,54 @@
+# The explicit migration step (`APP12-H02` §10).
+#
+# A Job, not an API init container and not an API startup hook, for one reason:
+# migrations must run exactly once per release, and every API replica running
+# them would be N processes racing the same forward-only history. The delivered
+# runner is not documented as concurrency-safe, and H02 may not make it so.
+#
+# It reuses the API image so it runs the same committed tooling
+# (`@embroidery/database`) the application was built against — a separate
+# migration image is a second version of the schema history waiting to drift.
+#
+# Idempotent by construction: the runner records applied migrations in
+# `drizzle.__drizzle_migrations` and applies only what is missing, so re-running
+# it against an already-current database is a no-op that exits 0.
+#
+# `generateName` is deliberate — kustomize appends a release suffix per overlay
+# so each release gets its own Job object rather than failing to patch an
+# immutable completed one.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: embroidery-migrate
+  labels: { app.kubernetes.io/name: embroidery, app.kubernetes.io/component: migrate }
+spec:
+  backoffLimit: 3
+  # A failed migration must stay inspectable, so completed Jobs are not reaped
+  # automatically; the release procedure removes them (APP12-H07 owns that).
+  template:
+    metadata:
+      labels: { app.kubernetes.io/name: embroidery, app.kubernetes.io/component: migrate }
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: migrate
+          image: embroidery/api:REPLACED_BY_OVERLAY
+          command: ['node', '/app/packages/database/dist/cli/migrate-deployment.js']
+          envFrom:
+            - configMapRef: { name: embroidery-config }
+            - secretRef: { name: embroidery-secrets }
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { memory: 512Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ['ALL'] }
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+      volumes: [{ name: tmp, emptyDir: {} }]

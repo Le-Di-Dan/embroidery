@@ -147,7 +147,15 @@ services:
         # prerenders. Declared here so a production image built from this file
         # receives the same origin the container runs with, rather than baking
         # a different one (APP11-S04).
-        STOREFRONT_PUBLIC_ORIGIN: ${STOREFRONT_PUBLIC_ORIGIN:-}
+        STOREFRONT_PUBLIC_ORIGIN: ${STOREFRONT_PUBLIC_ORIGIN:-http://embroidery.local}
+        # The PUBLIC values Next inlines into the client bundle during
+        # `next build` (`APP12-H02` §14). Passed here for the same reason as the
+        # origin above: a production image built from this file must bake the
+        # values it will run with. `next dev` reads them from the environment
+        # instead, which is why the `dev` target ignores these.
+        NEXT_PUBLIC_ZALO_CONTACT_URL: ${NEXT_PUBLIC_ZALO_CONTACT_URL:-}
+        NEXT_PUBLIC_MESSENGER_CONTACT_URL: ${NEXT_PUBLIC_MESSENGER_CONTACT_URL:-}
+        NEXT_PUBLIC_API_BASE_PATH: ${NEXT_PUBLIC_API_BASE_PATH:-/api}
     environment:
       NODE_ENV: development
       # Browser calls the same-origin gateway path; never a direct host:port.
@@ -159,10 +167,24 @@ services:
       # canonical URLs, robots.txt and sitemap.xml. The SAME variable the worker
       # reads for secure links, deliberately — both processes must mean one
       # address by it, and a second value is how a canonical tag and a secure
-      # link start naming different hosts. No default: an unset value fails the
-      # SEO consumer closed rather than publishing a guessed origin, and it never
-      # carries NEXT_PUBLIC_ because no client code needs it.
-      STOREFRONT_PUBLIC_ORIGIN: ${STOREFRONT_PUBLIC_ORIGIN:-}
+      # link start naming different hosts.
+      #
+      # The default is the canonical DEVELOPMENT gateway origin, and it lives in
+      # this tracked file rather than in anyone's `.env` (`APP12-H02` §13 —
+      # `FU-APP11-S04-01` / `FU-APP12-S03-06`). Before H02 the value was empty
+      # here, so an ordinary `pnpm docker:dev:up` produced a stack whose SEO
+      # routes and secure-link composition both failed closed on a variable
+      # nothing had set — a first-run failure with no local cause.
+      #
+      # It is a COMPOSE default, not a runtime fallback. `getStorefrontPublicOrigin`
+      # still has none and still throws when the variable is absent, so production
+      # cannot inherit a localhost guess from anywhere; the two behaviours are
+      # independent on purpose. It also matches `STOREFRONT_HOST`'s own default —
+      # change `GATEWAY_HTTP_PORT` away from 80 and this must be set explicitly,
+      # because an origin without the port names an address the browser cannot use.
+      #
+      # It never carries NEXT_PUBLIC_: no client code needs it.
+      STOREFRONT_PUBLIC_ORIGIN: ${STOREFRONT_PUBLIC_ORIGIN:-http://embroidery.local}
       # Public external contact channels for the footer handoff (APP10-I01).
       # Optional and independent: an unset or invalid value omits that CTA, and
       # with neither set the whole `Kết nối` group is absent. Never a credential.
@@ -341,7 +363,7 @@ services:
       # outbound channel call, so the worker — and only the worker — needs the
       # public Storefront origin. No default: an unset value fails closed at
       # that rendering boundary rather than minting a link to a guessed host.
-      STOREFRONT_PUBLIC_ORIGIN: ${STOREFRONT_PUBLIC_ORIGIN:-}
+      STOREFRONT_PUBLIC_ORIGIN: ${STOREFRONT_PUBLIC_ORIGIN:-http://embroidery.local}
       # Reach the database over the compose network (never the host mapping).
       DATABASE_URL: postgres://${POSTGRES_USER:-embroidery}:${POSTGRES_PASSWORD:-embroidery_dev_password}@postgres:5432/${POSTGRES_DB:-embroidery}
       CHOKIDAR_USEPOLLING: 'true'

@@ -1,0 +1,30 @@
+# HTTP → HTTPS (`APP12-H02` §21).
+#
+# Bound to the **http** listener, which exists for nothing else. Every request
+# that arrives in the clear is answered with a redirect to the same host and
+# path over https, before it reaches any application: no plain-HTTP request is
+# ever proxied to the Storefront, the Admin or the API.
+#
+# `301`, not `302`. The redirect is a permanent property of the deployment, and
+# a permanent redirect is the one a browser and a crawler both cache — which is
+# the point of redirecting at all.
+#
+# One HTTPRoute covers both hostnames because the rule is identical for them;
+# the hostnames list is supplied per overlay alongside the Gateway listeners.
+# No `Strict-Transport-Security` here: a redirect is a plain-HTTP response and
+# HSTS on one is ignored (§22).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: embroidery-https-redirect
+  labels: { app.kubernetes.io/name: embroidery, app.kubernetes.io/component: gateway }
+spec:
+  parentRefs: [{ name: embroidery, sectionName: http }]
+  hostnames: ['REPLACED_BY_OVERLAY']
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            port: 443
+            statusCode: 301

@@ -1,0 +1,73 @@
+# Staging overlay (`APP12-H02` §6/§26).
+#
+# The SAME base as production — same Deployments, same probes, same security
+# contexts, same Gateway API routing, same migration Job. Only the values
+# differ, which is the point: a staging deployment that used a different model
+# would prove the model it used, not the one that ships.
+#
+# It additionally pulls in `staging-scaffolding/`: a disposable PostgreSQL and
+# MinIO so the deployment has something at the addresses configuration names.
+# Those are test infrastructure, labelled `embroidery.local/disposable: "true"`,
+# and are NOT part of the production model — stateful topology is reserved to an
+# ADR (`SYSTEM_ARCHITECTURE.md` §13).
+#
+# Every value here is synthetic and under test control: a staging hostname, a
+# structurally-valid merchant account that is deliberately not a real one, and
+# disposable credentials generated per run.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: embroidery-staging
+
+resources:
+  - ../../base
+  - ../../staging-scaffolding
+  - staff-bootstrap-job.yaml
+
+images:
+  - name: embroidery/api
+    newTag: REPLACE_WITH_IMMUTABLE_RELEASE_REF
+  - name: embroidery/worker
+    newTag: REPLACE_WITH_IMMUTABLE_RELEASE_REF
+  - name: embroidery/storefront
+    newTag: REPLACE_WITH_IMMUTABLE_RELEASE_REF
+  - name: embroidery/admin
+    newTag: REPLACE_WITH_IMMUTABLE_RELEASE_REF
+
+patches:
+  - path: gateway-patch.yaml
+  - path: route-hostnames-patch.yaml
+  # Two replicas of each app on a single-node disposable cluster proves nothing
+  # a rollout does not already prove, and costs memory the cluster needs for
+  # PostgreSQL and MinIO. The rolling-update strategy is unchanged, so the
+  # rollback and failed-rollout evidence still exercises the production shape.
+  - path: replicas-patch.yaml
+
+configMapGenerator:
+  - name: embroidery-config
+    behavior: merge
+    literals:
+      # The canonical staging origin. HTTPS, under test control, and the SAME
+      # value the worker composes secure links with and the Storefront resolves
+      # `metadataBase`, canonical URLs, robots.txt and sitemap.xml from.
+      - STOREFRONT_PUBLIC_ORIGIN=https://staging.embroidery.local
+      - STAFF_ALLOWED_ORIGINS=https://admin.staging.embroidery.local
+      - DESIGN_SESSION_ALLOWED_ORIGINS=https://staging.embroidery.local
+      - OBJECT_STORAGE_ENDPOINT=http://embroidery-minio:9000
+      - OBJECT_STORAGE_ORIGINALS_BUCKET=embroidery-staging-originals
+      - OBJECT_STORAGE_DERIVATIVES_BUCKET=embroidery-staging-derivatives
+      # Structurally valid and deliberately NOT a real account: `970000` is not
+      # an issued NAPAS acquirer id and the account number is all zeroes, so a
+      # QR generated here cannot address a real bank destination (§29).
+      - PAYMENT_MERCHANT_BANK_BIN=970000
+      - PAYMENT_MERCHANT_ACCOUNT_NUMBER=0000000000
+      - PAYMENT_MERCHANT_ACCOUNT_NAME=STAGING TEST ACCOUNT DO NOT PAY
+      - PAYMENT_MERCHANT_BANK_DISPLAY_NAME=Staging Test Bank
+      # Wave 1 — the same explicit `false` production carries (§47).
+      - CUSTOM_EMBROIDERY_RELEASE_ENABLED=false
+      # The SAME value production carries. The disposable PostgreSQL is given a
+      # per-run self-signed certificate precisely so this does not have to
+      # differ: `require` accepts a self-signed peer (`rejectUnauthorized: false`),
+      # which is right for a disposable server and is what makes the staging
+      # deployment exercise the production TLS path rather than a weaker one.
+      - DATABASE_SSL_MODE=require

@@ -1,0 +1,26 @@
+# The Gateway's three external release values: the controller that implements
+# it and the two canonical hostnames it terminates TLS for.
+#
+# `gatewayClassName` is empty because the concrete Gateway API controller is an
+# open decision requiring an ADR (`SYSTEM_ARCHITECTURE.md` §13, D-036). H02
+# delivers the routing contract, not the controller choice.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: embroidery
+spec:
+  gatewayClassName: ''
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: ''
+      allowedRoutes: { namespaces: { from: Same } }
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: ''
+      tls:
+        mode: Terminate
+        certificateRefs: [{ kind: Secret, name: embroidery-tls }]
+      allowedRoutes: { namespaces: { from: Same } }

@@ -1,0 +1,7 @@
+# Disposable staging infrastructure. See README.md — test scaffolding only,
+# never production topology.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - postgres.yaml
+  - minio.yaml

@@ -19,6 +19,39 @@ import { DatabaseExecutor } from './database-executor';
 import { DatabaseHealthService } from '../health/database-health.service';
 import { TransactionManager } from '../transaction/transaction-manager';
 
+/**
+ * The canonical physical schema, as two independent facts (`APP12-H02` §11 —
+ * `FU-APP12-B02-01` / `FU-APP12-B05-03`).
+ *
+ * A bare table count is a snapshot that drifts silently: it went stale at
+ * `0037_add_app7_transfer_evidence_association` and was still asserting the
+ * pre-APP7 `78` when two separate APP12 checkpoints tripped over it and filed
+ * the same debt twice. The count alone also cannot say *why* it moved — a
+ * migration that adds one table and a migration that adds two while another
+ * drops one look identical to it.
+ *
+ * So three assertions replace the one, and each fails with a different meaning:
+ *
+ * - `CANONICAL_MIGRATION_COUNT` — how much history was applied. Wrong when the
+ *   runner stopped early or a migration was added without this being reviewed.
+ * - `CANONICAL_TABLE_COUNT` — the physical result. Wrong when the schema
+ *   changed shape.
+ * - `NEWEST_CANONICAL_TABLE` — the specific table whose arrival last moved the
+ *   count, checked **by name**. This is what a count-only snapshot cannot do:
+ *   the next migration that adds a table has to change a name here, not just a
+ *   number, so nobody can restore a green suite by editing a digit.
+ *
+ * Measured, not assumed: 38 rows in `drizzle.__drizzle_migrations`, 79 base
+ * tables in `public`, and `payment_transfer_evidence` created by `0037`.
+ * `APP12-DB01` (`0038`) is the newest migration but creates no table — it
+ * alters `orders`, `order_items`, `payment_obligations` and
+ * `secure_access_grants` in place — which is exactly why the table count did
+ * not move at APP12 and why naming "the APP12 table" would have named nothing.
+ */
+const CANONICAL_MIGRATION_COUNT = 38;
+const CANONICAL_TABLE_COUNT = 79;
+const NEWEST_CANONICAL_TABLE = 'payment_transfer_evidence';
+
 /** A password that must never appear in any message this suite provokes. */
 const SECRET = 'super_secret_password_do_not_leak';
 
@@ -71,14 +104,35 @@ describe('database runtime (integration)', () => {
       expect(result.rows[0]).toEqual({ one: 1 });
     });
 
-    it('applied the DB6 schema — the canonical table count is present', async () => {
+    it('applied every canonical migration onto the canonical schema', async () => {
       const executor = moduleRef.get(DatabaseExecutor);
-      const result = await executor
+
+      const applied = await executor
+        .current()
+        .execute<{ count: string }>(
+          'SELECT count(*)::text AS count FROM drizzle.__drizzle_migrations',
+        );
+      expect(Number(applied.rows[0]?.count)).toBe(CANONICAL_MIGRATION_COUNT);
+
+      const tables = await executor
         .current()
         .execute<{ count: string }>(
           "SELECT count(*)::text AS count FROM information_schema.tables WHERE table_schema = 'public'",
         );
-      expect(Number(result.rows[0]?.count)).toBe(78);
+      expect(Number(tables.rows[0]?.count)).toBe(CANONICAL_TABLE_COUNT);
+    });
+
+    it('carries the newest canonical table by name, not only in the count', async () => {
+      const executor = moduleRef.get(DatabaseExecutor);
+      // The name is interpolated rather than bound. `to_regclass` takes a
+      // literal, and the value is a constant declared in this file — never
+      // input — so there is nothing here for a parameter to protect against.
+      const result = await executor
+        .current()
+        .execute<{ present: boolean }>(
+          `SELECT to_regclass('public.${NEWEST_CANONICAL_TABLE}') IS NOT NULL AS present`,
+        );
+      expect(result.rows[0]?.present).toBe(true);
     });
   });
 

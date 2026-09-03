@@ -11,5 +11,5 @@
     "incremental": false
   },
   "include": ["src/**/*"],
-  "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts", "src/cli/**"]
+  "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts", "src/cli/migrate.ts", "src/cli/status.ts"]
 }

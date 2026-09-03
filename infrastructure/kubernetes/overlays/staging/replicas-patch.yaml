@@ -1,0 +1,14 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: embroidery-api }
+spec: { replicas: 1 }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: embroidery-storefront }
+spec: { replicas: 1 }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: embroidery-admin }
+spec: { replicas: 1 }
