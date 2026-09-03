@@ -36,6 +36,7 @@
  */
 import { execFileSync } from 'node:child_process';
 import { argv, env, exit, stdout } from 'node:process';
+import { pathToFileURL } from 'node:url';
 
 /**
  * The ONE prefix this repository's disposable databases carry.
@@ -54,7 +55,7 @@ import { argv, env, exit, stdout } from 'node:process';
  * therefore retains — whereas the failure mode of a *wrong* entry is a drop.
  * The narrow version can only ever under-collect.
  */
-const PROVEN_DISPOSABLE_PREFIX = 'embroidery_db7_';
+export const PROVEN_DISPOSABLE_PREFIX = 'embroidery_db7_';
 
 /**
  * Names that may never be dropped, whatever else matches.
@@ -63,7 +64,7 @@ const PROVEN_DISPOSABLE_PREFIX = 'embroidery_db7_';
  * templates and `sonar` are infrastructure. This list is checked after the
  * prefix match and overrides it.
  */
-const PROTECTED_DATABASES = Object.freeze([
+export const PROTECTED_DATABASES = Object.freeze([
   'embroidery',
   'postgres',
   'template0',
@@ -120,7 +121,7 @@ function inventory(container, user) {
  * The disposition. `disposable` alone never authorises a drop — `droppable`
  * does, and it additionally requires the database to be idle.
  */
-function classify(name) {
+export function classify(name) {
   if (PROTECTED_DATABASES.includes(name)) {
     return { disposition: 'PROTECTED', reason: 'on the protected list' };
   }
@@ -136,7 +137,7 @@ function classify(name) {
   };
 }
 
-function droppable(entry) {
+export function droppable(entry) {
   return entry.disposition === 'DISPOSABLE' && entry.connections === 0;
 }
 
@@ -211,4 +212,9 @@ function main() {
   }
 }
 
-main();
+// Only run when invoked as a command. Importing this module — which the safety
+// tests do, to exercise `classify` and `droppable` without a database — must
+// never reach for Docker or drop anything.
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main();
+}

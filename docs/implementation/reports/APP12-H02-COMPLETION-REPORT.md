@@ -5,6 +5,7 @@ CHECKPOINT      = APP12-H02
 PHASE           = APP12 — Hardening, UAT and Production Readiness
 STATUS          = COMPLETE
 DATE            = 2026-09-03
+TIERS           = implementation (§A–§AK) · PO continuation (§AL–§AT)
 CORRECTION_USED = 0 / 1
 NEXT            = APP12-H03
 PUSHED          = false
@@ -1243,4 +1244,429 @@ CORRECTION_USED = 0 / 1
 G03 data created  = false
 production deployed = false
 pushed = false
+```
+
+---
+---
+
+# PO CONTINUATION — remaining deployment/configuration acceptance
+
+```text
+TIER            = PO continuation (not a correction; CORRECTION_USED stays 0 / 1)
+DATE            = 2026-09-03
+ENTRY           = H02_IMPLEMENTATION = PROVISIONALLY_ACCEPTED
+                  H02_ACCEPTANCE     = INCOMPLETE
+EXIT            = APP12-H02 = COMPLETE
+```
+
+## AL. What the first report did not do
+
+Three gaps, stated as the Product Owner stated them, before the evidence that
+supersedes them.
+
+1. **Two mandatory live acceptance cases were not run.** `/mua-hang/[slug]` was
+   absent from the Chromium CSP matrix, and the real staging `ORDER_ACCESS`
+   notification journey was proved only on its configuration half. Both were
+   filed as follow-ups (`FU-APP12-H02-03`, `FU-APP12-H02-01`) and routed to
+   `APP12-E01`.
+2. **`FU-APP12-B02-03` was left `PARTIALLY_CLOSED`.** The deployment half was
+   closed; the integration harness that inherits an ambient release flag was
+   routed away.
+3. **The two H02-owned release-safety tools had no focused tests**
+   (`FU-APP12-H02-02`, routed to `APP12-H07`).
+
+The first report's reason for (1) — that commercial fixtures were out of scope —
+was a **misreading**. §27 forbids a *G03 dataset* and forbids shared dev; it
+explicitly permits a disposable staging database with synthetic data for a smoke
+case that needs a commerce mutation. That is what this tier uses.
+
+All three are now closed here. None is deferred.
+
+---
+
+## AM. Disposable commercial fixture
+
+The staging PostgreSQL database was renamed `embroidery_db7_h02_staging`. That is
+not cosmetic: the canonical fixture authority
+(`packages/e2e-testing/support/app12/s01-catalog-fixture.mjs`) refuses to seed
+commercial data into any database whose name does not begin `embroidery_db7_` —
+the rule that keeps fixtures out of shared data
+(`VALIDATION_GOVERNANCE.md` §3A.4). The database *is* disposable — an `emptyDir`
+destroyed with the cluster — so it is named to say so, and the guard does its job
+instead of being argued with.
+
+The fixture is the delivered `APP12-S01` one, unmodified: a PUBLISHED test-only
+category, two PUBLISHED Products, colour/size variants, one SKU per variant with
+positive stock on the buyable combinations plus a deliberate out-of-stock one and
+a deliberate ambiguous one. No production taxonomy is hard-coded — every business
+key carries the `app12-s01-e2e-` prefix.
+
+```text
+seeded into embroidery_db7_h02_staging: 2 products, 1 category
+served publicly:  /san-pham/app12-s01-e2e-ao-thun            200
+                  /mua-hang/app12-s01-e2e-ao-thun            200
+```
+
+Re-deployed against the renamed database, the migration Job produced the same
+canonical schema: **38 migrations, 79 tables**.
+
+---
+
+## AN. Journey A — `/mua-hang/[slug]` under nonce CSP
+
+Driven as a customer drives it, not by constructing a URL. Real Chromium, real
+staging HTTPS Gateway.
+
+```text
+/san-pham/app12-s01-e2e-ao-thun
+  CTA absent before selection                          true
+  select an enabled colour + size
+  -> a checkout link appears carrying a real SKU id    PASS
+  click it
+/mua-hang/app12-s01-e2e-ao-thun?sku=<real sku id>&quantity=1
+  status                                               200
+  heading                                              "Xác nhận đơn hàng"
+  post-hydration interaction (controlled input echoed typed text)   PASS
+```
+
+The CTA's appearance is itself a hydration proof: the server-rendered document
+for that page contains no such href, so the link exists only because client state
+produced it.
+
+CSP on the checkout response:
+
+```text
+nonce present             yes
+executable inline scripts 9   nonced 9   bare 0
+script-src unsafe-inline  false
+script-src unsafe-eval    false
+connect-src ws:           absent
+CSP violations            0
+```
+
+`FU-APP12-H02-03 = CLOSED_BY_APP12_H02_CONTINUATION`.
+
+---
+
+## AO. Journey B — real staging `ORDER_ACCESS` origin
+
+Every business step ran against the **deployed** staging API over its real HTTPS
+Gateway.
+
+One thing could not run inside the cluster, and the reason is a security property
+rather than a limitation: the delivery channel is the recording adapter
+(`APP4-W01`, `ADR-APP4-001` §12), which writes to **no table, no file and no
+log** — it holds the decrypted secret in process memory only, precisely so a
+plaintext credential is never at rest. Nothing outside that process can read what
+the customer was sent, and making it readable would defeat the envelope.
+
+So the **worker's own runtime** was booted in process — the same `WorkerModule`,
+the same `JobExecutionService`, the same claim path through the same
+`WorkerJobQueueRepository`, the same recording adapter — against the **same**
+staging database, the **same** staging secrets and the **same**
+`STOREFRONT_PUBLIC_ORIGIN`. It claimed the real outbox rows the deployed API had
+written. The deployed worker was scaled to 0 for the duration so there was
+exactly one claimant. This is the repository's own canonical technique
+(`packages/e2e-testing/support/app4/worker-control.mjs`), not a new mechanism.
+
+```text
+1. publicVerification_issue          -> 202
+   real worker delivered the code (recording adapter, memory only)
+   publicVerification_submitAttempt  -> 200
+2. publicProductVariant_list         -> real purchasable SKU id
+   publicReadyMadeOrder_create       -> 201
+3. real worker -> recorded SECURE_LINK_TOKEN delivery
+```
+
+The delivered URL, asserted as booleans so no assertion message can print it:
+
+```text
+PASS  scheme = https
+PASS  origin = configured staging STOREFRONT_PUBLIC_ORIGIN
+PASS  path = /truy-cap/don-hang
+PASS  credential carrier = #t= fragment
+PASS  fragment carries an opaque token
+PASS  query token absent
+PASS  path token absent
+```
+
+The **exact delivered string** was then opened in Chromium — no path repair, no
+token rewriting, no re-composition:
+
+```text
+PASS  secure page rendered on the ORDER_ACCESS route   (heading "Thanh toán đơn hàng")
+PASS  fragment stripped from the address bar
+PASS  no token in the query
+PASS  no token anywhere in the DOM
+PASS  no token in localStorage
+PASS  no token in sessionStorage
+PASS  at least one secure API request was made          (1 observed)
+PASS  no token in any secure API request URL
+PASS  no CSP violation
+
+JOURNEY B failures = 0
+```
+
+The browser context ran with trace, HAR and video all off, because it handles a
+live credential. The token appears nowhere in this report, in any log, or in any
+retained artifact.
+
+`FU-APP12-H02-01 = CLOSED_BY_APP12_H02_CONTINUATION`.
+
+---
+
+## AP. Final nonce-CSP live matrix
+
+Every route opened for itself. No route inferred from another.
+
+```text
+route                     status  nonce  inlineExec  nonced  bare  unsafeInline  unsafeEval  ws:
+/                          200     yes       12        12      0      false        false     no
+/kham-pha                  200     yes       11        11      0      false        false     no
+/san-pham/[slug]           200     yes       16        16      0      false        false     no
+/mua-hang/[slug]           200     yes        9         9      0      false        false     no
+/truy-cap/don-hang         200     yes        8         8      0      false        false     no
+Admin /login               200     yes        4         4      0      false        false     no
+Admin /orders    (auth'd)  200     yes        6         6      0      false        false     no
+Admin /categories(auth'd)  200     yes        6         6      0      false        false     no
+
+distinct nonces = 8      CSP violations = 0      route failures = 0
+cookie __Host-adm_session: secure=true httpOnly=true sameSite=Strict path=/
+```
+
+One measurement correction worth recording. The first continuation run reported a
+bare inline script on `/san-pham/[slug]`. It is that page's
+`type="application/ld+json"` structured-data block — **not executable**, so
+`script-src` does not apply to it, which is why Chromium reports no violation
+against it. The matrix now counts only executable inline scripts (no `type`, or a
+JavaScript/module type). Counting a data block would have reported a policy
+failure that does not exist.
+
+---
+
+## AQ. `FU-APP12-B02-03` — closed in H02
+
+Located mechanically, then measured rather than reasoned about: the whole
+`apps/api/test` tree was run twice, once with the flag explicitly `false` and
+once explicitly `true`.
+
+```text
+flag = false : 18 suites failed / 87
+flag = true  :  3 suites failed / 87
+difference   : 15 suites whose only obstacle was the ambient flag
+```
+
+The three that fail either way are unrelated pre-existing debt — frozen
+historical snapshots (`api-integration-context` asserts the APP2-era 33
+migrations / 78 tables; `e01-06-contract-boundary` asserts an APP6-era OpenAPI of
+72 paths / 79 operations / 167 schemas against the current 125/138/278) plus
+`admin-payment-review`.
+
+Two harnesses now exist, neither inheriting an ambient value:
+
+```text
+apps/api/jest.config.mjs        setupFiles -> release-flag.wave1.mjs  (false)
+                                excludes the Wave-2 suites
+apps/api/jest.wave2.config.mjs  setupFiles -> release-flag.wave2.mjs  (true)
+                                runs ONLY the Wave-2 suites
+apps/api/test/support/wave2-suites.mjs  the single shared list — adding a file to
+                                        one harness removes it from the other
+```
+
+Wave 2 is never enabled globally: turning it on for the whole run would hand 28
+withheld operations to the suites whose purpose is to prove they stay withheld.
+
+```text
+default (Wave-1) harness   69 / 71 suites pass   (2 pre-existing snapshot failures)
+Wave-2 harness             15 / 16 suites pass   (1 pre-existing snapshot failure)
+                           207 / 208 tests
+```
+
+Registered as `CMD-TEST-API-WAVE2`.
+
+`FU-APP12-B02-03 = CLOSED_BY_APP12_H02`.
+
+---
+
+## AR. Focused tests for the H02 release-safety tools
+
+Not routed to H07. H02 owns these tools and now tests them.
+
+**`tools/check-release-config.test.mjs` — 13 tests.** Each refusal is proved
+individually against a manifest differing from a passing one in exactly one way;
+a single "bad config fails" test would pass even if the tool refused for the
+wrong reason. Every case renders a real overlay through the real `kubectl` path
+the tool uses.
+
+```text
+valid staging                              -> PASS
+missing STOREFRONT_PUBLIC_ORIGIN           -> FAIL  MISSING
+malformed origin (path + query)            -> FAIL  MALFORMED
+invalid release flag ("True")              -> FAIL  MALFORMED
+mutable `latest` image                     -> FAIL  IMAGE
+unresolved placeholder image               -> FAIL  IMAGE
+secretRef marked optional                  -> FAIL  SECRET
+synthetic secret-shaped value              -> FAIL, and the value never appears in the output
+production committed overlay               -> FAIL (every external value absent)
+production missing gatewayClassName        -> FAIL  ROUTING
+production missing hostname                -> FAIL  ROUTING
+production loopback origin                 -> FAIL  PRODUCTION
+production fully supplied                  -> PASS
+```
+
+**`tools/db-disposable-inventory.test.mjs` — 11 tests.** Eight of the ten
+behavioural cases prove something is *not* dropped, which is the right weighting
+for the only tool in the repository that issues `DROP DATABASE`. Classification
+is tested as a pure function, because that is what the destructive decision
+actually depends on — `classify` is re-run immediately before every drop.
+
+```text
+disposable prefix classified correctly     protected list wins over prefix match
+shared development database retained       near-miss prefixes retained
+every protected name retained              idle disposable droppable
+unrecognised name retained                 active disposable NOT droppable
+protected never droppable                  unknown never droppable
+dry-run by default; --execute required     (bounded integration; skips without Docker)
+```
+
+```text
+node --test tools/check-release-config.test.mjs tools/db-disposable-inventory.test.mjs
+# tests 24   # pass 24   # fail 0
+```
+
+Registered as `CMD-TEST-RELEASE-TOOLS`.
+
+`FU-APP12-H02-02 = CLOSED_BY_APP12_H02_CONTINUATION`.
+
+---
+
+## AS. Release gates and freshly measured baseline
+
+Run now, not carried forward.
+
+```text
+node tools/check-report-secrets.mjs           PASS  (646 documents, 5129 tracked files)
+node tools/check-category-source-of-truth.mjs PASS  (2544 sources; no compiled category
+                                                     values, no legacy taxonomy imports)
+Storefront route authority                    PASS  (check-storefront-route-authority
+                                                     + 18 boundary suites, 419 tests)
+Admin route authority / count                 PASS  (admin-shell model + 17 boundary
+                                                     suites, 291 tests; 26 page.tsx routes)
+OpenAPI check                                 PASS  ("artifact is up to date")
+generated api-client check                    PASS  (tree hash 4b60e760…)
+release-gate authority contract spec          PASS  (15 tests)
+```
+
+**Freshly measured**, from the generated artifact and the runtime authority sets:
+
+```text
+WAVE2_WITHHELD_PUBLIC_OPERATIONS   28
+WAVE1_RELEASED_PUBLIC_OPERATIONS   18
+SCOPE_GATED_PUBLIC_OPERATIONS       3
+union                              49
+non-admin / non-staff operations in the published contract   51
+  of which operational health probes (health_check, health_readiness)   2
+  business public operations                                           49
+unclassified public business operations                                 0
+classified but not public                                               0
+```
+
+So `public operations = 49` and `release matrix = 28 DENY / 18 ALLOW /
+3 SCOPE_GATED` are measured facts in this tier, not inherited ones. The union
+partitions the public business surface exactly.
+
+---
+
+## AT. `FU-APP12-B03-01` — current state, mechanically known
+
+Inspected against the current `packages/contracts/openapi/openapi.generated.json`.
+
+```text
+AdminShippingFeeOutcomeResponse.previousFeeAmount        "type": "string"   OK
+AdminShippingFeeOutcomeResponse.remainingAmount          "type": "object"   STILL WRONG
+AdminShippingFeeOutcomeResponse.remainingObligationId    "type": "object"   STILL WRONG  ("format": "uuid")
+AdminShippingFeeOutcomeResponse.supersededObligationId   "type": "object"   STILL WRONG  ("format": "uuid")
+```
+
+Three of the four fields still publish `type: object` for what is a nullable
+string, and two of those pair it with `format: uuid` — internally contradictory,
+and enough to make the generated client type them as `object` rather than
+`string | null`. Not `ALREADY_CLOSED`.
+
+Fixing it means changing published OpenAPI, which §48 freezes for this checkpoint
+and §3 forbids H02 doing. Disposition:
+
+```text
+FU-APP12-B03-01 -> APP12-E01     (still open; exact current schema evidence above)
+```
+
+---
+
+## AU. Continuation hygiene
+
+The two journeys created real, immutable commercial history. Where it lives, and
+where it does not:
+
+```text
+DURING THE RUN — disposable staging database embroidery_db7_h02_staging
+  orders=1  order_items=1  secure_access_grants=1  customers=2  outbox_events=4
+
+SHARED DEVELOPMENT DATABASE — H02 commercial residue
+  orders=0  order_items=0  payment_attempts=0  payment_transfer_evidence=0
+  app12-s01-e2e fixture rows=0
+  grants created today=0   customers created today=0   newest grant=2026-08-22
+```
+
+The shared database's 4 grants and 3 customers all predate this checkpoint by
+twelve days. Nothing H02 did touched it.
+
+Teardown:
+
+```text
+staging namespace + minikube profile embroidery-staging   removed ("all traces")
+disposable PostgreSQL + MinIO (emptyDir)                  destroyed with the cluster
+disposable OCI registry container + registry:2 image      removed
+4 release images (host + registry tags)                   removed -> 0 remaining
+synthetic secrets, staging TLS key/cert, postgres TLS     removed
+host database URL file                                    removed
+harness temp scripts in packages/e2e-testing              removed -> 0 remaining
+orphan disposable databases on the shared server          0
+```
+
+Only the pre-existing development stack is still running. No certificate private
+key was committed. No secret artifact remains.
+
+---
+
+## AV. Continuation follow-up state
+
+| Follow-up | Disposition |
+| --- | --- |
+| `FU-APP12-H02-01` staging ORDER_ACCESS journey | **CLOSED_BY_APP12_H02_CONTINUATION** (§AO) |
+| `FU-APP12-H02-02` no tests for the release tools | **CLOSED_BY_APP12_H02_CONTINUATION** (§AR) |
+| `FU-APP12-H02-03` `/mua-hang/[slug]` CSP coverage | **CLOSED_BY_APP12_H02_CONTINUATION** (§AN) |
+| `FU-APP12-B02-03` release flag in the harness | **CLOSED_BY_APP12_H02** (§AQ) |
+| `FU-APP12-B03-01` `AdminShippingFeeOutcomeResponse` | `-> APP12-E01`, still open, exact schema evidence in §AT |
+| `FU-APP10-I01-02` real Zalo/Messenger URLs | `RELEASE_OPERATOR_INPUT_REQUIRED_BEFORE_R01` |
+| `FU-APP12-H02-04` ConfigMap is not hash-suffixed | `-> APP12-H07`. A config-only change is applied safely today by an explicit `kubectl rollout restart` — exercised in this checkpoint, when the ConfigMap changed and the running pods kept the old values until restarted. **No automatic rollout is claimed.** |
+| `FU-APP12-H02-05` production architecture inputs | `RELEASE_ARCHITECTURE_INPUT_REQUIRED_BEFORE_R01` — covering the production GatewayClass/controller, the production PostgreSQL topology and the production object-storage topology. All three are ADR-reserved; none is invented here. |
+
+New in this tier: none.
+
+---
+
+## AW. Final roadmap
+
+```text
+APP12-H02 = COMPLETE
+APP12-H03 = NEXT
+
+ROADMAP_STATUS  = LOCKED
+ROADMAP_LOCK    = LOCKED
+CHECKPOINTS     = 38
+CORRECTION_USED = 0 / 1
+
+G03 data created    = false
+production deployed = false
+pushed              = false
 ```

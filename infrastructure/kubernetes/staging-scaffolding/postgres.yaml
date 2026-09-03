@@ -49,7 +49,15 @@ spec:
             # so a staging database initialised without it fails the migration
             # Job rather than building every text index under the wrong rules.
             - { name: POSTGRES_INITDB_ARGS, value: '--locale=C --encoding=UTF8' }
-            - { name: POSTGRES_DB, value: embroidery }
+            # Named with the harness's disposable prefix on purpose. The
+            # canonical fixture authority (`packages/e2e-testing/support/app12/*`)
+            # refuses to seed commercial data into any database whose name does
+            # not start with `embroidery_db7_` — the rule that keeps fixtures out
+            # of shared data (VALIDATION_GOVERNANCE §3A.4). This database is
+            # disposable in fact (an `emptyDir`, destroyed with the cluster), so
+            # it is named to say so, and the guard does its job instead of being
+            # argued with.
+            - { name: POSTGRES_DB, value: embroidery_db7_h02_staging }
             - { name: POSTGRES_USER, value: embroidery }
             - name: POSTGRES_PASSWORD
               valueFrom:
