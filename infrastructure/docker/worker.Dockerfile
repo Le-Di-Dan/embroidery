@@ -163,5 +163,12 @@ COPY --from=build --chown=node:node /app/packages/notification-delivery/package.
 COPY --from=build --chown=node:node /app/packages/object-storage/dist ./packages/object-storage/dist
 COPY --from=build --chown=node:node /app/packages/object-storage/package.json ./packages/object-storage/package.json
 COPY --from=prod-deps --chown=node:node /app/packages/object-storage/node_modules ./packages/object-storage/node_modules
+# APP12-H03 — the shared metrics platform. The process starts its internal
+# scrape listener from this package at bootstrap, so a missing COPY here would
+# reproduce exactly the `MODULE_NOT_FOUND` this file already records three times.
+# No `node_modules` line: the package declares no runtime dependency at all —
+# it is Node builtins and plain TypeScript, which is `ADR-APP12-001` D5.
+COPY --from=build --chown=node:node /app/packages/observability/dist ./packages/observability/dist
+COPY --from=build --chown=node:node /app/packages/observability/package.json ./packages/observability/package.json
 WORKDIR /app/apps/worker
 CMD ["node", "dist/main.js"]

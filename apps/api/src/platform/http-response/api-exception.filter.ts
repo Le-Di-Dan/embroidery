@@ -7,16 +7,39 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
+import { isPersistenceError } from '@embroidery/database';
+import type { MetricDependency } from '@embroidery/observability';
+import { ObjectStorageError } from '@embroidery/object-storage';
 
 import { summarizeError } from '../logging/log-error';
 import { PLATFORM_LOG_EVENT } from '../logging/log-record';
 import { safeMethod, safeRoute, type RoutableRequest } from '../logging/safe-route';
 import { LOGGING_CONFIG, type LoggingConfig } from '../logging/logging-config';
 import { StructuredLogger } from '../logging/structured-logger.service';
+import { ApiDependencyMetrics } from '../metrics/api-metrics.providers';
+import { metricRouteTemplate } from '../metrics/metric-route';
 import { RequestContextService } from '../request-context/request-context.service';
 import { createErrorEnvelope } from './api-envelope.factory';
 import { mapExceptionToError } from './api-error-mapper';
 import { ResponseClock } from './response-clock';
+
+/**
+ * Names the infrastructure dependency an exception came from, or `undefined`.
+ *
+ * Two dependencies, recognised by their own error types and by nothing else.
+ * A heuristic on the message would be wrong in both directions — a business
+ * error mentioning "connection" would be counted, and a driver error with an
+ * unexpected message would not.
+ */
+function classifyDependencyFailure(exception: unknown): MetricDependency | undefined {
+  if (isPersistenceError(exception)) {
+    return 'database';
+  }
+  if (exception instanceof ObjectStorageError) {
+    return 'object_storage';
+  }
+  return undefined;
+}
 
 /** Lowest status that is a server fault, typed as a number for status comparison. */
 const SERVER_ERROR_STATUS: number = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -48,6 +71,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
     private readonly clock: ResponseClock,
     private readonly logger: StructuredLogger,
     @Inject(LOGGING_CONFIG) private readonly loggingConfig: LoggingConfig,
+    private readonly metrics: ApiDependencyMetrics,
   ) {}
 
   catch(exception: unknown, host: ArgumentsHost): void {
@@ -78,7 +102,35 @@ export class ApiExceptionFilter implements ExceptionFilter {
     // The public response is already sent; internal logging is additive and must
     // not turn a handled error into a new failure.
     if (mapped.status >= SERVER_ERROR_STATUS) {
-      this.logInternalError(exception, mapped.status, http.getRequest<RoutableRequest>());
+      const request = http.getRequest<RoutableRequest>();
+      this.logInternalError(exception, mapped.status, request);
+      this.countDependencyError(exception, request);
+    }
+  }
+
+  /**
+   * Counts an infrastructure failure at the boundary it surfaced from
+   * (`APP12-H03` §9).
+   *
+   * Only the two dependencies §9 names, and only when the exception says so —
+   * a `PersistenceError` or an `ObjectStorageError`. An unrecognised fault is
+   * already counted by the HTTP 5xx family and by whichever commerce metric
+   * owns the seam; guessing a dependency for it would report a database
+   * incident that may have nothing to do with the database.
+   *
+   * `operation` carries the **route template**, which is bounded by the same
+   * rule as `route_template` and answers the only question this counter is
+   * for: which endpoint's infrastructure call is failing. §9 forbids labelling
+   * by SQL or by a query carrying parameters, and a route template is neither.
+   */
+  private countDependencyError(exception: unknown, request: RoutableRequest): void {
+    try {
+      const dependency = classifyDependencyFailure(exception);
+      if (dependency !== undefined) {
+        this.metrics.recordDependencyError(dependency, metricRouteTemplate(request));
+      }
+    } catch {
+      // Telemetry must never turn a handled error into a second failure.
     }
   }
 

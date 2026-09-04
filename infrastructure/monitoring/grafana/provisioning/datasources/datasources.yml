@@ -1,0 +1,60 @@
+# Grafana data sources, provisioned from repository source (`APP12-H03` §14).
+#
+# Provisioned rather than added through the UI, because §14 forbids a
+# manual-only dashboard and a dashboard is only as reproducible as the data
+# source its panels reference. A UI-created data source gets a random UID, and
+# a dashboard JSON that names that UID stops working the moment Grafana is
+# rebuilt — which is exactly what a disposable staging cluster does every run.
+#
+# So both UIDs are **fixed here and referenced by name in the dashboard**.
+
+apiVersion: 1
+
+# Removes anything provisioned earlier under these names, so an edit here is an
+# edit rather than an addition.
+deleteDatasources:
+  - name: Prometheus
+    orgId: 1
+  - name: Loki
+    orgId: 1
+
+datasources:
+  - name: Prometheus
+    uid: embroidery-prometheus
+    type: prometheus
+    access: proxy
+    orgId: 1
+    url: http://embroidery-prometheus:9090
+    isDefault: true
+    # The panels drive Grafana; nobody edits a data source in the UI and expects
+    # it to survive a redeploy.
+    editable: false
+    jsonData:
+      # Matches `scrape_interval`, so a range query never asks for a resolution
+      # the data does not have.
+      timeInterval: 15s
+      httpMethod: POST
+
+  - name: Loki
+    uid: embroidery-loki
+    type: loki
+    access: proxy
+    orgId: 1
+    url: http://embroidery-loki:3100
+    editable: false
+    jsonData:
+      # The correlation link that makes §14's "where do I inspect diagnostic
+      # logs" answerable in one click: a `requestId` in a log line becomes a
+      # link that queries every record sharing it, across services.
+      derivedFields:
+        - name: requestId
+          matcherType: label
+          matcherRegex: '"requestId":"([^"]+)"'
+          # `${__value.raw}` is the captured request id.
+          query: '{namespace="embroidery-staging"} |= "${__value.raw}"'
+          datasourceUid: embroidery-loki
+        - name: correlationId
+          matcherType: label
+          matcherRegex: '"correlationId":"([^"]+)"'
+          query: '{namespace="embroidery-staging"} |= "${__value.raw}"'
+          datasourceUid: embroidery-loki

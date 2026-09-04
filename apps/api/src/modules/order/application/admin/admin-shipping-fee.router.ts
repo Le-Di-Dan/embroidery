@@ -44,8 +44,12 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ORDER_ORIGIN_PORT, type OrderOriginPort } from '@embroidery/persistence';
 import type { ShippingDetail } from '@embroidery/persistence';
 
-import { adminShippingError } from '../../domain/shipping/admin-shipping.errors';
+import {
+  adminShippingError,
+  isAdminShippingError,
+} from '../../domain/shipping/admin-shipping.errors';
 import { SetReadyMadeShippingFeeUseCase } from '../ready-made/set-ready-made-shipping-fee.use-case';
+import { OrderFulfilmentMetrics } from './order-fulfilment.metrics';
 import {
   SaveShippingDetailUseCase,
   type SaveShippingDetailCommand,
@@ -88,14 +92,60 @@ export class AdminShippingFeeRouter {
     @Inject(ORDER_ORIGIN_PORT) private readonly origins: OrderOriginPort,
     private readonly custom: SaveShippingDetailUseCase,
     private readonly readyMade: SetReadyMadeShippingFeeUseCase,
+    private readonly metrics: OrderFulfilmentMetrics,
   ) {}
 
+  /**
+   * `APP12-H03` §7 — the fee write is instrumented here rather than in either
+   * use case, because this is the only place that knows the order's origin
+   * *before* the write and sees both branches settle. The origin comes from the
+   * same database read the routing decision uses, so the label can never
+   * disagree with the path that ran.
+   */
   async save(command: SaveShippingDetailCommand): Promise<AdminShippingSaveOutcome> {
     const origin = await this.origins.originOf(command.orderId);
     if (origin === undefined) {
       throw adminShippingError('ORDER_NOT_FOUND');
     }
+    return this.observed(origin, () => this.route(origin, command));
+  }
 
+  /**
+   * Records the settled outcome under the transition the result reveals.
+   *
+   * The set/correct distinction is `previousFeeAmount`: a first confirmation
+   * has no previous fee, a correction does. It is read from the committed
+   * outcome rather than guessed from the order's status beforehand, so a
+   * concurrent write cannot make the label describe the wrong operation.
+   *
+   * A refusal is attributed to `shipping_fee_set`. Nothing was written, so no
+   * committed outcome exists to say which of the two it would have been, and
+   * inventing one would put a refusal on a transition that never happened.
+   */
+  private async observed(
+    origin: string,
+    run: () => Promise<AdminShippingSaveOutcome>,
+  ): Promise<AdminShippingSaveOutcome> {
+    const refusal = (error: unknown): string | undefined =>
+      isAdminShippingError(error) ? error.failure : undefined;
+    const observation = this.metrics.start('shipping_fee_set', refusal);
+    observation.origin(origin);
+    try {
+      const outcome = await run();
+      observation.succeededAs(
+        outcome.previousFeeAmount === null ? 'shipping_fee_set' : 'shipping_fee_corrected',
+      );
+      return outcome;
+    } catch (error: unknown) {
+      observation.failed(error);
+      throw error;
+    }
+  }
+
+  private async route(
+    origin: string,
+    command: SaveShippingDetailCommand,
+  ): Promise<AdminShippingSaveOutcome> {
     if (origin === 'READY_MADE') {
       const result = await this.readyMade.save(command);
       return {

@@ -23,6 +23,12 @@ import { buildCorrelationId } from '../identity/worker-identity';
 import { WorkerFatalService } from '../lifecycle/worker-fatal.service';
 import { FATAL_EXIT_SAFETY_MS } from '../lifecycle/worker-process';
 import { formatJobLogLine, projectJobLogFields } from '../logging/job-log-fields';
+import {
+  UNKNOWN_JOB_TYPE,
+  jobOutcomeOf,
+  recordJobAttempt,
+} from '../metrics/job-attempt-observation';
+import { WorkerRuntimeMetrics } from '../metrics/worker-metrics.providers';
 import type { JobHandler } from '../registry/job-handler';
 import { MAX_EFFECT_KEY_LENGTH } from '../registry/job-handler';
 import { JobHandlerRegistry } from '../registry/job-handler.registry';
@@ -59,6 +65,7 @@ export class JobExecutionService {
     private readonly transactions: TransactionManager,
     private readonly fatal: WorkerFatalService,
     @Inject(WORKER_CLOCK) private readonly clock: WorkerClock,
+    private readonly metrics: WorkerRuntimeMetrics,
   ) {}
 
   async run(
@@ -75,6 +82,13 @@ export class JobExecutionService {
       this.logger.error(
         `Claimed event type "${job.eventType}" has no handler; abandoning the lease.`,
       );
+      // No handler, so no `jobKind`: the claim carries an event type, and an
+      // event type is an open vocabulary that must never become a label
+      // (`APP12-H03` §5). `UNKNOWN_JOB_TYPE` is the bounded stand-in, and a
+      // non-zero rate on it is itself the signal — a deployment is claiming
+      // work it cannot run.
+      this.metrics.recordJobClaimed(UNKNOWN_JOB_TYPE);
+      recordJobAttempt(this.metrics, UNKNOWN_JOB_TYPE, 'abandoned', 0, job.attemptNo);
       return {
         outboxEventId: job.outboxEventId,
         attemptNo: job.attemptNo,
@@ -92,6 +106,11 @@ export class JobExecutionService {
       jobKind: handler.jobKind,
     };
 
+    // `APP12-H03` §8 — the shared execution boundary, instrumented once. A job
+    // kind a later checkpoint registers is observable the moment it is
+    // registered; nobody has to remember to instrument a handler.
+    this.metrics.recordJobClaimed(handler.jobKind);
+
     // Bound for the whole attempt: validation, effect-key derivation, handler
     // execution and completion logging all read the same correlation.
     return jobCorrelation.run(context, async () => {
@@ -104,6 +123,7 @@ export class JobExecutionService {
         // `PENDING`, owned by this worker, same attempt, same lease deadline —
         // so nothing can pick it up until the lease expires, by which time this
         // process (and the runaway handler inside it) no longer exists.
+        recordJobAttempt(this.metrics, handler.jobKind, 'unresponsive', durationMs, job.attemptNo);
         await this.fatal.triggerUnresponsiveHandler(projectJobLogFields(context, { durationMs }));
         return {
           outboxEventId: job.outboxEventId,
@@ -119,6 +139,13 @@ export class JobExecutionService {
           ? await this.completeSuccess(job, handler, policy, workerInstanceId)
           : await this.completeFailure(job, handler, policy, workerInstanceId, failure);
 
+      recordJobAttempt(
+        this.metrics,
+        handler.jobKind,
+        jobOutcomeOf(summary.outcome),
+        durationMs,
+        job.attemptNo,
+      );
       this.logger.log(
         formatJobLogLine(
           projectJobLogFields(context, {

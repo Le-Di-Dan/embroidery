@@ -31,9 +31,11 @@ import { RecordingNotificationChannelAdapter } from './infrastructure/channel/re
 import { SqlNotificationDeliveryRepository } from './infrastructure/persistence/sql-notification-delivery.repository';
 import { NotificationDeliveryPolicyService } from './infrastructure/policy/notification-delivery-policy.service';
 import { NotificationDeliveryHandler } from './notification-delivery.handler';
+import { NotificationDeliveryMetrics } from './application/notification-delivery.metrics';
+import { WorkerMetricsModule } from '../../runtime/metrics/worker-metrics.module';
 
 @Module({
-  imports: [DatabaseModule, WorkerRuntimeModule],
+  imports: [WorkerMetricsModule, DatabaseModule, WorkerRuntimeModule],
   providers: [
     { provide: NOTIFICATION_DELIVERY_REPOSITORY, useClass: SqlNotificationDeliveryRepository },
     RecordingNotificationChannelAdapter,
@@ -41,6 +43,7 @@ import { NotificationDeliveryHandler } from './notification-delivery.handler';
     NotificationDeliveryPolicyService,
     WorkerDeliveryEnvelopeKeyProvider,
     StorefrontPublicOriginProvider,
+    NotificationDeliveryMetrics,
     NotificationDeliveryUseCase,
     NotificationDeliveryHandler,
   ],

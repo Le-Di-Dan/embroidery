@@ -26,6 +26,12 @@
  * (`FU-APP8-W01-01`). No second handler, no second event type, no second
  * idempotency namespace and no table for "remaining payments we have seen".
  *
+ * `APP12-H03-C1` extended it once more, on the same terms and for the same
+ * class of defect: `APP12-B05` made `FULL` verifiable and every verified
+ * Ready-Made payment since has dead-lettered here as `JOB_PAYLOAD_INVALID`. It
+ * joins REMAINING on the successful-no-op branch, because a Ready-Made
+ * reservation is already `CONSUMED` by the transaction that appended this row.
+ *
  * The job kind is `INVENTORY_RESERVATION`, not the transport kind
  * `OUTBOX_DISPATCH` — the precedent is `ORDER_CREATION` and, before it,
  * `ASSET_PROCESSING` (IMP-D030): filing domain work under the transport kind
@@ -91,10 +97,13 @@ export class InventoryReservationHandler implements JobHandler<PaymentVerifiedLo
     }
 
     if (!requiresInventoryReservation(payload.obligationKind)) {
-      // A verified REMAINING payment (`APP9-B03`) is a legitimate delivery of
-      // this event that inventory owes nothing for: the order's stock was
-      // committed when its deposit was verified, and `TR-LC17-04` gates the
-      // official reservation on that deposit alone. Returning here is the
+      // A verified REMAINING payment (`APP9-B03`) or a verified FULL one
+      // (`APP12-H03-C1`) is a legitimate delivery of this event that inventory
+      // owes nothing for. REMAINING: the order's stock was committed when its
+      // deposit was verified, and `TR-LC17-04` gates the official reservation on
+      // that deposit alone. FULL: `APP12-B05` consumed the Ready-Made
+      // reservation inside the verifying transaction, so the units were sold
+      // before this row became claimable. Returning here is the
       // handler's success — the runtime records `SUCCEEDED` and completes the
       // outbox row through the same path a reservation takes. Nothing is
       // written: no reservation, no ledger entry, no stock effect and no

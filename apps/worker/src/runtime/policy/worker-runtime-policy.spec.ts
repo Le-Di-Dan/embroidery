@@ -1,3 +1,8 @@
+import {
+  loadWorkerRuntimePolicyDataset,
+  WORKER_RUNTIME_POLICY_DATASET_KEY,
+} from '@embroidery/database';
+
 import { WORKER_RUNTIME_POLICY_KEY, parseWorkerRuntimePolicy } from './worker-runtime-policy';
 
 /** A policy whose four relations all hold, used as the base for each case. */
@@ -30,6 +35,27 @@ function reasonsFor(overrides: Record<string, unknown>): readonly string[] {
 describe('worker runtime policy', () => {
   it('names the canonical configuration key', () => {
     expect(WORKER_RUNTIME_POLICY_KEY).toBe('worker.runtime');
+  });
+
+  /**
+   * The assertion that makes `APP12-H03-C1` real rather than plausible.
+   *
+   * The dataset the bootstrap publishes and the validator the worker enforces
+   * live in different packages and neither imports the other — deliberately, so
+   * that the value source cannot become a second validator. This is the seam
+   * that proves they agree: if the shipped values ever violated one of the four
+   * relations, every deployed worker would log `WORKER_POLICY_INVALID` and claim
+   * nothing, and the only place to find out before production is here.
+   */
+  it('validates the values the deployment bootstrap actually publishes', () => {
+    const dataset = loadWorkerRuntimePolicyDataset(
+      require.resolve('@embroidery/database/package.json'),
+    );
+    const [configuration] = dataset.configurations;
+
+    expect(configuration?.configKey).toBe(WORKER_RUNTIME_POLICY_KEY);
+    expect(WORKER_RUNTIME_POLICY_DATASET_KEY).toBe(WORKER_RUNTIME_POLICY_KEY);
+    expect(parseWorkerRuntimePolicy(configuration?.value).ok).toBe(true);
   });
 
   it('accepts a policy whose values and relations all hold', () => {

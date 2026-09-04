@@ -13,7 +13,8 @@
  * ```text
  * paymentAttemptId      the attempt the operator verified — also aggregate_id
  * paymentObligationId   the obligation that moved to SATISFIED
- * obligationKind        'DEPOSIT' | 'REMAINING' — the real kind, since APP9-B03
+ * obligationKind        the real kind, since APP9-B03; one of the three the
+ *                       verification command can settle
  * orderId               the order the obligation belongs to
  * ```
  *
@@ -35,12 +36,19 @@
  * obligation's real kind, which made a verified remaining payment arrive here as
  * `JOB_PAYLOAD_INVALID` and dead-letter (`FU-APP8-W01-01`).
  *
- * So the kind is a variable now — but a **closed** one. Exactly `DEPOSIT` and
- * `REMAINING` are accepted, because those are the two kinds the verification
- * command can satisfy. Anything else stays a terminal malformed payload: a
- * producer ahead of this build must reach an operator, never be coerced onto
- * whichever branch happens to look safer. *Which* of the two triggers a
- * reservation is not decided here — see `reservation-trigger.policy.ts`.
+ * So the kind is a variable now — but a **closed** one. Exactly the kinds the
+ * verification command can satisfy are accepted. Anything else stays a terminal
+ * malformed payload: a producer ahead of this build must reach an operator,
+ * never be coerced onto whichever branch happens to look safer. *Which* of them
+ * triggers a reservation is not decided here — see
+ * `reservation-trigger.policy.ts`.
+ *
+ * `APP12-H03-C1` added the third, and for the same reason `APP9-B03` forced the
+ * second. `APP12-B05` made `FULL` verifiable, and every verified Ready-Made
+ * payment since has arrived here as `JOB_PAYLOAD_INVALID` and dead-lettered —
+ * observed in a production-like cluster by `APP12-H03`. The set now matches the
+ * producer's own `VERIFIABLE_OBLIGATION_KINDS` exactly, which is the only shape
+ * that cannot fall behind it again by one kind at a time.
  *
  * The version is checked by the runtime before this file is reached
  * (`payloadSchemaVersion`), so a producer ahead of this build is
@@ -63,10 +71,30 @@ export const DEPOSIT_OBLIGATION_KIND = 'DEPOSIT';
 /** The obligation kind `APP9-B03` added to this event, which reserves nothing. */
 export const REMAINING_OBLIGATION_KIND = 'REMAINING';
 
-/** The closed set this consumer accepts. Not a prefix and not a pattern. */
+/**
+ * The Ready-Made obligation kind (`APP12-B05`), which reserves nothing either.
+ *
+ * Its stock is not un-reserved — it is already **consumed**. `APP12-B02`
+ * reserves at checkout against an unpaid order, and the verification
+ * transaction turns that hold into a permanent commitment synchronously, before
+ * this event is even appended (`verified-payment-settlement.ts`,
+ * `COMMIT_RESERVED_STOCK`). By the time the worker claims the row the sale is
+ * complete; there is nothing left for inventory to do.
+ */
+export const FULL_OBLIGATION_KIND = 'FULL';
+
+/**
+ * The closed set this consumer accepts. Not a prefix and not a pattern.
+ *
+ * The same three the producer's `VERIFIABLE_OBLIGATION_KINDS` names, in the same
+ * order. It is restated rather than imported because the worker may not depend
+ * on an API module; the integration test asserts a real verified `FULL` event
+ * parses, which is what keeps the restatement honest.
+ */
 export const VERIFIED_OBLIGATION_KINDS = [
   DEPOSIT_OBLIGATION_KIND,
   REMAINING_OBLIGATION_KIND,
+  FULL_OBLIGATION_KIND,
 ] as const;
 
 export type VerifiedObligationKind = (typeof VERIFIED_OBLIGATION_KINDS)[number];

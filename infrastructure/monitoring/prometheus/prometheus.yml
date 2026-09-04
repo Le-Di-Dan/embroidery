@@ -1,0 +1,103 @@
+# Prometheus scrape configuration (`APP12-H03` §4, §10).
+#
+# Two application jobs and two self-monitoring ones. There is deliberately no
+# kube-state-metrics, no node-exporter and no cAdvisor scrape: §1 asks for the
+# smallest stack that lets an operator detect and diagnose the Wave-1 commerce
+# path, and cluster-resource telemetry answers a different question that H05
+# owns. Adding them would triple the series count on day one for panels nobody
+# has asked for.
+#
+# ## Why `role: endpoints` and not a plain Service address
+#
+# The API runs two replicas behind one Service. Scraping the Service address
+# would hit a *random* replica each interval, so a counter would appear to jump
+# backwards and every `rate()` would be wrong. Endpoint discovery scrapes each
+# pod individually, which is the only correct way to read a per-process counter.
+#
+# ## Why the metrics port is its own Service
+#
+# `embroidery-api-metrics` and `embroidery-worker-metrics` select the same pods
+# as the application Services but publish port 9464 only. No HTTPRoute
+# references either, so the Gateway has no path to them — the denial in §18 is
+# a property of the topology rather than of a rule that has to be maintained.
+
+global:
+  # 15s against a system doing fewer than a hundred orders a month is already
+  # generous; the interval is set by how quickly an operator needs to see a
+  # failure, not by traffic.
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
+  external_labels:
+    # Overridden per environment by the deployment. Never a hostname: an
+    # external label lands on every series, and a hostname would change the
+    # identity of every series when the cluster is rebuilt.
+    environment: staging
+
+rule_files:
+  - /etc/prometheus/rules/*.rules.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['embroidery-alertmanager:9093']
+
+scrape_configs:
+  # ---------------------------------------------------------------------------
+  # The business API. One target per pod, via the metrics-only Service.
+  # ---------------------------------------------------------------------------
+  - job_name: embroidery-api
+    metrics_path: /metrics
+    kubernetes_sd_configs:
+      - role: endpoints
+        namespaces:
+          own_namespace: true
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_service_name]
+        action: keep
+        regex: embroidery-api-metrics
+      - source_labels: [__meta_kubernetes_endpoint_port_name]
+        action: keep
+        regex: metrics
+      # The `service` label is NOT set here. Each process already stamps its
+      # own on every series it exposes, and a target label of the same name
+      # would collide — Prometheus renames the exposed one to
+      # `exported_service`, silently splitting every dashboard query in two.
+      #
+      # `pod` is the only high-ish-cardinality label kept, and it is bounded by
+      # the replica count. It is what makes "one replica is failing and the
+      # other is not" visible, which is the first question a two-replica
+      # deployment raises.
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+
+  # ---------------------------------------------------------------------------
+  # The worker. One replica by deployment policy, discovered the same way.
+  # ---------------------------------------------------------------------------
+  - job_name: embroidery-worker
+    metrics_path: /metrics
+    kubernetes_sd_configs:
+      - role: endpoints
+        namespaces:
+          own_namespace: true
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_service_name]
+        action: keep
+        regex: embroidery-worker-metrics
+      - source_labels: [__meta_kubernetes_endpoint_port_name]
+        action: keep
+        regex: metrics
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+
+  # ---------------------------------------------------------------------------
+  # Self-monitoring. Without these, a Prometheus that has stopped evaluating
+  # rules is indistinguishable from a system with no alerts firing.
+  # ---------------------------------------------------------------------------
+  - job_name: prometheus
+    static_configs:
+      - targets: ['127.0.0.1:9090']
+
+  - job_name: alertmanager
+    static_configs:
+      - targets: ['embroidery-alertmanager:9093']

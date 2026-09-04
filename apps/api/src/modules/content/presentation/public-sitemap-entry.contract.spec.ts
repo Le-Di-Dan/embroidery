@@ -320,9 +320,11 @@ describe('APP11-B04 public sitemap inventory contract', () => {
       // starting an empty one.
       // A ratchet, not a snapshot: 339 when APP11-B04 closed, 363 once the
       // Ready-Made commerce modules `APP12-B01`…`APP12-B05` registered. Re-measured
-      // and re-pinned by `APP12-H01` at the current value, so the file still cannot
-      // grow silently and still cannot approach the 400-line hard limit unnoticed.
-      expect(root.replace(/\n$/, '').split('\n').length).toBeLessThanOrEqual(363);
+      // and re-pinned by `APP12-H01` at the value of the day; 369 once `APP12-H03`
+      // registered the global `MetricsModule` beside `LoggingModule`. The file
+      // still cannot grow silently and still cannot approach the 400-line hard
+      // limit unnoticed.
+      expect(root.replace(/\n$/, '').split('\n').length).toBeLessThanOrEqual(369);
       expect(root).not.toContain('ContentPublicSeoModule');
     });
   });

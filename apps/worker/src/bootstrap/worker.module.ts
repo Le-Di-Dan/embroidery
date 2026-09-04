@@ -8,6 +8,8 @@ import { AssetNormalizationModule } from '../jobs/asset-normalization/asset-norm
 import { InventoryReservationModule } from '../jobs/inventory-reservation/inventory-reservation.module';
 import { NotificationDeliveryModule } from '../jobs/notification-delivery/notification-delivery.module';
 import { OrderConversionModule } from '../jobs/order-conversion/order-conversion.module';
+import { OrderCreatedAcknowledgementModule } from '../jobs/order-created-acknowledgement/order-created-acknowledgement.module';
+import { WorkerMetricsModule } from '../runtime/metrics/worker-metrics.module';
 import { WorkerRuntimeModule } from '../runtime/worker-runtime.module';
 import { WorkerObjectStorageModule } from '../storage/object-storage.module';
 
@@ -34,6 +36,11 @@ import { WorkerObjectStorageModule } from '../storage/object-storage.module';
   // event type, and its claim filter is exactly the registered types.
   imports: [
     DatabaseModule,
+    // `APP12-H03` — the metrics platform. Global and before the runtime, which
+    // injects `WorkerRuntimeMetrics` at the execution boundary. It registers no
+    // handler, claims nothing and starts no loop; the scrape is served by an
+    // internal listener `main.ts` starts.
+    WorkerMetricsModule,
     WorkerObjectStorageModule,
     WorkerRuntimeModule,
     AssetInspectionModule,
@@ -56,6 +63,16 @@ import { WorkerObjectStorageModule } from '../storage/object-storage.module';
     // adds no queue and no transport — only a handler, and the claim filter
     // grows by exactly one event type.
     InventoryReservationModule,
+    // `OrderCreatedAcknowledgementModule` (`APP12-H03-C1`) is the sixth outbox
+    // capability and the only one that performs no work: `order.created` has
+    // been appended by every order creation since DB7 and claimed by nobody, so
+    // each one left a row that was never retried, never dead-lettered and never
+    // completed — permanently `PENDING`, and permanently in the backlog gauge
+    // `APP12-H03` added. SE-006's notification obligation is already discharged
+    // by the sealed-envelope path both creation flows request themselves, so the
+    // correct disposition is an explicit acknowledgement rather than a second
+    // notification trigger. The claim filter grows by exactly one event type.
+    OrderCreatedAcknowledgementModule,
     // `IntakeCleanupModule` (APP5-B02) is the first capability here that is
     // **not** an outbox handler: an expired, unbound customer upload produces
     // no event to claim, which is precisely why it needs a sweep. It shares the

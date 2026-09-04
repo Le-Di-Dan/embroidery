@@ -25,6 +25,12 @@ function policyService(policy: WorkerRuntimePolicy | undefined): WorkerPolicySer
     load: () => Promise.resolve(),
     current: () => policy,
     currentProblem: () => (policy === undefined ? { kind: 'WORKER_POLICY_MISSING' } : undefined),
+    // `APP12-H03-C1`: the loop re-probes on every unconfigured pass. The stub
+    // answers a fixed policy, so the re-probe changes nothing here — which is
+    // the point: this suite proves the loop claims nothing while unconfigured,
+    // and the adoption itself is proven in `worker-policy.service.spec.ts`
+    // against a repository whose stored value actually moves.
+    reloadWhileUnconfigured: () => Promise.resolve(),
   } as unknown as WorkerPolicyService;
 }
 

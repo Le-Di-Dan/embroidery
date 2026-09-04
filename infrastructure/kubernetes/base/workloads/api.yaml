@@ -32,7 +32,12 @@ spec:
           # overwrites; no overlay may resolve to `latest`.
           image: embroidery/api:REPLACED_BY_OVERLAY
           imagePullPolicy: IfNotPresent
-          ports: [{ name: http, containerPort: 4000 }]
+          ports:
+            - { name: http, containerPort: 4000 }
+            # APP12-H03 §10 — the internal metrics listener. Declared so the
+            # metrics Service can target it by name; NOT a probe target, and no
+            # HTTPRoute references it.
+            - { name: metrics, containerPort: 9464 }
           envFrom:
             - configMapRef: { name: embroidery-config }
             # No `optional: true`, deliberately: a missing Secret must leave the
@@ -82,3 +87,26 @@ metadata:
 spec:
   selector: { app.kubernetes.io/name: embroidery, app.kubernetes.io/component: api }
   ports: [{ name: http, port: 4000, targetPort: http }]
+---
+# The metrics-only Service (`APP12-H03` §10, §18).
+#
+# A second Service over the same pods, publishing port 9464 and nothing else.
+# Two properties follow, and both are the point:
+#
+#   * Prometheus discovers it by name and scrapes **each pod individually**
+#     through endpoint discovery, which is the only correct way to read a
+#     per-process counter from a two-replica Deployment;
+#   * no HTTPRoute references it, so the Gateway has no path to it at all. The
+#     §18 denial is a property of the topology, not of a rule.
+apiVersion: v1
+kind: Service
+metadata:
+  name: embroidery-api-metrics
+  labels:
+    app.kubernetes.io/name: embroidery
+    app.kubernetes.io/component: api
+    embroidery.local/monitoring: 'true'
+spec:
+  type: ClusterIP
+  selector: { app.kubernetes.io/name: embroidery, app.kubernetes.io/component: api }
+  ports: [{ name: metrics, port: 9464, targetPort: metrics }]

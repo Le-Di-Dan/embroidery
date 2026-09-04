@@ -1,0 +1,646 @@
+{
+  "uid": "embroidery-wave1-commerce",
+  "title": "Wave 1 Commerce Operations",
+  "description": "The operator view of the Ready-Made commerce path: checkout, order creation, FULL payment verification, inventory and reservations, the worker, notification delivery and fulfilment. Every row answers one of the questions APP12-H03 §14 requires an operator to answer without SQL. Refusals and system errors are always separated: a refusal is the business working, a system error is not.",
+  "tags": ["embroidery", "wave1", "commerce", "app12-h03"],
+  "timezone": "browser",
+  "editable": false,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "environment",
+        "label": "Environment",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "embroidery-prometheus" },
+        "query": "label_values(up, environment)",
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "id": 1,
+      "title": "Is the shop up?",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "id": 2,
+      "title": "API instances reachable",
+      "description": "Prometheus targets answering on the internal metrics port. Zero means customers cannot check out.",
+      "datasource": { "type": "prometheus", "uid": "embroidery-prometheus" },
+      "gridPos": { "h": 5, "w": 4, "x": 0, "y": 1 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(up{job=\"embroidery-api\", environment=\"$environment\"})",
+          "legendFormat": "up"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "green", "value": 2 }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "none"
+      }
+    },
+    {
+      "type": "stat",
+      "id": 3,
+      "title": "Worker reachable",
+      "description": "The worker publishes no health route by design, so its metrics endpoint is the only positive signal that it is alive and able to work.",
+      "datasource": { "type": "prometheus", "uid": "embroidery-prometheus" },
+      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 1 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(up{job=\"embroidery-worker\", environment=\"$environment\"})",
+          "legendFormat": "up"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "none"
+      }
+    },
+    {
+      "type": "stat",
+      "id": 4,
+      "title": "Server errors (6h)",
+      "description": "5xx responses only. A 4xx is the API refusing a request, which is not a fault.",
+      "datasource": { "type": "prometheus", "uid": "embroidery-prometheus" },
+      "gridPos": { "h": 5, "w": 4, "x": 8, "y": 1 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(embroidery_http_requests_total{status_class=\"5xx\", environment=\"$environment\"}[6h])) or vector(0)",
+          "legendFormat": "5xx"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "red", "value": 6 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "none"
+      }
+    },
+    {
+      "type": "timeseries",
+      "id": 5,
+      "title": "HTTP requests by status class",
+      "description": "Is checkout failing? A rising 5xx line is a fault; a rising 4xx line is usually a client or a validation refusal.",
+      "datasource": { "type": "prometheus", "uid": "embroidery-prometheus" },
+      "gridPos": { "h": 5, "w": 12, "x": 12, "y": 1 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (status_class) (rate(embroidery_http_requests_total{environment=\"$environment\"}[5m]))",
+          "legendFormat": "{{status_class}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "custom": { "fillOpacity": 10, "showPoints": "never" } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "5xx" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }]
+          }
+        ]
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "type": "timeseries",
+      "id": 6,
+      "title": "Request rate by route template",
+      "description": "Route templates, never concrete paths — an order id is never a label (APP12-H03 §5).",
+      "datasource": { "type": "prometheus", "uid": "embroidery-prometheus" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 6 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(10, sum by (route_template) (rate(embroidery_http_requests_total{environment=\"$environment\"}[5m])))",
+          "legendFormat": "{{route_template}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "custom": { "fillOpacity": 0, "showPoints": "never" } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean"] } }
+    },
+    {
+      "type": "timeseries",
+      "id": 7,
+      "title": "Request duration, p95 by route template",
+      "description": "The 95th percentile of the request histogram. A route whose p95 climbs while its rate does not is usually waiting on the database.",
+      "datasource": { "type": "prometheus", "uid": "embroidery-prometheus" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 6 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, route_template) (rate(embroidery_http_request_duration_seconds_bucket{environment=\"$environment\"}[5m])))",
+          "legendFormat": "{{route_template}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "fillOpacity": 0, "showPoints": "never" } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["max"] } }
+    },
+
+    {
+      "type": "row",
+      "id": 10,
+      "title": "Are orders being created?",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "id": 11,
+      "title": "Orders created (24h)",
+      "description": "Committed order creations. A replay of a duplicate submit is not counted twice.",
+      "datasource": { "type": "prometheus", "uid": "embroidery-prometheus" },
+      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 14 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(embroidery_order_create_total{outcome=\"success\", environment=\"$environment\"}[24h])) or vector(0)",
+          "legendFormat": "created"
+        }
+      ],
+      "fieldConfig": { "defaults": { "decimals": 0 }, "overrides": [] },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "timeseries",
+      "id": 12,
+      "title": "Order creation by outcome",
+      "description": "success / refused / system_error. Only system_error is a fault — a refusal is the domain correctly declining (out of stock, unverified contact, duplicate submit).",
+      "datasource": { "type": "prometheus", "uid": "embroidery-prometheus" },
+      "gridPos": { "h": 6, "w": 10, "x": 4, "y": 14 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (outcome) (increase(embroidery_order_create_total{environment=\"$environment\"}[5m]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "decimals": 0, "custom": { "fillOpacity": 20, "showPoints": "never", "stacking": { "mode": "normal" } } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "system_error" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "success" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "refused" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "yellow" } }]
+          }
+        ]
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "type": "table",
+      "id": 13,
+      "title": "Why checkouts are being refused",
+      "description": "The refusal vocabulary the domain publishes. INSUFFICIENT_STOCK dominating means inventory, not a defect.",
+      "datasource": { "type": "prometheus", "uid": "embroidery-prometheus" },
+      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 14 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (reason_class) (increase(embroidery_order_create_total{outcome=\"refused\", environment=\"$environment\"}[6h]))",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true } } }
+      ],
+      "fieldConfig": { "defaults": { "decimals": 0 }, "overrides": [] },
+      "options": { "showHeader": true }
+    },
+
+    {
+      "type": "row",
+      "id": 20,
+      "title": "Are payment verifications throwing system errors?",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 20 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 21,
+      "title": "FULL verification by outcome",
+      "description": "A routed REQUIRES_REVIEW and a lost-response replay are recorded as refused, not as failures — both are the system behaving correctly.",
+      "datasource": { "type": "prometheus", "uid": "embroidery-prometheus" },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 21 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (outcome, payment_kind) (increase(embroidery_payment_verification_total{environment=\"$environment\"}[5m]))",
+          "legendFormat": "{{payment_kind}} {{outcome}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "decimals": 0, "custom": { "fillOpacity": 20, "showPoints": "never" } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "type": "table",
+      "id": 22,
+      "title": "Verification outcomes by reason",
+      "description": "REQUIRES_REVIEW means an operator's observed transfer did not match the expected one. REPLAYED means a retry of an already-committed verification.",
+      "datasource": { "type": "prometheus", "uid": "embroidery-prometheus" },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 21 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (outcome, reason_class) (increase(embroidery_payment_verification_total{environment=\"$environment\"}[6h]))",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true } } }
+      ],
+      "fieldConfig": { "defaults": { "decimals": 0 }, "overrides": [] },
+      "options": { "showHeader": true }
+    },
+
+    {
+      "type": "row",
+      "id": 30,
+      "title": "Are reservations processing correctly?",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 31,
+      "title": "Reservation transitions",
+      "description": "create when an order is placed, consume when a FULL payment is verified, expire when the 24-hour window lapses.",
+      "datasource": { "type": "prometheus", "uid": "embroidery-prometheus" },
+      "gridPos": { "h": 6, "w": 9, "x": 0, "y": 28 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (transition, outcome) (increase(embroidery_inventory_reservation_total{environment=\"$environment\"}[5m]))",
+          "legendFormat": "{{transition}} {{outcome}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "decimals": 0, "custom": { "fillOpacity": 20, "showPoints": "never" } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "type": "timeseries",
+      "id": 32,
+      "title": "Expiry sweep",
+      "description": "Passes by outcome, and how many reservations each pass released. A sweep that runs and expires nothing is healthy; a sweep that stops running is not.",
+      "datasource": { "type": "prometheus", "uid": "embroidery-prometheus" },
+      "gridPos": { "h": 6, "w": 9, "x": 9, "y": 28 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (outcome) (increase(embroidery_reservation_sweep_total{environment=\"$environment\"}[5m]))",
+          "legendFormat": "passes {{outcome}}"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(increase(embroidery_reservation_sweep_expired_total{environment=\"$environment\"}[5m]))",
+          "legendFormat": "reservations expired"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "decimals": 0, "custom": { "fillOpacity": 10, "showPoints": "never" } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "type": "stat",
+      "id": 33,
+      "title": "Expired reservations still held",
+      "description": "Reservations past their own expires_at and still RESERVED. Non-zero for more than a few minutes means stock is held for orders that will never be paid.",
+      "datasource": { "type": "prometheus", "uid": "embroidery-prometheus" },
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 28 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(embroidery_invariant_violations{invariant=\"expired_reservation_held\", environment=\"$environment\"}) or vector(0)",
+          "legendFormat": "held"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+
+    {
+      "type": "row",
+      "id": 40,
+      "title": "Is the worker processing and retrying?",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 34 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 41,
+      "title": "Job attempts by outcome",
+      "description": "failed_retryable will be retried; failed_terminal will not — the retry budget is spent.",
+      "datasource": { "type": "prometheus", "uid": "embroidery-prometheus" },
+      "gridPos": { "h": 6, "w": 9, "x": 0, "y": 35 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (outcome) (increase(embroidery_worker_job_attempts_total{environment=\"$environment\"}[5m]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "decimals": 0, "custom": { "fillOpacity": 20, "showPoints": "never", "stacking": { "mode": "normal" } } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "failed_terminal" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }]
+          }
+        ]
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "type": "timeseries",
+      "id": 42,
+      "title": "Retries by job type",
+      "description": "Attempts that were themselves a retry. A steady low rate is a healthy at-least-once runtime; a climbing one is a handler that keeps failing.",
+      "datasource": { "type": "prometheus", "uid": "embroidery-prometheus" },
+      "gridPos": { "h": 6, "w": 9, "x": 9, "y": 35 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (job_type) (increase(embroidery_worker_job_retries_total{environment=\"$environment\"}[5m]))",
+          "legendFormat": "{{job_type}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "decimals": 0, "custom": { "fillOpacity": 10, "showPoints": "never" } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "type": "stat",
+      "id": 43,
+      "title": "Queue backlog",
+      "description": "Due work only — a job waiting out its retry backoff is not backlog. The age is measured from when the work was created.",
+      "datasource": { "type": "prometheus", "uid": "embroidery-prometheus" },
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 35 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(embroidery_worker_queue_pending{environment=\"$environment\"}) or vector(0)",
+          "legendFormat": "due jobs"
+        },
+        {
+          "refId": "B",
+          "expr": "max(embroidery_worker_queue_oldest_pending_age_seconds{environment=\"$environment\"}) or vector(0)",
+          "legendFormat": "oldest (s)"
+        }
+      ],
+      "fieldConfig": { "defaults": { "decimals": 0 }, "overrides": [] },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value_and_name"
+      }
+    },
+
+    {
+      "type": "row",
+      "id": 50,
+      "title": "Are ORDER_ACCESS notifications failing?",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 41 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 51,
+      "title": "Notification delivery by purpose and outcome",
+      "description": "An undelivered ORDER_ACCESS link is a customer who has paid and cannot open their own order. Every delivery failure is a system_error here — there is no healthy reason to fail to deliver one.",
+      "datasource": { "type": "prometheus", "uid": "embroidery-prometheus" },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 42 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (operation, outcome) (increase(embroidery_notification_delivery_total{environment=\"$environment\"}[5m]))",
+          "legendFormat": "{{operation}} {{outcome}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "decimals": 0, "custom": { "fillOpacity": 20, "showPoints": "never" } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "type": "table",
+      "id": 52,
+      "title": "Delivery failures by reason",
+      "description": "NOTIFICATION_ENVELOPE_UNREADABLE points at a key or a producer; NOTIFICATION_TRANSPORT_UNAVAILABLE points at the channel.",
+      "datasource": { "type": "prometheus", "uid": "embroidery-prometheus" },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 42 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (operation, reason_class) (increase(embroidery_notification_delivery_total{outcome=\"system_error\", environment=\"$environment\"}[6h]))",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true } } }
+      ],
+      "fieldConfig": { "defaults": { "decimals": 0 }, "overrides": [] },
+      "options": { "showHeader": true }
+    },
+
+    {
+      "type": "row",
+      "id": 60,
+      "title": "Are dispatch and completion transitions failing?",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 48 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 61,
+      "title": "Fulfilment transitions",
+      "description": "shipping_fee_set, shipping_fee_corrected, dispatch and complete, by order origin. A refusal here is usually an operator acting on an order that has already moved.",
+      "datasource": { "type": "prometheus", "uid": "embroidery-prometheus" },
+      "gridPos": { "h": 6, "w": 14, "x": 0, "y": 49 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (transition, outcome) (increase(embroidery_fulfilment_transition_total{environment=\"$environment\"}[5m]))",
+          "legendFormat": "{{transition}} {{outcome}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "decimals": 0, "custom": { "fillOpacity": 20, "showPoints": "never" } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum"] } }
+    },
+    {
+      "type": "table",
+      "id": 62,
+      "title": "Fulfilment refusals by reason",
+      "datasource": { "type": "prometheus", "uid": "embroidery-prometheus" },
+      "description": "ORDER_INVALID_TRANSITION means the order was not in the state the command needs. It is a refusal, not a fault.",
+      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 49 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (transition, reason_class) (increase(embroidery_fulfilment_transition_total{outcome!=\"success\", environment=\"$environment\"}[6h]))",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true } } }
+      ],
+      "fieldConfig": { "defaults": { "decimals": 0 }, "overrides": [] },
+      "options": { "showHeader": true }
+    },
+
+    {
+      "type": "row",
+      "id": 70,
+      "title": "Where do I inspect diagnostic logs?",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 55 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "logs",
+      "id": 71,
+      "title": "Errors and warnings, all services",
+      "description": "Live from Loki. Click a line to expand it; requestId and correlationId are linked, so one click follows a journey across the API and the worker.",
+      "datasource": { "type": "loki", "uid": "embroidery-loki" },
+      "gridPos": { "h": 11, "w": 14, "x": 0, "y": 56 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{namespace=~\"embroidery.*\", level=~\"error|warn\"}",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "enableLogDetails": true
+      }
+    },
+    {
+      "type": "text",
+      "id": 72,
+      "title": "Log query recipes",
+      "description": "The queries an operator needs during an incident, so they do not have to remember LogQL.",
+      "gridPos": { "h": 11, "w": 10, "x": 14, "y": 56 },
+      "options": {
+        "mode": "markdown",
+        "content": "### Follow one journey end to end\n\nEvery record carries `requestId`; the worker's carry `correlationId` too. Both are **log fields, never labels** — that is deliberate, and it is why they are queried with `|=` rather than selected with `{}`.\n\n```logql\n{namespace=~\"embroidery.*\"} |= \"<requestId>\"\n```\n\n### One failing checkout\n\n```logql\n{namespace=~\"embroidery.*\", app=\"api\"}\n  | json\n  | event = \"http.request.completed\"\n  | http_route = \"/api/public/ready-made-orders\"\n  | http_statusCode >= 500\n```\n\n### Unhandled API faults\n\n```logql\n{namespace=~\"embroidery.*\", app=\"api\", level=\"error\"}\n  | json | event = \"platform.error\"\n```\n\n### One job kind in the worker\n\n```logql\n{namespace=~\"embroidery.*\", app=\"worker\"}\n  | json | jobKind = \"NOTIFICATION_DELIVERY\"\n```\n\n### Storefront and Admin server errors\n\n```logql\n{namespace=~\"embroidery.*\", app=~\"storefront|admin\", level=\"error\"}\n```\n\n---\n\n**What you will not find in a log line.** Secure tokens, verification and step-up codes, cookies, `Authorization` values, customer contact details and raw evidence payloads are redacted at the source by the `APP12-H01` policy. If you need to identify a customer, take the `requestId` to the Admin surface — not to the logs."
+      }
+    }
+  ]
+}

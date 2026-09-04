@@ -1,0 +1,174 @@
+# Alertmanager and the staging recording receiver (`APP12-H03` §16).
+#
+# ## The recorder is the point
+#
+# §16 requires live proof that a condition reaches a *notification*, not just
+# that Prometheus reddened a row. It also forbids inventing production Slack,
+# Teams or email credentials. Those two together leave exactly one honest
+# option: a receiver under test control that records what it was sent.
+#
+# `embroidery-alert-recorder` is nine lines of `nc` in a busybox loop. It
+# accepts the POST, answers `200`, and writes the request to its own stdout —
+# where Alloy collects it into Loki like any other pod, so the proof is
+# queryable rather than transient. It cannot contact a person, cannot leave the
+# cluster, and is labelled disposable so the teardown guard removes it.
+#
+# Production substitutes a real receiver at the same Alertmanager route:
+#
+#     RELEASE_INPUT: production_alert_receiver = REQUIRED_BEFORE_R01
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: embroidery-alertmanager
+  labels:
+    app.kubernetes.io/name: embroidery-monitoring
+    app.kubernetes.io/component: alertmanager
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: embroidery-monitoring
+      app.kubernetes.io/component: alertmanager
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: embroidery-monitoring
+        app.kubernetes.io/component: alertmanager
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: alertmanager
+          image: prom/alertmanager:v0.28.0
+          args:
+            - --config.file=/etc/alertmanager/alertmanager.yml
+            - --storage.path=/alertmanager
+          ports:
+            - name: http
+              containerPort: 9093
+          volumeMounts:
+            - {
+                name: config,
+                mountPath: /etc/alertmanager/alertmanager.yml,
+                subPath: alertmanager.yml,
+              }
+            - { name: data, mountPath: /alertmanager }
+          readinessProbe:
+            httpGet: { path: /-/ready, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /-/healthy, port: http }
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 20m, memory: 64Mi }
+            limits: { memory: 256Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ['ALL'] }
+      volumes:
+        - name: config
+          configMap: { name: embroidery-alertmanager-config }
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: embroidery-alertmanager
+  labels:
+    app.kubernetes.io/name: embroidery-monitoring
+    app.kubernetes.io/component: alertmanager
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: embroidery-monitoring
+    app.kubernetes.io/component: alertmanager
+  ports:
+    - { name: http, port: 9093, targetPort: http }
+---
+# ---------------------------------------------------------------------------
+# The staging recording receiver. Disposable, and labelled as such.
+# ---------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: embroidery-alert-recorder
+  labels:
+    app.kubernetes.io/name: embroidery-monitoring
+    app.kubernetes.io/component: alert-recorder
+    embroidery.local/disposable: 'true'
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: embroidery-monitoring
+      app.kubernetes.io/component: alert-recorder
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: embroidery-monitoring
+        app.kubernetes.io/component: alert-recorder
+        embroidery.local/disposable: 'true'
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: recorder
+          image: busybox:1.37.0
+          # One request per connection, answered and logged. `-l` (not `-lk`)
+          # plus the surrounding loop is what busybox's nc supports everywhere;
+          # the loop is what makes it serve more than one alert.
+          command: ['/bin/sh', '-c']
+          args:
+            - |
+              echo "alert recorder listening on 8080"
+              while true; do
+                printf 'HTTP/1.1 200 OK\r\nContent-Length: 3\r\nConnection: close\r\n\r\nok\n' \
+                  | nc -l -p 8080 \
+                  | while IFS= read -r line; do
+                      case "$line" in
+                        '{'*) echo "ALERT_NOTIFICATION $line" ;;
+                      esac
+                    done
+              done
+          ports:
+            - name: http
+              containerPort: 8080
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits: { memory: 64Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ['ALL'] }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: embroidery-alert-recorder
+  labels:
+    app.kubernetes.io/name: embroidery-monitoring
+    app.kubernetes.io/component: alert-recorder
+    embroidery.local/disposable: 'true'
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: embroidery-monitoring
+    app.kubernetes.io/component: alert-recorder
+  ports:
+    - { name: http, port: 8080, targetPort: http }

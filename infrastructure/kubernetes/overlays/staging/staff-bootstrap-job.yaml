@@ -7,6 +7,17 @@
 #
 # The credential is synthetic, generated per run and destroyed with the cluster.
 # No shared production staff password is ever requested or read (§25).
+#
+# `APP12-H03-C1` gave this Job a second responsibility: the same CLI publishes
+# `worker.runtime`, the policy every worker reads at startup and which nothing
+# published before. That is why a cold staging cluster now has an ACTIVE worker
+# rather than one that is Ready and claims nothing. Nothing about the ordering
+# is guaranteed — Kubernetes starts this Job and the worker Deployment
+# concurrently — and nothing needs to be: the worker re-reads the policy on its
+# own recheck interval while it has none, and adopts the first valid one.
+#
+# Production applies the equivalent by hand
+# (`infrastructure/kubernetes/operator/staff-bootstrap-job.yaml`).
 apiVersion: batch/v1
 kind: Job
 metadata:

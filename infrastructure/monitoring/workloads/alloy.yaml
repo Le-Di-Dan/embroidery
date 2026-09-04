@@ -1,0 +1,129 @@
+# Grafana Alloy, the log collector (`APP12-H03` §13, §26.17).
+#
+# §13 says to prefer Alloy when introducing the Grafana stack and forbids
+# introducing Promtail. Alloy is the supported successor; Promtail is in
+# maintenance and takes no new features, so adopting it now would be adopting a
+# component with a known end.
+#
+# ## Why this one needs privileges the applications do not
+#
+# A log collector reads the kubelet's log files, which live on the node and are
+# owned by root. So this DaemonSet — and nothing else in the cluster — mounts
+# `/var/log` and runs as root. Every mitigation that can still apply does:
+#
+#   * both host mounts are **read-only**;
+#   * the container root filesystem is read-only;
+#   * every capability is dropped;
+#   * the RBAC grant is read-only and covers pods only.
+#
+# It has no write access to anything in the cluster and no way to reach the
+# business database or object store.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: embroidery-alloy
+  labels:
+    app.kubernetes.io/name: embroidery-monitoring
+    app.kubernetes.io/component: alloy
+---
+# Pod discovery is cluster-scoped because a DaemonSet pod discovers the pods on
+# its own node, which may be in any namespace. Read-only, and pods only — no
+# secrets, no configmaps, no nodes.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: embroidery-alloy
+  labels:
+    app.kubernetes.io/name: embroidery-monitoring
+    app.kubernetes.io/component: alloy
+rules:
+  - apiGroups: ['']
+    resources: ['pods']
+    verbs: ['get', 'list', 'watch']
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: embroidery-alloy
+  labels:
+    app.kubernetes.io/name: embroidery-monitoring
+    app.kubernetes.io/component: alloy
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: embroidery-alloy
+subjects:
+  - kind: ServiceAccount
+    name: embroidery-alloy
+    namespace: embroidery-staging
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: embroidery-alloy
+  labels:
+    app.kubernetes.io/name: embroidery-monitoring
+    app.kubernetes.io/component: alloy
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: embroidery-monitoring
+      app.kubernetes.io/component: alloy
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: embroidery-monitoring
+        app.kubernetes.io/component: alloy
+    spec:
+      serviceAccountName: embroidery-alloy
+      containers:
+        - name: alloy
+          image: grafana/alloy:v1.6.1
+          args:
+            - run
+            - /etc/alloy/config.alloy
+            - --storage.path=/tmp/alloy
+            # Bound to loopback: the Alloy UI is a debugging surface and there is
+            # no reason for it to accept a connection from anywhere, not even
+            # from inside the cluster.
+            - --server.http.listen-addr=127.0.0.1:12345
+          env:
+            # Read by `discovery.kubernetes`'s field selector to name the node
+            # whose pods this instance collects. Without it every instance would
+            # watch every pod in the cluster and then find no log file for the
+            # ones scheduled elsewhere.
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef: { fieldPath: spec.nodeName }
+          volumeMounts:
+            - { name: config, mountPath: /etc/alloy }
+            # The kubelet's log tree, and the container runtime's real files
+            # that its symlinks point at. Both read-only.
+            - { name: varlog, mountPath: /var/log, readOnly: true }
+            - { name: varlibdockercontainers, mountPath: /var/lib/docker/containers, readOnly: true }
+            - { name: state, mountPath: /tmp/alloy }
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { memory: 512Mi }
+          securityContext:
+            # Root, and only for this: the kubelet writes its log files as root
+            # and a collector that cannot read them collects nothing. Everything
+            # else is locked down.
+            runAsUser: 0
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ['ALL'] }
+      volumes:
+        - name: config
+          configMap: { name: embroidery-alloy-config }
+        - name: varlog
+          hostPath: { path: /var/log }
+        - name: varlibdockercontainers
+          hostPath: { path: /var/lib/docker/containers }
+        - name: state
+          emptyDir: {}
+      tolerations:
+        # A control-plane node runs application pods on a single-node cluster,
+        # so its logs must be collected too.
+        - operator: Exists

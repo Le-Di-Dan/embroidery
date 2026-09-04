@@ -35,6 +35,13 @@ copy-paste is a startup failure rather than a shared blast radius.
 
 Consumed by: the `staff-bootstrap` Job only. Never read by normal API startup.
 
+That Job is also the **only** publisher of `worker.runtime` (`APP12-H03-C1`),
+because `policy_configuration_versions.created_by_admin_id` is `NOT NULL` and
+this is the one admin-bearing path in the repository. A release that never runs
+it leaves a worker that is Ready, claims nothing, and shows no failing probe —
+see `infrastructure/kubernetes/README.md` and
+`infrastructure/kubernetes/operator/staff-bootstrap-job.yaml`.
+
 | Key                            | Classification  | Notes                                                                                                    |
 | ------------------------------ | --------------- | -------------------------------------------------------------------------------------------------------- |
 | `STAFF_BOOTSTRAP_EMAIL`        | INTERNAL_CONFIG | Not a credential by itself, but it is only ever meaningful beside the password, so it shares the object. |

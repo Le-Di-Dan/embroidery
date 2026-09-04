@@ -1,0 +1,73 @@
+# The bootstrap one-shot, applied by hand (`APP12-H03-C1`).
+#
+# Deliberately in **no** kustomization. `APP12-H02` decided that production
+# operator provisioning is an operator action rather than a side effect of a
+# deploy, and that decision stands: a Job in the base would run on every
+# `kubectl apply -k` and would make a missing `embroidery-staff-bootstrap`
+# Secret an unschedulable pod in an otherwise healthy release.
+#
+# It is committed here because `APP12-H03-C1` gave the same command a second
+# responsibility that a release cannot skip: it publishes `worker.runtime`, the
+# policy every worker reads at startup. Without it the worker pod is Ready,
+# holds no lease and claims nothing — a state with no failing probe, no restart
+# loop and no symptom except the outbox backlog gauge.
+#
+# The operator applies it once, after the Secret exists and after the migration
+# Job has completed:
+#
+#   kubectl -n embroidery-production apply -f \
+#     infrastructure/kubernetes/operator/staff-bootstrap-job.yaml
+#   kubectl -n embroidery-production wait --for=condition=complete \
+#     job/embroidery-staff-bootstrap --timeout=300s
+#   kubectl -n embroidery-production logs job/embroidery-staff-bootstrap
+#
+# The last line is the point: the CLI prints exactly one parseable
+# `result=<STATUS>` line and never the password or the encoded credential.
+# `CREATED` and `REUSED_EXISTING` are both successes; anything else exits
+# non-zero. Re-running it is safe — the staff step is create-or-reuse and every
+# policy publication compares before it writes, so an unchanged dataset appends
+# no version.
+#
+# `image` is a placeholder. A release sets it to the SAME immutable reference
+# the overlay's `embroidery/api` resolves to; a different one would bootstrap
+# against a different build of the schema and the datasets.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: embroidery-staff-bootstrap
+  labels:
+    app.kubernetes.io/name: embroidery
+    app.kubernetes.io/component: staff-bootstrap
+    app.kubernetes.io/part-of: embroidery
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: embroidery
+        app.kubernetes.io/component: staff-bootstrap
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: staff-bootstrap
+          image: embroidery/api:REPLACE_WITH_IMMUTABLE_RELEASE_REF
+          command: ['node', '/app/apps/api/dist/cli/staff-bootstrap.js']
+          envFrom:
+            - configMapRef: { name: embroidery-config }
+            - secretRef: { name: embroidery-secrets }
+            - secretRef: { name: embroidery-staff-bootstrap }
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { memory: 512Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ['ALL'] }
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+      volumes: [{ name: tmp, emptyDir: {} }]

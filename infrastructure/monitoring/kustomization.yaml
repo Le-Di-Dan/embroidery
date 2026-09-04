@@ -1,0 +1,78 @@
+# The monitoring plane (`APP12-H03`).
+#
+# A kustomization **beside** the application overlays, never inside them. Two
+# reasons, and both are §19:
+#
+#   1. the applications must start whether or not this exists. A monitoring
+#      plane composed into `overlays/production` would be applied with them,
+#      and a broken Prometheus manifest would fail the same `kubectl apply` the
+#      commerce pods depend on;
+#   2. observability must be able to fail independently. Deployed separately,
+#      it can be removed, rebuilt or upgraded without touching a single
+#      commerce resource.
+#
+# Applied with:
+#
+#     kubectl apply -k infrastructure/monitoring
+#
+# ## Configuration comes from the same files the tooling validates
+#
+# Every ConfigMap below is generated from the real config file — the same
+# `prometheus.yml` `promtool check config` reads, the same rules file
+# `promtool test rules` runs against, the same dashboard JSON. There is no
+# second, inlined copy that could drift from the one under test, which is what
+# §14's "provisioned from repository source" means in practice.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# The same namespace as the staging overlay. Prometheus discovers endpoints in
+# `own_namespace`, so the monitoring plane and the workloads it scrapes must
+# share one — a cross-namespace scrape would need a ClusterRole this checkpoint
+# has no reason to grant.
+namespace: embroidery-staging
+
+labels:
+  - includeSelectors: false
+    pairs:
+      app.kubernetes.io/part-of: embroidery-monitoring
+
+resources:
+  - workloads/prometheus.yaml
+  - workloads/alertmanager.yaml
+  - workloads/loki.yaml
+  - workloads/alloy.yaml
+  - workloads/grafana.yaml
+
+configMapGenerator:
+  - name: embroidery-prometheus-config
+    files:
+      - prometheus.yml=prometheus/prometheus.yml
+  - name: embroidery-prometheus-rules
+    files:
+      - wave1-commerce.rules.yml=prometheus/rules/wave1-commerce.rules.yml
+  - name: embroidery-alertmanager-config
+    files:
+      - alertmanager.yml=alertmanager/alertmanager.yml
+  - name: embroidery-loki-config
+    files:
+      - loki.yml=loki/loki.yml
+  - name: embroidery-alloy-config
+    files:
+      - config.alloy=alloy/config.alloy
+  - name: embroidery-grafana-datasources
+    files:
+      - datasources.yml=grafana/provisioning/datasources/datasources.yml
+  - name: embroidery-grafana-dashboard-provider
+    files:
+      - dashboards.yml=grafana/provisioning/dashboards/dashboards.yml
+  - name: embroidery-grafana-dashboards
+    files:
+      - wave1-commerce-operations.json=grafana/dashboards/wave1-commerce-operations.json
+
+generatorOptions:
+  # Content-hash suffixes are kept ON, deliberately. A rules change then
+  # produces a new ConfigMap name, which changes the pod spec, which rolls the
+  # pod — so an applied rule is a *running* rule. With `disableNameSuffixHash`
+  # the ConfigMap would update in place and Prometheus would keep evaluating
+  # the old rules until something happened to restart it.
+  disableNameSuffixHash: false

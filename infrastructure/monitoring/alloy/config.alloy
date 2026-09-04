@@ -1,0 +1,217 @@
+// Grafana Alloy — Kubernetes application log collection (`APP12-H03` §13).
+//
+// §13 names Alloy as the collector to prefer and forbids introducing Promtail,
+// which is in maintenance and whose replacement this is. One DaemonSet, one
+// pipeline: discover pods, keep the five application containers, read their
+// files, parse the JSON, and ship to Loki with a **bounded** label set.
+//
+// ## The label rule, which is the whole design
+//
+// A Loki label is an index dimension: every distinct combination is a separate
+// stream with its own chunks. Five bounded labels are cheap; one unbounded one
+// is a Loki that will not compact. So the labels are exactly:
+//
+//     namespace · app · container · pod · level
+//
+// and `pod` is the only one that is not a small closed set — bounded by the
+// replica count, and the one an operator needs to say "this replica, not that
+// one". Everything else the applications log — `requestId`, `correlationId`,
+// `jobKey`, `outboxEventId`, entity ids — stays inside the JSON line as a
+// **field**, queryable with `| json | requestId = "..."` and indexed by
+// nothing. That is §13's requirement and §12's: high-cardinality correlation
+// lives in log fields, never in a label.
+//
+// ## What is not collected
+//
+// No node logs, no kubelet, no audit log, no journal. The applications' stdout
+// is what diagnoses the Wave-1 commerce path; the rest is cluster telemetry
+// that H03 has no question for.
+
+logging {
+	level  = "warn"
+	format = "logfmt"
+}
+
+// ---------------------------------------------------------------------------
+// Discovery: every pod in the cluster, then filtered down to ours.
+// ---------------------------------------------------------------------------
+discovery.kubernetes "pods" {
+	role = "pod"
+
+	// Only the pods scheduled on THIS node. A DaemonSet instance can read only
+	// its own node's log files, so discovering the whole cluster would have it
+	// watch every pod in the API server and then find no file for most of them.
+	// `NODE_NAME` is projected into the container from `spec.nodeName`.
+	selectors {
+		role  = "pod"
+		field = "spec.nodeName=" + sys.env("NODE_NAME")
+	}
+}
+
+discovery.relabel "application_pods" {
+	targets = discovery.kubernetes.pods.targets
+
+	// The application namespace and the Gateway's, and nothing else.
+	//
+	// It filters by NAMESPACE rather than by a pod label, and that is a
+	// correction rather than a preference: kustomize's `labels:` transformer
+	// writes `app.kubernetes.io/part-of` onto the *workload* metadata and — with
+	// `includeSelectors: false` and no `includeTemplates` — **not** onto the pod
+	// template. Keeping on that label matched no pod at all, and the symptom was
+	// a Loki with zero streams and an Alloy with nothing to say about it.
+	//
+	// The namespace is also what §13 actually asks for: API, Worker, Storefront,
+	// Admin *and* the Gateway edge, which lives in its own namespace and shares
+	// none of the application's labels.
+	rule {
+		source_labels = ["__meta_kubernetes_namespace"]
+		action        = "keep"
+		regex         = "embroidery-.*|nginx-gateway"
+	}
+
+	// Only running pods have readable log files; a pending one would be a
+	// permanent read error in the collector's own logs.
+	rule {
+		source_labels = ["__meta_kubernetes_pod_phase"]
+		action        = "keep"
+		regex         = "Running"
+	}
+
+	rule {
+		source_labels = ["__meta_kubernetes_namespace"]
+		target_label  = "namespace"
+	}
+
+	// `app` is the primary way an operator narrows a query, and it is a closed
+	// set either way it is derived. The container name always exists, so it is
+	// the base; the component label overrides it where a workload publishes one,
+	// which is what keeps `api`, `worker`, `storefront` and `admin` reading the
+	// way the deployment names them.
+	rule {
+		source_labels = ["__meta_kubernetes_pod_container_name"]
+		target_label  = "app"
+	}
+
+	// `regex = "(.+)"` is what makes this an override rather than a blanket
+	// replace: a pod with no component label leaves the container name in place.
+	rule {
+		source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_component"]
+		regex         = "(.+)"
+		target_label  = "app"
+	}
+
+	rule {
+		source_labels = ["__meta_kubernetes_pod_container_name"]
+		target_label  = "container"
+	}
+
+	rule {
+		source_labels = ["__meta_kubernetes_pod_name"]
+		target_label  = "pod"
+	}
+
+	// The path the DaemonSet's hostPath mount exposes. Composing it here rather
+	// than globbing the directory means Alloy tails exactly the discovered
+	// containers and nothing else that happens to be on the node.
+	rule {
+		source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+		separator     = "/"
+		action        = "replace"
+		replacement   = "/var/log/pods/*$1/*.log"
+		target_label  = "__path__"
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Read the files the kubelet writes.
+// ---------------------------------------------------------------------------
+local.file_match "application_logs" {
+	path_targets = discovery.relabel.application_pods.output
+}
+
+loki.source.file "application_logs" {
+	targets    = local.file_match.application_logs.targets
+	forward_to = [loki.process.application_logs.receiver]
+	// The kubelet's own rotation is what bounds disk on the node; Alloy follows
+	// the rename rather than re-reading from the top.
+	tail_from_end = false
+}
+
+// ---------------------------------------------------------------------------
+// Parse, derive `level`, and stop there.
+// ---------------------------------------------------------------------------
+loki.process "application_logs" {
+	forward_to = [loki.write.default.receiver]
+
+	// Unwrap the container runtime's own envelope, whichever one the node uses.
+	//
+	// containerd writes CRI text — `<timestamp> <stream> <flags> <line>` — and
+	// Docker writes a JSON object with the line under `log`. Both stages are
+	// present and ordered, and a stage that cannot parse an entry passes it
+	// through unchanged, so one node type is handled without breaking the other.
+	//
+	// This is not hypothetical tidiness: the staging cluster runs the Docker
+	// driver, so a CRI-only pipeline shipped every line still wrapped in
+	// `{"log":"…","stream":"stdout"}` — which is valid JSON, so `| json` in a
+	// query returned the *wrapper's* fields and none of the application's.
+	stage.docker { }
+
+	stage.cri { }
+
+	// The API and worker emit one JSON object per line (`APP0-B05`). Next.js does
+	// not, so this stage fails harmlessly on Storefront and Admin lines and they
+	// arrive as plain text — which is correct: inventing a level for a line that
+	// has none would be worse than having none.
+	stage.json {
+		expressions = {
+			level = "level",
+			event = "event",
+		}
+	}
+
+	// The ONE derived label. `level` is a four-value closed set, and it is what
+	// makes "show me the errors" a cheap query instead of a full scan. A line
+	// whose JSON carries no `level` extracts nothing, so no label is set and no
+	// empty-valued stream is created — which is why no label-drop stage follows.
+	//
+	// `event` is parsed above but deliberately NOT promoted to a label: the
+	// platform taxonomy is small today and the business taxonomy is open, so a
+	// label on it would grow without bound as checkpoints add event names.
+	stage.labels {
+		values = {
+			level = "",
+		}
+	}
+
+	// `loki.source.file` adds `filename` — the absolute path on the node — to
+	// every entry. It is bounded (one per container) but it is an index
+	// dimension nobody queries, and it changes on every container restart, so it
+	// multiplies streams for no benefit.
+	stage.label_drop {
+		values = ["filename"]
+	}
+
+	// Use the application's own timestamp when it has one, so a burst of records
+	// written during a slow scrape is ordered by when it happened rather than by
+	// when it was read.
+	stage.timestamp {
+		source            = "timestamp"
+		format            = "RFC3339Nano"
+		action_on_failure = "skip"
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Ship.
+// ---------------------------------------------------------------------------
+loki.write "default" {
+	endpoint {
+		url = "http://embroidery-loki:3100/loki/api/v1/push"
+	}
+	// `environment` matches the Prometheus external label, so a dashboard can
+	// move between a metric and a log line without the two disagreeing about
+	// which environment they came from.
+	external_labels = {
+		environment = "staging",
+	}
+}

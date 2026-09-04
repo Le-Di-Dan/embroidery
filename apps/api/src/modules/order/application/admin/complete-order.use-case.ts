@@ -67,7 +67,11 @@ import {
 } from '@embroidery/persistence';
 
 import { RequestContextService } from '../../../../platform/request-context/request-context.service';
-import { orderDeliveryError } from '../../domain/lifecycle/order-delivery.errors';
+import { OrderFulfilmentMetrics } from './order-fulfilment.metrics';
+import {
+  isOrderDeliveryError,
+  orderDeliveryError,
+} from '../../domain/lifecycle/order-delivery.errors';
 import { requireOrderLifecycleAdminId } from './order-lifecycle-actor';
 
 /** The one source state `TR-LC14-08` is legal from (GRD-018). */
@@ -83,12 +87,24 @@ export interface CompleteOrderResult {
   readonly status: OrderState;
 }
 
+/**
+ * Names an order completion refusal for the metrics plane, or `undefined`.
+ *
+ * Only `OrderDeliveryError` is a refusal. Anything else — a persistence fault,
+ * a defect — is a `system_error` and reaches the alert rule, which is the
+ * conservative direction `APP12-H03` §26.26 requires.
+ */
+function completionRefusal(error: unknown): string | undefined {
+  return isOrderDeliveryError(error) ? error.failure : undefined;
+}
+
 @Injectable()
 export class CompleteOrderUseCase {
   constructor(
     private readonly transactions: TransactionManager,
     @Inject(ORDER_REPOSITORY) private readonly orders: OrderRepository,
     private readonly requestContext: RequestContextService,
+    private readonly metrics: OrderFulfilmentMetrics,
   ) {}
 
   async complete(orderId: string): Promise<CompleteOrderResult> {
@@ -97,8 +113,11 @@ export class CompleteOrderUseCase {
     const correlationId = this.requestContext.requireRequestId();
     const id = orderId as OrderId;
 
+    // `APP12-H03` §7 — settled after the transaction, like every other
+    // commerce observation in this checkpoint.
+    const observation = this.metrics.start('complete', completionRefusal);
     try {
-      return await this.transactions.runInTransaction(async () => {
+      const result = await this.transactions.runInTransaction<CompleteOrderResult>(async () => {
         // Origin-neutral: `loadForUpdate` maps the custom aggregate and refuses
         // a Ready-Made row (`APP12-B05` §23). Closing an order is the same act
         // whichever way it was created, so it reads the shape both origins have.
@@ -106,6 +125,7 @@ export class CompleteOrderUseCase {
         if (order === undefined) {
           throw orderDeliveryError('ORDER_NOT_FOUND');
         }
+        observation.origin(order.origin);
         if (order.status !== COMPLETION_SOURCE_STATE) {
           throw orderDeliveryError('ORDER_INVALID_TRANSITION');
         }
@@ -124,8 +144,12 @@ export class CompleteOrderUseCase {
           status: moved.status,
         };
       });
+      observation.succeeded();
+      return result;
     } catch (error: unknown) {
-      throw this.translate(error);
+      const translated = this.translate(error);
+      observation.failed(translated);
+      throw translated;
     }
   }
 

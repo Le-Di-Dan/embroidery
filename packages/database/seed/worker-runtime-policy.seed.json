@@ -1,0 +1,41 @@
+{
+  "seedId": "worker-runtime-policy",
+  "tier": "SYSTEM_REFERENCE",
+  "checkpoint": "APP12-H03-C1",
+  "decisionId": "IMP-D065",
+  "authority": "docs/adr/backend/ADR-APP2-002-ASYNCHRONOUS-JOB-RUNTIME.md",
+  "purpose": "The worker runtime policy APP2-I02 defined and every deployed worker reads at startup (policy_configurations / policy_configuration_versions, TBL-076 / TBL-077). Until APP12-H03-C1 the only publishers were test fixtures and the APP2-E01 smoke tool, so a cold deployed worker found no policy, reported WORKER_POLICY_MISSING and claimed nothing. Data only: the reader and the publishing caller are APP12-H03-C1, exactly as APP4-G01 and APP6-G01 shipped theirs. No seed runner is introduced here.",
+  "idempotency": "Upsert by the natural key policy_configurations.config_key (ensureKey), then append one version (publishVersion) only when the key is missing or the stored value has drifted. Versions are immutable; drift is corrected by appending, never by mutating history.",
+  "containsSecrets": false,
+  "configurations": [
+    {
+      "configKey": "worker.runtime",
+      "description": "Background worker claim, lease, timeout, shutdown and retry policy (APP2-I02).",
+      "valueSchemaVersion": 1,
+      "units": {
+        "concurrency": "concurrent attempts per worker instance",
+        "batchSize": "jobs per claim",
+        "pollIntervalMs": "milliseconds",
+        "leaseDurationMs": "milliseconds",
+        "handlerTimeoutMs": "milliseconds",
+        "leaseSafetyMarginMs": "milliseconds",
+        "shutdownGraceMs": "milliseconds",
+        "maxAttempts": "attempts including the first",
+        "backoffBaseMs": "milliseconds",
+        "backoffMaxMs": "milliseconds"
+      },
+      "value": {
+        "concurrency": 2,
+        "batchSize": 5,
+        "pollIntervalMs": 500,
+        "leaseDurationMs": 120000,
+        "handlerTimeoutMs": 60000,
+        "leaseSafetyMarginMs": 5000,
+        "shutdownGraceMs": 10000,
+        "maxAttempts": 3,
+        "backoffBaseMs": 1000,
+        "backoffMaxMs": 30000
+      }
+    }
+  ]
+}

@@ -51,6 +51,7 @@ import {
   type NotificationDeliveryRepository,
 } from '../domain/repositories/notification-delivery.repository';
 import { NotificationDeliveryPolicyService } from '../infrastructure/policy/notification-delivery-policy.service';
+import { NotificationDeliveryMetrics } from './notification-delivery.metrics';
 
 /**
  * The envelope discriminator that means "this secret is a link, not a code"
@@ -83,6 +84,7 @@ export class NotificationDeliveryUseCase {
     private readonly policies: NotificationDeliveryPolicyService,
     private readonly envelopeKey: WorkerDeliveryEnvelopeKeyProvider,
     private readonly storefrontOrigin: StorefrontPublicOriginProvider,
+    private readonly metrics: NotificationDeliveryMetrics,
   ) {}
 
   async deliver(request: DeliveryRequest): Promise<void> {
@@ -135,6 +137,10 @@ export class NotificationDeliveryUseCase {
           ? error.failure
           : ('NOTIFICATION_ENVELOPE_UNREADABLE' as const);
       await this.settle(intent, intent.channel, 'FAILED_TERMINAL', failure, 'FAILED');
+      // `APP12-H03` §7 — recorded after the settle commits. The operation is
+      // `other`: the purpose lives inside the envelope that just failed to
+      // open, and guessing one would put a real failure on the wrong panel.
+      this.metrics.failed(undefined, undefined, failure);
       throw new NotificationDeliveryError(failure);
     }
 
@@ -143,6 +149,7 @@ export class NotificationDeliveryUseCase {
 
     if (result.outcome === 'SENT') {
       await this.settle(intent, opened.channel, 'DELIVERED', undefined, 'SATISFIED');
+      this.metrics.delivered(opened.secretKind, opened.secureLinkLanding);
       return;
     }
 
@@ -163,6 +170,8 @@ export class NotificationDeliveryUseCase {
       failure,
       terminal ? 'FAILED' : undefined,
     );
+
+    this.metrics.failed(opened.secretKind, opened.secureLinkLanding, failure);
 
     // Thrown after the effect has committed, so the runtime's own completion —
     // the retry delay, the dead letter, the generic attempt row — reflects an

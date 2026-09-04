@@ -1,0 +1,534 @@
+# Deterministic alert-rule tests (`APP12-H03` §16).
+#
+# Run with:
+#
+#     promtool test rules infrastructure/monitoring/prometheus/tests/wave1-commerce.rules.test.yml
+#
+# §16 asks each group for four proofs, and every group below carries all four:
+# a normal series does not alert, a breach fires, a recovery stops firing, and
+# — the one that matters most — **a business refusal never fires a
+# system-failure alert.** That last case is the executable form of §26.26, and
+# it is why the refusal series appear in almost every test here at volumes far
+# above the failure thresholds.
+#
+# The series notation is promtool's own: `a+bxN` means "start at a, add b, N
+# more times", one sample per `interval`.
+
+rule_files:
+  - ../rules/wave1-commerce.rules.yml
+
+evaluation_interval: 1m
+
+tests:
+  # ===========================================================================
+  # Availability
+  # ===========================================================================
+  - interval: 1m
+    name: an API pod that stays up never alerts
+    input_series:
+      - series: 'up{job="embroidery-api",instance="10.0.0.1:9464",pod="embroidery-api-a"}'
+        values: '1x10'
+      - series: 'up{job="embroidery-api",instance="10.0.0.2:9464",pod="embroidery-api-b"}'
+        values: '1x10'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: EmbroideryApiTargetDown
+        exp_alerts: []
+      - eval_time: 10m
+        alertname: EmbroideryAllApiTargetsDown
+        exp_alerts: []
+
+  - interval: 1m
+    name: one API pod down for two minutes fires, and the fleet alert does not
+    input_series:
+      - series: 'up{job="embroidery-api",instance="10.0.0.1:9464",pod="embroidery-api-a"}'
+        values: '1 1 0 0 0 0 0 0'
+      - series: 'up{job="embroidery-api",instance="10.0.0.2:9464",pod="embroidery-api-b"}'
+        values: '1x8'
+    alert_rule_test:
+      # Below `for: 2m` — pending, not firing.
+      - eval_time: 3m
+        alertname: EmbroideryApiTargetDown
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: EmbroideryApiTargetDown
+        exp_alerts:
+          - exp_labels:
+              alertname: EmbroideryApiTargetDown
+              severity: critical
+              service: api
+              domain: availability
+              threshold_authority: INITIAL_OPERATIONAL_THRESHOLD
+              job: embroidery-api
+              instance: 10.0.0.1:9464
+              pod: embroidery-api-a
+            exp_annotations:
+              summary: 'An API instance has been unreachable for 2 minutes'
+              description: >-
+                Prometheus cannot scrape an API pod. Either the process is down or its
+                internal metrics listener is not bound. Check the pod's readiness and
+                its startup logs; a pod that is failing readiness has also left the
+                Gateway's rotation, so customers may be affected.
+              dashboard: 'Wave 1 Commerce Operations'
+              runbook: RUNBOOK-H07-API-DOWN
+      # One replica still up, so the shop is not closed.
+      - eval_time: 5m
+        alertname: EmbroideryAllApiTargetsDown
+        exp_alerts: []
+
+  - interval: 1m
+    name: a recovered API pod stops firing
+    input_series:
+      - series: 'up{job="embroidery-api",instance="10.0.0.1:9464",pod="embroidery-api-a"}'
+        values: '0 0 0 0 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: EmbroideryApiTargetDown
+        exp_alerts:
+          - exp_labels:
+              alertname: EmbroideryApiTargetDown
+              severity: critical
+              service: api
+              domain: availability
+              threshold_authority: INITIAL_OPERATIONAL_THRESHOLD
+              job: embroidery-api
+              instance: 10.0.0.1:9464
+              pod: embroidery-api-a
+            exp_annotations:
+              summary: 'An API instance has been unreachable for 2 minutes'
+              description: >-
+                Prometheus cannot scrape an API pod. Either the process is down or its
+                internal metrics listener is not bound. Check the pod's readiness and
+                its startup logs; a pod that is failing readiness has also left the
+                Gateway's rotation, so customers may be affected.
+              dashboard: 'Wave 1 Commerce Operations'
+              runbook: RUNBOOK-H07-API-DOWN
+      - eval_time: 7m
+        alertname: EmbroideryApiTargetDown
+        exp_alerts: []
+
+  - interval: 1m
+    name: the worker going away fires the worker alert after five minutes
+    input_series:
+      - series: 'up{job="embroidery-worker",instance="10.0.1.1:9464",pod="embroidery-worker-a"}'
+        values: '1 1 0 0 0 0 0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: EmbroideryWorkerTargetDown
+        exp_alerts: []
+      - eval_time: 9m
+        alertname: EmbroideryWorkerTargetDown
+        exp_alerts:
+          - exp_labels:
+              alertname: EmbroideryWorkerTargetDown
+              severity: critical
+              service: worker
+              domain: availability
+              threshold_authority: INITIAL_OPERATIONAL_THRESHOLD
+            exp_annotations:
+              summary: 'The worker is unreachable'
+              description: >-
+                The worker is not being scraped. Nothing is delivering notifications,
+                converting orders or expiring reservations. A customer who orders now
+                will not receive their access link.
+              dashboard: 'Wave 1 Commerce Operations'
+              runbook: RUNBOOK-H07-WORKER-DOWN
+
+  # ===========================================================================
+  # HTTP — a 4xx storm must not fire the 5xx alert.
+  # ===========================================================================
+  - interval: 1m
+    name: client errors never fire the server-error alert
+    input_series:
+      - series: 'embroidery_http_requests_total{service="api",method="POST",route_template="/api/public/ready-made-orders",status_class="4xx"}'
+        values: '0+20x20'
+      - series: 'embroidery_http_requests_total{service="api",method="POST",route_template="/api/public/ready-made-orders",status_class="2xx"}'
+        values: '0+5x20'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: EmbroideryApiServerErrorBurst
+        exp_alerts: []
+
+  - interval: 1m
+    name: a sustained 5xx burst fires and then resolves
+    input_series:
+      # Two per minute for ten minutes, then flat.
+      - series: 'embroidery_http_requests_total{service="api",method="POST",route_template="/api/public/ready-made-orders",status_class="5xx"}'
+        values: '0+2x12 24x25'
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: EmbroideryApiServerErrorBurst
+        exp_alerts:
+          - exp_labels:
+              alertname: EmbroideryApiServerErrorBurst
+              severity: critical
+              service: api
+              domain: http
+              threshold_authority: INITIAL_OPERATIONAL_THRESHOLD
+            exp_annotations:
+              summary: 'Sustained 5xx responses from the API'
+              description: >-
+                More than five server errors in ten minutes, sustained for five. Use
+                the dashboard's route-template breakdown to find which endpoint, then
+                the Loki panel for the matching `platform.error` records.
+              dashboard: 'Wave 1 Commerce Operations'
+              runbook: RUNBOOK-H07-API-5XX
+      # Ten minutes of no new errors empties the increase window entirely.
+      - eval_time: 30m
+        alertname: EmbroideryApiServerErrorBurst
+        exp_alerts: []
+
+  # ===========================================================================
+  # Commerce — the §26.26 proof.
+  # ===========================================================================
+  - interval: 1m
+    name: refused checkouts never fire the order-create failure alert
+    input_series:
+      # A busy, healthy shop: successes, plus a steady stream of out-of-stock
+      # and duplicate-submit refusals far above the failure threshold.
+      - series: 'embroidery_order_create_total{service="api",origin="READY_MADE",outcome="success",reason_class="other"}'
+        values: '0+3x30'
+      - series: 'embroidery_order_create_total{service="api",origin="READY_MADE",outcome="refused",reason_class="INSUFFICIENT_STOCK"}'
+        values: '0+10x30'
+      - series: 'embroidery_order_create_total{service="api",origin="READY_MADE",outcome="refused",reason_class="DUPLICATE_OPERATION"}'
+        values: '0+7x30'
+      - series: 'embroidery_order_create_total{service="api",origin="READY_MADE",outcome="refused",reason_class="VERIFIED_CONTACT_REQUIRED"}'
+        values: '0+4x30'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: EmbroideryOrderCreateSystemErrors
+        exp_alerts: []
+
+  - interval: 1m
+    name: order-create system errors fire and then resolve
+    input_series:
+      - series: 'embroidery_order_create_total{service="api",origin="READY_MADE",outcome="system_error",reason_class="other"}'
+        values: '0 0 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: EmbroideryOrderCreateSystemErrors
+        exp_alerts: []
+      - eval_time: 9m
+        alertname: EmbroideryOrderCreateSystemErrors
+        exp_alerts:
+          - exp_labels:
+              alertname: EmbroideryOrderCreateSystemErrors
+              severity: critical
+              service: api
+              domain: checkout
+              threshold_authority: INITIAL_OPERATIONAL_THRESHOLD
+            exp_annotations:
+              summary: 'Order creation is throwing system errors'
+              description: >-
+                Order creation failed for a reason the domain does not publish as a
+                refusal — a database fault or a defect, never "out of stock". Check
+                the order-create panel for the `origin`, then the Loki query for
+                `http.request.completed` on the checkout route.
+              dashboard: 'Wave 1 Commerce Operations'
+              runbook: RUNBOOK-H07-ORDER-CREATE
+      # Twenty quiet minutes empty the 15m increase window.
+      - eval_time: 34m
+        alertname: EmbroideryOrderCreateSystemErrors
+        exp_alerts: []
+
+  - interval: 1m
+    name: a review routing and a replay never fire the verification alert
+    input_series:
+      # Both are recorded as `refused`, which is exactly what keeps them off
+      # this alert. Volumes far above the threshold.
+      - series: 'embroidery_payment_verification_total{service="api",payment_kind="FULL",outcome="refused",reason_class="REQUIRES_REVIEW"}'
+        values: '0+6x25'
+      - series: 'embroidery_payment_verification_total{service="api",payment_kind="FULL",outcome="refused",reason_class="REPLAYED"}'
+        values: '0+9x25'
+      - series: 'embroidery_payment_verification_total{service="api",payment_kind="FULL",outcome="refused",reason_class="PAYMENT_ATTEMPT_ALREADY_SETTLED"}'
+        values: '0+5x25'
+      - series: 'embroidery_payment_verification_total{service="api",payment_kind="FULL",outcome="success",reason_class="other"}'
+        values: '0+2x25'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: EmbroideryFullVerificationSystemErrors
+        exp_alerts: []
+
+  - interval: 1m
+    name: verification system errors fire
+    input_series:
+      - series: 'embroidery_payment_verification_total{service="api",payment_kind="FULL",outcome="system_error",reason_class="other"}'
+        values: '0 1 2 2 2 2 2 2 2 2 2 2'
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: EmbroideryFullVerificationSystemErrors
+        exp_alerts:
+          - exp_labels:
+              alertname: EmbroideryFullVerificationSystemErrors
+              severity: critical
+              service: api
+              domain: payment
+              threshold_authority: INITIAL_OPERATIONAL_THRESHOLD
+            exp_annotations:
+              summary: 'Payment verification is throwing system errors'
+              description: >-
+                An operator's verification failed for a reason that is not a published
+                refusal. A `REQUIRES_REVIEW` routing and a lost-response replay are
+                both recorded as `refused` and do not reach this alert. Money state may
+                be un-advanceable; check before telling a customer their payment
+                failed.
+              dashboard: 'Wave 1 Commerce Operations'
+              runbook: RUNBOOK-H07-PAYMENT-VERIFY
+
+  - interval: 1m
+    name: fulfilment refusals never fire, system errors do
+    input_series:
+      - series: 'embroidery_fulfilment_transition_total{service="api",transition="dispatch",origin="READY_MADE",outcome="refused",reason_class="ORDER_INVALID_TRANSITION"}'
+        values: '0+8x20'
+      - series: 'embroidery_fulfilment_transition_total{service="api",transition="dispatch",origin="READY_MADE",outcome="system_error",reason_class="other"}'
+        values: '0 1 2 2 2 2 2 2 2 2 2 2'
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: EmbroideryFulfilmentSystemErrors
+        exp_alerts:
+          - exp_labels:
+              alertname: EmbroideryFulfilmentSystemErrors
+              severity: warning
+              service: api
+              domain: fulfilment
+              threshold_authority: INITIAL_OPERATIONAL_THRESHOLD
+            exp_annotations:
+              summary: 'A fulfilment transition is throwing system errors'
+              description: >-
+                Setting a shipping fee, dispatching or completing an order failed for
+                a non-refusal reason. `warning` rather than `critical`: an operator is
+                present, sees the failure in the Admin UI, and the customer's order is
+                not lost — but a repeated failure blocks the order from shipping.
+              dashboard: 'Wave 1 Commerce Operations'
+              runbook: RUNBOOK-H07-FULFILMENT
+
+  # ===========================================================================
+  # Inventory
+  # ===========================================================================
+  - interval: 1m
+    name: a healthy sweep with expiries never alerts
+    input_series:
+      - series: 'embroidery_reservation_sweep_total{service="worker",outcome="success"}'
+        values: '0+1x30'
+      - series: 'embroidery_reservation_sweep_expired_total{service="worker"}'
+        values: '0+2x30'
+      - series: 'embroidery_invariant_violations{service="worker",invariant="expired_reservation_held"}'
+        values: '0 0 3 0 0 2 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 24m
+        alertname: EmbroideryReservationSweepFailing
+        exp_alerts: []
+      # Transient non-zero readings between passes must not fire: `for: 15m`.
+      - eval_time: 24m
+        alertname: EmbroideryExpiredReservationsHeld
+        exp_alerts: []
+
+  - interval: 1m
+    name: a stuck invariant fires after fifteen minutes and clears when released
+    input_series:
+      - series: 'embroidery_invariant_violations{service="worker",invariant="expired_reservation_held"}'
+        values: '4x20 0x10'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: EmbroideryExpiredReservationsHeld
+        exp_alerts: []
+      - eval_time: 18m
+        alertname: EmbroideryExpiredReservationsHeld
+        exp_alerts:
+          - exp_labels:
+              alertname: EmbroideryExpiredReservationsHeld
+              severity: warning
+              service: worker
+              domain: inventory
+              threshold_authority: DOMAIN_DEADLINE
+            exp_annotations:
+              summary: 'Expired reservations have not been released'
+              description: >-
+                Reservations are past their own `expires_at` and still `RESERVED`
+                after fifteen minutes. Stock is held for orders that are no longer
+                entitled to it, so a purchasable SKU may read as out of stock. Check
+                whether the sweep is running at all.
+              dashboard: 'Wave 1 Commerce Operations'
+              runbook: RUNBOOK-H07-RESERVATION-SWEEP
+      - eval_time: 25m
+        alertname: EmbroideryExpiredReservationsHeld
+        exp_alerts: []
+
+  # ===========================================================================
+  # Worker jobs
+  # ===========================================================================
+  - interval: 1m
+    name: retries within the budget never fire the terminal-failure alert
+    input_series:
+      # A job that fails, retries and eventually succeeds: retryable failures
+      # and retries at high volume, no terminal failure at all.
+      - series: 'embroidery_worker_job_attempts_total{service="worker",job_type="NOTIFICATION_DELIVERY",outcome="failed_retryable"}'
+        values: '0+4x25'
+      - series: 'embroidery_worker_job_retries_total{service="worker",job_type="NOTIFICATION_DELIVERY"}'
+        values: '0+4x25'
+      - series: 'embroidery_worker_job_attempts_total{service="worker",job_type="NOTIFICATION_DELIVERY",outcome="succeeded"}'
+        values: '0+3x25'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: EmbroideryWorkerJobFailures
+        exp_alerts: []
+
+  - interval: 1m
+    name: an exhausted retry budget fires
+    input_series:
+      - series: 'embroidery_worker_job_attempts_total{service="worker",job_type="NOTIFICATION_DELIVERY",outcome="failed_terminal"}'
+        values: '0 0 1 1 1 1 1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: EmbroideryWorkerJobFailures
+        exp_alerts:
+          - exp_labels:
+              alertname: EmbroideryWorkerJobFailures
+              severity: critical
+              service: worker
+              domain: jobs
+              threshold_authority: RETRY_BUDGET
+              job_type: NOTIFICATION_DELIVERY
+            exp_annotations:
+              summary: 'A background job has exhausted its retries'
+              description: >-
+                A job reached a terminal failure, which means the runtime's retry
+                budget is spent and nothing will try again. The threshold is zero
+                because the retry schedule has already absorbed every transient
+                failure by this point — a terminal failure is by definition not
+                transient.
+              dashboard: 'Wave 1 Commerce Operations'
+              runbook: RUNBOOK-H07-WORKER-JOBS
+
+  - interval: 1m
+    name: a briefly non-empty queue never fires, a stuck one does
+    input_series:
+      - series: 'embroidery_worker_queue_oldest_pending_age_seconds{service="worker"}'
+        values: '0 30 120 0 0 60 0x20'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: EmbroideryWorkerQueueBacklog
+        exp_alerts: []
+
+  - interval: 1m
+    name: work due for longer than the threshold fires and clears
+    input_series:
+      - series: 'embroidery_worker_queue_oldest_pending_age_seconds{service="worker"}'
+        values: '1000x20 0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: EmbroideryWorkerQueueBacklog
+        exp_alerts: []
+      - eval_time: 15m
+        alertname: EmbroideryWorkerQueueBacklog
+        exp_alerts:
+          - exp_labels:
+              alertname: EmbroideryWorkerQueueBacklog
+              severity: warning
+              service: worker
+              domain: jobs
+              threshold_authority: INITIAL_OPERATIONAL_THRESHOLD
+            exp_annotations:
+              summary: 'Work has been due for longer than fifteen minutes'
+              description: >-
+                The oldest due job has been waiting more than fifteen minutes. The
+                worker may be up but not claiming — check its logs for a missing
+                policy or a closed startup gate, both of which leave it deliberately
+                idle rather than crashed.
+              dashboard: 'Wave 1 Commerce Operations'
+              runbook: RUNBOOK-H07-WORKER-JOBS
+      - eval_time: 25m
+        alertname: EmbroideryWorkerQueueBacklog
+        exp_alerts: []
+
+  # ===========================================================================
+  # Notification
+  # ===========================================================================
+  - interval: 1m
+    name: successful deliveries never fire
+    input_series:
+      - series: 'embroidery_notification_delivery_total{service="worker",operation="order_access",outcome="success",reason_class="other"}'
+        values: '0+5x25'
+      - series: 'embroidery_notification_delivery_total{service="worker",operation="verification",outcome="success",reason_class="other"}'
+        values: '0+12x25'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: EmbroideryOrderAccessDeliveryFailing
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: EmbroideryVerificationDeliveryFailing
+        exp_alerts: []
+
+  - interval: 1m
+    name: a single failed ORDER_ACCESS delivery fires, and a single failed verification does not
+    input_series:
+      - series: 'embroidery_notification_delivery_total{service="worker",operation="order_access",outcome="system_error",reason_class="NOTIFICATION_TRANSPORT_UNAVAILABLE"}'
+        values: '0 1 1 1 1 1 1 1 1 1 1 1'
+      - series: 'embroidery_notification_delivery_total{service="worker",operation="verification",outcome="system_error",reason_class="NOTIFICATION_TRANSPORT_UNAVAILABLE"}'
+        values: '0 1 1 1 1 1 1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: EmbroideryOrderAccessDeliveryFailing
+        exp_alerts:
+          - exp_labels:
+              alertname: EmbroideryOrderAccessDeliveryFailing
+              severity: critical
+              service: worker
+              domain: notification
+              threshold_authority: INITIAL_OPERATIONAL_THRESHOLD
+            exp_annotations:
+              summary: 'ORDER_ACCESS notification delivery is failing'
+              description: >-
+                A customer's order-access link was not delivered. They have an order
+                they cannot open and no way to recover it themselves. Check the
+                `reason_class` on the notification panel — an unreadable envelope is a
+                key or producer problem, an unavailable transport is a channel one.
+              dashboard: 'Wave 1 Commerce Operations'
+              runbook: RUNBOOK-H07-NOTIFICATION
+      # One is below the verification threshold: a customer can ask for another
+      # code, so that alert is deliberately less sensitive.
+      - eval_time: 8m
+        alertname: EmbroideryVerificationDeliveryFailing
+        exp_alerts: []
+
+  # ===========================================================================
+  # The monitoring plane's own honesty
+  # ===========================================================================
+  - interval: 1m
+    name: a healthy telemetry plane never alerts
+    input_series:
+      - series: 'embroidery_metrics_series_dropped{service="api"}'
+        values: '0x25'
+      - series: 'embroidery_metrics_collector_failures_total{service="worker",operation="telemetry_snapshot"}'
+        values: '0x25'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: EmbroideryMetricSeriesDropped
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: EmbroideryTelemetryCollectorFailing
+        exp_alerts: []
+
+  - interval: 1m
+    name: a breached cardinality cap fires
+    input_series:
+      - series: 'embroidery_metrics_series_dropped{service="api"}'
+        values: '0 0 12x20'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: EmbroideryMetricSeriesDropped
+        exp_alerts:
+          - exp_labels:
+              alertname: EmbroideryMetricSeriesDropped
+              severity: warning
+              service: api
+              domain: telemetry
+              threshold_authority: CARDINALITY_CONTRACT
+            exp_annotations:
+              summary: 'A metric family has reached its cardinality cap'
+              description: >-
+                A metric family refused new series. Some label is unbounded, so the
+                data behind at least one panel is incomplete. Find the family whose
+                series count is at the cap and check what its labels carry.
+              dashboard: 'Wave 1 Commerce Operations'
+              runbook: RUNBOOK-H07-TELEMETRY

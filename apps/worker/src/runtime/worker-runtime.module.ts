@@ -22,9 +22,10 @@ import { WORKER_PROCESS, systemWorkerProcess } from './lifecycle/worker-process'
 import { JobPollRuntimeService } from './poll/job-poll-runtime.service';
 import { WorkerPolicyService } from './policy/worker-policy.service';
 import { JobHandlerRegistry } from './registry/job-handler.registry';
+import { WorkerMetricsModule } from './metrics/worker-metrics.module';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [WorkerMetricsModule, DatabaseModule],
   providers: [
     { provide: WORKER_CLOCK, useValue: systemWorkerClock },
     { provide: WORKER_PROCESS, useValue: systemWorkerProcess },

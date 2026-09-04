@@ -95,7 +95,11 @@ import {
 } from '@embroidery/persistence';
 
 import { RequestContextService } from '../../../../platform/request-context/request-context.service';
-import { orderDeliveryError } from '../../domain/lifecycle/order-delivery.errors';
+import { OrderFulfilmentMetrics } from './order-fulfilment.metrics';
+import {
+  isOrderDeliveryError,
+  orderDeliveryError,
+} from '../../domain/lifecycle/order-delivery.errors';
 import { settlementObligationKindFor } from '../../domain/lifecycle/settlement-obligation-kind';
 import { requireOrderLifecycleAdminId } from './order-lifecycle-actor';
 
@@ -115,6 +119,17 @@ export interface DispatchOrderResult {
   readonly frozenAt: Date;
 }
 
+/**
+ * Names an order dispatch refusal for the metrics plane, or `undefined`.
+ *
+ * Only `OrderDeliveryError` is a refusal. Anything else — a persistence fault,
+ * a defect — is a `system_error` and reaches the alert rule, which is the
+ * conservative direction `APP12-H03` §26.26 requires.
+ */
+function dispatchRefusal(error: unknown): string | undefined {
+  return isOrderDeliveryError(error) ? error.failure : undefined;
+}
+
 @Injectable()
 export class DispatchOrderUseCase {
   constructor(
@@ -123,6 +138,7 @@ export class DispatchOrderUseCase {
     @Inject(PAYMENT_OBLIGATION_REPOSITORY)
     private readonly obligations: PaymentObligationRepository,
     private readonly requestContext: RequestContextService,
+    private readonly metrics: OrderFulfilmentMetrics,
   ) {}
 
   async dispatch(orderId: string): Promise<DispatchOrderResult> {
@@ -131,8 +147,11 @@ export class DispatchOrderUseCase {
     const correlationId = this.requestContext.requireRequestId();
     const id = orderId as OrderId;
 
+    // `APP12-H03` §7 — one observation per dispatch, settled after the
+    // transaction so a rolled-back dispatch can never be read as one.
+    const observation = this.metrics.start('dispatch', dispatchRefusal);
     try {
-      return await this.transactions.runInTransaction(async () => {
+      const result = await this.transactions.runInTransaction<DispatchOrderResult>(async () => {
         // The origin-neutral lock. `loadForUpdate` maps the custom aggregate and
         // refuses a Ready-Made row outright, which made this command — an
         // origin-neutral one — unreachable for half the shop (`APP12-B05` §21).
@@ -141,6 +160,8 @@ export class DispatchOrderUseCase {
         if (order === undefined) {
           throw orderDeliveryError('ORDER_NOT_FOUND');
         }
+        // The order's own committed origin, under its row lock.
+        observation.origin(order.origin);
         if (order.status !== DISPATCH_SOURCE_STATE) {
           throw orderDeliveryError('ORDER_INVALID_TRANSITION');
         }
@@ -179,8 +200,12 @@ export class DispatchOrderUseCase {
           frozenAt: frozen.frozenAt,
         };
       });
+      observation.succeeded();
+      return result;
     } catch (error: unknown) {
-      throw this.translate(error);
+      const translated = this.translate(error);
+      observation.failed(translated);
+      throw translated;
     }
   }
 

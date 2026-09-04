@@ -1,3 +1,4 @@
+import { MetricRegistry } from '@embroidery/observability';
 import type { TransactionManager, WorkerJobQueueRepository } from '@embroidery/persistence';
 
 import { jobCorrelation } from '../context/job-correlation';
@@ -13,14 +14,28 @@ import {
   fatalServiceWith,
   testHandler,
 } from '../tests/runtime-doubles';
+import { WorkerRuntimeMetrics } from '../metrics/worker-metrics.providers';
 import { JobExecutionService } from './job-execution.service';
 
 const WORKER_ID = 'worker:test:1:uuid';
+
+/**
+ * A real metrics recorder over a fresh registry (`APP12-H03` §22).
+ *
+ * Not a mock. The instruments are pure and the registry is per-instance, so the
+ * genuine article is both simpler than a double and strictly better evidence:
+ * the exact-count assertions below read the same rendered scrape a Prometheus
+ * server would.
+ */
+function metricsWith(): WorkerRuntimeMetrics {
+  return new WorkerRuntimeMetrics(new MetricRegistry('worker'));
+}
 
 function serviceWith(
   registry: JobHandlerRegistry,
   queue: FakeQueue,
   worker: FakeWorkerProcess = new FakeWorkerProcess(),
+  metrics: WorkerRuntimeMetrics = metricsWith(),
 ): JobExecutionService {
   return new JobExecutionService(
     registry,
@@ -28,6 +43,7 @@ function serviceWith(
     new FakeTransactions() as unknown as TransactionManager,
     fatalServiceWith(worker).fatal,
     systemWorkerClock,
+    metrics,
   );
 }
 

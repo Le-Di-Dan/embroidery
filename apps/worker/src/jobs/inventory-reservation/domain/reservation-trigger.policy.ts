@@ -15,12 +15,23 @@
  * something smaller" — it is "there is nothing inventory owes this event", which
  * is a successful consumption, not a failure and not a skipped one.
  *
+ * `FULL` (`APP12-H03-C1`) is the same answer reached from the opposite
+ * direction. Custom commerce reserves *after* its deposit is verified, which is
+ * why this handler exists; Ready-Made reserves at checkout and **consumes**
+ * inside the verifying transaction itself (`APP12-B05`, `COMMIT_RESERVED_STOCK`
+ * → `CommitReadyMadeStockService`). The units have already left on-hand and the
+ * reservation is already `CONSUMED` before this event is claimable, so
+ * reserving here would create a second hold against goods that are sold, and
+ * consuming here would decrement on-hand twice.
+ *
  * A `switch` over the closed union rather than `kind === DEPOSIT`, so that
- * adding a third kind to `VERIFIED_OBLIGATION_KINDS` is a compile error here
- * instead of a silent no-op in production.
+ * adding a fourth kind to `VERIFIED_OBLIGATION_KINDS` is a compile error here
+ * instead of a silent no-op in production. That is exactly how the third one was
+ * caught: the compiler refused the set change until this file answered for it.
  */
 import {
   DEPOSIT_OBLIGATION_KIND,
+  FULL_OBLIGATION_KIND,
   REMAINING_OBLIGATION_KIND,
   type VerifiedObligationKind,
 } from './payment-verified.payload';
@@ -30,6 +41,8 @@ export function requiresInventoryReservation(kind: VerifiedObligationKind): bool
     case DEPOSIT_OBLIGATION_KIND:
       return true;
     case REMAINING_OBLIGATION_KIND:
+      return false;
+    case FULL_OBLIGATION_KIND:
       return false;
   }
 }

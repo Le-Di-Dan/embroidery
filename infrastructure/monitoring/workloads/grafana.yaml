@@ -1,0 +1,135 @@
+# Grafana (`APP12-H03` §14, §18, §26.34).
+#
+# ## Anonymous access is off, explicitly
+#
+# `GF_AUTH_ANONYMOUS_ENABLED=false` is Grafana's own default. It is set here
+# anyway, because §26.34 makes it an acceptance criterion and a criterion proved
+# by "the default happens to be right" stops being proved the moment an image is
+# upgraded. The same applies to `GF_AUTH_BASIC_ENABLED` and sign-up: each is a
+# deliberate `false`, not an omission.
+#
+# ## The admin password is not in this repository
+#
+# It comes from a Secret this manifest references and does not create.
+# `§18` forbids committing it and §8a of `CLAUDE.md` forbids writing it
+# anywhere. The staging value is generated per run by the operator and passed
+# out of band; production is a release input:
+#
+#     RELEASE_INPUT: grafana_operator_credential = REQUIRED_BEFORE_R01
+#
+# `optional: false` on the Secret reference is deliberate — a missing Secret
+# must leave the pod unschedulable rather than start Grafana on its built-in
+# `admin`/`admin` default, which would be an unauthenticated monitoring plane
+# in everything but name.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: embroidery-grafana
+  labels:
+    app.kubernetes.io/name: embroidery-monitoring
+    app.kubernetes.io/component: grafana
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: embroidery-monitoring
+      app.kubernetes.io/component: grafana
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: embroidery-monitoring
+        app.kubernetes.io/component: grafana
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 472
+        runAsGroup: 472
+        fsGroup: 472
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: grafana
+          image: grafana/grafana:11.5.1
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              value: embroidery-operator
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: embroidery-grafana-admin
+                  key: admin-password
+                  optional: false
+            # §26.34. Anonymous viewing would make every panel — and every
+            # order count on it — readable by anyone who reached the port.
+            - name: GF_AUTH_ANONYMOUS_ENABLED
+              value: 'false'
+            - name: GF_USERS_ALLOW_SIGN_UP
+              value: 'false'
+            - name: GF_USERS_ALLOW_ORG_CREATE
+              value: 'false'
+            # The monitoring plane makes no outbound calls: no update checks, no
+            # analytics, no plugin catalogue.
+            - name: GF_ANALYTICS_REPORTING_ENABLED
+              value: 'false'
+            - name: GF_ANALYTICS_CHECK_FOR_UPDATES
+              value: 'false'
+            - name: GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES
+              value: 'false'
+            - name: GF_NEWS_NEWS_FEED_ENABLED
+              value: 'false'
+            - name: GF_INSTALL_PLUGINS
+              value: ''
+          volumeMounts:
+            - { name: datasources, mountPath: /etc/grafana/provisioning/datasources }
+            - { name: dashboard-provider, mountPath: /etc/grafana/provisioning/dashboards }
+            - { name: dashboards, mountPath: /var/lib/grafana/dashboards }
+            - { name: data, mountPath: /var/lib/grafana }
+          readinessProbe:
+            httpGet: { path: /api/health, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet: { path: /api/health, port: http }
+            initialDelaySeconds: 40
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { memory: 512Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ['ALL'] }
+      volumes:
+        - name: datasources
+          configMap: { name: embroidery-grafana-datasources }
+        - name: dashboard-provider
+          configMap: { name: embroidery-grafana-dashboard-provider }
+        - name: dashboards
+          configMap: { name: embroidery-grafana-dashboards }
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: embroidery-grafana
+  labels:
+    app.kubernetes.io/name: embroidery-monitoring
+    app.kubernetes.io/component: grafana
+spec:
+  # ClusterIP, and no HTTPRoute anywhere references it. An operator reaches
+  # Grafana by `kubectl port-forward`, which §4 permits for staging and which
+  # requires cluster credentials to use.
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: embroidery-monitoring
+    app.kubernetes.io/component: grafana
+  ports:
+    - { name: http, port: 3000, targetPort: http }

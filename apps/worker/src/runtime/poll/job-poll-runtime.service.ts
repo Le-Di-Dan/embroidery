@@ -194,6 +194,14 @@ export class JobPollRuntimeService implements OnApplicationBootstrap, OnApplicat
       const policy = this.policies.current();
       if (policy === undefined) {
         await this.clock.sleep(UNCONFIGURED_RECHECK_MS, signal);
+        // `APP12-H03-C1`: the recheck this constant was named for now actually
+        // rechecks. It used to sleep and loop on a value that could only ever
+        // have been set once, at bootstrap — so a worker that started before
+        // its policy was published stayed idle until a human restarted the pod,
+        // which is what a cold cluster showed in `APP12-H03`. The service
+        // ignores the call once it holds a valid policy, so this cannot reload
+        // a running fleet's lease duration.
+        await this.policies.reloadWhileUnconfigured();
         continue;
       }
 

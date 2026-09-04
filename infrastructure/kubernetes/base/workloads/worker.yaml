@@ -1,12 +1,19 @@
 # The asynchronous worker (NestJS application context).
 #
-# It publishes NO HTTP surface, so it has no Service and no HTTP probe. That is
+# It publishes no **business** HTTP surface and has no HTTP probe. That remains
 # deliberate rather than missing: `APP12-H02` §9 forbids inventing an HTTP
-# worker endpoint solely to satisfy a Kubernetes probe, and the delivered
-# worker's own health contract is process liveness — a fatal handler calls
-# `process.exit(1)` and the container is restarted by the kubelet. A real
-# liveness endpoint arrives with the queue/broker decision (open decision
-# IMP-O003), which owns what "the worker is working" even means.
+# worker endpoint solely to satisfy a Kubernetes probe, and the worker's health
+# contract is still process liveness — a fatal handler calls `process.exit(1)`
+# and the container is restarted by the kubelet. A real liveness endpoint
+# arrives with the queue/broker decision (open decision IMP-O003), which owns
+# what "the worker is working" even means.
+#
+# `APP12-H03` §10 adds an internal **metrics** listener on port 9464, and it is
+# not the endpoint H02 refused. It is not a probe target, no probe references
+# it, and a failure to bind it is logged and stepped over rather than failing
+# the process — the worker's liveness semantics are byte-for-byte unchanged. It
+# exists because a process with no HTTP surface still has to be scrapeable, and
+# the alternative was inventing a business API for it.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -42,6 +49,8 @@ spec:
         - name: worker
           image: embroidery/worker:REPLACED_BY_OVERLAY
           imagePullPolicy: IfNotPresent
+          ports:
+            - { name: metrics, containerPort: 9464 }
           envFrom:
             - configMapRef: { name: embroidery-config }
             - secretRef: { name: embroidery-secrets }
@@ -54,3 +63,20 @@ spec:
             capabilities: { drop: ['ALL'] }
           volumeMounts: [{ name: tmp, mountPath: /tmp }]
       volumes: [{ name: tmp, emptyDir: {} }]
+---
+# The worker's metrics-only Service (`APP12-H03` §10, §18).
+#
+# The worker's ONLY Service, and it publishes only port 9464. Nothing routes to
+# it and nothing probes it.
+apiVersion: v1
+kind: Service
+metadata:
+  name: embroidery-worker-metrics
+  labels:
+    app.kubernetes.io/name: embroidery
+    app.kubernetes.io/component: worker
+    embroidery.local/monitoring: 'true'
+spec:
+  type: ClusterIP
+  selector: { app.kubernetes.io/name: embroidery, app.kubernetes.io/component: worker }
+  ports: [{ name: metrics, port: 9464, targetPort: metrics }]

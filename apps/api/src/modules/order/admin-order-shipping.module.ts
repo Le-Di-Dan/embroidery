@@ -13,6 +13,8 @@ import { SaveShippingDetailUseCase } from './application/admin/save-shipping-det
 import { ReadyMadePayableTotalResolver } from './application/ready-made/payable-total.resolver';
 import { SetReadyMadeShippingFeeUseCase } from './application/ready-made/set-ready-made-shipping-fee.use-case';
 import { AdminOrderShippingController } from './presentation/admin-order-shipping.controller';
+import { OrderFulfilmentMetrics } from './application/admin/order-fulfilment.metrics';
+import { MetricsModule } from '../../platform/metrics/metrics.module';
 
 /**
  * `APP9-B04` — the two guarded Admin shipping-detail operations, and the write
@@ -78,6 +80,9 @@ import { AdminOrderShippingController } from './presentation/admin-order-shippin
   imports: [
     DatabaseModule,
     IdentityModule,
+    // `APP12-H03` — the fee router records through `OrderFulfilmentMetrics`.
+    // Explicit, so a Testing module that imports only this module composes.
+    MetricsModule,
     InventoryPersistenceModule,
     OrderPersistenceModule,
     PaymentPersistenceModule,
@@ -89,6 +94,7 @@ import { AdminOrderShippingController } from './presentation/admin-order-shippin
     ReadyMadePayableTotalResolver,
     SetReadyMadeShippingFeeUseCase,
     AdminShippingFeeRouter,
+    OrderFulfilmentMetrics,
   ],
 })
 export class AdminOrderShippingModule {}

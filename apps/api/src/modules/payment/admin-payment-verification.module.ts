@@ -18,6 +18,8 @@ import { RouteAttemptToReview } from './application/admin/route-attempt-to-revie
 import { VerifyPaymentAttemptUseCase } from './application/admin/verify-payment-attempt.use-case';
 import { AdminPaymentAttemptController } from './presentation/admin-payment-attempt.controller';
 import { VERIFIED_PAYMENT_SETTLEMENT_PORT } from './domain/verification/verified-payment-settlement';
+import { PaymentVerificationMetrics } from './application/admin/payment-verification.metrics';
+import { MetricsModule } from '../../platform/metrics/metrics.module';
 
 /**
  * `APP7-B04` — Admin manual verification and review.
@@ -95,6 +97,9 @@ import { VERIFIED_PAYMENT_SETTLEMENT_PORT } from './domain/verification/verified
     AuditModule,
     DatabaseModule,
     IdentityModule,
+    // `APP12-H03` — `PaymentVerificationMetrics` injects `ApiCommerceMetrics`.
+    // Explicit, so a Testing module that imports only this module composes.
+    MetricsModule,
     InventoryPersistenceModule,
     OrderPersistenceModule,
     PaymentPersistenceModule,
@@ -108,6 +113,7 @@ import { VERIFIED_PAYMENT_SETTLEMENT_PORT } from './domain/verification/verified
     RouteAttemptToReview,
     VerifyPaymentAttemptUseCase,
     ReviewPaymentAttemptUseCase,
+    PaymentVerificationMetrics,
   ],
 })
 export class AdminPaymentVerificationModule {}

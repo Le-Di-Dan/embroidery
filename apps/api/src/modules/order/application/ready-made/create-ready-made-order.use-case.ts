@@ -111,10 +111,8 @@ import {
   PURCHASABLE_SKU_PORT,
   type PurchasableSkuPort,
 } from '../../../catalog/domain/repositories/purchasable-sku.port';
-import {
-  classifyReadyMadeOrderFailure,
-  ReadyMadeOrderError,
-} from '../../domain/ready-made/ready-made-order.errors';
+import { ReadyMadeOrderError } from '../../domain/ready-made/ready-made-order.errors';
+import { ReadyMadeOrderMetrics, type ReadyMadeCreationAttempt } from './ready-made-order.metrics';
 import { readyMadeOrderFingerprint } from '../../domain/ready-made/ready-made-order-fingerprint';
 import {
   READY_MADE_INITIAL_RESERVATION_WINDOW_MS,
@@ -163,6 +161,7 @@ export class CreateReadyMadeOrderUseCase {
     @Inject(ORDER_REPOSITORY) private readonly shipping: OrderRepository,
     @Inject(SKU_STOCK_REPOSITORY) private readonly stock: SkuStockRepository,
     private readonly clock: AuditClock,
+    private readonly metrics: ReadyMadeOrderMetrics,
   ) {}
 
   async create(command: CreateReadyMadeOrderCommand): Promise<CreatedReadyMadeOrderResult> {
@@ -183,18 +182,17 @@ export class CreateReadyMadeOrderUseCase {
       }),
     };
 
-    try {
-      return await this.runCreation(key, command);
-    } catch (error: unknown) {
-      throw classifyReadyMadeOrderFailure(error);
-    }
+    // `APP12-H03` §7 — the observation wraps the whole transaction and settles
+    // after it, and it owns the failure classification this method used to do
+    // inline. `ReadyMadeOrderMetrics` re-throws the same classified failure.
+    return this.metrics.observeCreation(() => this.runCreation(key, command));
   }
 
   /** One whole attempt. Commits every consequence, or none of them. */
   private async runCreation(
     key: IdempotencyKey,
     command: CreateReadyMadeOrderCommand,
-  ): Promise<CreatedReadyMadeOrderResult> {
+  ): Promise<ReadyMadeCreationAttempt<CreatedReadyMadeOrderResult>> {
     return this.transactions.runInTransaction(async () => {
       const now = this.clock.now();
       const customerId = await this.identities.resolve(
@@ -213,7 +211,9 @@ export class CreateReadyMadeOrderUseCase {
       if (claim.outcome === 'replay') {
         // Completed earlier with this exact fingerprint. Nothing below runs, so
         // no second order, line, shipping detail, reservation or event.
-        return decodeReadyMadeOrderResult(claim.result);
+        // `reserved: false` — a replay creates no reservation, so counting one
+        // would report stock movement that never happened (`APP12-H03` §7).
+        return { result: decodeReadyMadeOrderResult(claim.result), reserved: false };
       }
       if (claim.outcome === 'in_progress') {
         throw new ReadyMadeOrderError('DUPLICATE_OPERATION');
@@ -317,7 +317,7 @@ export class CreateReadyMadeOrderUseCase {
         },
       };
       await this.idempotency.complete(key, result);
-      return result;
+      return { result, reserved: true };
     });
   }
 }

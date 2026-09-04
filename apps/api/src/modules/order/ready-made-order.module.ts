@@ -8,6 +8,8 @@ import { InventoryModule } from '../inventory/inventory.module';
 import { OrderModule } from './order.module';
 import { CreateReadyMadeOrderUseCase } from './application/ready-made/create-ready-made-order.use-case';
 import { PublicReadyMadeOrderController } from './presentation/public-ready-made-order.controller';
+import { ReadyMadeOrderMetrics } from './application/ready-made/ready-made-order.metrics';
+import { MetricsModule } from '../../platform/metrics/metrics.module';
 
 /**
  * `APP12-B02` — the Ready-Made order-creation surface.
@@ -46,12 +48,15 @@ import { PublicReadyMadeOrderController } from './presentation/public-ready-made
   imports: [
     DatabaseModule,
     AuditContextModule,
+    // `APP12-H03` — `ReadyMadeOrderMetrics` injects `ApiCommerceMetrics`.
+    // Explicit, so a Testing module that imports only this module composes.
+    MetricsModule,
     OrderModule,
     CustomerModule,
     CatalogPurchasableSkuModule,
     InventoryModule,
   ],
   controllers: [PublicReadyMadeOrderController],
-  providers: [CreateReadyMadeOrderUseCase],
+  providers: [CreateReadyMadeOrderUseCase, ReadyMadeOrderMetrics],
 })
 export class ReadyMadeOrderModule {}

@@ -227,3 +227,18 @@ export type {
   App6AgreementContentDataset,
   App6AgreementContentType,
 } from './seed/app6-agreement-content-dataset';
+
+// APP12-H03-C1 — the `worker.runtime` dataset reader. The third dataset on the
+// same rule, and the one that closes the gap `APP12-H03` found in a cold
+// cluster: the policy the worker has read since APP2-I02 had no publisher, so a
+// freshly deployed worker stayed idle. The JSON in `seed/` is the single value
+// source and nothing here restates a lease, a timeout or an attempt budget.
+export {
+  WORKER_RUNTIME_POLICY_DATASET_FILE,
+  WORKER_RUNTIME_POLICY_DATASET_KEY,
+  loadWorkerRuntimePolicyDataset,
+} from './seed/worker-runtime-policy-dataset';
+export type {
+  WorkerRuntimePolicyConfiguration,
+  WorkerRuntimePolicyDataset,
+} from './seed/worker-runtime-policy-dataset';

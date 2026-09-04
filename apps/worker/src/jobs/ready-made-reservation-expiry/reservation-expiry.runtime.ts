@@ -21,6 +21,7 @@ import type { OnApplicationBootstrap, OnApplicationShutdown } from '@nestjs/comm
 import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { WORKER_CLOCK, type WorkerClock } from '../../runtime/clock/worker-clock';
+import { WorkerRuntimeMetrics } from '../../runtime/metrics/worker-metrics.providers';
 import { ExpireReadyMadeReservationsUseCase } from './application/expire-reservations.usecase';
 import { RESERVATION_EXPIRY_INTERVAL_MS } from './domain/reservation-expiry.policy';
 
@@ -36,6 +37,7 @@ export class ReservationExpiryRuntimeService
   constructor(
     private readonly expiry: ExpireReadyMadeReservationsUseCase,
     @Inject(WORKER_CLOCK) private readonly clock: WorkerClock,
+    private readonly metrics: WorkerRuntimeMetrics,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -65,8 +67,28 @@ export class ReservationExpiryRuntimeService
         return;
       }
       try {
-        await this.expiry.run();
+        const outcome = await this.expiry.run();
+        // `APP12-H03` §7 — the pass result, recorded after the pass returns.
+        // Per-reservation expiries are counted too, so "are reservations being
+        // released" is answerable without reading the database.
+        this.metrics.recordReservationSweep({
+          outcome: 'success',
+          examined: outcome.examined,
+          expired: outcome.expired,
+        });
+        if (outcome.expired > 0) {
+          this.metrics.recordReservation({
+            transition: 'expire',
+            outcome: 'success',
+            reasonClass: 'other',
+            count: outcome.expired,
+          });
+        }
       } catch (error: unknown) {
+        // A failed pass is a system error, never a refusal: the sweep has no
+        // business rule to decline under, so anything reaching here is a fault
+        // an operator must act on (§15's reservation-processing alert).
+        this.metrics.recordReservationSweep({ outcome: 'system_error', examined: 0, expired: 0 });
         // The message only: an error object from the database can carry a
         // connection string or a row's values.
         this.logger.error(

@@ -1,0 +1,368 @@
+# Wave-1 commerce alert rules (`APP12-H03` §15).
+#
+# ## The one rule every rule here obeys
+#
+# **An alert fires on `outcome="system_error"` and never on `outcome="refused"`.**
+# A customer ordering more units than exist, an operator verifying a payment
+# twice, a stale attempt — all of those are the business working correctly, and
+# a system that pages someone for them trains its operators to ignore it.
+#
+# ## Thresholds
+#
+# This shop does fewer than a hundred orders a month. A percentage-based SLO on
+# that volume is arithmetic noise: one failed checkout in a quiet hour is a 100%
+# error rate, and a 1%-of-requests burn rate would need a thousand requests to
+# mean anything. So the commerce rules use **absolute system-error counts over a
+# window**, which is what an operator actually acts on: "two order creations
+# threw in fifteen minutes" is a real signal at this volume and a meaningless
+# one at ten thousand orders a day.
+#
+# No threshold below is derived from a service-level objective, because none
+# exists. Every one is labelled `threshold_authority: INITIAL_OPERATIONAL_THRESHOLD`
+# and is expected to be revised once R01 has real traffic behind it. Where a
+# delivered budget *does* exist — the reservation window, the retry schedule —
+# the rule uses it and says so.
+#
+# ## `runbook` is a placeholder that names its owner
+#
+# `APP12-H07` writes the operational runbooks. Every alert carries the id it
+# will have, so H07 fills in documents rather than discovering which alerts
+# exist.
+
+groups:
+  # ===========================================================================
+  # Availability of the things that produce every other signal.
+  # ===========================================================================
+  - name: embroidery-wave1-availability
+    interval: 15s
+    rules:
+      - alert: EmbroideryApiTargetDown
+        # `up == 0` is target availability as Prometheus sees it: the pod is
+        # unreachable on its metrics port. Two minutes, so a rolling update —
+        # which replaces pods one at a time with `maxUnavailable: 0` — cannot
+        # fire it.
+        expr: up{job="embroidery-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: api
+          domain: availability
+          threshold_authority: INITIAL_OPERATIONAL_THRESHOLD
+        annotations:
+          summary: 'An API instance has been unreachable for 2 minutes'
+          description: >-
+            Prometheus cannot scrape an API pod. Either the process is down or its
+            internal metrics listener is not bound. Check the pod's readiness and
+            its startup logs; a pod that is failing readiness has also left the
+            Gateway's rotation, so customers may be affected.
+          dashboard: 'Wave 1 Commerce Operations'
+          runbook: RUNBOOK-H07-API-DOWN
+
+      - alert: EmbroideryAllApiTargetsDown
+        # The one that means the shop is closed. Deliberately separate from the
+        # per-pod alert and deliberately shorter: with `maxUnavailable: 0` there
+        # is no legitimate moment when every replica is gone at once.
+        expr: absent(up{job="embroidery-api"} == 1)
+        for: 1m
+        labels:
+          severity: critical
+          service: api
+          domain: availability
+          threshold_authority: INITIAL_OPERATIONAL_THRESHOLD
+        annotations:
+          summary: 'No API instance is reachable'
+          description: >-
+            Every API pod is unreachable, or the metrics Service selects none.
+            Customers cannot check out. Check the Deployment, then the Service
+            endpoints.
+          dashboard: 'Wave 1 Commerce Operations'
+          runbook: RUNBOOK-H07-API-DOWN
+
+      - alert: EmbroideryWorkerTargetDown
+        # The worker has no HTTP health contract by design, so its metrics
+        # endpoint is the only positive signal that the process is alive and
+        # able to do work. Five minutes, because the worker's Recreate strategy
+        # means a deployment legitimately has a gap.
+        expr: absent(up{job="embroidery-worker"} == 1)
+        for: 5m
+        labels:
+          severity: critical
+          service: worker
+          domain: availability
+          threshold_authority: INITIAL_OPERATIONAL_THRESHOLD
+        annotations:
+          summary: 'The worker is unreachable'
+          description: >-
+            The worker is not being scraped. Nothing is delivering notifications,
+            converting orders or expiring reservations. A customer who orders now
+            will not receive their access link.
+          dashboard: 'Wave 1 Commerce Operations'
+          runbook: RUNBOOK-H07-WORKER-DOWN
+
+  # ===========================================================================
+  # Transport-level failure. The broadest net, and the one that catches a
+  # failure no domain rule below anticipated.
+  # ===========================================================================
+  - name: embroidery-wave1-http
+    interval: 15s
+    rules:
+      - alert: EmbroideryApiServerErrorBurst
+        # 5xx only. A 4xx is a client sending something the API refuses, which
+        # is the same class of event as a business refusal and must not page.
+        expr: sum(increase(embroidery_http_requests_total{status_class="5xx"}[10m])) > 5
+        for: 5m
+        labels:
+          severity: critical
+          service: api
+          domain: http
+          threshold_authority: INITIAL_OPERATIONAL_THRESHOLD
+        annotations:
+          summary: 'Sustained 5xx responses from the API'
+          description: >-
+            More than five server errors in ten minutes, sustained for five. Use
+            the dashboard's route-template breakdown to find which endpoint, then
+            the Loki panel for the matching `platform.error` records.
+          dashboard: 'Wave 1 Commerce Operations'
+          runbook: RUNBOOK-H07-API-5XX
+
+  # ===========================================================================
+  # The Wave-1 commerce path.
+  # ===========================================================================
+  - name: embroidery-wave1-commerce
+    interval: 15s
+    rules:
+      - alert: EmbroideryOrderCreateSystemErrors
+        # Two in fifteen minutes. At this volume a single one may be a genuine
+        # one-off; two is a pattern, and a customer who cannot place an order is
+        # revenue lost silently — nobody complains, they leave.
+        expr: sum(increase(embroidery_order_create_total{outcome="system_error"}[15m])) > 1
+        for: 5m
+        labels:
+          severity: critical
+          service: api
+          domain: checkout
+          threshold_authority: INITIAL_OPERATIONAL_THRESHOLD
+        annotations:
+          summary: 'Order creation is throwing system errors'
+          description: >-
+            Order creation failed for a reason the domain does not publish as a
+            refusal — a database fault or a defect, never "out of stock". Check
+            the order-create panel for the `origin`, then the Loki query for
+            `http.request.completed` on the checkout route.
+          dashboard: 'Wave 1 Commerce Operations'
+          runbook: RUNBOOK-H07-ORDER-CREATE
+
+      - alert: EmbroideryFullVerificationSystemErrors
+        expr: sum(increase(embroidery_payment_verification_total{outcome="system_error"}[15m])) > 1
+        for: 5m
+        labels:
+          severity: critical
+          service: api
+          domain: payment
+          threshold_authority: INITIAL_OPERATIONAL_THRESHOLD
+        annotations:
+          summary: 'Payment verification is throwing system errors'
+          description: >-
+            An operator's verification failed for a reason that is not a published
+            refusal. A `REQUIRES_REVIEW` routing and a lost-response replay are
+            both recorded as `refused` and do not reach this alert. Money state may
+            be un-advanceable; check before telling a customer their payment
+            failed.
+          dashboard: 'Wave 1 Commerce Operations'
+          runbook: RUNBOOK-H07-PAYMENT-VERIFY
+
+      - alert: EmbroideryFulfilmentSystemErrors
+        expr: sum(increase(embroidery_fulfilment_transition_total{outcome="system_error"}[15m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+          domain: fulfilment
+          threshold_authority: INITIAL_OPERATIONAL_THRESHOLD
+        annotations:
+          summary: 'A fulfilment transition is throwing system errors'
+          description: >-
+            Setting a shipping fee, dispatching or completing an order failed for
+            a non-refusal reason. `warning` rather than `critical`: an operator is
+            present, sees the failure in the Admin UI, and the customer's order is
+            not lost — but a repeated failure blocks the order from shipping.
+          dashboard: 'Wave 1 Commerce Operations'
+          runbook: RUNBOOK-H07-FULFILMENT
+
+  # ===========================================================================
+  # Inventory and the worker.
+  # ===========================================================================
+  - name: embroidery-wave1-inventory
+    interval: 15s
+    rules:
+      - alert: EmbroideryReservationSweepFailing
+        expr: sum(increase(embroidery_reservation_sweep_total{outcome="system_error"}[15m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: worker
+          domain: inventory
+          threshold_authority: INITIAL_OPERATIONAL_THRESHOLD
+        annotations:
+          summary: 'The reservation expiry sweep is failing'
+          description: >-
+            Passes of the Ready-Made expiry sweep are erroring. Lapsed
+            reservations are not being released, so stock stays held for orders
+            that will never be paid. The invariant gauge below confirms the
+            effect.
+          dashboard: 'Wave 1 Commerce Operations'
+          runbook: RUNBOOK-H07-RESERVATION-SWEEP
+
+      - alert: EmbroideryExpiredReservationsHeld
+        # The deadline is the reservation's own `expires_at` — a delivered
+        # domain value (`BR-025`/`BR-026`), not an invented SLA. A small
+        # non-zero reading is normal between passes, so this is qualified by
+        # duration rather than fired instantaneously.
+        expr: max(embroidery_invariant_violations{invariant="expired_reservation_held"}) > 0
+        for: 15m
+        labels:
+          severity: warning
+          service: worker
+          domain: inventory
+          threshold_authority: DOMAIN_DEADLINE
+        annotations:
+          summary: 'Expired reservations have not been released'
+          description: >-
+            Reservations are past their own `expires_at` and still `RESERVED`
+            after fifteen minutes. Stock is held for orders that are no longer
+            entitled to it, so a purchasable SKU may read as out of stock. Check
+            whether the sweep is running at all.
+          dashboard: 'Wave 1 Commerce Operations'
+          runbook: RUNBOOK-H07-RESERVATION-SWEEP
+
+  - name: embroidery-wave1-worker
+    interval: 15s
+    rules:
+      - alert: EmbroideryWorkerJobFailures
+        expr: sum by (job_type) (increase(embroidery_worker_job_attempts_total{outcome="failed_terminal"}[15m])) > 0
+        for: 5m
+        labels:
+          severity: critical
+          service: worker
+          domain: jobs
+          threshold_authority: RETRY_BUDGET
+        annotations:
+          summary: 'A background job has exhausted its retries'
+          description: >-
+            A job reached a terminal failure, which means the runtime's retry
+            budget is spent and nothing will try again. The threshold is zero
+            because the retry schedule has already absorbed every transient
+            failure by this point — a terminal failure is by definition not
+            transient.
+          dashboard: 'Wave 1 Commerce Operations'
+          runbook: RUNBOOK-H07-WORKER-JOBS
+
+      - alert: EmbroideryWorkerQueueBacklog
+        # Due work, not deferred work: a job waiting out its backoff is not
+        # backlog. Ten minutes of a non-empty due queue at this volume means
+        # nothing is claiming.
+        expr: max(embroidery_worker_queue_oldest_pending_age_seconds) > 900
+        for: 10m
+        labels:
+          severity: warning
+          service: worker
+          domain: jobs
+          threshold_authority: INITIAL_OPERATIONAL_THRESHOLD
+        annotations:
+          summary: 'Work has been due for longer than fifteen minutes'
+          description: >-
+            The oldest due job has been waiting more than fifteen minutes. The
+            worker may be up but not claiming — check its logs for a missing
+            policy or a closed startup gate, both of which leave it deliberately
+            idle rather than crashed.
+          dashboard: 'Wave 1 Commerce Operations'
+          runbook: RUNBOOK-H07-WORKER-JOBS
+
+  # ===========================================================================
+  # Notification. The failure a customer feels and nobody else notices.
+  # ===========================================================================
+  - name: embroidery-wave1-notification
+    interval: 15s
+    rules:
+      - alert: EmbroideryOrderAccessDeliveryFailing
+        # Threshold zero, and deliberately so. An `ORDER_ACCESS` link is a
+        # customer's only credential for the order they just paid for; a single
+        # undelivered one is a support incident, and there is no volume at which
+        # some of them failing is acceptable.
+        expr: sum(increase(embroidery_notification_delivery_total{operation="order_access",outcome="system_error"}[15m])) > 0
+        for: 5m
+        labels:
+          severity: critical
+          service: worker
+          domain: notification
+          threshold_authority: INITIAL_OPERATIONAL_THRESHOLD
+        annotations:
+          summary: 'ORDER_ACCESS notification delivery is failing'
+          description: >-
+            A customer's order-access link was not delivered. They have an order
+            they cannot open and no way to recover it themselves. Check the
+            `reason_class` on the notification panel — an unreadable envelope is a
+            key or producer problem, an unavailable transport is a channel one.
+          dashboard: 'Wave 1 Commerce Operations'
+          runbook: RUNBOOK-H07-NOTIFICATION
+
+      - alert: EmbroideryVerificationDeliveryFailing
+        expr: sum(increase(embroidery_notification_delivery_total{operation="verification",outcome="system_error"}[15m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: worker
+          domain: notification
+          threshold_authority: INITIAL_OPERATIONAL_THRESHOLD
+        annotations:
+          summary: 'Verification code delivery is failing'
+          description: >-
+            Verification codes are not reaching customers, so nobody can start a
+            checkout. `warning` and a threshold above zero because a customer can
+            request another code, unlike an order-access link.
+          dashboard: 'Wave 1 Commerce Operations'
+          runbook: RUNBOOK-H07-NOTIFICATION
+
+  # ===========================================================================
+  # The monitoring plane's own honesty.
+  # ===========================================================================
+  - name: embroidery-wave1-telemetry
+    interval: 15s
+    rules:
+      - alert: EmbroideryMetricSeriesDropped
+        # A dropped series means a metric family hit its cardinality cap, which
+        # means a label is carrying something it should not. The dashboard would
+        # keep rendering and the data would be quietly incomplete, so this is
+        # the only signal that the contract has been broken in production.
+        expr: max(embroidery_metrics_series_dropped) > 0
+        for: 10m
+        labels:
+          severity: warning
+          service: api
+          domain: telemetry
+          threshold_authority: CARDINALITY_CONTRACT
+        annotations:
+          summary: 'A metric family has reached its cardinality cap'
+          description: >-
+            A metric family refused new series. Some label is unbounded, so the
+            data behind at least one panel is incomplete. Find the family whose
+            series count is at the cap and check what its labels carry.
+          dashboard: 'Wave 1 Commerce Operations'
+          runbook: RUNBOOK-H07-TELEMETRY
+
+      - alert: EmbroideryTelemetryCollectorFailing
+        expr: sum(increase(embroidery_metrics_collector_failures_total[15m])) > 3
+        for: 10m
+        labels:
+          severity: warning
+          service: worker
+          domain: telemetry
+          threshold_authority: INITIAL_OPERATIONAL_THRESHOLD
+        annotations:
+          summary: 'A scrape-time collector is failing'
+          description: >-
+            The queue-backlog and invariant gauges are stale because their
+            collector cannot reach the database. Treat the two inventory gauges as
+            unavailable, not as zero.
+          dashboard: 'Wave 1 Commerce Operations'
+          runbook: RUNBOOK-H07-TELEMETRY

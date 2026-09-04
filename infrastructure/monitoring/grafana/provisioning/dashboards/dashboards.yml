@@ -1,0 +1,27 @@
+# Dashboard provisioning (`APP12-H03` §14, §26.22).
+#
+# Grafana loads every dashboard JSON under `/var/lib/grafana/dashboards` from
+# the ConfigMap the monitoring kustomization generates. The repository is the
+# source; the UI is a viewer.
+#
+# `allowUiUpdates: false` is the part that makes that true rather than aspirational.
+# With it, a change made in the browser cannot be saved, so the file on disk and
+# the dashboard an operator is looking at can never diverge — and a dashboard
+# that has silently drifted from its source is worse than no dashboard, because
+# it is trusted.
+
+apiVersion: 1
+
+providers:
+  - name: embroidery
+    orgId: 1
+    folder: Embroidery
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards
+      # Keeps the on-disk layout, so a second dashboard added later lands in its
+      # own folder rather than all of them collapsing into one list.
+      foldersFromFilesStructure: false

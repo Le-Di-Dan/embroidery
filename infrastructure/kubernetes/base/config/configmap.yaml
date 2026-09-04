@@ -77,3 +77,11 @@ data:
   LOG_STACK_ENABLED: 'false'
   # Swagger UI is unauthenticated. Never on in production.
   API_DOCS_ENABLED: 'false'
+
+  # --- Operational metrics (APP12-H03 §10). The internal scrape listener, on a
+  # port no Gateway routes to and no HTTPRoute references. `METRICS_ENABLED` is
+  # an emergency switch, not a tuning knob: turning it off makes the pod
+  # invisible to Prometheus and fires the target-down alert, which is the
+  # correct and loud consequence.
+  METRICS_ENABLED: 'true'
+  METRICS_PORT: '9464'

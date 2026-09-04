@@ -38,9 +38,11 @@ import { ExpireReadyMadeReservationsUseCase } from './application/expire-reserva
 import { DUE_RESERVATION_REPOSITORY } from './domain/repositories/due-reservation.repository';
 import { SqlDueReservationRepository } from './infrastructure/persistence/sql-due-reservation.repository';
 import { ReservationExpiryRuntimeService } from './reservation-expiry.runtime';
+import { WorkerMetricsModule } from '../../runtime/metrics/worker-metrics.module';
 
 @Module({
   imports: [
+    WorkerMetricsModule,
     DatabaseModule,
     WorkerRuntimeModule,
     InventoryPersistenceModule,

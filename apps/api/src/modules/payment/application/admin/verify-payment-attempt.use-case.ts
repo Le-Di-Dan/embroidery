@@ -102,6 +102,7 @@ import { ApplyVerifiedSettlement } from './apply-verified-settlement.service';
 import type { PaymentDecisionView } from './admin-payment.view';
 import { PaymentDecisionChainResolver } from './payment-decision-chain.resolver';
 import { PaymentDecisionRecorder } from './payment-decision.recorder';
+import { PaymentVerificationMetrics } from './payment-verification.metrics';
 import { RouteAttemptToReview } from './route-attempt-to-review.service';
 import { requirePaymentAdminActorId } from './payment-admin-actor';
 
@@ -153,6 +154,7 @@ export class VerifyPaymentAttemptUseCase {
     private readonly reviewRouter: RouteAttemptToReview,
     private readonly requestContext: RequestContextService,
     private readonly clock: AuditClock,
+    private readonly metrics: PaymentVerificationMetrics,
   ) {}
 
   async verify(command: VerifyPaymentAttemptCommand): Promise<PaymentDecisionView> {
@@ -163,10 +165,16 @@ export class VerifyPaymentAttemptUseCase {
       transferReference: command.observedTransferReference,
     };
 
+    // `APP12-H03` §7 — one observation per verification attempt, settled after
+    // the transaction so a rolled-back verification cannot present as applied.
+    const observation = this.metrics.start();
     try {
-      return await this.transactions.runInTransaction(async () => {
+      const decision = await this.transactions.runInTransaction<PaymentDecisionView>(async () => {
         const { locked, orderId, orderStatus, kind, transition, expected } =
           await this.chain.resolve(command.attemptId);
+        // The kind the *locked* row reported. Read here rather than from the
+        // command, which carries only an attempt id and could not name one.
+        observation.paymentKind(kind);
         const { attempt, obligation } = locked;
         const now = this.clock.now();
 
@@ -325,8 +333,13 @@ export class VerifyPaymentAttemptUseCase {
           replayed: false,
         };
       });
+      observation.settled(decision);
+      return decision;
     } catch (error: unknown) {
-      throw this.classify(error);
+      // Classified first, so the metric and the operator read the same verdict.
+      const classified = this.classify(error);
+      observation.failed(classified);
+      throw classified;
     }
   }
 

@@ -9,6 +9,8 @@ import { IdentityModule } from '../identity/identity.module';
 import { CompleteOrderUseCase } from './application/admin/complete-order.use-case';
 import { DispatchOrderUseCase } from './application/admin/dispatch-order.use-case';
 import { AdminOrderDeliveryController } from './presentation/admin-order-delivery.controller';
+import { OrderFulfilmentMetrics } from './application/admin/order-fulfilment.metrics';
+import { MetricsModule } from '../../platform/metrics/metrics.module';
 
 /**
  * `APP9-B05` — the two guarded Admin delivery commands (`TR-LC14-07`,
@@ -63,8 +65,19 @@ import { AdminOrderDeliveryController } from './presentation/admin-order-deliver
  * It exports nothing, and has two entry points.
  */
 @Module({
-  imports: [DatabaseModule, IdentityModule, OrderPersistenceModule, PaymentPersistenceModule],
+  imports: [
+    DatabaseModule,
+    IdentityModule,
+    // `APP12-H03` — `OrderFulfilmentMetrics` injects `ApiCommerceMetrics`.
+    // `MetricsModule` is `@Global()`, so the running application would resolve it
+    // from the root module — but a Testing module that imports only this module
+    // has no root, and would fail to compose. Imported explicitly so this
+    // module's dependency graph is complete on its own.
+    MetricsModule,
+    OrderPersistenceModule,
+    PaymentPersistenceModule,
+  ],
   controllers: [AdminOrderDeliveryController],
-  providers: [DispatchOrderUseCase, CompleteOrderUseCase],
+  providers: [DispatchOrderUseCase, CompleteOrderUseCase, OrderFulfilmentMetrics],
 })
 export class AdminOrderDeliveryModule {}

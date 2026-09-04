@@ -1,0 +1,97 @@
+# Alertmanager routing (`APP12-H03` §16, §19).
+#
+# ## The production receiver is deliberately absent
+#
+# There is **no** Slack workspace, no Teams tenant, no SMTP relay and no
+# PagerDuty account recorded anywhere in this repository, and §16 forbids
+# inventing one. What exists here is the routing *mechanism*, complete and
+# proved: a severity-based route tree, grouping that matches how these alerts
+# actually arrive, and a receiver that can be observed end to end.
+#
+# The staging receiver is a **recording webhook** — a container that accepts the
+# POST and writes it to its own log — which is what makes the §16 live proof
+# possible without addressing a real person. Production substitutes a real
+# receiver at the same route:
+#
+#     RELEASE_INPUT: production_alert_receiver = REQUIRED_BEFORE_R01
+#
+# The substitution is a value, not a redesign: the route tree, the grouping and
+# the inhibition below are unchanged by which URL sits under `webhook_configs`.
+#
+# ## Grouping
+#
+# By `alertname` and `service`, not by instance. When both API pods fail, an
+# operator needs one notification saying "the API is down", not two saying "a
+# pod is down" — and the alert list inside the notification still names each
+# instance.
+
+global:
+  # How long a firing alert may go unrefreshed before Alertmanager declares it
+  # resolved. Comfortably above the 15s evaluation interval, so a Prometheus
+  # restart does not produce a spurious resolution.
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname', 'service']
+  # Long enough to collect the second pod's alert into the first pod's
+  # notification; short enough that an operator is not waiting on it.
+  group_wait: 30s
+  group_interval: 5m
+  # A still-firing alert is re-sent every four hours. At this alert volume a
+  # shorter repeat is noise and a longer one lets an incident fall off the
+  # bottom of a chat window and be forgotten.
+  repeat_interval: 4h
+  receiver: default
+
+  routes:
+    # Critical alerts take their own branch so a production release can point
+    # them somewhere that wakes someone, while warnings go to a channel that
+    # does not. Both resolve to the same recording receiver in staging, which
+    # is the honest thing to do — inventing two staging destinations would
+    # prove a routing tree that production will not use.
+    - matchers:
+        - severity = critical
+      receiver: critical
+      continue: false
+    - matchers:
+        - severity = warning
+      receiver: warning
+      continue: false
+
+inhibit_rules:
+  # When every API instance is unreachable, the per-pod alert adds nothing: it
+  # is the same incident seen one pod at a time. Inhibited rather than deleted,
+  # so a single-pod failure still alerts on its own.
+  - source_matchers:
+      - alertname = EmbroideryAllApiTargetsDown
+    target_matchers:
+      - alertname = EmbroideryApiTargetDown
+    equal: ['service']
+
+  # A worker that is not running cannot process jobs, expire reservations or
+  # deliver notifications. Its downstream alerts would all fire and all say the
+  # same thing.
+  - source_matchers:
+      - alertname = EmbroideryWorkerTargetDown
+    target_matchers:
+      - domain=~"jobs|inventory|notification"
+    equal: ['service']
+
+receivers:
+  # Staging: a recording webhook. It accepts the POST, logs the payload and
+  # returns 200 — enough to prove delivery end to end (§16) and incapable of
+  # contacting anyone.
+  - name: default
+    webhook_configs:
+      - url: http://embroidery-alert-recorder:8080/alerts
+        send_resolved: true
+
+  - name: critical
+    webhook_configs:
+      - url: http://embroidery-alert-recorder:8080/alerts
+        send_resolved: true
+
+  - name: warning
+    webhook_configs:
+      - url: http://embroidery-alert-recorder:8080/alerts
+        send_resolved: true

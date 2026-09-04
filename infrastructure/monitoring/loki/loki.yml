@@ -1,0 +1,102 @@
+# Loki, single-binary, filesystem-backed (`APP12-H03` §13).
+#
+# The smallest supported Loki there is: monolithic mode, TSDB index and chunks
+# on a local filesystem, no object store, no ring beyond an in-memory one, no
+# compactor schedule beyond retention. §1 forbids building an enterprise
+# telemetry platform, and a microservices Loki with S3 chunks would be exactly
+# that for a system whose whole log volume is a handful of JSON lines per order.
+#
+# ## Multi-tenancy is off, and that is a deliberate security statement
+#
+# `auth_enabled: false` means Loki does not read an `X-Scope-OrgID` header and
+# serves one tenant. It is **not** an authorisation decision: the Loki API is
+# reachable only from inside the namespace, no HTTPRoute references it, and §18
+# proves that from the Gateway. Turning tenancy on would add a header nobody
+# checks and no isolation that the network does not already provide.
+#
+# ## Retention
+#
+# 14 days. Long enough to investigate an incident reported a week late, short
+# enough that a disposable volume holds it. Production retention is a release
+# input, not a value this file may invent:
+#
+#     RELEASE_INPUT: monitoring_retention = REQUIRED_BEFORE_R01
+
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  # Log lines about log lines, at the level that matters. `info` here would
+  # roughly double the stack's own log volume.
+  log_level: warn
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+limits_config:
+  # The bounded-label contract, enforced by the server rather than trusted from
+  # the collector (§13). Fifteen is generous against the six labels Alloy
+  # actually sends and low enough that a mistaken `label` in a future collector
+  # config is rejected at ingest instead of silently multiplying streams.
+  max_label_names_per_series: 15
+  max_label_name_length: 64
+  max_label_value_length: 128
+  # Loki 3 adds `service_name` and `detected_level` to every stream on its own.
+  # Both are turned off: the label set is declared by the collector, in one
+  # place, and a store that silently adds two more makes the documented contract
+  # untrue. `level` is already derived explicitly by Alloy from the
+  # application's own field, which is the value worth indexing.
+  discover_service_name: []
+  discover_log_levels: false
+  # An application log line is JSON and short. A 64KB line is a stack trace or a
+  # payload dump, and neither belongs in a log record under the H01 policy.
+  max_line_size: 65536
+  max_line_size_truncate: true
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h
+  retention_period: 336h
+  # Deliberately generous for a low-volume system: the point of these is to stop
+  # a runaway, not to shape traffic.
+  ingestion_rate_mb: 8
+  ingestion_burst_size_mb: 16
+
+compactor:
+  working_directory: /loki/compactor
+  # Retention is only enforced when the compactor is told to do it. Without
+  # these two lines `retention_period` above is documentation, and the volume
+  # fills up regardless.
+  retention_enabled: true
+  delete_request_store: filesystem
+
+ruler:
+  # No Loki alerting rules. Alerts are Prometheus's, on metrics, because a
+  # metric alert is cheap and deterministic and a log alert is neither. Loki's
+  # job here is diagnosis after an alert, not detection.
+  storage:
+    type: local
+    local:
+      directory: /loki/rules
+
+analytics:
+  # No usage reporting. The monitoring plane must not make outbound calls.
+  reporting_enabled: false

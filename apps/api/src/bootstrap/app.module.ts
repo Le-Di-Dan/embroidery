@@ -53,6 +53,7 @@ import { GalleryCompositionModule } from '../modules/gallery/gallery-composition
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
 import { LoggingModule } from '../platform/logging/logging.module';
+import { MetricsModule } from '../platform/metrics/metrics.module';
 import { PolicyModule } from '../platform/policy/policy.module';
 import { ReleaseGateModule } from '../platform/release-gate/release-gate.module';
 import { RequestContextModule } from '../platform/request-context/request-context.module';
@@ -62,6 +63,11 @@ import { ValidationModule } from '../platform/validation/validation.module';
   imports: [
     RequestContextModule,
     LoggingModule,
+    // APP12-H03 — the operational metrics platform, beside logging and for the
+    // same reason. It publishes no route and no controller: the scrape is a
+    // separate internal listener `main.ts` starts, off OpenAPI and off the
+    // Gateway.
+    MetricsModule,
     AuditContextModule,
     HttpResponseModule,
     ValidationModule,

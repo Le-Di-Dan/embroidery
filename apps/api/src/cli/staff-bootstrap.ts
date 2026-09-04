@@ -24,6 +24,7 @@ import {
 } from '../modules/identity/application/bootstrap-staff.use-case';
 import { PublishApp4PolicyUseCase } from '../platform/policy/publish-app4-policy.use-case';
 import { PublishApp6PolicyUseCase } from '../platform/policy/publish-app6-policy.use-case';
+import { PublishWorkerRuntimePolicyUseCase } from '../platform/policy/publish-worker-runtime-policy.use-case';
 import { PublishApp6AgreementsUseCase } from '../modules/content/application/publish-app6-agreements.use-case';
 import {
   STATUS_EXIT_CODE,
@@ -119,6 +120,15 @@ async function runEnsure(): Promise<number> {
       // the read fails closed on, rather than content nothing requires.
       // Idempotent — a rerun with unchanged content publishes nothing.
       await app.get(PublishApp6AgreementsUseCase).publish(result.adminId);
+      // `APP12-H03-C1`, same seam and the same resolved Admin. `worker.runtime`
+      // is the one policy the *worker* reads, and until now nothing published
+      // it: a cold deployed worker found no policy and claimed nothing for the
+      // life of the pod. Last of the four deliberately — the three above
+      // configure request-path behaviour the API itself serves, and this one
+      // switches on a second process. A boot that fails partway therefore
+      // leaves the API's own policy complete and the worker still safely idle,
+      // rather than a worker claiming jobs against half-configured policy.
+      await app.get(PublishWorkerRuntimePolicyUseCase).publish(result.adminId);
     }
     return report(ENSURE_OUTCOME_STATUS[result.outcome], `staff ${result.outcome}`, result.adminId);
   } catch (error: unknown) {

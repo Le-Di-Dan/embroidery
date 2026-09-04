@@ -1,0 +1,92 @@
+# Loki (`APP12-H03` §13, §18).
+#
+# Single binary, `emptyDir`, `ClusterIP`, nothing routed to it. The same
+# ephemeral-storage decision Prometheus takes, for the same reason: production
+# persistence for the monitoring plane is a release input, not a value this
+# checkpoint may invent.
+#
+#     RELEASE_INPUT: monitoring_persistence = REQUIRED_BEFORE_R01
+#
+# The Loki HTTP API is unauthenticated *and* unreachable from outside the
+# namespace. Both halves matter: `auth_enabled: false` in the config is about
+# multi-tenancy, not authorisation, and the reason no authorisation is needed is
+# that no HTTPRoute exists for this Service and §18 proves it from the Gateway.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: embroidery-loki
+  labels:
+    app.kubernetes.io/name: embroidery-monitoring
+    app.kubernetes.io/component: loki
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: embroidery-monitoring
+      app.kubernetes.io/component: loki
+  strategy:
+    # Two Loki instances over one filesystem index corrupt it. Not a scaling
+    # decision to be revisited casually — it is a property of the storage mode.
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: embroidery-monitoring
+        app.kubernetes.io/component: loki
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: loki
+          image: grafana/loki:3.4.1
+          args:
+            - -config.file=/etc/loki/loki.yml
+          ports:
+            - name: http
+              containerPort: 3100
+          volumeMounts:
+            - { name: config, mountPath: /etc/loki/loki.yml, subPath: loki.yml }
+            - { name: data, mountPath: /loki }
+          readinessProbe:
+            httpGet: { path: /ready, port: http }
+            # Loki reports not-ready for its first fifteen seconds by design.
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet: { path: /ready, port: http }
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          resources:
+            requests: { cpu: 50m, memory: 256Mi }
+            limits: { memory: 1Gi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ['ALL'] }
+      volumes:
+        - name: config
+          configMap: { name: embroidery-loki-config }
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: embroidery-loki
+  labels:
+    app.kubernetes.io/name: embroidery-monitoring
+    app.kubernetes.io/component: loki
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: embroidery-monitoring
+    app.kubernetes.io/component: loki
+  ports:
+    - { name: http, port: 3100, targetPort: http }

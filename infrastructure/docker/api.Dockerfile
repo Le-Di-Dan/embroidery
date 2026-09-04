@@ -194,6 +194,13 @@ COPY --from=build --chown=node:node /app/packages/design-document/package.json .
 COPY --from=build --chown=node:node /app/packages/design-engine/dist ./packages/design-engine/dist
 COPY --from=build --chown=node:node /app/packages/design-engine/package.json ./packages/design-engine/package.json
 COPY --from=prod-deps --chown=node:node /app/packages/design-engine/node_modules ./packages/design-engine/node_modules
+# APP12-H03 — the shared metrics platform. The process starts its internal
+# scrape listener from this package at bootstrap, so a missing COPY here would
+# reproduce exactly the `MODULE_NOT_FOUND` this file already records three times.
+# No `node_modules` line: the package declares no runtime dependency at all —
+# it is Node builtins and plain TypeScript, which is `ADR-APP12-001` D5.
+COPY --from=build --chown=node:node /app/packages/observability/dist ./packages/observability/dist
+COPY --from=build --chown=node:node /app/packages/observability/package.json ./packages/observability/package.json
 EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD wget -qO- http://127.0.0.1:4000/api/health || exit 1

@@ -49,6 +49,7 @@ import {
   WORKER_RUNTIME_POLICY_SCHEMA_VERSION,
 } from '../../../runtime/policy/worker-runtime-policy';
 import { applyOfflineObjectStorageEnv } from '../../../runtime/tests/offline-object-storage-env';
+import { DESIGN_APPROVED_EVENT_TYPE } from '../domain/design-approved.payload';
 import { STOREFRONT_PUBLIC_ORIGIN_ENV } from '../../notification-delivery/config/storefront-origin.config';
 import { NOTIFICATION_DELIVERY_ENVELOPE_KEY_ENV } from '@embroidery/notification-delivery';
 
@@ -129,7 +130,21 @@ export async function startOrderConversionWorker(label: string): Promise<OrderCo
         const claimed = await transactions.runInTransaction(() =>
           queue.claimRegisteredBatch({
             workerInstanceId,
-            registeredTypes: registry.registeredTypes(),
+            // The real registry, narrowed to the event this suite drives.
+            //
+            // Narrowed by `APP12-H03-C1`, which registered a consumer for
+            // `order.created` — a row **this capability itself appends** on every
+            // successful conversion. An unfiltered claim then returned that row
+            // to the next `runOnce()`, and each assertion silently read the
+            // previous case's acknowledgement instead of its own conversion.
+            //
+            // The narrowing costs nothing this suite was proving: the claim
+            // filter still comes from the production registry, and "a live
+            // worker asks for `design.approved`" is asserted directly against
+            // `registeredTypes()` in the spec.
+            registeredTypes: registry
+              .registeredTypes()
+              .filter((type) => type.eventType === DESIGN_APPROVED_EVENT_TYPE),
             // One row per call, so "no second conversion" is measured against a
             // guard rather than against an abandoned lease.
             batchSize: 1,

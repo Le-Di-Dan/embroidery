@@ -62,8 +62,28 @@ describe('the accepted SE-007 contract', () => {
     });
   });
 
-  it('accepts exactly two kinds and no others', () => {
-    expect(VERIFIED_OBLIGATION_KINDS).toEqual(['DEPOSIT', 'REMAINING']);
+  it('accepts the same shape carrying FULL (APP12-B05, FU-APP12-H03-03)', () => {
+    // The Ready-Made event. Until `APP12-H03-C1` this was `JOB_PAYLOAD_INVALID`
+    // and every verified Ready-Made payment dead-lettered — the same defect
+    // `APP9-B03` caused for REMAINING, one obligation kind later.
+    const result = parsePaymentVerifiedPayload({ ...PRODUCER_PAYLOAD, obligationKind: 'FULL' });
+
+    expect(result).toEqual({
+      valid: true,
+      payload: {
+        orderId: 'order-1',
+        paymentAttemptId: 'attempt-1',
+        paymentObligationId: 'obligation-1',
+        obligationKind: 'FULL',
+      },
+    });
+  });
+
+  it('accepts exactly the three verifiable kinds and no others', () => {
+    // The producer's `VERIFIABLE_OBLIGATION_KINDS`, in its order. Restated
+    // rather than imported — the worker may not depend on an API module — so
+    // this assertion is what keeps the restatement from drifting again.
+    expect(VERIFIED_OBLIGATION_KINDS).toEqual(['DEPOSIT', 'REMAINING', 'FULL']);
   });
 
   it.each([
