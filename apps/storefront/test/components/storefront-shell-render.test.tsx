@@ -1,6 +1,7 @@
 import { renderWithProviders, screen, within } from '@embroidery/frontend-testing';
 
 import { StorefrontShell } from '../../src/features/storefront-shell';
+import { STOREFRONT_SHELL_COPY } from '../../src/features/storefront-shell/model/storefront-shell-copy';
 
 function renderShell() {
   return renderWithProviders(
@@ -50,7 +51,7 @@ describe('StorefrontShell — structure & landmarks', () => {
 describe('StorefrontShell — navigation & search boundaries', () => {
   it('links the brand to the canonical home route only', () => {
     renderShell();
-    const brandLinks = screen.getAllByRole('link', { name: 'Xưởng Thêu — về trang chủ' });
+    const brandLinks = screen.getAllByRole('link', { name: STOREFRONT_SHELL_COPY.brand.homeLabel });
     expect(brandLinks.length).toBeGreaterThanOrEqual(1);
     for (const link of brandLinks) {
       expect(link).toHaveAttribute('href', '/');

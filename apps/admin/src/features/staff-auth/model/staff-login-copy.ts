@@ -6,10 +6,18 @@ import type { FieldErrorCode, StaffLoginField } from './staff-login-form';
  * approved Figma nodes (FIG-ADMIN-LOGIN-* — see the APP1-A01 report). Error
  * copy never reveals which credential was wrong or whether an account exists.
  */
+import { BRAND_NAME } from '@embroidery/ui';
+
 export const STAFF_LOGIN_COPY = {
   brand: {
-    eyebrow: 'BẢNG QUẢN TRỊ',
-    title: 'Xưởng Thêu',
+    /**
+     * The approved login application (`589:36`) composes the production symbol,
+     * the brand name and one supporting label. The former `BẢNG QUẢN TRỊ`
+     * eyebrow said the same thing as `Quản trị xưởng` a line later, so the
+     * mockup's two-line form is taken rather than stacking three.
+     */
+    title: BRAND_NAME,
+    supporting: 'Quản trị xưởng',
     footnote: 'Bảng điều hành nội bộ · Chỉ dành cho nhân sự được cấp quyền truy cập.',
   },
   editorial: {

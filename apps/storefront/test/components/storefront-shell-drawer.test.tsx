@@ -7,6 +7,7 @@ import {
 } from '@embroidery/frontend-testing';
 
 import { StorefrontShell } from '../../src/features/storefront-shell';
+import { STOREFRONT_SHELL_COPY } from '../../src/features/storefront-shell/model/storefront-shell-copy';
 
 function renderShell() {
   return renderWithProviders(
@@ -33,7 +34,7 @@ describe('StorefrontShell — mobile navigation drawer', () => {
     expect(dialog).toHaveAttribute('aria-modal', 'true');
     expect(trigger()).toHaveAttribute('aria-expanded', 'true');
     // Focus enters the dialog (first focusable = the brand home link).
-    const brand = within(dialog).getByRole('link', { name: 'Xưởng Thêu — về trang chủ' });
+    const brand = within(dialog).getByRole('link', { name: STOREFRONT_SHELL_COPY.brand.homeLabel });
     expect(brand).toHaveFocus();
     expect(document.body.style.overflow).toBe('hidden');
   });
@@ -59,7 +60,9 @@ describe('StorefrontShell — mobile navigation drawer', () => {
       renderShell();
       await user.click(trigger());
       const dialog = screen.getByRole('dialog', { name: 'Điều hướng' });
-      const brand = within(dialog).getByRole('link', { name: 'Xưởng Thêu — về trang chủ' });
+      const brand = within(dialog).getByRole('link', {
+        name: STOREFRONT_SHELL_COPY.brand.homeLabel,
+      });
       const close = within(dialog).getByRole('button', { name: 'Đóng menu điều hướng' });
 
       // The routed primary-nav areas, in IA order. Unrouted items stay

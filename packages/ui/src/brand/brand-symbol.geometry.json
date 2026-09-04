@@ -1,0 +1,30 @@
+{
+  "$provenance": {
+    "file": "BQwqV8GdfUIELvsQDB1UQE",
+    "section": "582:18  BRD0 · 09B — Approved Concept 03 Productionization · Nét Thêu",
+    "master": "582:9  FIG-BRD0-C3-SYMBOL-MASTER (APPROVED_FOR_IMPLEMENTATION)",
+    "production": "583:52  SYMBOL · Production (ring 4→6)",
+    "micro": "583:61  SYMBOL · Micro (gesture only, stroke 16.9→21)",
+    "note": "Exported verbatim. BRD0-F02 forbids altering vectorPaths; the two variants share one gesture path because in the design they are the same drawing with and without the seal ring. This JSON is the single source: the React components import it, and tools/generate-brand-icons.mjs writes every static icon file from it."
+  },
+  "viewBox": "0 0 300 300",
+  "signatureGesturePath": "M68.75 176.936C94.75 222.436 120.75 219.186 146.75 163.936C169.5 115.186 159.75 85.9359 133.75 92.4359C107.75 98.9359 114.25 144.436 159.75 160.686C192.25 172.061 218.25 147.686 231.25 111.936",
+  "sealRing": {
+    "cx": 150,
+    "cy": 150,
+    "r": 121.25,
+    "strokeWidth": 7.5
+  },
+  "gestureStrokeWidth": {
+    "production": 21.125,
+    "micro": 26.25
+  },
+  "toneColor": {
+    "ink": "#171717",
+    "light": "#ffffff",
+    "accent": "#e8475f"
+  },
+  "canvasColor": "#faf8f5",
+  "brandName": "Nét Thêu",
+  "brandDescriptor": "Xưởng thêu cá nhân hóa"
+}

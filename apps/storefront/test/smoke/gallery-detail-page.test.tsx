@@ -21,6 +21,7 @@ import {
   makeSingleImageGalleryDetail,
   GALLERY_DETAIL_SLUG,
 } from '../support/gallery-fixture';
+import { BRAND_NAME } from '@embroidery/ui';
 
 jest.mock('@embroidery/api-client', () => ({
   ...jest.requireActual<Record<string, unknown>>('@embroidery/api-client'),
@@ -221,14 +222,14 @@ describe('per-entry metadata', () => {
     detailMock.mockResolvedValue(
       galleryDetailEnvelope(
         makeGalleryDetail({
-          seo: { isIndexable: true, title: 'Kỷ niệm — Xưởng Thêu', description: 'Mô tả SEO.' },
+          seo: { isIndexable: true, title: `Kỷ niệm — ${BRAND_NAME}`, description: 'Mô tả SEO.' },
         }),
       ),
     );
 
     const meta = await generateMetadata(params(GALLERY_DETAIL_SLUG));
 
-    expect(meta.title).toBe('Kỷ niệm — Xưởng Thêu');
+    expect(meta.title).toBe(`Kỷ niệm — ${BRAND_NAME}`);
     expect(meta.description).toBe('Mô tả SEO.');
   });
 

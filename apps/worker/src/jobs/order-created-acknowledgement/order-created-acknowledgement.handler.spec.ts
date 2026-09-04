@@ -94,10 +94,7 @@ describe('the acknowledgement', () => {
     const handler = new OrderCreatedAcknowledgementHandler();
 
     await expect(
-      handler.execute(
-        { orderId: 'order-1', code: 'RM-0001' },
-        context({ aggregateId: 'order-2' }),
-      ),
+      handler.execute({ orderId: 'order-1', code: 'RM-0001' }, context({ aggregateId: 'order-2' })),
     ).rejects.toThrow(AcknowledgementRefusalError);
   });
 

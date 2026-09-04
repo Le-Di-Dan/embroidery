@@ -243,7 +243,10 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "decimals": 0, "custom": { "fillOpacity": 20, "showPoints": "never", "stacking": { "mode": "normal" } } },
+        "defaults": {
+          "decimals": 0,
+          "custom": { "fillOpacity": 20, "showPoints": "never", "stacking": { "mode": "normal" } }
+        },
         "overrides": [
           {
             "matcher": { "id": "byName", "options": "system_error" },
@@ -276,9 +279,7 @@
           "instant": true
         }
       ],
-      "transformations": [
-        { "id": "organize", "options": { "excludeByName": { "Time": true } } }
-      ],
+      "transformations": [{ "id": "organize", "options": { "excludeByName": { "Time": true } } }],
       "fieldConfig": { "defaults": { "decimals": 0 }, "overrides": [] },
       "options": { "showHeader": true }
     },
@@ -326,9 +327,7 @@
           "instant": true
         }
       ],
-      "transformations": [
-        { "id": "organize", "options": { "excludeByName": { "Time": true } } }
-      ],
+      "transformations": [{ "id": "organize", "options": { "excludeByName": { "Time": true } } }],
       "fieldConfig": { "defaults": { "decimals": 0 }, "overrides": [] },
       "options": { "showHeader": true }
     },
@@ -443,7 +442,10 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "decimals": 0, "custom": { "fillOpacity": 20, "showPoints": "never", "stacking": { "mode": "normal" } } },
+        "defaults": {
+          "decimals": 0,
+          "custom": { "fillOpacity": 20, "showPoints": "never", "stacking": { "mode": "normal" } }
+        },
         "overrides": [
           {
             "matcher": { "id": "byName", "options": "failed_terminal" },
@@ -544,9 +546,7 @@
           "instant": true
         }
       ],
-      "transformations": [
-        { "id": "organize", "options": { "excludeByName": { "Time": true } } }
-      ],
+      "transformations": [{ "id": "organize", "options": { "excludeByName": { "Time": true } } }],
       "fieldConfig": { "defaults": { "decimals": 0 }, "overrides": [] },
       "options": { "showHeader": true }
     },
@@ -594,9 +594,7 @@
           "instant": true
         }
       ],
-      "transformations": [
-        { "id": "organize", "options": { "excludeByName": { "Time": true } } }
-      ],
+      "transformations": [{ "id": "organize", "options": { "excludeByName": { "Time": true } } }],
       "fieldConfig": { "defaults": { "decimals": 0 }, "overrides": [] },
       "options": { "showHeader": true }
     },

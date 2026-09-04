@@ -140,6 +140,33 @@ export default defineConfig({
       testMatch: '**/app12/s01-purchase-state.acceptance.spec.ts',
       use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: STOREFRONT_URL },
     },
+    // APP12-H06 Wave-1 SEO and public readiness. One Storefront project, and
+    // deliberately the plainest one in this file: every case is an anonymous
+    // GET whose subject is the rendered `<head>`, an HTTP status line, or a
+    // metadata route's body. No viewport matters — none of it is visual — and
+    // no case writes anything, so the suite is order-independent and needs no
+    // serial worker.
+    //
+    // **`trace`, `video` and `screenshot` are set to `off` here explicitly**,
+    // and that is a security control rather than a preference (`APP12-H06`
+    // §14). The file-level defaults are `trace: 'retain-on-failure'` and
+    // `screenshot: 'only-on-failure'`, so inheriting them would mean that the
+    // first failing case on `/truy-cap/don-hang` writes a trace of a secure
+    // customer surface to disk — the exact material this checkpoint exists to
+    // prove is absent from published output. Off unconditionally, so a failure
+    // cannot be the thing that creates the artefact.
+    {
+      name: 'app12-h06-chromium',
+      testMatch: '**/app12/h06-seo.acceptance.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        ...chromiumLaunch,
+        baseURL: STOREFRONT_URL,
+        trace: 'off',
+        video: 'off',
+        screenshot: 'off',
+      },
+    },
     // APP12-S02 Ready-Made checkout. Serial and Storefront-only, for the same
     // reason as S01 — the suite drives the three approved viewports itself with
     // `test.use` — plus one this checkpoint adds: the run creates real orders in

@@ -19,7 +19,7 @@ import {
 } from '../../features/product-discovery';
 import { fetchCategoryInventoryOnServer } from '../../features/product-discovery/services/category-inventory.server';
 import { fetchFirstDiscoverPageOnServer } from '../../features/product-discovery/services/discover-catalog.server';
-import { publicPageMetadata } from '../../features/storefront-seo';
+import { publicPageMetadata, publicPageTitle } from '../../features/storefront-seo';
 
 interface DiscoverPageProps {
   readonly searchParams: Promise<DiscoverSearchParams>;
@@ -91,11 +91,11 @@ export async function generateMetadata({ searchParams }: DiscoverPageProps): Pro
       // thing to a redirect this checkpoint is allowed to emit, and it would
       // reward a mistyped link with a real URL.
       path: buildDiscoverHref(selectedSlug),
-      title: `${
+      title: publicPageTitle(
         selectedCategory === undefined
           ? DISCOVER_COPY.heading
-          : discoverCategoryTitle(selectedCategory.name)
-      } — Xưởng Thêu`,
+          : discoverCategoryTitle(selectedCategory.name),
+      ),
       description: DISCOVER_COPY.intro,
     }),
     // Applied after the public block so it can never be overwritten by it, the

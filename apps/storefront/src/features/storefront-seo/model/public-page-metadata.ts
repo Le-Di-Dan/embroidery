@@ -28,18 +28,63 @@ import { toAbsolutePublicUrl } from '../../../config/public-origin';
  * `type`, `url`, `title`, `description`, `locale`, and images only when the
  * caller has a genuinely public image path from its own contract.
  *
- * There is no `siteName`. The wordmark divergence between `Xưởng Thêu` (the
- * page titles) and `Nét Thêu` (the secure-route titles) is an open Product Owner
- * copy question, and `og:site_name` is precisely the field that would settle it
- * by accident, in published markup, without anybody deciding. Omitting it is not
- * an oversight; it is the checkpoint declining to make someone else's decision.
+ * `siteName` is now emitted, and the reason it was not is worth keeping.
+ * `APP11-S04` omitted it because the page titles said `Xưởng Thêu` and the
+ * secure-route titles said `Nét Thêu`, and `og:site_name` is precisely the
+ * field that would have settled an open Product Owner copy question by accident,
+ * in published markup, without anybody deciding. It is no longer open:
+ * `BRD0-F02` locked the brand name `Nét Thêu` — "locked and now replace the
+ * placeholder wordmark" — and `APP12-H06` §7 makes it the canonical metadata
+ * brand. So the field is filled from the decision rather than from a guess.
  *
- * There is no `twitter` block, no `article:*` metadata, no author and no
- * published date: none of those facts exists in any contract this app reads.
+ * There is no `article:*` metadata, no author and no published date: none of
+ * those facts exists in any contract this app reads. No `twitter` block is
+ * written either; Next derives `twitter:card`/`title`/`description` from the
+ * Open Graph block above, which restates the same facts rather than adding one.
+ *
+ * ## An absent description is published as absent, not inherited
+ *
+ * The same field-by-field merge that makes a root `openGraph` dangerous applies
+ * to `description`, and the root layout carries one as the app-wide fallback.
+ * A Product with no description of its own therefore used to publish the store's
+ * blurb — "Cửa hàng thêu — sản phẩm nền và dịch vụ thêu theo yêu cầu." — as
+ * `<meta name="description">` *and*, because Open Graph falls back to it, as
+ * `og:description`. Measured on the running stack: every description-less
+ * Product served the identical sentence (`APP12-H06`).
+ *
+ * That is a claim the page cannot support. The sentence describes the store, not
+ * the artwork, and repeating it on every such Product is the duplicate-meta
+ * pattern a crawler discounts anyway. So the field is set to `null` — Next's
+ * explicit "no value, do not inherit" — rather than left absent. A search engine
+ * then writes its snippet from the page's own visible copy, which is true, while
+ * an operator who authors a description still has it published verbatim.
  */
 
 /** `vi`, matching `<html lang="vi">`. Open Graph wants the underscored form. */
 export const PUBLIC_OG_LOCALE = 'vi_VN';
+
+/**
+ * The canonical customer-facing brand (`BRD0-F02`, `APP12-H06` §7).
+ *
+ * Written once. The three feed and landing routes each carried their own
+ * `— Xưởng Thêu` literal, which is how one store came to publish two names: a
+ * brand repeated in three template strings is three places for a rename to miss.
+ */
+export const PUBLIC_BRAND_NAME = 'Nét Thêu';
+
+/**
+ * A public page's title: its own subject, then the brand.
+ *
+ * Used by the routes whose title is app-authored copy. The two entity detail
+ * routes deliberately do **not** call it: their title is
+ * `seo.title ?? name` — an operator's own words — and appending a brand to a
+ * title the operator wrote would overrule a decision this app does not own.
+ * Those pages carry the brand through `og:site_name` instead, which is the
+ * field for exactly that.
+ */
+export function publicPageTitle(subject: string): string {
+  return `${subject} — ${PUBLIC_BRAND_NAME}`;
+}
 
 /** Every public surface here is a page rather than an article or a product. */
 const PUBLIC_OG_TYPE = 'website';
@@ -77,11 +122,14 @@ export function publicPageMetadata(input: PublicPageMetadataInput): Metadata {
 
   return {
     title: input.title,
-    ...(hasDescription ? { description } : {}),
+    // `null`, never omitted: an omitted key inherits the root layout's fallback,
+    // and this function exists to stop a page publishing a fact it does not have.
+    description: hasDescription ? description : null,
     alternates: { canonical: url },
     openGraph: {
       type: PUBLIC_OG_TYPE,
       url,
+      siteName: PUBLIC_BRAND_NAME,
       title: input.title,
       ...(hasDescription ? { description } : {}),
       locale: PUBLIC_OG_LOCALE,

@@ -204,6 +204,10 @@ services:
       - ../../apps/storefront/src:/app/apps/storefront/src
       - ../../packages/contracts/src:/app/packages/contracts/src
       - ../../packages/api-client/src:/app/packages/api-client/src
+      # The shared brand-symbol components (@embroidery/ui). Bind-mounted for the
+      # same reason as the two above: both Next apps consume this package as
+      # TypeScript source, so an edit must reach the dev server without a rebuild.
+      - ../../packages/ui/src:/app/packages/ui/src
     healthcheck:
       test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3000/healthz']
       interval: 15s
@@ -232,6 +236,10 @@ services:
       - ../../apps/admin/src:/app/apps/admin/src
       - ../../packages/contracts/src:/app/packages/contracts/src
       - ../../packages/api-client/src:/app/packages/api-client/src
+      # The shared brand-symbol components (@embroidery/ui). Bind-mounted for the
+      # same reason as the two above: both Next apps consume this package as
+      # TypeScript source, so an edit must reach the dev server without a rebuild.
+      - ../../packages/ui/src:/app/packages/ui/src
     depends_on:
       # The public Admin must not be advertised ready until a bootstrap admin
       # exists (or was intentionally skipped in production). A development

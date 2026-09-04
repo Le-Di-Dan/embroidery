@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 import { HOMEPAGE_COPY, HomepageScreen } from '../features/homepage';
 import { STOREFRONT_HOME_ROUTE } from '../features/storefront-shell';
-import { publicPageMetadata } from '../features/storefront-seo';
+import { publicPageMetadata, publicPageTitle } from '../features/storefront-seo';
 
 /**
  * Homepage metadata: the title and description it always had, plus the
@@ -23,7 +23,7 @@ import { publicPageMetadata } from '../features/storefront-seo';
 export function generateMetadata(): Metadata {
   return publicPageMetadata({
     path: STOREFRONT_HOME_ROUTE,
-    title: `${HOMEPAGE_COPY.hero.heading} — Xưởng Thêu`,
+    title: publicPageTitle(HOMEPAGE_COPY.hero.heading),
     description: HOMEPAGE_COPY.hero.lead,
   });
 }

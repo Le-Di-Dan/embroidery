@@ -80,7 +80,12 @@ const scssCode = codeOnly(scss);
 describe('product-detail API boundary', () => {
   it('discovers the feature and route source files', () => {
     expect(sources.length).toBeGreaterThan(10);
-    expect(routeFiles).toHaveLength(3);
+    // page · loading · error · layout. The fourth is `APP12-H06`'s: the
+    // existence decision had to move into the shell, outside the `<Suspense>`
+    // boundary `loading.tsx` compiles to, so an unknown slug could still be
+    // answered with a 404 status line rather than a 200 carrying a not-found
+    // body. Every rule below scans it like the other three.
+    expect(routeFiles).toHaveLength(4);
   });
 
   it('consumes only the anonymous detail operation', () => {

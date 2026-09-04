@@ -6,12 +6,24 @@
  * here; footer content is limited to approved generic brand copy until canonical
  * company values exist (see the report's follow-ups).
  */
+import { BRAND_NAME } from '@embroidery/ui';
+
 export const STOREFRONT_SHELL_COPY = {
   brand: {
-    /** Text wordmark; the storefront ships no logo asset, so the brand is type. */
-    wordmark: 'Xưởng Thêu',
+    /**
+     * The brand name, rendered as live text beside the approved vector symbol.
+     *
+     * `Xưởng Thêu` until the Product Owner brand-system directive: that string
+     * was the placeholder wordmark `BRD0-F02` locked `Nét Thêu` to replace, and
+     * it had survived here while the metadata brand had already moved, which
+     * `APP12-H06` reported as a visible inconsistency (`FU-APP12-H06-01`).
+     *
+     * Imported rather than written, so the shell and the mark cannot disagree
+     * about the store's name.
+     */
+    wordmark: BRAND_NAME,
     /** Accessible name for the brand home link. */
-    homeLabel: 'Xưởng Thêu — về trang chủ',
+    homeLabel: `${BRAND_NAME} — về trang chủ`,
   },
   skipToContent: 'Bỏ qua tới nội dung chính',
   nav: {
@@ -75,6 +87,6 @@ export const STOREFRONT_SHELL_COPY = {
   footer: {
     tagline: 'Studio thêu thủ công theo yêu cầu.',
     /** Rights line without a hard-coded year (no stale/invented business value). */
-    rights: '© Xưởng Thêu · Studio thêu theo yêu cầu.',
+    rights: `© ${BRAND_NAME} · Studio thêu theo yêu cầu.`,
   },
 } as const;

@@ -101,7 +101,11 @@ spec:
             # The kubelet's log tree, and the container runtime's real files
             # that its symlinks point at. Both read-only.
             - { name: varlog, mountPath: /var/log, readOnly: true }
-            - { name: varlibdockercontainers, mountPath: /var/lib/docker/containers, readOnly: true }
+            - {
+                name: varlibdockercontainers,
+                mountPath: /var/lib/docker/containers,
+                readOnly: true,
+              }
             - { name: state, mountPath: /tmp/alloy }
           resources:
             requests: { cpu: 50m, memory: 128Mi }

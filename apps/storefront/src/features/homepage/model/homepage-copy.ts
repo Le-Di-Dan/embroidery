@@ -22,6 +22,8 @@
  * `docs/design/USER_FLOW_ARCHITECTURE.md` §6.3 (the commission ask comes after
  * appreciation, and is never presented in isolation).
  */
+import { BRAND_NAME } from '@embroidery/ui';
+
 export const HOMEPAGE_COPY = {
   /** Section 1 — Hero. Owns the page's single `<h1>`. */
   hero: {
@@ -66,7 +68,7 @@ export const HOMEPAGE_COPY = {
   story: {
     heading: 'Câu chuyện của xưởng',
     paragraphs: [
-      'Xưởng Thêu làm việc trực tiếp với từng khách hàng, trên từng tác phẩm một.',
+      `${BRAND_NAME} làm việc trực tiếp với từng khách hàng, trên từng tác phẩm một.`,
       'Chúng tôi bắt đầu từ ý tưởng của bạn, dựng bản thiết kế, rồi cùng bạn chỉnh sửa cho đến khi bản thiết kế đúng với điều bạn hình dung.',
       'Chỉ khi đó khung thêu mới bắt đầu chạy. Không có sản phẩm hàng loạt — mỗi đơn hàng là một lần hợp tác.',
     ],

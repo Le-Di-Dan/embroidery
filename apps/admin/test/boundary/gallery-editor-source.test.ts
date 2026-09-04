@@ -165,6 +165,12 @@ describe('the capability the contract does not have', () => {
 
   it('added no dependency to make ordering or dialogs work', () => {
     expect(allCode).not.toMatch(/dnd-kit|react-beautiful-dnd|draggable|onDragStart|sortablejs/i);
+    // `@embroidery/ui` joined the list with the Product Owner brand-system
+    // directive. It is a workspace package holding the approved Nét Thêu symbol
+    // — one `<svg>` built from one geometry source — and it is deliberately not
+    // the kind of thing this guard exists to catch: no drag-and-drop, no dialog
+    // primitive, no icon library, no third-party capability. The guard keeps its
+    // teeth because the list is still exact.
     const manifest = JSON.parse(readFileSync(join(ADMIN_SRC, '..', 'package.json'), 'utf8')) as {
       dependencies: Record<string, string>;
     };
@@ -174,6 +180,7 @@ describe('the capability the contract does not have', () => {
       '@embroidery/design-document',
       '@embroidery/design-engine',
       '@embroidery/styles',
+      '@embroidery/ui',
       '@tanstack/react-query',
       'axios',
       'next',

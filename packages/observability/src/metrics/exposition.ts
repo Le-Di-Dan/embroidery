@@ -29,13 +29,14 @@ export const METRICS_CONTENT_TYPE = CONTENT_TYPE;
  * body Prometheus rejects.
  */
 function escapeValue(value: string): string {
-  return value
-    .replaceAll('\\', '\\\\')
-    .replaceAll('"', '\\"')
-    .replaceAll('\n', '\\n');
+  return value.replaceAll('\\', '\\\\').replaceAll('"', '\\"').replaceAll('\n', '\\n');
 }
 
-function renderLabels(service: string, labels: MetricLabels, extra?: readonly [string, string]): string {
+function renderLabels(
+  service: string,
+  labels: MetricLabels,
+  extra?: readonly [string, string],
+): string {
   const pairs: string[] = [`service="${escapeValue(service)}"`];
   for (const [name, value] of Object.entries(labels)) {
     if (value !== undefined) {
@@ -62,9 +63,13 @@ function renderHistogram(
     if (bound === undefined || count === undefined) {
       continue;
     }
-    lines.push(`${name}_bucket${renderLabels(service, labels, ['le', bound.toString()])} ${count.toString()}`);
+    lines.push(
+      `${name}_bucket${renderLabels(service, labels, ['le', bound.toString()])} ${count.toString()}`,
+    );
   }
-  lines.push(`${name}_bucket${renderLabels(service, labels, ['le', '+Inf'])} ${value.count.toString()}`);
+  lines.push(
+    `${name}_bucket${renderLabels(service, labels, ['le', '+Inf'])} ${value.count.toString()}`,
+  );
   lines.push(`${name}_sum${renderLabels(service, labels)} ${value.sum.toString()}`);
   lines.push(`${name}_count${renderLabels(service, labels)} ${value.count.toString()}`);
 }
@@ -75,12 +80,26 @@ function renderInstrument(lines: string[], service: string, instrument: AnyInstr
   if (instrument.type === 'histogram') {
     const histogram = instrument as Extract<AnyInstrument, { buckets: readonly number[] }>;
     for (const series of histogram.entries()) {
-      renderHistogram(lines, service, instrument.name, histogram.buckets, series.labels, series.value);
+      renderHistogram(
+        lines,
+        service,
+        instrument.name,
+        histogram.buckets,
+        series.labels,
+        series.value,
+      );
     }
     return;
   }
-  for (const series of (instrument as Extract<AnyInstrument, { entries(): readonly { labels: MetricLabels; value: number }[] }>).entries()) {
-    lines.push(`${instrument.name}${renderLabels(service, series.labels)} ${series.value.toString()}`);
+  for (const series of (
+    instrument as Extract<
+      AnyInstrument,
+      { entries(): readonly { labels: MetricLabels; value: number }[] }
+    >
+  ).entries()) {
+    lines.push(
+      `${instrument.name}${renderLabels(service, series.labels)} ${series.value.toString()}`,
+    );
   }
 }
 

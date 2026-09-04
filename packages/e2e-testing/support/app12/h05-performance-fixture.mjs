@@ -240,7 +240,13 @@ async function seedCatalog({ client, pool, take, objects, productSlugs }) {
         await client.query(
           `insert into product_media (id, product_id, asset_id, role, display_order)
            values ($1, $2, $3, $4, $5)`,
-          [randomUUID(), productId, built.asset.id, position === 0 ? 'THUMBNAIL' : 'GALLERY', position],
+          [
+            randomUUID(),
+            productId,
+            built.asset.id,
+            position === 0 ? 'THUMBNAIL' : 'GALLERY',
+            position,
+          ],
         );
       }
       productSlugs.push(slug);

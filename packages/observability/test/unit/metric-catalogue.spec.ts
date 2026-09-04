@@ -8,17 +8,11 @@
  * fails the second.
  */
 import { createCommerceMetrics } from '../../src/catalog/commerce-metrics';
-import {
-  createDependencyMetrics,
-  createHttpMetrics,
-} from '../../src/catalog/platform-metrics';
+import { createDependencyMetrics, createHttpMetrics } from '../../src/catalog/platform-metrics';
 import { reasonClass, statusClass } from '../../src/catalog/metric-vocabulary';
 import { createWorkerMetrics } from '../../src/catalog/worker-metrics';
 import { renderMetrics } from '../../src/metrics/exposition';
-import {
-  ALLOWED_METRIC_LABEL_NAMES,
-  isForbiddenLabelName,
-} from '../../src/metrics/metric-label';
+import { ALLOWED_METRIC_LABEL_NAMES, isForbiddenLabelName } from '../../src/metrics/metric-label';
 import { MetricRegistry } from '../../src/metrics/metric-registry';
 
 function apiRegistry(): MetricRegistry {

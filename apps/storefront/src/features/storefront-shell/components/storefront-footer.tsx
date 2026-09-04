@@ -24,7 +24,15 @@ export function StorefrontFooter() {
     <footer className="storefront-shell__footer">
       <div className="storefront-shell__footer-inner">
         <div className="storefront-shell__footer-brand">
-          <StorefrontBrand />
+          {/*
+            The micro symbol at every width. The footer brand is a secondary
+            presence slot sitting above a tagline, and its usable height stays
+            under the production symbol's proven 48px light-ground floor even on
+            desktop — so pinning the small variant is the truthful reading of the
+            size authority rather than shrinking the ring below what BRD0 proved
+            readable.
+          */}
+          <StorefrontBrand symbol="micro" />
           <p className="storefront-shell__footer-tagline">{footer.tagline}</p>
         </div>
         <p className="storefront-shell__footer-rights">{footer.rights}</p>

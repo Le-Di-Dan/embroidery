@@ -1,8 +1,5 @@
-import {
-  buildBreadcrumbListJsonLd,
-  serializeJsonLd,
-  type BreadcrumbItem,
-} from '../model/breadcrumb-json-ld';
+import { buildBreadcrumbListJsonLd, type BreadcrumbItem } from '../model/breadcrumb-json-ld';
+import { serializeJsonLd } from '../model/json-ld-serialization';
 
 /**
  * Emits the `BreadcrumbList` JSON-LD for a page that renders a visible trail.

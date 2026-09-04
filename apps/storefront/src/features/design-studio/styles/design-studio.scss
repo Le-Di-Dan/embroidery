@@ -14,6 +14,15 @@
 
 @use '@embroidery/styles' as styles;
 
+// The approved brand mark as a data URI, generated from the one geometry source
+// by `tools/generate-brand-icons.mjs`. Never hand-edited.
+@use './brand-mark.generated' as brand;
+
+// The watermark mark's edge. Caption-sized type sits beside it, so this is the
+// micro variant's territory — `BRD0-F02` proves it stable from 16px and
+// requires it below 32px.
+$watermark-mark-size: 18px;
+
 // Local layout decisions. The design system defers a shared breakpoint scale
 // (FU-A16), so this is feature-local and aligned with the shell's own
 // threshold: 1025+ is the two-column tier, everything below is stacked. The
@@ -1505,8 +1514,40 @@ $size-studio-rail-control: 48px;
   text-transform: uppercase;
 }
 
+// Each pass is the approved brand mark followed by the mark text, on one line.
+//
+// The mark is a **background image**, not an element. The watermark repeats its
+// tile 35 times in two passes, so an inline symbol would put 70 `<svg>` nodes on
+// the Studio stage and break the single-SVG-scene invariant `ADR-APP0-001`
+// guards — a real architectural property, spent on decoration. The data URI is
+// generated from the one geometry source by `tools/generate-brand-icons.mjs`
+// and checked by its `--check` mode, so it cannot drift from the approved node.
+//
+// The parent's `opacity` applies to the pseudo-element as well as to the
+// glyphs, so the mark fades with its pass rather than needing an opacity of its
+// own.
 .studio-watermark__text {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: styles.spacing(4);
+
+  &::before {
+    content: '';
+    flex: none;
+    inline-size: $watermark-mark-size;
+    block-size: $watermark-mark-size;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+  }
+}
+
+.studio-watermark__text--dark::before {
+  background-image: brand.$studio-watermark-mark-light;
+}
+
+.studio-watermark__text--light::before {
+  background-image: brand.$studio-watermark-mark-ink;
 }
 
 // The dark-imagery pass, underneath: white at the approved opacity. It is what

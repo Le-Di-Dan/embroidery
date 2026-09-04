@@ -7,7 +7,7 @@ ROADMAP_STATUS         = LOCKED
 ROADMAP_LOCK           = LOCKED
 IMPLEMENTATION_STARTED = true
 CHECKPOINTS            = 38
-NEXT                   = APP12-H06
+NEXT                   = APP12-H07
 CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
                          APP12-G02-C1 (2026-09-01, 1/1 — no C2)
                          APP12-C01-C1 (2026-09-01, 1/1 — no C2)
@@ -283,8 +283,8 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | 23·C1 | `APP12-H04-C1` | Startup safety, graceful drain and object-storage failure correction | `COMPLETE` |
 | 24 | `APP12-H05` | Performance and CWV measurement (Wave 1) | `COMPLETE_AFTER_C1` |
 | 24·C1 | `APP12-H05-C1` | Intrinsic media dimensions and desktop grid CLS correction | `COMPLETE` |
-| 25 | `APP12-H06` | SEO and public readiness (Wave 1) | **`NEXT`** |
-| 26 | `APP12-H07` | Operational runbooks (Wave 1) | `NOT_STARTED` |
+| 25 | `APP12-H06` | SEO and public readiness (Wave 1) | `COMPLETE` |
+| 26 | `APP12-H07` | Operational runbooks (Wave 1) | **`NEXT`** |
 | 27 | `APP12-H08` | Accessibility and compatibility (Wave 1) | `NOT_STARTED` |
 | 28 | `APP12-V01` | Runtime Visual & Content UAT — audit | `NOT_STARTED` |
 | 29 | `APP12-V02` | Runtime Visual & Content corrections and live re-verification | `NOT_STARTED` |

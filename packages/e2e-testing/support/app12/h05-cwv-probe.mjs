@@ -66,9 +66,13 @@ export function installH05Probe() {
     state.shifts.push({ value: entry.value, time: entry.startTime });
   });
 
-  observe('event', (entry) => {
-    state.interactions.push({ name: entry.name, duration: entry.duration });
-  }, { durationThreshold: 16 });
+  observe(
+    'event',
+    (entry) => {
+      state.interactions.push({ name: entry.name, duration: entry.duration });
+    },
+    { durationThreshold: 16 },
+  );
 
   observe('longtask', (entry) => {
     state.longTasks += 1;
@@ -124,7 +128,9 @@ export function readH05Probe() {
   return {
     ttfbMs: navigation ? navigation.responseStart - navigation.requestStart : null,
     responseEndMs: navigation ? navigation.responseEnd - navigation.requestStart : null,
-    domContentLoadedMs: navigation ? navigation.domContentLoadedEventEnd - navigation.startTime : null,
+    domContentLoadedMs: navigation
+      ? navigation.domContentLoadedEventEnd - navigation.startTime
+      : null,
     loadEventMs: navigation ? navigation.loadEventEnd - navigation.startTime : null,
     transferSizeBytes: navigation ? navigation.transferSize : null,
     lcpMs: state.lcp ?? 0,

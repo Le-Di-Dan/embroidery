@@ -1,3 +1,5 @@
+import { BRAND_SYMBOL_APPLICATION_PX, BrandSymbol } from '@embroidery/ui';
+
 import { STAFF_LOGIN_COPY } from '../model/staff-login-copy';
 
 /**
@@ -12,8 +14,18 @@ export function StaffLoginBrandPanel() {
   return (
     <aside className="staff-login__brand">
       <div className="staff-login__brand-mark">
-        <p className="staff-login__eyebrow">{brand.eyebrow}</p>
+        {/*
+          The production symbol at the approved login size (`589:36`). Decorative:
+          the brand name is the visible text right beneath it, so naming the mark
+          as well would make a screen reader announce the brand twice.
+        */}
+        <BrandSymbol
+          variant="production"
+          size={BRAND_SYMBOL_APPLICATION_PX.adminLogin}
+          tone="ink"
+        />
         <p className="staff-login__brand-title">{brand.title}</p>
+        <p className="staff-login__brand-supporting">{brand.supporting}</p>
       </div>
       <div className="staff-login__editorial">
         <p className="staff-login__headline">

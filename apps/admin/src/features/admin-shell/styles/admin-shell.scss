@@ -86,7 +86,11 @@ $scrim-expiry: rgba(styles.$color-text-primary, 0.2);
   gap: styles.spacing(12);
 }
 
+// Trailing edge of the compact bar, opposite the brand. `margin-inline-start:
+// auto` rather than a wrapper: the trailing operator block is `display: none`
+// here, so the trigger is the last laid-out child and absorbs the free space.
 .admin-shell__nav-trigger {
+  margin-inline-start: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -114,10 +118,56 @@ $scrim-expiry: rgba(styles.$color-text-primary, 0.2);
   line-height: 1;
 }
 
+// The brand lockup: the approved symbol beside the eyebrow/title stack. The
+// stack keeps its own vertical rhythm; only the relationship between the mark
+// and the words is styled here.
 .admin-shell__brand {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: styles.spacing(12);
+}
+
+// The compact bar shows the symbol alone.
+//
+// A deliberate simplification rather than a space constraint: with the operator
+// block moved into the drawer the wordmark would fit, but a compact bar reads
+// better carrying one mark and one control than a three-line lockup opposite a
+// hamburger. The desktop bar, which is a working surface rather than a glance,
+// keeps the eyebrow and the name.
+//
+// Hidden **visually, not from the accessibility tree**. The words stay in the
+// DOM and keep their place as the brand's accessible name, so the symbol remains
+// decorative at every width and a screen reader hears the brand exactly once —
+// never twice, and never not at all.
+.admin-shell__brand-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+
+  @media (min-width: $shell-breakpoint) {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+  }
+}
+
+.admin-shell__brand-text {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  // Neither line may wrap. The brand is one unit and the app bar is tight at
+  // 390 once the trigger, the identity block and the logout control are on it.
+  white-space: nowrap;
 }
 
 .admin-shell__brand-eyebrow {
@@ -193,17 +243,34 @@ $scrim-expiry: rgba(styles.$color-text-primary, 0.2);
 }
 // --- Identity + logout ------------------------------------------------------
 
+// The operator block belongs to the desktop bar only. On the compact tier the
+// drawer carries the identity and the logout control, so repeating them here
+// spent most of a 390 bar on a block the visitor cannot act on without opening
+// the drawer anyway. `display: none` rather than a visual hide, so the logout
+// button leaves the tab order with it.
 .admin-shell__bar-trail {
-  display: flex;
-  align-items: center;
-  gap: styles.spacing(12);
-  margin-left: auto;
+  display: none;
+
+  @media (min-width: $shell-breakpoint) {
+    display: flex;
+    align-items: center;
+    gap: styles.spacing(12);
+    margin-left: auto;
+  }
 }
 
+// Alignment is not the block's own business: it reads right against the bar's
+// trailing edge and left inside the drawer's column. Declaring `text-align:
+// right` here is what left the drawer's identity hanging off its own axis while
+// every sibling was flush left.
 .admin-shell__identity {
   display: flex;
   flex-direction: column;
   min-width: 0;
+}
+
+.admin-shell__bar-trail .admin-shell__identity {
+  flex: 0 1 auto;
   text-align: right;
 }
 
@@ -235,10 +302,18 @@ $scrim-expiry: rgba(styles.$color-text-primary, 0.2);
   white-space: nowrap;
 }
 
+// Like the identity block, this one does not own its alignment: it reads right
+// against the desktop bar's trailing edge and left inside the drawer's column.
+// `align-items: flex-end` declared here is what left the drawer's logout button
+// floating off the axis every other row sits on.
 .admin-shell__logout {
   display: flex;
   flex-direction: column;
   gap: styles.spacing(4);
+  align-items: flex-start;
+}
+
+.admin-shell__bar-trail .admin-shell__logout {
   align-items: flex-end;
 }
 
@@ -451,11 +526,39 @@ $scrim-expiry: rgba(styles.$color-text-primary, 0.2);
   }
 }
 
+// Only the close control lives here now — the shell shows one brand mark and it
+// is the app bar's, visible above the drawer's own edge. Pushed to the trailing
+// edge so it sits under the trigger the visitor just pressed.
+// One left axis for the whole drawer.
+//
+// The navigation rows carry `spacing(16)` of their own inline padding — it is
+// the inset of their active-row highlight, not a margin — so their labels start
+// 16px in. Everything else in the column sat flush against the drawer's padding
+// and read as a second, competing axis. Matching the inset here aligns the
+// operator block, the note and the logout control with the nav labels rather
+// than removing the highlight the rows need.
+.admin-shell__drawer-account,
+.admin-shell__drawer .admin-shell__nav-note {
+  padding-inline: styles.spacing(16);
+}
+
+// The account block sits at the foot of the drawer, not above the navigation.
+// `margin-block-start: auto` rather than a fixed offset: the drawer is a
+// full-height column, so this pins the block to the bottom on a short list and
+// still lets a long one push it down and scroll.
+.admin-shell__drawer-account {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  margin-block-start: auto;
+  padding-block-start: styles.spacing(16);
+  border-block-start: 1px solid styles.$color-border-primary;
+}
+
 .admin-shell__drawer-head {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: styles.spacing(16);
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .admin-shell__drawer-close {

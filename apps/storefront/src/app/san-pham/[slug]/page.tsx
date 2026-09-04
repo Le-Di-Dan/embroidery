@@ -9,7 +9,12 @@ import {
 } from '../../../features/product-detail';
 import { loadProductDetail } from '../../../features/product-detail/services/product-detail.server';
 import { loadReadyMadePurchase } from '../../../features/ready-made-purchase/services/ready-made-purchase.server';
-import { BreadcrumbJsonLd, publicPageMetadata } from '../../../features/storefront-seo';
+import {
+  BreadcrumbJsonLd,
+  ProductJsonLd,
+  publicPageMetadata,
+  toOfferableSkus,
+} from '../../../features/storefront-seo';
 
 /**
  * `force-dynamic` renders this segment per request and forbids a build-time or
@@ -47,10 +52,11 @@ interface ProductDetailPageProps {
  * with no deliverable media simply gets no `og:image`, which is the honest
  * answer rather than a placeholder.
  *
- * Still no price, availability, published date, author or `Product` JSON-LD:
- * every one of those would be a claim invented at render time. The only
- * structured data this page emits is the `BreadcrumbList` for the trail it
- * visibly draws (see the page component).
+ * Still no published date and no author: neither exists in any contract this
+ * app reads. Price and availability are no longer in that list — `APP12-B01`
+ * publishes both per SKU and `APP12-S01` renders them on this page — but they
+ * belong to the `Product` JSON-LD emitted by the page component, not to the
+ * metadata block, which describes the document rather than the offer.
  */
 export async function generateMetadata({ params }: ProductDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -59,16 +65,15 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
   // The not-found decision is taken here as well as in the page component, so
   // metadata never describes a Product the visitor may not see.
   //
-  // A measured limitation, recorded rather than papered over: on Next 16.2.10 a
-  // `notFound()` raised from a **dynamic** segment renders the approved
-  // not-found surface but answers HTTP **200**, while the identical call from a
-  // static segment (`/kham-pha`) answers 404. Six configurations were tried in
-  // the running production stack — with and without `loading.tsx`, with and
-  // without `error.tsx`, from `generateMetadata` and from the page, and with a
-  // segment-local `not-found.tsx` — and an unconditional `notFound()` with no
-  // awaits at all still answered 200. Nothing this route can rearrange changes
-  // it (`FU-APP2-DETAIL-NOT-FOUND-STATUS-01`). The surface stays correct and
-  // leaks no cause; only the status line is wrong.
+  // The **status line** is settled a level up, in this segment's `layout.tsx`.
+  // `APP2-S02` and `APP12-H01` both recorded the 200 answered here as an
+  // unfixable framework limitation (`FU-APP2-DETAIL-NOT-FOUND-STATUS-01`,
+  // `H01-F06`); `APP12-H06` measured it again and found the cause — this
+  // segment's `loading.tsx` compiles to a `<Suspense>` boundary, and the HTTP
+  // head is flushed as soon as the shell outside it completes, which is before
+  // any `notFound()` in here can be raised. The layout renders outside that
+  // boundary, so it can still decide. See `layout.tsx` for the full mechanism
+  // and for why the earlier measurements said otherwise.
   if (result.kind === 'not-found') notFound();
   // A genuine failure is left for the page to raise, so it reaches the route's
   // error boundary rather than being reported as a missing Product.
@@ -159,6 +164,33 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
        * type has no field for them.
        */}
       <BreadcrumbJsonLd items={resolveProductBreadcrumb(product)} />
+      {/*
+       * The `Product` document (`APP12-H06`).
+       *
+       * Composed from the two reads this render already made and from nothing
+       * else: the Product for name, description, canonical slug and public
+       * media, and the same `purchase` projection the panel below renders for
+       * price and availability. There is no third read and no second authority,
+       * so what a crawler parses and what a visitor is offered cannot disagree.
+       *
+       * `toOfferableSkus` applies the panel's own refusals — an `ambiguous`
+       * variant contributes no offer, and an `unavailable` projection
+       * contributes none at all rather than an `OutOfStock` claim. A Product
+       * with nothing purchasable still emits its `Product` document, simply
+       * without `offers`.
+       *
+       * Media paths are the projected view's already-public delivery routes, in
+       * persisted display order — the same ones the gallery renders and the same
+       * one `og:image` uses. No storage key and no private original exists on
+       * this side of the contract to leak.
+       */}
+      <ProductJsonLd
+        name={product.name}
+        canonicalPath={buildStorefrontProductDetailPath(product.slug)}
+        {...(product.description === undefined ? {} : { description: product.description })}
+        imagePaths={product.media.map((item) => item.url)}
+        offerableSkus={toOfferableSkus(purchase)}
+      />
       <ProductDetailScreen product={product} purchase={purchase} />
     </>
   );

@@ -14,6 +14,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import DiscoverPage, { generateMetadata } from '../../src/app/kham-pha/page';
 import { makePublicPage, makePublicProduct, publicEnvelope } from '../support/discover-fixture';
+import { BRAND_NAME } from '@embroidery/ui';
 
 jest.mock('@embroidery/api-client', () => ({
   ...jest.requireActual<Record<string, unknown>>('@embroidery/api-client'),
@@ -269,8 +270,8 @@ describe('/kham-pha server rendering', () => {
 
     // The name comes from the row. Renaming the category renames the title with
     // no deployment, and no slug is ever title-cased into a label.
-    expect(metadata.title).toBe('Mũ lưỡi trai — Khám phá — Xưởng Thêu');
-    expect(metadata.openGraph?.title).toBe('Mũ lưỡi trai — Khám phá — Xưởng Thêu');
+    expect(metadata.title).toBe(`Mũ lưỡi trai — Khám phá — ${BRAND_NAME}`);
+    expect(metadata.openGraph?.title).toBe(`Mũ lưỡi trai — Khám phá — ${BRAND_NAME}`);
   });
 
   it('asks crawlers not to index a published non-indexable category, and still shows it', async () => {
@@ -307,7 +308,7 @@ describe('/kham-pha server rendering', () => {
     // `/kham-pha` is not a category and has no operator indexability decision;
     // inventing one here would make this file the store's robots authority.
     expect(metadata.robots).toBeUndefined();
-    expect(metadata.title).toBe('Khám phá — Xưởng Thêu');
+    expect(metadata.title).toBe(`Khám phá — ${BRAND_NAME}`);
   });
 
   it('withholds the directive rather than guessing noindex when the inventory is unreadable', async () => {
@@ -325,6 +326,6 @@ describe('/kham-pha server rendering', () => {
     expect(metadata.alternates?.canonical).toBe(
       'https://example.test/kham-pha?category=mu-luoi-trai',
     );
-    expect(metadata.title).toBe('Khám phá — Xưởng Thêu');
+    expect(metadata.title).toBe(`Khám phá — ${BRAND_NAME}`);
   });
 });

@@ -79,6 +79,18 @@ $stack-gap: 28px;
   color: styles.$color-text-primary;
 }
 
+// The approved login application (`589:36`) sets the descriptor beneath the
+// brand name in secondary ink. It replaces the former `BẢNG QUẢN TRỊ` eyebrow,
+// which said the same thing one line earlier.
+.staff-login__brand-supporting {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-regular;
+  line-height: 1.4;
+  color: styles.$color-text-secondary;
+}
+
 .staff-login__editorial {
   display: none;
 

@@ -2,6 +2,7 @@ import { baseConfig } from '@embroidery/eslint-config/base';
 
 const NODE_GLOBALS = {
   process: 'readonly',
+  Buffer: 'readonly',
   console: 'readonly',
   URL: 'readonly',
   fetch: 'readonly',
@@ -22,6 +23,23 @@ export default [
     files: ['scripts/**/*.mjs', 'support/**/*.mjs'],
     languageOptions: {
       globals: NODE_GLOBALS,
+    },
+  },
+  {
+    // The APP12-H05 Core Web Vitals probe is the one file here that does NOT run
+    // in Node: its functions are serialized and evaluated inside Chromium by
+    // Playwright, so `window`, `performance` and `PerformanceObserver` are the
+    // correct globals for it. Declared for this file alone rather than widened
+    // across `support/**`, because an orchestration script reaching for
+    // `window` is a real defect and must keep failing.
+    files: ['support/app12/h05-cwv-probe.mjs'],
+    languageOptions: {
+      globals: {
+        ...NODE_GLOBALS,
+        window: 'readonly',
+        performance: 'readonly',
+        PerformanceObserver: 'readonly',
+      },
     },
   },
 ];

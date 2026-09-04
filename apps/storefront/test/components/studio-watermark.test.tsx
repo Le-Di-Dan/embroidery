@@ -346,6 +346,11 @@ describe('coexistence (APP3-S09 §11)', () => {
   it('keeps one SVG scene and no canvas', () => {
     const { container } = renderStage();
 
+    // Unchanged by the brand-system directive, and deliberately so. The approved
+    // mark now appears in every watermark tile, but as a CSS background rather
+    // than an element: 35 tiles in two passes would otherwise have put 70 extra
+    // `<svg>` nodes on this stage and spent a real architectural invariant on
+    // decoration.
     expect(container.querySelectorAll('svg')).toHaveLength(1);
     expect(container.querySelectorAll('canvas')).toHaveLength(0);
   });

@@ -68,7 +68,9 @@ export class MetricRegistry {
     return this.register(new Gauge(definition));
   }
 
-  histogram(definition: Omit<HistogramDefinition, 'buckets'> & { buckets?: readonly number[] }): Histogram {
+  histogram(
+    definition: Omit<HistogramDefinition, 'buckets'> & { buckets?: readonly number[] },
+  ): Histogram {
     return this.register(
       new Histogram({
         name: definition.name,

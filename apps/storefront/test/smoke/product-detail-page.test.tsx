@@ -220,12 +220,19 @@ describe('metadata', () => {
     expect(meta.description).toContain('khu vườn nhỏ sau nhà bà ngoại');
   });
 
-  it('omits description when neither SEO nor the Product carries one', async () => {
+  it('publishes no description when neither SEO nor the Product carries one', async () => {
     detailMock.mockResolvedValue(publicDetailEnvelope(makePublicDetailWithoutDescription()));
 
     const meta = await generateMetadata(params('gau-bong-theu-tay'));
 
-    expect(meta.description).toBeUndefined();
+    // `null`, not `undefined`, and the difference is the whole point
+    // (`APP12-H06`). Next merges metadata field by field, so an **omitted**
+    // key inherits the root layout's app-wide fallback — every Product without
+    // a description of its own was publishing the store's blurb as the
+    // artwork's, in `<meta name="description">` and, by Open Graph fallback, in
+    // `og:description` too. `null` is Next's explicit "no value, do not
+    // inherit", which is what makes the tag actually disappear.
+    expect(meta.description).toBeNull();
   });
 
   it('maps isIndexable onto robots and always follows', async () => {

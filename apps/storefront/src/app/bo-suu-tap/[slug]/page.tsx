@@ -67,13 +67,11 @@ export async function generateMetadata({ params }: GalleryDetailPageProps): Prom
   // description, no canonical and — through the not-found surface's own head —
   // no index directive pointing at an address that renders nothing.
   //
-  // A measured limitation carried over from `APP2-S02` and re-measured for this
-  // route rather than assumed: on this Next version a `notFound()` raised from
-  // a **dynamic** segment renders the approved not-found surface but answers
-  // HTTP 200, while the identical call from a static segment answers 404.
-  // Nothing this route can rearrange changes it
-  // (`FU-APP2-DETAIL-NOT-FOUND-STATUS-01`). The surface stays correct and leaks
-  // no cause; only the status line is wrong.
+  // The **status line** is settled a level up, in this segment's `layout.tsx`
+  // (`APP12-H06`). The 200 this route used to answer was caused by the
+  // `<Suspense>` boundary `loading.tsx` compiles to, not by anything
+  // unfixable; the layout renders outside that boundary and decides before the
+  // head is flushed.
   if (result.kind === 'not-found') notFound();
   // A genuine failure is left for the page to raise, so it reaches the route's
   // error boundary rather than being reported as a missing entry.

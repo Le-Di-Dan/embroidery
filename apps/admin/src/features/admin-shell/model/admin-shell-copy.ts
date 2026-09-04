@@ -7,10 +7,17 @@
  * returned by the API. The shell never renders API-supplied roles or
  * permissions (there is exactly one Admin actor — REQ-IDN-001).
  */
+import { BRAND_NAME } from '@embroidery/ui';
+
 export const ADMIN_SHELL_COPY = {
   brand: {
     eyebrow: 'BẢNG QUẢN TRỊ',
-    title: 'Xưởng Thêu',
+    /**
+     * The brand name, imported rather than written. It was `Xưởng Thêu` — the
+     * placeholder wordmark `BRD0-F02` locked `Nét Thêu` to replace — and the
+     * Admin shell was one of the surfaces still publishing it.
+     */
+    title: BRAND_NAME,
   },
   /** Static label for the single Admin actor; never an API-supplied role. */
   actor: 'Quản trị viên',

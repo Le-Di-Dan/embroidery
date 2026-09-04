@@ -25,6 +25,7 @@ import { join } from 'node:path';
 import { renderWithProviders, screen, within } from '@embroidery/frontend-testing';
 
 import { StorefrontShell } from '../../src/features/storefront-shell';
+import { STOREFRONT_SHELL_COPY } from '../../src/features/storefront-shell/model/storefront-shell-copy';
 
 const ZALO_URL = 'https://zalo.me/xuong-theu-demo';
 const MESSENGER_URL = 'https://m.me/xuong.theu.demo';
@@ -145,9 +146,7 @@ describe('APP10-I01 — partial and absent configuration', () => {
     const footer = screen.getByRole('contentinfo');
     // The approved APP1-S01A footer still renders in full.
     expect(within(footer).getByText('Studio thêu thủ công theo yêu cầu.')).toBeInTheDocument();
-    expect(
-      within(footer).getByText('© Xưởng Thêu · Studio thêu theo yêu cầu.'),
-    ).toBeInTheDocument();
+    expect(within(footer).getByText(STOREFRONT_SHELL_COPY.footer.rights)).toBeInTheDocument();
     expect(within(footer).getAllByRole('link')).toHaveLength(1);
   });
 

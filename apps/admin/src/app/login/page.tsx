@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { BRAND_NAME } from '@embroidery/ui';
 
 import { StaffLoginScreen } from '../../features/staff-auth';
 import { redirectAuthenticatedStaffFromLogin } from '../../server/staff-session-access';
@@ -7,7 +8,7 @@ import { redirectAuthenticatedStaffFromLogin } from '../../server/staff-session-
 // non-indexable in addition to the app-wide robots policy.
 export const metadata: Metadata = {
   title: 'Đăng nhập · Bảng quản trị',
-  description: 'Đăng nhập dành cho quản trị viên Xưởng Thêu.',
+  description: `Đăng nhập dành cho quản trị viên ${BRAND_NAME}.`,
   robots: { index: false, follow: false },
 };
 

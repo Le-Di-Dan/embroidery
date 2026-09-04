@@ -6,7 +6,6 @@ import { ADMIN_SHELL_COPY } from '../model/admin-shell-copy';
 import { useFocusTrap } from '../hooks/use-focus-trap';
 import { useScrollLock } from '../hooks/use-scroll-lock';
 import { type StaffLogoutMutation } from '../hooks/use-staff-logout-mutation';
-import { AdminBrand } from './admin-brand';
 import { AdminIdentity } from './admin-identity';
 import { AdminLogoutButton } from './admin-logout-button';
 import { AdminPrimaryNav } from './admin-primary-nav';
@@ -49,8 +48,12 @@ export function AdminMobileDrawer({ open, onClose, staff, logout }: AdminMobileD
         aria-label={ADMIN_SHELL_COPY.nav.drawerLabel}
         className="admin-shell__drawer"
       >
+        {/*
+          No brand here. The app bar's mark stays visible behind the scrim and
+          above the drawer's own edge, so repeating it would show the same logo
+          twice in one view — the head carries only the control that closes.
+        */}
         <div className="admin-shell__drawer-head">
-          <AdminBrand />
           <button
             type="button"
             className="admin-shell__drawer-close"
@@ -60,9 +63,18 @@ export function AdminMobileDrawer({ open, onClose, staff, logout }: AdminMobileD
             <span aria-hidden="true">✕</span>
           </button>
         </div>
-        <AdminIdentity staff={staff} />
         <AdminPrimaryNav variant="drawer" />
-        <AdminLogoutButton logout={logout} />
+        {/*
+          Who is signed in, and how to stop being signed in, as one block at the
+          foot of the drawer. They belong together — the identity is the reason
+          the logout control is there — and they belong last: the drawer is
+          opened to navigate, so the destinations come first and the account
+          block sits where a foot is looked for rather than above the list.
+        */}
+        <div className="admin-shell__drawer-account">
+          <AdminIdentity staff={staff} />
+          <AdminLogoutButton logout={logout} />
+        </div>
       </div>
     </div>
   );

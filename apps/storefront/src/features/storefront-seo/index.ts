@@ -9,12 +9,29 @@
 // The public-only canonical + Open Graph builder. Exported because the inverted
 // composition is the whole safety property: a public page *requests* its OG
 // block, so a private route inherits none (see `public-page-metadata.ts`).
-export { publicPageMetadata, PUBLIC_OG_LOCALE } from './model/public-page-metadata';
+export {
+  publicPageMetadata,
+  publicPageTitle,
+  PUBLIC_BRAND_NAME,
+  PUBLIC_OG_LOCALE,
+} from './model/public-page-metadata';
 export type { PublicPageMetadataInput } from './model/public-page-metadata';
 
 // The BreadcrumbList emitter for the two detail pages that draw a visible trail.
 export { BreadcrumbJsonLd } from './components/breadcrumb-json-ld';
 export type { BreadcrumbItem } from './model/breadcrumb-json-ld';
+
+// The Product emitter and the offer projection that feeds it (`APP12-H06`). The
+// builder is exported alongside the component so the focused structured-data
+// tests can assert the document itself rather than parse it back out of markup.
+export { ProductJsonLd } from './components/product-json-ld';
+export { buildProductJsonLd } from './model/product-json-ld';
+export type { OfferableSku, ProductJsonLdInput } from './model/product-json-ld';
+export { toOfferableSkus } from './model/product-offer-projection';
+
+// The one JSON-LD serializer, shared by both documents.
+export { serializeJsonLd } from './model/json-ld-serialization';
+export type { JsonLdDocument } from './model/json-ld-serialization';
 
 // The static public route inventory — the seam `APP11-S05` extends with its four
 // content pages instead of rewriting `sitemap.ts`.

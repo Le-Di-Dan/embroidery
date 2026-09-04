@@ -11,7 +11,7 @@ import {
 } from '../../features/gallery-feed';
 import { fetchFirstGalleryPageOnServer } from '../../features/gallery-feed/services/gallery-feed.server';
 import { STOREFRONT_GALLERY_ROUTE } from '../../features/storefront-shell';
-import { publicPageMetadata } from '../../features/storefront-seo';
+import { publicPageMetadata, publicPageTitle } from '../../features/storefront-seo';
 
 /**
  * Gallery feed metadata: the title and description it always had, plus the
@@ -33,7 +33,7 @@ import { publicPageMetadata } from '../../features/storefront-seo';
 export function generateMetadata(): Metadata {
   return publicPageMetadata({
     path: STOREFRONT_GALLERY_ROUTE,
-    title: `${GALLERY_COPY.heading} — Xưởng Thêu`,
+    title: publicPageTitle(GALLERY_COPY.heading),
     description: GALLERY_COPY.intro,
   });
 }

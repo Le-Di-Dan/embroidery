@@ -71,7 +71,10 @@ describe('worker job metrics', () => {
     const body = await scrape();
 
     expect(
-      seriesValue(body, 'embroidery_worker_job_claimed_total{service="worker",job_type="OUTBOX_DISPATCH"}'),
+      seriesValue(
+        body,
+        'embroidery_worker_job_claimed_total{service="worker",job_type="OUTBOX_DISPATCH"}',
+      ),
     ).toBe(1);
     expect(
       seriesValue(
@@ -121,7 +124,10 @@ describe('worker job metrics', () => {
     const body = await scrape();
 
     expect(
-      seriesValue(body, 'embroidery_worker_job_retries_total{service="worker",job_type="OUTBOX_DISPATCH"}'),
+      seriesValue(
+        body,
+        'embroidery_worker_job_retries_total{service="worker",job_type="OUTBOX_DISPATCH"}',
+      ),
     ).toBe(1);
     expect(
       seriesValue(
@@ -147,7 +153,10 @@ describe('worker job metrics', () => {
     const body = await scrape();
 
     expect(
-      seriesValue(body, 'embroidery_worker_job_retries_total{service="worker",job_type="OUTBOX_DISPATCH"}'),
+      seriesValue(
+        body,
+        'embroidery_worker_job_retries_total{service="worker",job_type="OUTBOX_DISPATCH"}',
+      ),
     ).toBe(0);
   });
 

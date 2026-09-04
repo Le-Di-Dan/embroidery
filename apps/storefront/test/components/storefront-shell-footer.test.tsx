@@ -1,6 +1,7 @@
 import { renderWithProviders, screen, within } from '@embroidery/frontend-testing';
 
 import { StorefrontShell } from '../../src/features/storefront-shell';
+import { STOREFRONT_SHELL_COPY } from '../../src/features/storefront-shell/model/storefront-shell-copy';
 
 function renderShell() {
   return renderWithProviders(
@@ -15,10 +16,8 @@ describe('StorefrontShell — footer', () => {
     renderShell();
     const footer = screen.getByRole('contentinfo');
     expect(within(footer).getByText('Studio thêu thủ công theo yêu cầu.')).toBeInTheDocument();
-    expect(
-      within(footer).getByText('© Xưởng Thêu · Studio thêu theo yêu cầu.'),
-    ).toBeInTheDocument();
-    const brand = within(footer).getByRole('link', { name: 'Xưởng Thêu — về trang chủ' });
+    expect(within(footer).getByText(STOREFRONT_SHELL_COPY.footer.rights)).toBeInTheDocument();
+    const brand = within(footer).getByRole('link', { name: STOREFRONT_SHELL_COPY.brand.homeLabel });
     expect(brand).toHaveAttribute('href', '/');
   });
 

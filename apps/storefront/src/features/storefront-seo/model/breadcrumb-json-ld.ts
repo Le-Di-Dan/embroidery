@@ -1,4 +1,5 @@
 import { toAbsolutePublicUrl } from '../../../config/public-origin';
+import type { JsonLdDocument, JsonLdObject } from './json-ld-serialization';
 
 /**
  * `BreadcrumbList` structured data for the two public detail pages that already
@@ -38,14 +39,14 @@ export interface BreadcrumbItem {
   readonly path?: string;
 }
 
-interface BreadcrumbListElement {
+interface BreadcrumbListElement extends JsonLdObject {
   readonly '@type': 'ListItem';
   readonly position: number;
   readonly name: string;
   readonly item?: string;
 }
 
-export interface BreadcrumbListJsonLd {
+export interface BreadcrumbListJsonLd extends JsonLdDocument {
   readonly '@context': 'https://schema.org';
   readonly '@type': 'BreadcrumbList';
   readonly itemListElement: readonly BreadcrumbListElement[];
@@ -69,22 +70,4 @@ export function buildBreadcrumbListJsonLd(items: readonly BreadcrumbItem[]): Bre
       ...(item.path === undefined ? {} : { item: toAbsolutePublicUrl(item.path) }),
     })),
   };
-}
-
-/**
- * Serializes a JSON-LD document for embedding in an HTML `<script>` element.
- *
- * `JSON.stringify` escapes quotes and control characters but not `<`, and an
- * operator-authored title containing `</script>` would otherwise terminate the
- * element and inject whatever followed into the document. Escaping `<` as its
- * unicode form keeps the JSON byte-for-byte equivalent for any parser while
- * making the sequence impossible to write. `&` is escaped for the same reason a
- * step further out — it cannot start a tag, but it is the other character an
- * HTML parser gives meaning to inside raw text.
- *
- * The document is always built by `buildBreadcrumbListJsonLd` from typed fields,
- * so no raw JSON string is ever concatenated into markup.
- */
-export function serializeJsonLd(document: BreadcrumbListJsonLd): string {
-  return JSON.stringify(document).replace(/</g, '\\u003c').replace(/&/g, '\\u0026');
 }

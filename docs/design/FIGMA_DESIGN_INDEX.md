@@ -462,8 +462,11 @@ winning concept, proposes **no** brand name (the wordmark is the literal placeho
 the approved foundation only (`$color-text-primary`, `$color-action-primary`,
 `$color-background-primary`, `$color-surface-primary`, `$color-text-secondary`,
 `$color-text-tertiary`, `$color-border-primary`; base-4 spacing; radius scale).
-No frontend checkpoint may implement from these rows. Brand-name and concept selection
-were **open at `BRD0-F01`** and are **closed at `BRD0-F02`** — see §4.6.1.
+No frontend checkpoint may implement from **these `BRD0-F01` exploration rows**, which
+stay `REFERENCE_ONLY`. Brand-name and concept selection were **open at `BRD0-F01`** and
+are **closed at `BRD0-F02`**; the symbol master promoted out of that section is
+`APPROVED_FOR_IMPLEMENTATION` and is the one row a frontend checkpoint may implement the
+mark from — see §4.6.1.
 
 `Route/Capability` is `BRD0` throughout because a logo system is not route-bound.
 
@@ -498,13 +501,35 @@ Concept 03" as licence to derive a *new* `N` monogram from the brand name. That 
 is retained for audit under an on-canvas `REJECTED — Incorrect reinterpretation into N
 monogram · DO NOT USE` banner and is **not** authority for anything.
 
-Both sections remain `REFERENCE_ONLY`: the logo system still needs human approval, and
-no production asset (SVG/PNG/ICO) has been exported.
+**Approval and first production asset (Product Owner, 2026-09-04, recorded at `APP12-H06`).**
+The Product Owner has approved the logo system. `FIG-BRD0-C3-SYMBOL-MASTER` (`582:9`) is
+therefore `APPROVED_FOR_IMPLEMENTATION` and is the authority a frontend checkpoint may
+implement the **symbol** from.
+
+`APP12-H06` exported the first production asset from it: `apps/storefront/src/app/icon.svg`
+and `apps/admin/src/app/icon.svg`, taken from the **micro** variant (`583:61` — gesture
+only, stroke 21), which §01 designates for use below 32px and which is the size class a
+browser tab icon occupies. The `Signature Gesture` path data and every stroke attribute
+were verified byte-for-byte against the node before the file was written, so the
+`no vectorPaths were altered` constraint above still holds for the exported asset. Ink
+`#171717` and ground `#faf8f5` are the locked `$color-text-primary` and
+`$color-background-primary` tokens; the ground is opaque so the ink mark stays legible on
+dark browser chrome, and it is a full-bleed square, so no corner radius was invented.
+
+`FIG-BRD0-C3-PRODUCTIONIZATION` (`582:18`) stays `REFERENCE_ONLY`, deliberately and
+narrowly: the **typography deviation disclosed below is still open**. Every wordmark on
+that page is set in Inter rather than the approved `General Sans`, so the wordmark
+lockups must be rebuilt and re-judged before a wordmark asset is exported. The approval
+recorded here covers the symbol artwork, which carries no type.
+
+`FIG-BRD0-WRONG-DIRECTION-ARCHIVE` (`570:3`) remains `OBSOLETE` and is authority for
+nothing: the rejected `N` monogram must not be used for an icon, a favicon or anything
+else.
 
 | Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | FIG-BRD0-C3-PRODUCTIONIZATION | Brand | BRD0 | Concept 03 Productionization (Nét Thêu) | Logo system | All | brand-exploration | REFERENCE_ONLY | BQwqV8GdfUIELvsQDB1UQE | LOGO_SYSTEM | 582:18 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=582-18) | BRD0-F02 | Productionizes FIG-BRD0-C3-SIGNATURE-MOTIF (symbol node 554:13) | — | 2026-08-03 |
-| FIG-BRD0-C3-SYMBOL-MASTER | Brand | BRD0 | Approved symbol master artwork (original / production / micro) | Master | All | brand-exploration | REFERENCE_ONLY | BQwqV8GdfUIELvsQDB1UQE | LOGO_SYSTEM | 582:9 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=582-9) | BRD0-F02 | Exact clone of 554:13 | — | 2026-08-03 |
+| FIG-BRD0-C3-SYMBOL-MASTER | Brand | BRD0 | Approved symbol master artwork (original / production / micro) | Master | All | brand-exploration | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | LOGO_SYSTEM | 582:9 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=582-9) | BRD0-F02 | Exact clone of 554:13 | Product Owner approval of the logo system, 2026-09-04, recorded at APP12-H06 | 2026-09-04 |
 | FIG-BRD0-WRONG-DIRECTION-ARCHIVE | Brand | BRD0 | Archived wrong direction (N monogram) | Rejected | All | brand-exploration | OBSOLETE | BQwqV8GdfUIELvsQDB1UQE | LOGO_SYSTEM | 570:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=570-3) | BRD0-F02 | Rejected — incorrect reinterpretation; replaced by FIG-BRD0-C3-PRODUCTIONIZATION | — | 2026-08-03 |
 
 **Typography deviation, disclosed.** The approved primary font `General Sans` is not

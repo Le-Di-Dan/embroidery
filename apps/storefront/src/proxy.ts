@@ -33,11 +33,16 @@ import { isWithheldWave2Route } from './features/release-isolation';
  *    server-side read is issued and no custom business surface is entered. A
  *    `notFound()` call inside a page has already run that page's module and
  *    whatever its layout does.
- * 2. **The transport is actually a denial.** This repository carries an open
- *    finding (`FU-APP2-DETAIL-NOT-FOUND-STATUS-01`) that a `notFound()` from a
- *    dynamic route can answer `200`. §7 asks for a verified transport status,
- *    not for rendered copy, so the gate must not be built on the mechanism that
- *    is known to under-report.
+ * 2. **The transport is actually a denial.** When this gate was built, a
+ *    `notFound()` from a dynamic route was known to answer `200`
+ *    (`FU-APP2-DETAIL-NOT-FOUND-STATUS-01`), so §7's demand for a verified
+ *    transport status could not be met by the page-level mechanism. `APP12-H06`
+ *    has since found the cause — a `loading.tsx` Suspense boundary flushing the
+ *    HTTP head before the page can decide — and closed it, so `notFound()` now
+ *    reports honestly. The argument for deciding here is **unchanged**: a
+ *    rewrite is a denial that does not depend on which boundaries a segment
+ *    happens to declare, and properties 1 and 3 were never about the status
+ *    code at all.
  * 3. **One decision, one place.** Seven page-level guards are seven chances for
  *    the eighth Wave-2 route to arrive unguarded.
  *

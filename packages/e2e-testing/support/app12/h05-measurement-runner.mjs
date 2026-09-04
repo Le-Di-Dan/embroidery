@@ -93,7 +93,9 @@ function median(values) {
 
 /** min / median / max over one metric across the measured runs. */
 export function summarise(runs, pick) {
-  const values = runs.map(pick).filter((value) => typeof value === 'number' && Number.isFinite(value));
+  const values = runs
+    .map(pick)
+    .filter((value) => typeof value === 'number' && Number.isFinite(value));
   if (values.length === 0) return null;
   return {
     min: Number(Math.min(...values).toFixed(1)),
@@ -108,7 +110,13 @@ export function summarise(runs, pick) {
  *
  * @param {{ context: unknown, url: string, interact?: Function, settleMs?: number }} params
  */
-export async function measureNavigation({ context, url, interact, settleMs = 2500, warmRepeat = false }) {
+export async function measureNavigation({
+  context,
+  url,
+  interact,
+  settleMs = 2500,
+  warmRepeat = false,
+}) {
   const page = await context.newPage();
   await page.addInitScript(installH05Probe);
 
@@ -165,7 +173,9 @@ export async function measureNavigation({ context, url, interact, settleMs = 250
   await page.close();
 
   const budget = payloadBudget(probe.resources, kindByUrl);
-  const { resources, ...metrics } = probe;
+  // `resources` is dropped from `metrics` on purpose — the payload budget
+  // above already consumed it, and the report carries the summary, not the list.
+  const { resources: _resources, ...metrics } = probe;
 
   return {
     warm,

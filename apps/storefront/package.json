@@ -20,6 +20,7 @@
     "@embroidery/design-document": "workspace:*",
     "@embroidery/design-engine": "workspace:*",
     "@embroidery/styles": "workspace:*",
+    "@embroidery/ui": "workspace:*",
     "@tanstack/react-query": "^5.101.2",
     "axios": "^1.18.1",
     "next": "^16.2.10",

@@ -43,3 +43,11 @@ test-results/
 playwright-report/
 spikes/app0-r01-design-studio/bench-results/
 spikes/app0-r01-design-studio/.bench-container/
+
+# Brand-icon artifacts written by `tools/generate-brand-icons.mjs` from the one
+# approved geometry source. Prettier and the generator agree on their shape
+# today, but a formatter that reflowed either would make the generator's own
+# `--check` gate fail against a file nobody edited. The generator is the
+# authority for these; it is itself Prettier-formatted like any other tool.
+apps/*/src/app/icon.svg
+apps/storefront/src/features/design-studio/styles/_brand-mark.generated.scss

@@ -26,6 +26,7 @@ import { join } from 'node:path';
 import { renderWithProviders, screen, within } from '@embroidery/frontend-testing';
 
 import { StorefrontShell } from '../../src/features/storefront-shell';
+import { STOREFRONT_SHELL_COPY } from '../../src/features/storefront-shell/model/storefront-shell-copy';
 
 const ZALO_URL = 'https://zalo.me/xuong-theu-e01';
 const MESSENGER_URL = 'https://m.me/xuong.theu.e01';
@@ -191,9 +192,7 @@ describe('APP10-E01 · E01-11 · missing or malformed configuration is safe', ()
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.getByRole('main')).toBeInTheDocument();
     const footer = screen.getByRole('contentinfo');
-    expect(
-      within(footer).getByText('© Xưởng Thêu · Studio thêu theo yêu cầu.'),
-    ).toBeInTheDocument();
+    expect(within(footer).getByText(STOREFRONT_SHELL_COPY.footer.rights)).toBeInTheDocument();
     for (const anchor of container.querySelectorAll('a')) {
       const href = anchor.getAttribute('href') ?? '';
       expect(href).not.toBe('');

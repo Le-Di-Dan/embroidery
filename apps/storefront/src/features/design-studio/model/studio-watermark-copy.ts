@@ -19,9 +19,16 @@
  * copying, because none of those can be prevented and a claim that they are
  * would be a lie told to a customer.
  */
+import { BRAND_NAME } from '@embroidery/ui';
+
 export const STUDIO_WATERMARK_COPY = {
-  /** The wordmark, matching the storefront shell rather than a second brand string. */
-  wordmark: 'Xưởng Thêu',
+  /**
+   * The wordmark, imported from the one brand authority rather than written as a
+   * second brand string. It read `Xưởng Thêu` — the placeholder `BRD0-F02`
+   * locked `Nét Thêu` to replace — so the watermark was stamping a stale brand
+   * onto every preview.
+   */
+  wordmark: BRAND_NAME,
   /** What the marked surface is. */
   preview: 'BẢN XEM TRƯỚC',
 

@@ -7,10 +7,8 @@
  * the two properties that make that safe: only public route and title facts go
  * in, and what comes out cannot break the `<script>` element it is embedded in.
  */
-import {
-  buildBreadcrumbListJsonLd,
-  serializeJsonLd,
-} from '../../src/features/storefront-seo/model/breadcrumb-json-ld';
+import { buildBreadcrumbListJsonLd } from '../../src/features/storefront-seo/model/breadcrumb-json-ld';
+import { serializeJsonLd } from '../../src/features/storefront-seo/model/json-ld-serialization';
 
 const ORIGIN = 'https://shop.example.test';
 

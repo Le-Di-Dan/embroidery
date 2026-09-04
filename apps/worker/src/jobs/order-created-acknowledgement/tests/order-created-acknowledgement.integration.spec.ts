@@ -101,9 +101,9 @@ describe('APP12-H03-C1 order.created acknowledgement (integration)', () => {
       eventType: ORDER_CREATED_EVENT_TYPE,
       jobKind: 'OUTBOX_DISPATCH',
     });
-    expect(
-      registered.filter((type) => type.eventType === ORDER_CREATED_EVENT_TYPE),
-    ).toHaveLength(1);
+    expect(registered.filter((type) => type.eventType === ORDER_CREATED_EVENT_TYPE)).toHaveLength(
+      1,
+    );
   });
 
   it('claims and completes the row a Ready-Made creation leaves', async () => {

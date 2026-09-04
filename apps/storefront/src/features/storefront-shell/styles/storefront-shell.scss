@@ -155,12 +155,39 @@ $scrim-drawer: rgba(styles.$color-text-primary, 0.45);
 .storefront-shell__brand {
   display: inline-flex;
   align-items: center;
+  // The lockup gap. The symbol and the wordmark are one brand unit, so the
+  // relationship between them is styled here rather than by either half.
+  gap: styles.spacing(12);
   text-decoration: none;
 
   &:focus-visible {
     outline: 2px solid styles.$color-action-primary;
     outline-offset: 4px;
     border-radius: styles.$radius-xs;
+  }
+}
+
+// The two approved symbol variants. Exactly one is shown at any width: the
+// production symbol (seal ring, proven readable from 48px on a light ground)
+// above the Full threshold, the micro symbol (no ring, required below 32px)
+// below it. Both are in the DOM because the header is one responsive component
+// rather than a tree per viewport — see `storefront-brand.tsx`.
+.storefront-shell__brand-symbol {
+  display: inline-flex;
+  align-items: center;
+}
+
+.storefront-shell__brand-symbol--full {
+  display: none;
+
+  @media (min-width: $bp-nav) {
+    display: inline-flex;
+  }
+}
+
+.storefront-shell__brand-symbol--compact {
+  @media (min-width: $bp-nav) {
+    display: none;
   }
 }
 

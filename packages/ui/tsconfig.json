@@ -1,4 +1,7 @@
 {
   "extends": "@embroidery/typescript-config/library.json",
+  "compilerOptions": {
+    "jsx": "react-jsx"
+  },
   "include": ["src/**/*", "eslint.config.mjs"]
 }

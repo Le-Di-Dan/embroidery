@@ -86,6 +86,24 @@ function jsonLdOf(html: string): unknown[] {
   return [...html.matchAll(pattern)].map((match) => JSON.parse(match[1] as string) as unknown);
 }
 
+/**
+ * The one document of a given `@type`.
+ *
+ * Product Detail now emits two — `APP12-H06` added the `Product` graph beside
+ * the `BreadcrumbList` — so these cases select by type rather than by position.
+ * The "exactly one" property they were really asserting is preserved and made
+ * explicit rather than lost: this fails if a second document of the same type
+ * ever appears, which is precisely the duplicate-breadcrumb defect
+ * `APP11-S04-C1` corrected.
+ */
+function jsonLdOfType(html: string, type: string): Record<string, unknown> {
+  const matches = jsonLdOf(html).filter(
+    (doc) => (doc as Record<string, unknown>)['@type'] === type,
+  );
+  expect(matches).toHaveLength(1);
+  return matches[0] as Record<string, unknown>;
+}
+
 describe('Product Detail', () => {
   it('resolves its existing relative canonical to an absolute URL', async () => {
     productMock.mockResolvedValue(publicDetailEnvelope(makePublicDetail()));
@@ -134,10 +152,9 @@ describe('Product Detail', () => {
   it('emits exactly one BreadcrumbList matching the visible trail', async () => {
     productMock.mockResolvedValue(publicDetailEnvelope(makePublicDetail()));
 
-    const documents = jsonLdOf(renderToStaticMarkup(await ProductDetailPage(params(PRODUCT_SLUG))));
+    const html = renderToStaticMarkup(await ProductDetailPage(params(PRODUCT_SLUG)));
 
-    expect(documents).toHaveLength(1);
-    expect(documents[0]).toEqual({
+    expect(jsonLdOfType(html, 'BreadcrumbList')).toEqual({
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
@@ -164,10 +181,8 @@ describe('Product Detail', () => {
     productMock.mockResolvedValue(publicDetailEnvelope(makePublicDetailWithUncontractedCategory()));
 
     const html = renderToStaticMarkup(await ProductDetailPage(params('ao-thun-cotton')));
-    const documents = jsonLdOf(html);
 
-    expect(documents).toHaveLength(1);
-    expect(documents[0]).toEqual({
+    expect(jsonLdOfType(html, 'BreadcrumbList')).toEqual({
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
@@ -234,7 +249,9 @@ describe('Product Detail', () => {
         (match[1] as string).replace(/<[^>]*>/g, '').trim(),
       );
       const names = (
-        jsonLdOf(html)[0] as { itemListElement: { name: string }[] }
+        jsonLdOfType(html, 'BreadcrumbList') as unknown as {
+          itemListElement: { name: string }[];
+        }
       ).itemListElement.map((item) => item.name);
 
       expect(crumbs).toEqual(expected);

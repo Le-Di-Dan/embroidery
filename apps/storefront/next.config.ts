@@ -49,7 +49,7 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '../../'),
   // Workspace packages are consumed as TypeScript source (just-in-time packages).
-  transpilePackages: ['@embroidery/api-client', '@embroidery/contracts'],
+  transpilePackages: ['@embroidery/api-client', '@embroidery/contracts', '@embroidery/ui'],
   allowedDevOrigins: [devOrigin],
   sassOptions: {
     loadPaths: [stylesLoadPath],

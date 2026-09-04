@@ -5,6 +5,7 @@ import {
 } from '@embroidery/frontend-testing';
 
 import { StaffLoginScreen } from '../../src/features/staff-auth';
+import { BRAND_NAME } from '@embroidery/ui';
 
 jest.mock('next/navigation', () => mockCreateNavigationMock().module);
 
@@ -36,8 +37,12 @@ describe('StaffLoginScreen — rendering and semantics', () => {
 
   it('renders the approved brand copy', () => {
     renderWithProviders(<StaffLoginScreen />);
-    expect(screen.getByText('BẢNG QUẢN TRỊ')).toBeInTheDocument();
-    expect(screen.getByText('Xưởng Thêu')).toBeInTheDocument();
+    // The approved login application (`589:36`) is symbol + brand name + one
+    // supporting label. The former `BẢNG QUẢN TRỊ` eyebrow said the same thing
+    // as `Quản trị xưởng` one line later, so the mockup's two-line form replaced
+    // it rather than stacking three.
+    expect(screen.getByText('Quản trị xưởng')).toBeInTheDocument();
+    expect(screen.getByText(BRAND_NAME)).toBeInTheDocument();
   });
 
   it('offers no self-service auth affordances', () => {

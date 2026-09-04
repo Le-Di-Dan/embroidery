@@ -84,7 +84,8 @@ function rawField(edgePx, seed) {
       const u = x / edgePx;
       const v = y / edgePx;
       const a =
-        0.5 + 0.25 * Math.sin(lowFrequency * Math.PI * u + seed) * Math.cos(midFrequency * Math.PI * v);
+        0.5 +
+        0.25 * Math.sin(lowFrequency * Math.PI * u + seed) * Math.cos(midFrequency * Math.PI * v);
       const b = 0.5 + 0.25 * Math.sin(midFrequency * Math.PI * v * u + seed);
       const noise = (next() - 0.5) * NOISE_AMPLITUDE;
       buffer[offset] = clamp(a + noise);
