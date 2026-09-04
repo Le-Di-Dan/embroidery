@@ -91,6 +91,14 @@ export class NotificationDeliveryUseCase {
     // Fail closed before anything else: with no published budget there is no
     // safe number of sends, so there is no send. Retryable, so the secret waits
     // for an operator rather than dead-lettering on a configuration gap.
+    //
+    // `APP12-H04` §F — the re-read that makes the sentence above true. The
+    // policy is published by the bootstrap Job while this worker is already
+    // running, so a pod that started first held no policy and, with a single
+    // startup read, never would: every delivery then burnt its attempts against
+    // a gap that had closed seconds after boot. The service ignores this once it
+    // holds a valid policy, so a live budget is never swapped mid-flight.
+    await this.policies.reloadWhileUnconfigured();
     const policy = this.policies.require();
 
     const intent = await this.intents.findIntent(request.intentId);

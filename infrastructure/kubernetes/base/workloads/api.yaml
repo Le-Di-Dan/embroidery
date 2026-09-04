@@ -19,6 +19,17 @@ spec:
     metadata:
       labels: { app.kubernetes.io/name: embroidery, app.kubernetes.io/component: api }
     spec:
+      # Graceful drain (`APP12-H04-C1` §4). `APP12-H04` measured three connection
+      # resets per replica roll: the container gets SIGTERM and stops accepting
+      # connections at the same instant kubelet *begins* removing it from
+      # Endpoints, and the Gateway keeps sending traffic until that removal has
+      # propagated. Nothing the process does can close that window on its own,
+      # because the process is not the thing holding the stale route.
+      #
+      # 45s = the preStop delay, plus room for the longest in-flight request to
+      # finish, plus margin. It bounds the whole drain; it is not a guess about
+      # how long shutdown takes.
+      terminationGracePeriodSeconds: 45
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -67,6 +78,24 @@ spec:
             httpGet: { path: /api/health, port: http }
             periodSeconds: 5
             failureThreshold: 30
+          # The first half of the drain (`APP12-H04-C1` §4). `preStop` runs
+          # BEFORE SIGTERM is delivered, and the container keeps serving
+          # normally throughout — so this is not a pause, it is the interval in
+          # which endpoint removal reaches the Gateway while this pod is still
+          # able to answer.
+          #
+          # `exec: sleep` rather than the newer `lifecycle.preStop.sleep` field:
+          # the sleep action is only GA from Kubernetes 1.32, and the production
+          # distribution is an open decision (`CLAUDE.md` §8), so the portable
+          # form is the correct one. `sleep` is busybox's, present in the Alpine
+          # runtime image this container already runs.
+          #
+          # 10s covers readiness failing (period 10s) plus the Gateway's own
+          # reconfiguration, and sits well inside the 45s grace period. It is
+          # measured, not arbitrary: §I records three rollout cycles at load.
+          lifecycle:
+            preStop:
+              exec: { command: ['sleep', '10'] }
           resources:
             requests: { cpu: 100m, memory: 256Mi }
             limits: { memory: 768Mi }

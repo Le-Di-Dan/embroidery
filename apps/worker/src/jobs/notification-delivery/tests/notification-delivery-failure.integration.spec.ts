@@ -208,22 +208,42 @@ describe('APP4-W01 notification delivery — unpublished policy', () => {
     context.adapter.reset();
   });
 
-  it('sends nothing until the policy exists, then delivers unchanged', async () => {
+  /**
+   * `APP12-H04-C1` §3 supersedes what this pair used to assert.
+   *
+   * Both cases previously expected the job to be **claimed** and to come back
+   * `FAILED_RETRYABLE`. That was fail-closed and it was safe about the secret,
+   * but it spent an attempt — and `APP12-H04` measured what that costs on a
+   * cold cluster, where `notification.delivery` is published by the bootstrap
+   * Job while the worker is already running: three attempts burned in about
+   * four seconds, and every `VERIFICATION_CODE` and `ORDER_ACCESS` credential
+   * dead-lettered permanently.
+   *
+   * The claim gate makes the stronger guarantee the two cases now assert: with
+   * no usable policy the event type leaves the claim filter entirely, so the row
+   * is never claimed, `attempt_count` never moves, and no budget is spent on a
+   * deployment gap. Nothing is delivered without a published budget either —
+   * that half is unchanged.
+   */
+  it('claims nothing until the policy exists, spends no attempt, then delivers unchanged', async () => {
     const secret = `synthetic-${newId()}`;
     const seeded = await seedDelivery(context, { secret });
 
     const blocked = await context.runOnce();
 
-    expect(blocked?.outcome).toBe('FAILED_RETRYABLE');
-    expect(blocked?.errorClass).toBe('JOB_DEPENDENCY_UNAVAILABLE');
+    // Not claimed at all — the strengthened guarantee.
+    expect(blocked).toBeUndefined();
+    const untouched = await outboxRow(context.disposable, seeded.outboxEventId);
+    expect(untouched.attemptCount).toBe(0);
+    expect(untouched.status).toBe('PENDING');
     expect(context.adapter.records()).toHaveLength(0);
     // Nothing was decided about the intent either: an unconfigured worker has
     // no opinion to record.
     expect(await deliveryAttempts(context.disposable, seeded.intentId)).toEqual([]);
     expect(await intentStatus(context.disposable, seeded.intentId)).toBe('PENDING');
+    expect(await secretAppears(context.disposable, secret)).toEqual([]);
 
     await publishDeliveryPolicy(context, DELIVERY_POLICY_VALUE);
-    await makeDueNow(context.disposable, seeded.outboxEventId);
     const delivered = await context.runOnce();
 
     expect(delivered?.outcome).toBe('SUCCEEDED');
@@ -231,7 +251,7 @@ describe('APP4-W01 notification delivery — unpublished policy', () => {
     expect(await intentStatus(context.disposable, seeded.intentId)).toBe('SATISFIED');
   });
 
-  it('sends nothing when the published policy is malformed', async () => {
+  it('claims nothing when the published policy is malformed', async () => {
     const secret = `synthetic-${newId()}`;
     const seeded = await seedDelivery(context, { secret });
     // A budget of three with one delay: the operator's two statements disagree,
@@ -240,7 +260,11 @@ describe('APP4-W01 notification delivery — unpublished policy', () => {
 
     const summary = await context.runOnce();
 
-    expect(summary?.outcome).toBe('FAILED_RETRYABLE');
+    // An invalid policy is as unusable as an absent one, so the gate stays shut
+    // and the job waits for an operator instead of being spent against a
+    // configuration nobody can act on from here.
+    expect(summary).toBeUndefined();
+    expect((await outboxRow(context.disposable, seeded.outboxEventId)).attemptCount).toBe(0);
     expect(context.adapter.records()).toHaveLength(0);
     expect(await intentStatus(context.disposable, seeded.intentId)).toBe('PENDING');
     expect(await secretAppears(context.disposable, secret)).toEqual([]);

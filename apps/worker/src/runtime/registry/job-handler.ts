@@ -57,6 +57,36 @@ export interface JobRetryPlan {
   retryDelayMs(attemptNo: number): number;
 }
 
+/**
+ * A precondition for a handler's event type being **claimed at all**
+ * (`APP12-H04-C1` §3).
+ *
+ * The distinction this draws is the whole point. A handler that *runs* and
+ * fails closed still spends an attempt, and a bounded attempt budget spent
+ * against a deployment gap is a job that dead-letters for a reason that has
+ * nothing to do with the job. `APP12-H04` measured that: the `staff-bootstrap`
+ * Job publishes `notification.delivery` while the worker is already running, so
+ * a worker that won the startup race burned all three attempts on every
+ * customer credential in about four seconds and dead-lettered them permanently.
+ *
+ * A closed gate removes the event type from the claim filter instead, so the row
+ * stays `PENDING`, unclaimed, with `attempt_count` untouched. Nothing is
+ * dropped, nothing is deferred to a second queue, and a missing policy can never
+ * be mistaken for a delivered notification.
+ *
+ * `refresh` is what lets the gate open without a restart, and it is called only
+ * while the gate is closed, so a live capability's configuration is never
+ * swapped underneath work already measured against it.
+ */
+export interface JobClaimGate {
+  /** A stable, safe name for what is being waited on. Never a value. */
+  readonly requirement: string;
+  /** False while this handler's event type must not be claimed. */
+  ready(): boolean;
+  /** Re-checks the precondition. Called only while `ready()` is false. */
+  refresh(): Promise<void>;
+}
+
 export interface PayloadValidationSuccess<TPayload> {
   readonly valid: true;
   readonly payload: TPayload;
@@ -85,6 +115,17 @@ export interface JobHandler<TPayload = unknown> {
    * closed onto the global schedule instead of onto an invented default.
    */
   readonly retryPlan?: JobRetryPlan | undefined;
+
+  /**
+   * A precondition for this handler's event type being claimed at all.
+   *
+   * Omit when the handler has none — the overwhelmingly common case, and the
+   * reason this is optional rather than a method every handler must implement.
+   * Read per poll cycle for the same reason `retryPlan` is read per completion:
+   * a capability whose policy loads asynchronously must be able to answer
+   * "not yet" and then "yes" without the runtime caching the first answer.
+   */
+  readonly claimGate?: JobClaimGate | undefined;
 
   /**
    * Validates the raw JSONB payload before any effect is attempted.

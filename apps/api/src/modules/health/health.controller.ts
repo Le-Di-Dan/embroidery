@@ -5,6 +5,7 @@ import { DatabaseHealthService } from '@embroidery/persistence';
 
 import { SkipApiEnvelope } from '../../platform/http-response/api-envelope.decorators';
 import { HealthStatusResponse, ReadinessStatusResponse } from './health-response.dto';
+import { ShutdownStateService } from './shutdown-state.service';
 
 /**
  * Health endpoints, served under the global `api` prefix (D-036).
@@ -45,7 +46,10 @@ interface StatusSettableResponse {
 // opt-out covers success bodies only — a thrown error is still safe-mapped.
 @SkipApiEnvelope()
 export class HealthController {
-  constructor(private readonly databaseHealth: DatabaseHealthService) {}
+  constructor(
+    private readonly databaseHealth: DatabaseHealthService,
+    private readonly shutdown: ShutdownStateService,
+  ) {}
 
   @Get()
   @ApiOkResponse({
@@ -74,6 +78,21 @@ export class HealthController {
     @Res({ passthrough: true }) response: StatusSettableResponse,
   ): Promise<ReadinessStatus> {
     const database = await this.databaseHealth.check();
+
+    // `APP12-H04-C1` §4 — a terminating process is not a valid traffic target,
+    // whatever its dependencies say. Checked first and independently of the
+    // database, because the whole point is that the database is *fine* while
+    // this instance is closing: `APP12-H04` measured the Gateway still routing
+    // to a pod that had begun draining, and this is the probe finally saying so.
+    if (this.shutdown.isTerminating) {
+      response.status(HttpStatus.SERVICE_UNAVAILABLE);
+      return {
+        status: 'not_ready',
+        service: 'api',
+        timestamp: new Date().toISOString(),
+        database,
+      };
+    }
 
     // `degraded` still serves traffic — the database is reachable and the pool
     // is merely contended. Only `down` withdraws the instance from rotation.

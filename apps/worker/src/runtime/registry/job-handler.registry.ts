@@ -42,16 +42,62 @@ export class JobHandlerRegistry {
   }
 
   /**
-   * The claim filter: exactly the event types this deployment can handle.
+   * The claim filter: exactly the event types this deployment can handle
+   * **right now**.
    *
    * Returns `[]` for an empty registry, which the persistence seam treats as
    * "claim nothing" — never as "claim everything".
+   *
+   * `APP12-H04-C1` §3 — a handler whose {@link JobClaimGate} is closed is
+   * omitted. Its rows therefore stay `PENDING` and unclaimed rather than being
+   * claimed and failed: an attempt spent because a deployment has not finished
+   * bootstrapping is an attempt that teaches nobody anything, and three of them
+   * dead-letter a customer's only credential. A handler with no gate is always
+   * included, so this changes nothing for the five capabilities that have none.
    */
   registeredTypes(): RegisteredJobType[] {
-    return [...this.handlers.values()].map((handler) => ({
-      eventType: handler.eventType,
-      jobKind: handler.jobKind,
-    }));
+    return [...this.handlers.values()]
+      .filter((handler) => handler.claimGate?.ready() !== false)
+      .map((handler) => ({
+        eventType: handler.eventType,
+        jobKind: handler.jobKind,
+      }));
+  }
+
+  /**
+   * Re-checks every closed claim gate.
+   *
+   * Called once per poll cycle by the runtime. Gates that are already open are
+   * not touched, which is what keeps a live capability's configuration from
+   * being reloaded underneath work already measured against it, and means the
+   * ordinary steady state costs nothing.
+   *
+   * A gate that throws is treated as still closed: `refresh` runs on the poll
+   * loop, and an unhandled rejection there would take down the loop that exists
+   * to survive exactly this kind of transient failure.
+   */
+  async refreshClaimGates(): Promise<void> {
+    for (const handler of this.handlers.values()) {
+      const gate = handler.claimGate;
+      if (gate === undefined || gate.ready()) {
+        continue;
+      }
+      try {
+        await gate.refresh();
+      } catch {
+        // Still closed. The capability stays unclaimable and nothing is lost.
+      }
+    }
+  }
+
+  /** The requirements currently holding capabilities back. Observability only. */
+  closedGates(): { readonly jobKind: string; readonly requirement: string }[] {
+    return [...this.handlers.values()]
+      .filter((handler) => handler.claimGate?.ready() === false)
+      .map((handler) => ({
+        jobKind: handler.jobKind,
+        requirement: handler.claimGate?.requirement ?? 'UNKNOWN',
+      }));
   }
 
   get size(): number {

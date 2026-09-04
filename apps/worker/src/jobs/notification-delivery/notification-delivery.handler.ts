@@ -28,6 +28,7 @@ import type { BackgroundJobKind } from '@embroidery/persistence';
 import type { DeliveryEnvelope } from '@embroidery/notification-delivery';
 
 import type {
+  JobClaimGate,
   JobExecutionContext,
   JobHandler,
   JobRetryPlan,
@@ -43,7 +44,10 @@ import {
   deriveNotificationDeliveryEffectKey,
   parseNotificationDeliveryPayload,
 } from './domain/notification-delivery.payload';
-import { retryDelayMsFor } from './domain/notification-delivery-policy';
+import {
+  NOTIFICATION_DELIVERY_POLICY_KEY,
+  retryDelayMsFor,
+} from './domain/notification-delivery-policy';
 import { NotificationDeliveryPolicyService } from './infrastructure/policy/notification-delivery-policy.service';
 
 /** The DB7 job kind this capability files its generic evidence under. */
@@ -59,6 +63,29 @@ export class NotificationDeliveryHandler implements JobHandler<DeliveryEnvelope>
     private readonly useCase: NotificationDeliveryUseCase,
     private readonly policies: NotificationDeliveryPolicyService,
   ) {}
+
+  /**
+   * `APP12-H04-C1` §3 — this capability is not claimable without its policy.
+   *
+   * `notification.delivery` is published by the `staff-bootstrap` Job while this
+   * worker is already running, so losing that race is ordinary rather than
+   * exceptional. Running anyway is what made it catastrophic: the attempt failed
+   * closed (correctly), but it *spent* an attempt, and three of those inside four
+   * seconds dead-lettered the customer's `VERIFICATION_CODE` and `ORDER_ACCESS`
+   * credentials permanently.
+   *
+   * Gating the claim instead leaves the row `PENDING` with `attempt_count` at
+   * zero until a policy exists. Nothing is delivered without a published budget,
+   * which is the same fail-closed guarantee as before — it simply no longer
+   * costs the notification its life.
+   */
+  get claimGate(): JobClaimGate {
+    return {
+      requirement: NOTIFICATION_DELIVERY_POLICY_KEY,
+      ready: () => this.policies.current() !== undefined,
+      refresh: () => this.policies.reloadWhileUnconfigured(),
+    };
+  }
 
   get retryPlan(): JobRetryPlan | undefined {
     const policy = this.policies.current();

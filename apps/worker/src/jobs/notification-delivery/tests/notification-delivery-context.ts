@@ -174,6 +174,11 @@ export async function startNotificationWorker(
     get: <T>(token: unknown): T => moduleRef.get<T>(token as never),
 
     runOnce: async (): Promise<AttemptSummary | undefined> => {
+      // One poll cycle, modelled faithfully: the real loop re-checks closed
+      // claim gates before deciding what it may claim (`APP12-H04-C1` §3).
+      // Without this the harness would report "not claimed" forever after a
+      // policy was published, which is the opposite of the runtime's behaviour.
+      await registry.refreshClaimGates();
       const claimed = await transactions.runInTransaction(() =>
         queue.claimRegisteredBatch({
           workerInstanceId,

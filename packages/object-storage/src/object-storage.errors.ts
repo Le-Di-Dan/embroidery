@@ -180,6 +180,16 @@ export function classifyProviderError(error: unknown): ObjectStorageErrorCode {
  * The message names only the operation and the classification — never the
  * endpoint, credentials, bucket contents or the raw SDK message.
  */
+/**
+ * Wraps a provider failure as a classified storage error.
+ *
+ * `operation` names the **kind** of call and never its object key.
+ * `APP12-H04-C1` §7 found the key in an API error log — a bounded storage
+ * deadline turns a hang into a logged error, so a message that had always
+ * carried the key started reaching the log pipeline. Nothing diagnostic is
+ * lost: the request id, route and business id are already on the same line, and
+ * they identify the object without publishing its storage path.
+ */
 export function toObjectStorageError(operation: string, error: unknown): ObjectStorageError {
   if (error instanceof ObjectStorageError) {
     return error;

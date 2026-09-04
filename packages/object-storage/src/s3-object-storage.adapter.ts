@@ -38,10 +38,26 @@ import type {
   PutObjectStreamInput,
   StoredObjectResult,
 } from './object-storage.types';
-import { requestOptions } from './request-options';
+import { STORAGE_OPERATION_DEADLINE_MS, requestOptions } from './request-options';
 
 /** Guards against a provider paging forever on a malformed continuation token. */
 const MAX_LIST_PAGES = 1_000;
+
+/**
+ * Retry budget for a transient provider blip.
+ *
+ * The **timeout** boundary is deliberately not here. `APP12-H04-C1` §5 tried to
+ * put it here first and could not: this SDK version discards a plain
+ * `requestHandler: { connectionTimeout, requestTimeout }` object, and an
+ * explicitly constructed `NodeHttpHandler` carrying the same options did not
+ * bound a stalled call either — measured against a socket that accepts and then
+ * never answers, both forms hung indefinitely. `request-options.ts` records the
+ * measurement and owns the deadline that actually works.
+ *
+ * Two attempts keeps one free retry for a genuine blip while leaving the
+ * per-operation deadline comfortably inside the Gateway's own timeout.
+ */
+const STORAGE_MAX_ATTEMPTS = 2;
 
 export function createS3Client(config: ObjectStorageConfig): S3Client {
   return new S3Client({
@@ -51,6 +67,7 @@ export function createS3Client(config: ObjectStorageConfig): S3Client {
     ...(config.endpoint === undefined ? {} : { endpoint: config.endpoint }),
     ...(config.credentials === undefined ? {} : { credentials: config.credentials }),
     forcePathStyle: config.forcePathStyle,
+    maxAttempts: STORAGE_MAX_ATTEMPTS,
   });
 }
 
@@ -82,8 +99,24 @@ export function createS3ObjectStorage(
     const metadata = assertBoundedMetadata(input.metadata);
     const multipart = resolveMultipartOptions(input.multipart);
 
+    // `APP12-H04-C1` §5 — the upload's own deadline, handed to lib-storage so
+    // the SDK cancels its in-flight request rather than this file racing it.
+    //
+    // Destroying the source body is *not* sufficient on its own, which
+    // `APP12-H04-C1` measured: against a store frozen mid-request the body was
+    // destroyed and `done()` still waited on an HTTP response that never came,
+    // for the full 60 seconds until the Gateway answered. The body abort ends
+    // the *stream*; only the upload's own controller ends the *request*.
+    const uploadDeadline = AbortSignal.timeout(STORAGE_OPERATION_DEADLINE_MS);
+    const uploadController = new AbortController();
+    const failUpload = (): void => {
+      uploadController.abort();
+    };
+    uploadDeadline.addEventListener('abort', failUpload, { once: true });
+
     const upload = new Upload({
       client,
+      abortController: uploadController,
       params: {
         Bucket: bucketNameOf(input.bucket),
         Key: key,
@@ -119,7 +152,12 @@ export function createS3ObjectStorage(
       abortError.name = 'AbortError';
       input.body.destroy(abortError);
     };
-    input.signal?.addEventListener('abort', onAbort, { once: true });
+    // The caller's own cancellation still ends the stream, which is what keeps
+    // the delivered no-dangling-parts guarantee: lib-storage unwinds through its
+    // ordinary error path and awaits AbortMultipartUpload before rejecting.
+    const abort =
+      input.signal === undefined ? uploadDeadline : AbortSignal.any([input.signal, uploadDeadline]);
+    abort.addEventListener('abort', onAbort, { once: true });
 
     try {
       const result = await upload.done();
@@ -129,9 +167,10 @@ export function createS3ObjectStorage(
         ...(typeof result.ETag === 'string' ? { providerEntityTag: result.ETag } : {}),
       };
     } catch (error: unknown) {
-      throw toObjectStorageError(`put object "${key}"`, error);
+      throw toObjectStorageError('put object', error);
     } finally {
-      input.signal?.removeEventListener('abort', onAbort);
+      abort.removeEventListener('abort', onAbort);
+      uploadDeadline.removeEventListener('abort', failUpload);
     }
   }
 
@@ -168,7 +207,7 @@ export function createS3ObjectStorage(
           : {}),
       };
     } catch (error: unknown) {
-      throw toObjectStorageError(`copy object "${sourceKey}" to "${destinationKey}"`, error);
+      throw toObjectStorageError('copy object', error);
     }
   }
 
@@ -183,7 +222,7 @@ export function createS3ObjectStorage(
         requestOptions(signal),
       );
       if (response.Body === undefined) {
-        throw toObjectStorageError(`get object "${key}"`, { name: 'InvalidProviderResponse' });
+        throw toObjectStorageError('get object', { name: 'InvalidProviderResponse' });
       }
       return {
         bucket: reference.bucket,
@@ -198,7 +237,7 @@ export function createS3ObjectStorage(
         metadata: readMetadata(response.Metadata),
       };
     } catch (error: unknown) {
-      throw toObjectStorageError(`get object "${key}"`, error);
+      throw toObjectStorageError('get object', error);
     }
   }
 
@@ -224,7 +263,7 @@ export function createS3ObjectStorage(
         metadata: readMetadata(response.Metadata),
       };
     } catch (error: unknown) {
-      throw toObjectStorageError(`head object "${key}"`, error);
+      throw toObjectStorageError('head object', error);
     }
   }
 
@@ -241,7 +280,7 @@ export function createS3ObjectStorage(
       if (classifyProviderError(error) === 'OBJECT_NOT_FOUND') {
         return;
       }
-      throw toObjectStorageError(`delete object "${key}"`, error);
+      throw toObjectStorageError('delete object', error);
     }
   }
 
@@ -281,7 +320,7 @@ export function createS3ObjectStorage(
             : undefined;
       } while (continuationToken !== undefined && page < MAX_LIST_PAGES);
     } catch (error: unknown) {
-      throw toObjectStorageError(`list objects "${prefix}"`, error);
+      throw toObjectStorageError('list objects', error);
     }
     return found;
   }

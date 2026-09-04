@@ -39,7 +39,18 @@ export interface WorkerReadiness {
     | 'STARTUP_GATE_CLOSED'
     | 'NOT_STARTED'
     | 'SHUTTING_DOWN'
-    | 'FATAL_HANDLER_UNRESPONSIVE';
+    | 'FATAL_HANDLER_UNRESPONSIVE'
+    | 'CAPABILITY_POLICY_MISSING';
+  /**
+   * The capabilities this worker is registered for but cannot claim yet, and
+   * what each is waiting on (`APP12-H04-C1` §3).
+   *
+   * Reported even when `ready` is true would be misleading, so it is not: a
+   * required Wave-1 execution policy that is missing makes the worker unready,
+   * because a worker that silently handles four of its six capabilities is not
+   * a worker an operator should believe is fine.
+   */
+  readonly closedGates?: readonly { readonly jobKind: string; readonly requirement: string }[];
 }
 
 /**
@@ -64,6 +75,8 @@ export class JobPollRuntimeService implements OnApplicationBootstrap, OnApplicat
   private databaseReady = false;
   private claimFailures = 0;
   private gateFailure: string | undefined;
+  /** Last claim-gate re-check, so a closed gate is probed on a bounded cadence. */
+  private lastGateRefreshAt = Number.NEGATIVE_INFINITY;
 
   constructor(
     private readonly registry: JobHandlerRegistry,
@@ -77,7 +90,19 @@ export class JobPollRuntimeService implements OnApplicationBootstrap, OnApplicat
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
-    await this.policies.load();
+    // `APP12-H04` §W — the initial read must not be able to end the process.
+    //
+    // `load()` treats a *missing* or *invalid* policy as an expected startup
+    // state, but a failed **read** — the database not yet accepting connections,
+    // or its schema not yet migrated — propagated out of this hook, unwound Nest
+    // initialization and exited. That is the crash loop the fail-closed design
+    // exists to avoid, and `APP12-H04` observed it on a cold cluster: the worker
+    // died once because it booted while the migration Job was still running.
+    // `reloadWhileUnconfigured` already swallows exactly this failure on the poll
+    // loop; the startup path now agrees with it, so an unreadable policy leaves
+    // the process up, unready and claiming nothing, and the existing recheck
+    // adopts the policy as soon as it can be read.
+    await this.policies.reloadWhileUnconfigured();
     this.databaseReady = await this.queue.probeWorkerDatabase();
 
     // The gate is awaited **before** `started`, so there is no window in which
@@ -172,6 +197,14 @@ export class JobPollRuntimeService implements OnApplicationBootstrap, OnApplicat
     if (!this.databaseReady) {
       return { ready: false, reason: 'DATABASE_UNAVAILABLE' };
     }
+    // `APP12-H04-C1` §3, criterion 6 — readiness must state the truth about
+    // what this worker can actually claim. A closed gate means a registered
+    // capability is inert, so reporting `ok` would be the same silent
+    // half-working state `APP12-H04` found on a cold cluster.
+    const closedGates = this.registry.closedGates();
+    if (closedGates.length > 0) {
+      return { ready: false, reason: 'CAPABILITY_POLICY_MISSING', closedGates };
+    }
     return { ready: true, reason: 'ok' };
   }
 
@@ -204,6 +237,19 @@ export class JobPollRuntimeService implements OnApplicationBootstrap, OnApplicat
         await this.policies.reloadWhileUnconfigured();
         continue;
       }
+
+      // `APP12-H04-C1` §3 — re-check any closed claim gate before deciding what
+      // this cycle may claim. Only closed gates are touched, so the steady state
+      // costs nothing; a capability whose policy is published while the worker
+      // runs becomes claimable shortly afterwards, with no restart.
+      //
+      // Paced on the same `UNCONFIGURED_RECHECK_MS` the missing-`worker.runtime`
+      // branch uses, rather than on `pollIntervalMs`: a closed gate re-reads a
+      // policy row, and doing that twice a second for the life of an
+      // unconfigured pod is a database load nobody asked for. The bound on how
+      // late adoption can be is this interval, which is the same bound the
+      // delivered runtime-policy recheck already accepts.
+      await this.refreshClaimGatesPaced();
 
       const registeredTypes = this.registry.registeredTypes();
       if (registeredTypes.length === 0) {
@@ -251,6 +297,21 @@ export class JobPollRuntimeService implements OnApplicationBootstrap, OnApplicat
     }
 
     this.logger.log('Poll loop stopped claiming.');
+  }
+
+  /**
+   * Re-checks closed claim gates, at most once per {@link UNCONFIGURED_RECHECK_MS}.
+   *
+   * The registry already skips gates that are open, so this only paces the
+   * "am I configured yet" probe of the ones that are shut.
+   */
+  private async refreshClaimGatesPaced(): Promise<void> {
+    const now = this.clock.now();
+    if (now - this.lastGateRefreshAt < UNCONFIGURED_RECHECK_MS) {
+      return;
+    }
+    this.lastGateRefreshAt = now;
+    await this.registry.refreshClaimGates();
   }
 
   /** Returns claimed jobs, or `undefined` when the claim failed and was paced. */
