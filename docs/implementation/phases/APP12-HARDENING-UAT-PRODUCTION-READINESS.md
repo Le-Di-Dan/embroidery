@@ -7,7 +7,7 @@ ROADMAP_STATUS         = LOCKED
 ROADMAP_LOCK           = LOCKED
 IMPLEMENTATION_STARTED = true
 CHECKPOINTS            = 38
-NEXT                   = APP12-H04-C1 (BLOCKED_RESILIENCE — PO decision required)
+NEXT                   = APP12-H06 (APP12-H05 = BLOCKED_PERFORMANCE — PO decision required)
 CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
                          APP12-G02-C1 (2026-09-01, 1/1 — no C2)
                          APP12-C01-C1 (2026-09-01, 1/1 — no C2)
@@ -17,7 +17,7 @@ CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
                          APP12-S03-C1 (2026-09-03, 1/1 — no C2)
                          APP12-A02-C1 (2026-09-03, 1/1 — no C2)
                          APP12-H03-C1 (2026-09-04, 1/1 — no C2)
-                         APP12-H04-C1 (2026-09-04, 1/1 — no C2, BLOCKED_RESILIENCE)
+                         APP12-H04-C1 (2026-09-04, 1/1 — no C2)
 LOCKED_AT              = APP12-P01 entry, 2026-09-01, Product Owner authority
 ```
 
@@ -278,10 +278,10 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | 21 | `APP12-H02` | Production deployment and configuration readiness | `COMPLETE` |
 | 22 | `APP12-H03` | Observability and alerting (build) | `COMPLETE_AFTER_C1` |
 | 22·C1 | `APP12-H03-C1` | Worker runtime policy, Ready-Made event compatibility and outbox normal path | `COMPLETE` |
-| 23 | `APP12-H04` | Resilience and failure rehearsal (Wave 1) | `CORRECTION_REQUIRED` |
-| 23·C1 | `APP12-H04-C1` | Startup safety, graceful drain and object-storage failure correction | **`BLOCKED_RESILIENCE`** |
-| 24 | `APP12-H05` | Performance and CWV measurement (Wave 1) | `NOT_AUTHORIZED` |
-| 25 | `APP12-H06` | SEO and public readiness (Wave 1) | `NOT_STARTED` |
+| 23 | `APP12-H04` | Resilience and failure rehearsal (Wave 1) | `COMPLETE_AFTER_C1` |
+| 23·C1 | `APP12-H04-C1` | Startup safety, graceful drain and object-storage failure correction | `COMPLETE` |
+| 24 | `APP12-H05` | Performance and CWV measurement (Wave 1) | `BLOCKED_PERFORMANCE` |
+| 25 | `APP12-H06` | SEO and public readiness (Wave 1) | **`NEXT`** |
 | 26 | `APP12-H07` | Operational runbooks (Wave 1) | `NOT_STARTED` |
 | 27 | `APP12-H08` | Accessibility and compatibility (Wave 1) | `NOT_STARTED` |
 | 28 | `APP12-V01` | Runtime Visual & Content UAT — audit | `NOT_STARTED` |

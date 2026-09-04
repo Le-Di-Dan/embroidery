@@ -12,6 +12,35 @@
 
 // --- Loading and error ------------------------------------------------------
 
+// The streaming loading segment reserves a viewport (`APP12-H05`).
+//
+// `loading.tsx` puts this page behind a streaming Suspense boundary, so the
+// browser paints the shell plus this state first and swaps the resolved page in
+// afterwards. `APP12-H05` measured what that swap costs on a 1440×900 desktop:
+// `main` goes from 432px to 1768px roughly 250ms after first paint, and the
+// store-presentation block and footer — both visible at y=504 and y=837 — are
+// pushed 1336px down and out of view. The measured `CLS` was **0.4086**, four
+// times the `PO-APP12-005` release threshold of 0.10.
+//
+// The fix reserves the viewport the resolved page is about to fill, and does
+// nothing else. It deliberately does NOT give the stage a guessed box: the
+// contract publishes no derivative dimensions, a skeleton shaped like an artwork
+// would be a claim about a Product nobody has loaded yet (see `DetailLoading`),
+// and it was measured — adding `min-height` to `.product-detail__stage` on top
+// of this reserve put `CLS` straight back to 0.4086 rather than improving it.
+//
+// Reserving the viewport works because the shift being measured is not the page
+// growing, which is unavoidable while the content streams; it is the *already
+// visible* footer region being displaced. With a viewport reserved there is
+// nothing below the fold-line to displace, and the same three runs measured
+// 0.0465 / 0.0002 / 0.0002.
+//
+// This styles the transient loading state only. No loaded surface changes, so
+// no approved design frame is touched.
+.product-detail--loading {
+  min-height: 100vh;
+}
+
 .product-detail__error-heading {
   margin: 0;
   font-size: styles.$font-size-heading-s;
