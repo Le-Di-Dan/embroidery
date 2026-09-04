@@ -1,5 +1,33 @@
 # APP12-H05 — Performance and Core Web Vitals Measurement (Wave 1)
 
+> ## Correction notice — superseded verdict
+>
+> **`APP12-H05` = `COMPLETE_AFTER_C1`.** The Product Owner accepted this
+> measurement and authorised `APP12-H05-C1`, which closed the one blocking
+> finding: `H05-02`, the desktop grid CLS on Discover, filtered Discover and the
+> Gallery feed.
+>
+> C1 published `asset_derivatives.width_px` / `height_px` on the existing public
+> Product and Gallery media projections and consumed them as `<img width height>`
+> in the two grids. Remeasured over 11 cold runs per surface:
+>
+> | Surface (desktop) | here | after C1 |
+> |---|---|---|
+> | Discover | median 0.0625, 3/11 over 0.10 | **median 0.0008, 0/11 over** |
+> | Discover filtered | median 0.0625, 3/11 over 0.10 | **median 0.0007, 0/11 over** |
+> | Gallery feed | median 0.0538, 3/11 over 0.10 | **median 0.0001, 0/11 over** |
+>
+> `FU-APP12-H05-01` is `CLOSED_BY_APP12_H05_C1`. `FU-APP12-H05-02`, `-03` and
+> `-04` are routed to `APP12-V02`; `FU-APP11-B03-02` remains with
+> `FU-APP12-H02-05`.
+>
+> **Everything below is the original H05 measurement evidence and is unchanged.**
+> The `BLOCKED_PERFORMANCE` verdict in §A was correct when written and is
+> superseded by this notice, not rewritten.
+>
+> See `docs/implementation/reports/APP12-H05-C1-COMPLETION-REPORT.md`.
+
+
 ## A. Verdict
 
 ```text

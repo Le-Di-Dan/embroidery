@@ -10,6 +10,8 @@
  * tests assert that neither product id nor category id does.
  */
 
+import type { PublicMediaIntrinsicSize } from '../public-media-dimensions';
+
 /** One row of the public list, before projection. */
 export interface PublicProductListRow {
   /** Internal. Keyset tie-breaker only — never projected. */
@@ -29,6 +31,13 @@ export interface PublicProductListRow {
    * a page of N products costs one query rather than N+1.
    */
   readonly thumbnailProductMediaId: string | undefined;
+  /**
+   * Intrinsic size of the **list-rendition** derivative behind that
+   * association, or `undefined` when the row carries none (`APP12-H05-C1`).
+   * Resolved from the same correlated subquery text as the id above, so it
+   * cannot describe a different derivative.
+   */
+  readonly thumbnailSize: PublicMediaIntrinsicSize | undefined;
 }
 
 /** The product half of the public detail, before projection. */
@@ -51,6 +60,12 @@ export interface PublicProductDetailMediaRow {
   readonly productMediaId: string;
   readonly role: string;
   readonly displayOrder: number;
+  /**
+   * Intrinsic size of the **detail-rendition** derivative this row was selected
+   * by, or `undefined` when it carries none (`APP12-H05-C1`). The statement
+   * INNER JOINs that derivative, so the size and the URL share one source row.
+   */
+  readonly size: PublicMediaIntrinsicSize | undefined;
 }
 
 export interface PublicProductDetail {
@@ -73,6 +88,8 @@ export interface PublicLinkedProductRow {
   readonly name: string;
   /** The deliverable `THUMBNAIL` association, or `undefined` when there is none. */
   readonly thumbnailProductMediaId: string | undefined;
+  /** Intrinsic size of that association's list-rendition derivative, if any. */
+  readonly thumbnailSize: PublicMediaIntrinsicSize | undefined;
 }
 
 /**

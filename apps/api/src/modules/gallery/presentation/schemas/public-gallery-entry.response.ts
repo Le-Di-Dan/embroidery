@@ -64,6 +64,23 @@ export class PublicGalleryEntrySummaryResponse {
   @ApiProperty({ description: MEDIA_PATH_DESCRIPTION, example: COVER_URL_EXAMPLE })
   coverUrl!: string;
 
+  @ApiPropertyOptional({
+    description:
+      'Intrinsic pixel width of the derivative `coverUrl` addresses, so a client can ' +
+      'reserve the correct box before the bytes arrive. Present together with ' +
+      '`coverHeight` or absent together with it. Absent means the stored derivative ' +
+      'carries no dimensions, which is a legitimate historical state — it is never a ' +
+      'guess and must not be replaced by one.',
+    example: 800,
+  })
+  coverWidth?: number;
+
+  @ApiPropertyOptional({
+    description: 'Intrinsic pixel height of that same cover derivative. See `coverWidth`.',
+    example: 800,
+  })
+  coverHeight?: number;
+
   @ApiProperty({
     description: 'How many of the images are currently deliverable, not how many are stored.',
     example: 4,
@@ -106,6 +123,20 @@ export class PublicGalleryAssetResponse {
 
   @ApiProperty({ description: MEDIA_PATH_DESCRIPTION, example: DETAIL_URL_EXAMPLE })
   url!: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Intrinsic pixel width of the derivative `url` addresses. Present together with ' +
+      '`height` or absent together with it; never a guess.',
+    example: 1600,
+  })
+  width?: number;
+
+  @ApiPropertyOptional({
+    description: 'Intrinsic pixel height of that same derivative. See `width`.',
+    example: 1600,
+  })
+  height?: number;
 }
 
 export class PublicGalleryEntrySeoResponse {

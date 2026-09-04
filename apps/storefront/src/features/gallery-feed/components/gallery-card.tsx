@@ -40,7 +40,7 @@ export function GalleryCard({ card }: { card: GalleryFeedCard }) {
   return (
     <article className="gallery-feed__card">
       <div className="gallery-feed__card-media">
-        <GalleryCover coverUrl={card.coverUrl} title={card.title} />
+        <GalleryCover coverUrl={card.coverUrl} title={card.title} size={card.coverSize} />
       </div>
       <div className="gallery-feed__card-meta">
         <h2 className="gallery-feed__card-title">{card.title}</h2>

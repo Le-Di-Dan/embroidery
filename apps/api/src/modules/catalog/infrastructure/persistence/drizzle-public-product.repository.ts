@@ -32,6 +32,7 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
 import { schema } from '@embroidery/database';
 import { and, asc, eq, gt, isNotNull, isNull, or, sql } from 'drizzle-orm';
+import type { SQL } from 'drizzle-orm';
 
 import type {
   PublicIndexableProductRow,
@@ -54,8 +55,23 @@ import {
   PUBLIC_PRODUCT_VISIBLE_STATE,
 } from '../../domain/public-product-catalog.policy';
 import { DERIVATIVE_KIND_BY_RENDITION } from '../../domain/public-product-media.policy';
+import { toIntrinsicSize } from '../../domain/public-media-dimensions';
 
 const { products, categories, productMedia, assets, assetDerivatives } = schema;
+
+/**
+ * Explicitly qualified select-list references for the correlated subqueries.
+ *
+ * Not `productMedia.id` / `assetDerivatives.widthPx`: Drizzle strips table
+ * qualification from a *select-list* position, and the subquery joins three
+ * tables that each carry an `id`, so an unqualified reference is ambiguous and
+ * PostgreSQL refuses it. `APP11-B03` hit exactly this and its gallery twin
+ * carries the same note; the dimension columns are spelled out for the same
+ * reason even though only one table declares them today.
+ */
+const MEDIA_ID_SELECTION = sql`${sql.identifier('product_media')}.${sql.identifier('id')}`;
+const DERIVATIVE_WIDTH_SELECTION = sql`${sql.identifier('asset_derivatives')}.${sql.identifier('width_px')}`;
+const DERIVATIVE_HEIGHT_SELECTION = sql`${sql.identifier('asset_derivatives')}.${sql.identifier('height_px')}`;
 
 @Injectable()
 export class DrizzlePublicProductRepository
@@ -99,9 +115,20 @@ export class DrizzlePublicProductRepository
         isDisplayOutOfStock: products.isDisplayOutOfStock,
         categorySlug: categories.slug,
         categoryName: categories.name,
-        thumbnailProductMediaId: this.deliverableMediaId(
+        thumbnailProductMediaId: this.deliverableMediaColumn<string>(
           DERIVATIVE_KIND_BY_RENDITION[PUBLIC_LIST_RENDITION],
           PUBLIC_LIST_MEDIA_ROLE,
+          MEDIA_ID_SELECTION,
+        ),
+        thumbnailWidth: this.deliverableMediaColumn<number>(
+          DERIVATIVE_KIND_BY_RENDITION[PUBLIC_LIST_RENDITION],
+          PUBLIC_LIST_MEDIA_ROLE,
+          DERIVATIVE_WIDTH_SELECTION,
+        ),
+        thumbnailHeight: this.deliverableMediaColumn<number>(
+          DERIVATIVE_KIND_BY_RENDITION[PUBLIC_LIST_RENDITION],
+          PUBLIC_LIST_MEDIA_ROLE,
+          DERIVATIVE_HEIGHT_SELECTION,
         ),
       })
       .from(products)
@@ -110,9 +137,10 @@ export class DrizzlePublicProductRepository
       .orderBy(asc(products.displayOrder), asc(products.id))
       .limit(query.limit);
 
-    return rows.map((row) => ({
+    return rows.map(({ thumbnailWidth, thumbnailHeight, ...row }) => ({
       ...row,
       thumbnailProductMediaId: row.thumbnailProductMediaId ?? undefined,
+      thumbnailSize: toIntrinsicSize(thumbnailWidth, thumbnailHeight),
     }));
   }
 
@@ -173,9 +201,20 @@ export class DrizzlePublicProductRepository
       .select({
         slug: products.slug,
         name: products.name,
-        thumbnailProductMediaId: this.deliverableMediaId(
+        thumbnailProductMediaId: this.deliverableMediaColumn<string>(
           DERIVATIVE_KIND_BY_RENDITION[PUBLIC_LIST_RENDITION],
           PUBLIC_LIST_MEDIA_ROLE,
+          MEDIA_ID_SELECTION,
+        ),
+        thumbnailWidth: this.deliverableMediaColumn<number>(
+          DERIVATIVE_KIND_BY_RENDITION[PUBLIC_LIST_RENDITION],
+          PUBLIC_LIST_MEDIA_ROLE,
+          DERIVATIVE_WIDTH_SELECTION,
+        ),
+        thumbnailHeight: this.deliverableMediaColumn<number>(
+          DERIVATIVE_KIND_BY_RENDITION[PUBLIC_LIST_RENDITION],
+          PUBLIC_LIST_MEDIA_ROLE,
+          DERIVATIVE_HEIGHT_SELECTION,
         ),
       })
       .from(products)
@@ -196,7 +235,12 @@ export class DrizzlePublicProductRepository
     if (row === undefined) {
       return undefined;
     }
-    return { ...row, thumbnailProductMediaId: row.thumbnailProductMediaId ?? undefined };
+    const { thumbnailWidth, thumbnailHeight, ...summary } = row;
+    return {
+      ...summary,
+      thumbnailProductMediaId: summary.thumbnailProductMediaId ?? undefined,
+      thumbnailSize: toIntrinsicSize(thumbnailWidth, thumbnailHeight),
+    };
   }
 
   /**
@@ -235,6 +279,11 @@ export class DrizzlePublicProductRepository
         productMediaId: productMedia.id,
         role: productMedia.role,
         displayOrder: productMedia.displayOrder,
+        // Direct columns, not a subquery: this statement already INNER JOINs the
+        // exact derivative the detail URL addresses, so the dimensions cannot
+        // describe a different one.
+        width: assetDerivatives.widthPx,
+        height: assetDerivatives.heightPx,
       })
       .from(productMedia)
       .innerJoin(assets, eq(assets.id, productMedia.assetId))
@@ -247,20 +296,35 @@ export class DrizzlePublicProductRepository
           ...derivativeEligibility(),
         ),
       )
-      .orderBy(asc(productMedia.displayOrder), asc(productMedia.id));
+      .orderBy(asc(productMedia.displayOrder), asc(productMedia.id))
+      .then((rows) =>
+        rows.map(({ width, height, ...media }) => ({
+          ...media,
+          size: toIntrinsicSize(width, height),
+        })),
+      );
   }
 
   /**
-   * Correlated scalar subquery for a card's thumbnail association id.
+   * Correlated scalar subquery for one column of a card's thumbnail row.
    *
    * `limit 1` with an explicit order makes the choice deterministic even though
    * `APP2-B02` writes exactly one `THUMBNAIL` per product: relying on "there can
    * only be one" would make this query's result depend on a rule enforced
    * somewhere else.
+   *
+   * `APP12-H05-C1` parameterised the selection so the association id and the
+   * intrinsic dimensions of the derivative behind it come from **the same
+   * subquery text** — identical predicate, identical total order, identical
+   * `limit 1` — differing only in the column projected. That is what makes
+   * "the URL and the dimensions describe the same derivative" a property of the
+   * SQL rather than an argument about it. `public-media-dimensions.integration`
+   * proves it behaviourally against a product whose two associations carry
+   * deliberately different sizes.
    */
-  private deliverableMediaId(derivativeKind: string, role: string) {
-    return sql<string | null>`(
-      select ${productMedia.id}
+  private deliverableMediaColumn<T>(derivativeKind: string, role: string, selection: SQL) {
+    return sql<T | null>`(
+      select ${selection}
       from ${productMedia}
       join ${assets} on ${assets.id} = ${productMedia.assetId}
       join ${assetDerivatives} on ${assetDerivatives.assetId} = ${assets.id}

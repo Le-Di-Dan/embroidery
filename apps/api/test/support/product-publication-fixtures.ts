@@ -32,6 +32,19 @@ export interface SeededAssetOptions {
   readonly pendingDerivatives?: readonly string[];
   /** Derivative kinds to create `READY` but watermarked. */
   readonly watermarkedDerivatives?: readonly string[];
+  /**
+   * Intrinsic dimensions per derivative kind (`APP12-H05-C1`).
+   *
+   * Omitted by default, so every existing fixture keeps seeding derivatives with
+   * no dimensions — which is the legitimate historical state the public
+   * projection must publish as absence rather than as a guess. Supplying
+   * *different* sizes for two kinds of one asset is what makes "the published
+   * size belongs to the derivative the URL addresses" falsifiable: read the
+   * wrong derivative and the numbers swap.
+   */
+  readonly dimensions?: Readonly<
+    Record<string, { readonly width: number; readonly height: number }>
+  >;
 }
 
 /**
@@ -58,7 +71,14 @@ export async function seedAsset(
 
   const ready = options.readyDerivatives ?? ['THUMBNAIL', 'CATALOG_PREVIEW'];
   for (const derivativeKind of ready) {
-    await insertDerivative(ctx, id, derivativeKind, 'READY', false);
+    await insertDerivative(
+      ctx,
+      id,
+      derivativeKind,
+      'READY',
+      false,
+      options.dimensions?.[derivativeKind],
+    );
   }
   for (const derivativeKind of options.pendingDerivatives ?? []) {
     await insertDerivative(ctx, id, derivativeKind, 'PENDING', false);
@@ -78,12 +98,18 @@ async function insertDerivative(
   kind: string,
   status: string,
   isWatermarked: boolean,
+  size?: { readonly width: number; readonly height: number },
 ): Promise<void> {
+  // `ck_asset_derivatives__metadata_all_or_none` takes the four metadata columns
+  // together or not at all, so a size seeds `media_type` and `byte_size` with it.
   await ctx.database.client.db.execute(sql`
-    insert into asset_derivatives (id, asset_id, kind, status, storage_key, is_watermarked)
+    insert into asset_derivatives (id, asset_id, kind, status, storage_key, is_watermarked,
+                                   width_px, height_px, media_type, byte_size)
     values (${newId()}, ${assetId}, ${kind}, ${status},
             ${status === 'READY' ? `development/derivatives/${assetId}/${kind}.webp` : null},
-            ${isWatermarked})
+            ${isWatermarked},
+            ${size?.width ?? null}, ${size?.height ?? null},
+            ${size === undefined ? null : 'image/webp'}, ${size === undefined ? null : 65536})
   `);
 }
 

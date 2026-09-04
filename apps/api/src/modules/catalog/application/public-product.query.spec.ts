@@ -32,6 +32,7 @@ function row(index: number): PublicProductListRow {
     categorySlug: 'khan',
     categoryName: 'Khăn',
     thumbnailProductMediaId: undefined,
+    thumbnailSize: undefined,
   };
 }
 

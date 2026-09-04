@@ -8670,6 +8670,11 @@
             "format": "uuid",
             "type": "string"
           },
+          "height": {
+            "description": "Intrinsic pixel height of that same derivative. See `width`.",
+            "example": 1600,
+            "type": "number"
+          },
           "position": {
             "description": "Zero-based position in the curated order; 0 is the cover. Positions are consecutive over the images actually returned, so a withdrawn image leaves no gap.",
             "example": 0,
@@ -8679,6 +8684,11 @@
             "description": "Relative application path served by the publication-gated delivery route. Never a storage or CDN address, never signed, and it expires with nothing — the route re-checks publication and asset eligibility on every request.",
             "example": "/api/public/gallery-entries/bo-suu-tap-hoa-sen/assets/019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071/catalog-preview",
             "type": "string"
+          },
+          "width": {
+            "description": "Intrinsic pixel width of the derivative `url` addresses. Present together with `height` or absent together with it; never a guess.",
+            "example": 1600,
+            "type": "number"
           }
         },
         "required": [
@@ -8808,10 +8818,20 @@
             "format": "uuid",
             "type": "string"
           },
+          "coverHeight": {
+            "description": "Intrinsic pixel height of that same cover derivative. See `coverWidth`.",
+            "example": 800,
+            "type": "number"
+          },
           "coverUrl": {
             "description": "Relative application path served by the publication-gated delivery route. Never a storage or CDN address, never signed, and it expires with nothing — the route re-checks publication and asset eligibility on every request.",
             "example": "/api/public/gallery-entries/bo-suu-tap-hoa-sen/assets/019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071/thumbnail",
             "type": "string"
+          },
+          "coverWidth": {
+            "description": "Intrinsic pixel width of the derivative `coverUrl` addresses, so a client can reserve the correct box before the bytes arrive. Present together with `coverHeight` or absent together with it. Absent means the stored derivative carries no dimensions, which is a legitimate historical state — it is never a guess and must not be replaced by one.",
+            "example": 800,
+            "type": "number"
           },
           "description": {
             "example": "Thêu tay trên vải lanh, giới hạn 12 mẫu.",
@@ -8879,6 +8899,11 @@
       },
       "PublicMediaReferenceResponse": {
         "properties": {
+          "height": {
+            "description": "Intrinsic pixel height of that same derivative. See `width`.",
+            "example": 800,
+            "type": "number"
+          },
           "role": {
             "enum": [
               "THUMBNAIL",
@@ -8891,6 +8916,11 @@
             "description": "Relative application path served by the publication-gated delivery route. Never a storage or CDN address, never signed, and it expires with nothing — the route re-checks publication on every request.",
             "example": "/api/public/products/khan-theu-hoa-sen/media/019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071/thumbnail",
             "type": "string"
+          },
+          "width": {
+            "description": "Intrinsic pixel width of the derivative `url` addresses, so a client can reserve the correct box before the bytes arrive. Present together with `height` or absent together with it. Absent means the stored derivative carries no dimensions, which is a legitimate historical state — it is never a guess and must not be replaced by one.",
+            "example": 800,
+            "type": "number"
           }
         },
         "required": [

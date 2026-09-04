@@ -2,6 +2,10 @@
 
 import { useState } from 'react';
 
+import {
+  intrinsicSizeAttributes,
+  type MediaIntrinsicSize,
+} from '../../../shared/media/intrinsic-size';
 import { GALLERY_COPY, galleryCoverAlt } from '../model/gallery-copy';
 
 /**
@@ -24,7 +28,15 @@ import { GALLERY_COPY, galleryCoverAlt } from '../model/gallery-copy';
  * `<img>` with a fabricated `src`. It asserts that this entry's picture is not
  * showing — not that the entry has none.
  */
-export function GalleryCover({ coverUrl, title }: { coverUrl: string; title: string }) {
+export function GalleryCover({
+  coverUrl,
+  title,
+  size,
+}: {
+  coverUrl: string;
+  title: string;
+  size: MediaIntrinsicSize | undefined;
+}) {
   const [failed, setFailed] = useState(false);
 
   if (failed) {
@@ -40,15 +52,22 @@ export function GalleryCover({ coverUrl, title }: { coverUrl: string; title: str
   return (
     // A plain <img>, not next/image: the cover is served by the
     // publication-gated API route, which re-checks publication on every request
-    // and is `no-store`. next/image would also demand intrinsic dimensions, and
-    // `APP11-B03` publishes none — supplying them would mean inventing a ratio
-    // and cropping every cover to it, which is exactly what UI05's
-    // variable-height masonry must not do.
+    // and is `no-store`.
+    //
+    // `APP12-H05-C1` supplies `width`/`height` from the derivative's own stored
+    // dimensions, which `APP11-B03` now publishes. That is the opposite of
+    // inventing a ratio: the attributes carry the cover's real shape, and with
+    // `width: 100%; height: auto` in the stylesheet they only let the browser
+    // reserve the correct box before the bytes arrive. UI05's variable-height
+    // masonry is preserved exactly — each card still takes its own picture's
+    // shape. When the API publishes no dimensions the attributes are omitted and
+    // this renders as it always did, because a guessed box would shift twice.
     // eslint-disable-next-line @next/next/no-img-element
     <img
       className="gallery-feed__card-image"
       src={coverUrl}
       alt={galleryCoverAlt(title)}
+      {...intrinsicSizeAttributes(size)}
       loading="lazy"
       decoding="async"
       onError={() => setFailed(true)}

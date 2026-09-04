@@ -4937,10 +4937,14 @@ export interface PublicDesignTemplateListResponse {
 export interface PublicGalleryAssetResponse {
   /** Opaque identity of the image. It is not a storage reference and grants no access on its own — it resolves only inside this published entry. */
   assetId: string;
+  /** Intrinsic pixel height of that same derivative. See `width`. */
+  height?: number;
   /** Zero-based position in the curated order; 0 is the cover. Positions are consecutive over the images actually returned, so a withdrawn image leaves no gap. */
   position: number;
   /** Relative application path served by the publication-gated delivery route. Never a storage or CDN address, never signed, and it expires with nothing — the route re-checks publication and asset eligibility on every request. */
   url: string;
+  /** Intrinsic pixel width of the derivative `url` addresses. Present together with `height` or absent together with it; never a guess. */
+  width?: number;
 }
 
 export interface PublicGalleryLinkedProductResponse {
@@ -4979,8 +4983,12 @@ export interface PublicGalleryEntrySummaryResponse {
   assetCount: number;
   /** The leading image — the first currently deliverable association in the stored gallery order. Always present: an entry with no deliverable image is omitted from the feed rather than shown as a broken card. */
   coverAssetId: string;
+  /** Intrinsic pixel height of that same cover derivative. See `coverWidth`. */
+  coverHeight?: number;
   /** Relative application path served by the publication-gated delivery route. Never a storage or CDN address, never signed, and it expires with nothing — the route re-checks publication and asset eligibility on every request. */
   coverUrl: string;
+  /** Intrinsic pixel width of the derivative `coverUrl` addresses, so a client can reserve the correct box before the bytes arrive. Present together with `coverHeight` or absent together with it. Absent means the stored derivative carries no dimensions, which is a legitimate historical state — it is never a guess and must not be replaced by one. */
+  coverWidth?: number;
   description: string;
   /** Editorial position; the feed is ordered by it. */
   displayOrder: number;
@@ -5013,9 +5021,13 @@ export const PublicMediaReferenceResponseRole = {
 } as const;
 
 export interface PublicMediaReferenceResponse {
+  /** Intrinsic pixel height of that same derivative. See `width`. */
+  height?: number;
   role: PublicMediaReferenceResponseRole;
   /** Relative application path served by the publication-gated delivery route. Never a storage or CDN address, never signed, and it expires with nothing — the route re-checks publication on every request. */
   url: string;
+  /** Intrinsic pixel width of the derivative `url` addresses, so a client can reserve the correct box before the bytes arrive. Present together with `height` or absent together with it. Absent means the stored derivative carries no dimensions, which is a legitimate historical state — it is never a guess and must not be replaced by one. */
+  width?: number;
 }
 
 /**

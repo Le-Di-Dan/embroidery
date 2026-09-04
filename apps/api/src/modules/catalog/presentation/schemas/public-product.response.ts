@@ -73,6 +73,23 @@ export class PublicMediaReferenceResponse {
 
   @ApiProperty({ enum: ['THUMBNAIL', 'GALLERY'], example: 'THUMBNAIL' })
   role!: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Intrinsic pixel width of the derivative `url` addresses, so a client can ' +
+      'reserve the correct box before the bytes arrive. Present together with ' +
+      '`height` or absent together with it. Absent means the stored derivative ' +
+      'carries no dimensions, which is a legitimate historical state — it is never ' +
+      'a guess and must not be replaced by one.',
+    example: 800,
+  })
+  width?: number;
+
+  @ApiPropertyOptional({
+    description: 'Intrinsic pixel height of that same derivative. See `width`.',
+    example: 800,
+  })
+  height?: number;
 }
 
 export class PublicProductSummaryResponse {

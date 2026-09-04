@@ -18,6 +18,8 @@
  */
 
 /** One row of the public feed, before projection. */
+import type { PublicMediaIntrinsicSize } from '../../../catalog/domain/public-media-dimensions';
+
 export interface PublicGalleryEntryListRow {
   /** Also the keyset tie-breaker. */
   readonly id: string;
@@ -37,6 +39,12 @@ export interface PublicGalleryEntryListRow {
    * possibly absent anyway so the projection proves it rather than asserting it.
    */
   readonly coverAssetId: string | undefined;
+  /**
+   * Intrinsic size of that cover's **list-rendition** derivative, or
+   * `undefined` when it carries none (`APP12-H05-C1`). Selected from the same
+   * correlated source, order and `limit 1` as the id above.
+   */
+  readonly coverSize: PublicMediaIntrinsicSize | undefined;
   /** How many of the entry's associations are currently deliverable. */
   readonly assetCount: number;
 }
@@ -63,6 +71,11 @@ export interface PublicGalleryEntryDetailRow {
 export interface PublicGalleryEntryAssetRow {
   readonly assetId: string;
   readonly displayOrder: number;
+  /**
+   * Intrinsic size of the **detail-rendition** derivative this row was selected
+   * by, or `undefined` when it carries none (`APP12-H05-C1`).
+   */
+  readonly size: PublicMediaIntrinsicSize | undefined;
 }
 
 export interface PublicGalleryEntryDetail {

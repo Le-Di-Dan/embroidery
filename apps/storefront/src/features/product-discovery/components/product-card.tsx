@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { buildStorefrontProductDetailPath } from '../../storefront-shell';
+import { intrinsicSizeAttributes } from '../../../shared/media/intrinsic-size';
 import { DISCOVER_COPY, thumbnailAlt } from '../model/discover-copy';
 import type { DiscoverCard } from '../model/discover-feed';
 
@@ -38,15 +39,22 @@ export function ProductCard({ card }: { card: DiscoverCard }) {
         ) : (
           // A plain <img>, not next/image: the thumbnail is served by the
           // publication-gated API route, which re-checks publication on every
-          // request and is `no-store`. next/image would also demand intrinsic
-          // dimensions, and `APP2-B04` exposes none — supplying them would mean
-          // inventing a ratio and cropping every artwork to it, which is exactly
-          // what UI02's variable-height masonry must not do.
+          // request and is `no-store`.
+          //
+          // `APP12-H05-C1` supplies `width`/`height` from the derivative's own
+          // stored dimensions, which `APP2-B04` now publishes. That is the
+          // opposite of inventing a ratio: the attributes carry the artwork's
+          // real shape, and with `width: 100%; height: auto` in the stylesheet
+          // they only let the browser reserve the correct box before the bytes
+          // arrive. UI02's variable-height grid is preserved exactly. When the
+          // API publishes no dimensions the attributes are omitted and this
+          // renders as it always did, because a guessed box would shift twice.
           // eslint-disable-next-line @next/next/no-img-element
           <img
             className="discover__card-image"
             src={card.thumbnailUrl}
             alt={thumbnailAlt(card.name)}
+            {...intrinsicSizeAttributes(card.thumbnailSize)}
             loading="lazy"
             decoding="async"
           />

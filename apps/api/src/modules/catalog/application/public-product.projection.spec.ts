@@ -34,6 +34,7 @@ const LIST_ROW: PublicProductListRow = {
   categorySlug: 'khan',
   categoryName: 'Khăn',
   thumbnailProductMediaId: MEDIA_ID,
+  thumbnailSize: { width: 800, height: 1000 },
 };
 
 const DETAIL: PublicProductDetail = {
@@ -51,8 +52,15 @@ const DETAIL: PublicProductDetail = {
     categoryName: 'Khăn',
   },
   media: [
-    { productMediaId: MEDIA_ID, role: 'THUMBNAIL', displayOrder: 0 },
-    { productMediaId: SECOND_MEDIA_ID, role: 'GALLERY', displayOrder: 1 },
+    {
+      productMediaId: MEDIA_ID,
+      role: 'THUMBNAIL',
+      displayOrder: 0,
+      size: { width: 1600, height: 2000 },
+    },
+    // The second image carries no stored dimensions, which is the legitimate
+    // historical state APP12-H05-C1 must project as absence rather than a guess.
+    { productMediaId: SECOND_MEDIA_ID, role: 'GALLERY', displayOrder: 1, size: undefined },
   ],
 };
 
@@ -94,6 +102,10 @@ describe('public catalog projection', () => {
       thumbnail: {
         url: `/api/public/products/khan-theu-hoa-sen/media/${MEDIA_ID}/thumbnail`,
         role: 'THUMBNAIL',
+        // The list row's own list-rendition size (APP12-H05-C1), carried through
+        // verbatim rather than recomputed.
+        width: 800,
+        height: 1000,
       },
     });
   });
@@ -110,8 +122,12 @@ describe('public catalog projection', () => {
       {
         url: `/api/public/products/khan-theu-hoa-sen/media/${MEDIA_ID}/catalog-preview`,
         role: 'THUMBNAIL',
+        width: 1600,
+        height: 2000,
       },
       {
+        // No size at all: this fixture's derivative stores none, and absence
+        // must stay absence rather than becoming a guess (APP12-H05-C1).
         url: `/api/public/products/khan-theu-hoa-sen/media/${SECOND_MEDIA_ID}/catalog-preview`,
         role: 'GALLERY',
       },

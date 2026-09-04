@@ -22,6 +22,8 @@
  */
 import { publicProductMediaPath } from '../../catalog/domain/public-product-catalog-path';
 import { PUBLIC_LIST_RENDITION } from '../../catalog/domain/public-product-catalog.policy';
+import { toPublicMediaSize } from '../../catalog/application/public-product.projection';
+import type { PublicMediaIntrinsicSize } from '../../catalog/domain/public-media-dimensions';
 import type { PublicLinkedProductRow } from '../../catalog/domain/repositories/public-product.repository';
 import { publicGalleryMediaPath } from '../domain/public-gallery-entry-path';
 import {
@@ -41,6 +43,12 @@ export interface PublicGalleryAssetReference {
   readonly position: number;
   /** Relative application path served by the publication-gated media route. */
   readonly url: string;
+  /**
+   * Intrinsic pixel size of the derivative `url` addresses (`APP12-H05-C1`).
+   * Present together or absent together; never guessed.
+   */
+  readonly width?: number;
+  readonly height?: number;
 }
 
 export interface PublicGalleryEntrySummary {
@@ -53,6 +61,14 @@ export interface PublicGalleryEntrySummary {
   /** Always present: an entry with no deliverable cover is not in the feed. */
   readonly coverAssetId: string;
   readonly coverUrl: string;
+  /**
+   * Intrinsic pixel size of the cover derivative `coverUrl` addresses
+   * (`APP12-H05-C1`). Flat fields rather than a nested object, to match the
+   * flat `coverAssetId` / `coverUrl` this summary already publishes. Present
+   * together or absent together; never guessed.
+   */
+  readonly coverWidth?: number;
+  readonly coverHeight?: number;
   readonly assetCount: number;
 }
 
@@ -94,6 +110,19 @@ export interface PublicGalleryEntryDetailView {
   readonly linkedProduct: PublicGalleryLinkedProduct | null;
 }
 
+/**
+ * Spreads a cover size onto the flat summary shape, or contributes nothing.
+ *
+ * The feed's cover is published as flat `coverAssetId` / `coverUrl` fields
+ * rather than as a nested media reference, so its size follows the same shape.
+ * Omitted rather than nulled, for the reason {@link toPublicMediaSize} gives.
+ */
+function toCoverSize(
+  size: PublicMediaIntrinsicSize | undefined,
+): { coverWidth: number; coverHeight: number } | Record<string, never> {
+  return size === undefined ? {} : { coverWidth: size.width, coverHeight: size.height };
+}
+
 export function toPublicGalleryEntrySummary(
   row: PublicGalleryEntryListRow,
   coverAssetId: string,
@@ -111,6 +140,7 @@ export function toPublicGalleryEntrySummary(
       assetId: coverAssetId,
       rendition: PUBLIC_GALLERY_LIST_RENDITION,
     }),
+    ...toCoverSize(row.coverSize),
     assetCount: row.assetCount,
   };
 }
@@ -136,6 +166,7 @@ export function toPublicGalleryAssetReference(
       assetId: asset.assetId,
       rendition: PUBLIC_GALLERY_DETAIL_RENDITION,
     }),
+    ...toPublicMediaSize(asset.size),
   };
 }
 

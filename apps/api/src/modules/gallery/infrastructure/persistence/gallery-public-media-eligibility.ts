@@ -97,6 +97,18 @@ export function deliverableAssetSource(galleryEntryId: SQLWrapper, derivativeKin
  */
 export const GALLERY_ASSET_ID_SELECTION = sql`${sql.identifier('gallery_entry_assets')}.${sql.identifier('asset_id')}`;
 
+/**
+ * The cover derivative's intrinsic dimensions, qualified for the same reason
+ * {@link GALLERY_ASSET_ID_SELECTION} is (`APP12-H05-C1`).
+ *
+ * Only `asset_derivatives` declares these columns, so they are not ambiguous
+ * today — they are spelled out anyway so the correlated subquery has one
+ * qualification rule rather than two, and a later join cannot quietly make them
+ * ambiguous.
+ */
+export const GALLERY_DERIVATIVE_WIDTH_SELECTION = sql`${sql.identifier('asset_derivatives')}.${sql.identifier('width_px')}`;
+export const GALLERY_DERIVATIVE_HEIGHT_SELECTION = sql`${sql.identifier('asset_derivatives')}.${sql.identifier('height_px')}`;
+
 /** The stored gallery order, with the tie-breaker that makes it total. */
 export const GALLERY_ASSET_ORDER = sql`order by ${galleryEntryAssets.displayOrder} asc, ${galleryEntryAssets.id} asc`;
 

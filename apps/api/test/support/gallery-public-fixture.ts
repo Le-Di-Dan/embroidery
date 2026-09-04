@@ -77,6 +77,16 @@ export interface SeedAssetOptions {
   readonly isWatermarked?: boolean;
   /** When false the row is written but no object is stored behind it. */
   readonly storeObject?: boolean;
+  /**
+   * Intrinsic dimensions per derivative kind (`APP12-H05-C1`).
+   *
+   * Omitted by default, so every existing gallery fixture keeps seeding
+   * derivatives with no dimensions — the historical state the public feed must
+   * publish as absence rather than as a guess.
+   */
+  readonly dimensions?: Readonly<
+    Record<string, { readonly width: number; readonly height: number }>
+  >;
 }
 
 /** The key layout `public-media-context.ts` addresses. */
@@ -102,6 +112,7 @@ export async function seedDeliverableAsset(
     derivativeStatus = 'READY',
     isWatermarked = false,
     storeObject = true,
+    dimensions,
   } = options;
 
   const id = newId();
@@ -113,9 +124,15 @@ export async function seedDeliverableAsset(
 
   for (const derivativeKind of derivatives) {
     const key = derivativeStatus === 'READY' ? derivativeKey(id, derivativeKind) : null;
+    const size = dimensions?.[derivativeKind];
+    // The four metadata columns move together under
+    // `ck_asset_derivatives__metadata_all_or_none`.
     await ctx.database.client.db.execute(sql`
-      insert into asset_derivatives (id, asset_id, kind, status, storage_key, is_watermarked)
-      values (${newId()}, ${id}, ${derivativeKind}, ${derivativeStatus}, ${key}, ${isWatermarked})
+      insert into asset_derivatives (id, asset_id, kind, status, storage_key, is_watermarked,
+                                     width_px, height_px, media_type, byte_size)
+      values (${newId()}, ${id}, ${derivativeKind}, ${derivativeStatus}, ${key}, ${isWatermarked},
+              ${size?.width ?? null}, ${size?.height ?? null},
+              ${size === undefined ? null : 'image/webp'}, ${size === undefined ? null : 65536})
     `);
     if (key !== null && storeObject) {
       const bytes = Buffer.from(`webp:${id}:${derivativeKind}`, 'utf8');

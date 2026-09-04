@@ -13,6 +13,7 @@
  * projections rather than reason about the code that builds them.
  */
 import { publicProductMediaPath } from '../domain/public-product-catalog-path';
+import type { PublicMediaIntrinsicSize } from '../domain/public-media-dimensions';
 import {
   PUBLIC_DETAIL_RENDITION,
   PUBLIC_LIST_RENDITION,
@@ -31,6 +32,17 @@ export interface PublicMediaReference {
   /** Relative application path served by the `APP2-T01` route. */
   readonly url: string;
   readonly role: PublicMediaRole;
+  /**
+   * Intrinsic pixel width of the derivative `url` addresses (`APP12-H05-C1`).
+   *
+   * Present with {@link height} or absent with it — never one alone, and never
+   * a guess. Absent means the stored derivative carries no dimensions, which is
+   * a legitimate historical state; a consumer then renders exactly as it did
+   * before rather than reserving a fabricated box.
+   */
+  readonly width?: number;
+  /** Intrinsic pixel height of that same derivative. See {@link width}. */
+  readonly height?: number;
 }
 
 export interface PublicProductSummary {
@@ -114,6 +126,7 @@ export function toPublicProductSummary(row: PublicProductListRow): PublicProduct
               rendition: PUBLIC_LIST_RENDITION,
             }),
             role: 'THUMBNAIL',
+            ...toPublicMediaSize(row.thumbnailSize),
           },
         }),
   };
@@ -130,7 +143,22 @@ export function toPublicMediaReference(
       rendition: PUBLIC_DETAIL_RENDITION,
     }),
     role: toPublicMediaRole(media.role),
+    ...toPublicMediaSize(media.size),
   };
+}
+
+/**
+ * Spreads an intrinsic size onto a media reference, or contributes nothing.
+ *
+ * Omitted rather than nulled, for the same reason `thumbnail` itself is: a
+ * consumer reading `width: null` has to decide what that means, while a
+ * consumer reading no field at all simply has no size and renders as it always
+ * did. The pair moves together and cannot be half-applied.
+ */
+export function toPublicMediaSize(
+  size: PublicMediaIntrinsicSize | undefined,
+): PublicMediaIntrinsicSize | Record<string, never> {
+  return size === undefined ? {} : { width: size.width, height: size.height };
 }
 
 export function toPublicProductDetail(detail: PublicProductDetail): PublicProductDetailView {

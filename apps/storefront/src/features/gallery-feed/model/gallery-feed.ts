@@ -3,6 +3,11 @@ import type {
   PublicGalleryEntrySummaryResponse,
 } from '@embroidery/api-client';
 
+import {
+  toMediaIntrinsicSize,
+  type MediaIntrinsicSize,
+} from '../../../shared/media/intrinsic-size';
+
 /**
  * Projection of one `APP11-B03` list item onto what a UI05 feed card may render.
  *
@@ -50,14 +55,23 @@ export interface GalleryFeedCard {
    * resolving mid-session.
    */
   readonly coverUrl: string;
+  /**
+   * Intrinsic size of the derivative `coverUrl` addresses, or `undefined` when
+   * the API published none (`APP12-H05-C1`). Carried so the masonry can reserve
+   * each cover's box before its bytes arrive; never fabricated, so the card
+   * heights stay genuinely variable.
+   */
+  readonly coverSize?: MediaIntrinsicSize;
 }
 
 export function toGalleryFeedCard(item: PublicGalleryEntrySummaryResponse): GalleryFeedCard {
+  const coverSize = toMediaIntrinsicSize(item.coverWidth, item.coverHeight);
   return {
     slug: item.slug,
     title: item.title,
     description: item.description,
     coverUrl: item.coverUrl,
+    ...(coverSize === undefined ? {} : { coverSize }),
   };
 }
 

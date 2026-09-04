@@ -3,6 +3,11 @@ import type {
   PublicProductSummaryResponse,
 } from '@embroidery/api-client';
 
+import {
+  toMediaIntrinsicSize,
+  type MediaIntrinsicSize,
+} from '../../../shared/media/intrinsic-size';
+
 /**
  * Projection of the API list item onto what the Discover card may render.
  *
@@ -25,15 +30,23 @@ export interface DiscoverCard {
    * images, so a stored path can outlive the object it names.
    */
   readonly thumbnailUrl?: string;
+  /**
+   * Intrinsic size of the derivative `thumbnailUrl` addresses, or `undefined`
+   * when the API published none (`APP12-H05-C1`). Carried so the card can
+   * reserve the image's box before its bytes arrive; never fabricated.
+   */
+  readonly thumbnailSize?: MediaIntrinsicSize;
 }
 
 export function toDiscoverCard(item: PublicProductSummaryResponse): DiscoverCard {
   const thumbnailUrl = item.thumbnail?.url;
+  const thumbnailSize = toMediaIntrinsicSize(item.thumbnail?.width, item.thumbnail?.height);
   return {
     slug: item.slug,
     name: item.name,
     categoryName: item.category.name,
     ...(thumbnailUrl === undefined ? {} : { thumbnailUrl }),
+    ...(thumbnailSize === undefined ? {} : { thumbnailSize }),
   };
 }
 

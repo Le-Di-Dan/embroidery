@@ -32,6 +32,8 @@ import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
 import { schema } from '@embroidery/database';
 import { and, asc, eq, gt, or, sql } from 'drizzle-orm';
 
+import { toIntrinsicSize } from '../../../catalog/domain/public-media-dimensions';
+
 import {
   PUBLIC_GALLERY_DETAIL_RENDITION,
   PUBLIC_GALLERY_LIST_RENDITION,
@@ -49,6 +51,8 @@ import type {
 import {
   GALLERY_ASSET_ID_SELECTION,
   GALLERY_ASSET_ORDER,
+  GALLERY_DERIVATIVE_HEIGHT_SELECTION,
+  GALLERY_DERIVATIVE_WIDTH_SELECTION,
   allOf,
   deliverableAssetConditions,
   deliverableAssetSource,
@@ -102,6 +106,15 @@ export class DrizzlePublicGalleryEntryRepository
         coverAssetId: sql<
           string | null
         >`(select ${GALLERY_ASSET_ID_SELECTION} ${this.coverSource()} ${GALLERY_ASSET_ORDER} limit 1)`,
+        // The same source, the same total order and the same `limit 1` as the
+        // cover id above, differing only in the projected column — so the size
+        // describes the derivative the cover URL addresses (`APP12-H05-C1`).
+        coverWidth: sql<
+          number | null
+        >`(select ${GALLERY_DERIVATIVE_WIDTH_SELECTION} ${this.coverSource()} ${GALLERY_ASSET_ORDER} limit 1)`,
+        coverHeight: sql<
+          number | null
+        >`(select ${GALLERY_DERIVATIVE_HEIGHT_SELECTION} ${this.coverSource()} ${GALLERY_ASSET_ORDER} limit 1)`,
         assetCount: sql<number>`(select count(*)::int ${this.coverSource()})`,
       })
       .from(galleryEntries)
@@ -109,9 +122,10 @@ export class DrizzlePublicGalleryEntryRepository
       .orderBy(asc(galleryEntries.displayOrder), asc(galleryEntries.id))
       .limit(query.limit);
 
-    return rows.map((row) => ({
+    return rows.map(({ coverWidth, coverHeight, ...row }) => ({
       ...row,
       coverAssetId: row.coverAssetId ?? undefined,
+      coverSize: toIntrinsicSize(coverWidth, coverHeight),
       assetCount: Number(row.assetCount),
     }));
   }
@@ -190,6 +204,10 @@ export class DrizzlePublicGalleryEntryRepository
       .select({
         assetId: galleryEntryAssets.assetId,
         displayOrder: galleryEntryAssets.displayOrder,
+        // Direct columns: this statement already INNER JOINs the exact detail
+        // derivative the asset URL addresses.
+        width: assetDerivatives.widthPx,
+        height: assetDerivatives.heightPx,
       })
       .from(galleryEntryAssets)
       .innerJoin(assets, eq(assets.id, galleryEntryAssets.assetId))
@@ -200,7 +218,13 @@ export class DrizzlePublicGalleryEntryRepository
           allOf(deliverableAssetConditions(DETAIL_DERIVATIVE_KIND)),
         ),
       )
-      .orderBy(asc(galleryEntryAssets.displayOrder), asc(galleryEntryAssets.id));
+      .orderBy(asc(galleryEntryAssets.displayOrder), asc(galleryEntryAssets.id))
+      .then((rows) =>
+        rows.map(({ width, height, ...asset }) => ({
+          ...asset,
+          size: toIntrinsicSize(width, height),
+        })),
+      );
   }
 
   /**
