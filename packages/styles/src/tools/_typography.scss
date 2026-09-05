@@ -1,0 +1,83 @@
+// Typographic roles — the responsive half of the type system.
+//
+// `settings/_typography.scss` locks the *scale*: eleven sizes taken from the
+// approved Figma foundation. It says nothing about which size a page title
+// takes at 390 versus at 1440, and `V01-UX-023` recorded the consequence: the
+// Product Detail `h1` measured 40px/600 at 1440 **and at 390**, where it wrapped
+// to two lines and consumed about 120 of the 844 available pixels — pushing the
+// price and the purchase panel out of the mobile fold. The Homepage hero was
+// 64px at both widths.
+//
+// A heading sized for a 1440px canvas is a different object on a 390px one, and
+// the mobile fold is the scarcest space in the product.
+//
+// ## Why `clamp()` and not a breakpoint
+//
+// The foundation deliberately defers breakpoint thresholds (see the package
+// README, *Deferred*), and inventing one here to carry the type scale would
+// make this file the de-facto owner of a decision the design system has not
+// taken. `clamp()` needs none: the size interpolates between the two endpoints
+// across the viewport range they were measured at, so 1024 and 768 get sensible
+// intermediate values rather than whichever side of a threshold they fall on.
+//
+// Both endpoints are values from the locked scale. This layer chooses *which
+// approved size applies at which width*; it invents no size.
+//
+// Browser zoom scales the layout viewport, so a `vw` term still responds to a
+// user zooming to 200% — the WCAG 1.4.4 failure mode of a purely viewport-sized
+// heading does not apply to a `clamp()` whose floor is an absolute length.
+@use 'sass:math';
+@use '../settings/typography';
+
+// The viewport range the endpoints are measured at: the audited mobile width
+// and the audited desktop width (`APP12-V01` §3's matrix).
+$type-viewport-min: 390px;
+$type-viewport-max: 1440px;
+
+/// A size that interpolates from `$min` at 390px to `$max` at 1440px.
+///
+/// Returns `$min` unchanged when the two endpoints are equal, so a role that
+/// does not step down emits a plain length rather than a `clamp()` that can
+/// never move.
+@function fluid-size($min, $max) {
+  @if $min == $max {
+    @return $min;
+  }
+
+  // Unitless: the two endpoints and the two viewport widths are all `px`, so
+  // the division cancels the unit and leaves a pure gradient.
+  $slope: math.div($max - $min, $type-viewport-max - $type-viewport-min);
+  $intercept: $min - $slope * $type-viewport-min;
+
+  // `calc()` rather than Sass arithmetic: `vw` and `px` are incompatible units
+  // at compile time and only the browser can add them.
+  @return clamp(#{$min}, calc(#{$slope * 100vw} + #{$intercept}), #{$max});
+}
+
+// --- The roles --------------------------------------------------------------
+//
+// Seven, and deliberately few (`APP12-V02` §14). `V01-UX-004`/`-018` found
+// primary, secondary and tertiary text collapsing into too few *usable* layers
+// on the Storefront while single Admin screens created nineteen local ones. A
+// small named set is what makes both of those visible in review.
+
+/// The single largest thing on a page — a marketing hero, and nothing else.
+$type-display: fluid-size(typography.$font-size-heading-m, typography.$font-size-display-l);
+
+/// The page's own `h1`.
+$type-page-title: fluid-size(typography.$font-size-heading-s, typography.$font-size-heading-l);
+
+/// A section heading beneath the page title.
+$type-section-title: fluid-size(typography.$font-size-heading-s, typography.$font-size-heading-m);
+
+/// A card or block heading. Already small enough at 390 to need no step.
+$type-card-title: typography.$font-size-heading-s;
+
+/// Body copy. Never scaled down: §26 forbids shrinking body text on mobile.
+$type-body: typography.$font-size-body-m;
+
+/// Supporting text — helper copy, captions on a control.
+$type-secondary: typography.$font-size-body-s;
+
+/// Metadata: timestamps, counts, provenance.
+$type-caption: typography.$font-size-caption;

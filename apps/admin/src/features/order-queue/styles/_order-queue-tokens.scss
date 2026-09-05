@@ -1,0 +1,16 @@
+// Admin order queue — layout thresholds.
+//
+// Split out of `order-queue.scss` by `APP12-V02` §41: correcting the row link
+// (`V01-UX-026`) took the single file past the 400-line hard limit, and the rule
+// is to bring a responsibility out whole rather than to keep appending. The
+// entry stylesheet `@use`s the parts in their original order, so no declaration
+// changed place in the cascade.
+
+// The queue keeps all seven columns down to this width — nothing is dropped and
+// nothing scrolls sideways — so the only thing that changes below it is how much
+// room the flexible columns get.
+$order-narrow-desktop: 1360px;
+
+// The status multi-select is a grid of checkboxes; below this the eleven options
+// stack into a single column rather than squeezing their labels.
+$order-filter-narrow: 900px;

@@ -44,7 +44,7 @@
     // Focus lands here first, so the customer reads what is being asked of them
     // before their fingers are on the field that answers it.
     &:focus-visible {
-      outline: 2px solid styles.$color-action-primary;
+      outline: 2px solid styles.$color-focus-ring;
       outline-offset: 4px;
     }
   }

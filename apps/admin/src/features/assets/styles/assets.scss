@@ -99,15 +99,15 @@ $spinner-size: 16px;
   @extend %assets-control;
 
   color: styles.$color-surface-primary;
-  background: styles.$color-action-primary;
+  background: styles.$color-action-fill;
   border: 1px solid transparent;
 
   &:hover:not(:disabled) {
-    background: styles.$color-action-hover;
+    background: styles.$color-action-fill-hover;
   }
 
   &:active:not(:disabled) {
-    background: styles.$color-action-active;
+    background: styles.$color-action-fill-active;
   }
 }
 
@@ -371,7 +371,7 @@ $spinner-size: 16px;
 .asset-progress__fill {
   height: 100%;
   width: 0;
-  background: styles.$color-action-primary;
+  background: styles.$color-action-fill;
 
   @include styles.motion-safe {
     transition: width styles.$motion-duration-fast styles.$motion-easing-standard;

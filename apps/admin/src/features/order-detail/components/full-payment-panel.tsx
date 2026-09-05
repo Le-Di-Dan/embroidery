@@ -143,10 +143,16 @@ export function FullPaymentPanel({ orderId, payments, onMetadataStale }: FullPay
         </section>
       )}
 
+      {/*
+        The action below is primary (`V01-UX-003`; `APP12-V02` §13.1). It is the
+        write that settles money, and V01 measured it as the same white outline
+        as `Cập nhật phí` above it — the screen gave the operator no way to see
+        which of the two decisions was the irreversible one.
+      */}
       {actionable === undefined ? null : (
         <button
           type="button"
-          className="order-card__action"
+          className="order-card__action order-card__action--primary"
           data-testid="full-payment-verify"
           onClick={() => setVerifyingAttemptId(actionable.attemptId)}
         >

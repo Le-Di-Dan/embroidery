@@ -6,6 +6,20 @@
 //
 // Artwork is the primary source of colour; the UI palette is intentionally
 // neutral. Values are locked; do not derive alternatives from wireframes.
+//
+// ## Corrected at APP12-V02 under PO-APP12-004
+//
+// `APP12-H08` measured four pairs below WCAG 2.2 AA and referred them to the
+// Product Owner; `V01-UX-031` re-observed them and found no fifth. §15 of the
+// V02 prompt authorises the correction and adds `$color-status-error` to the
+// set. Every corrected value stays in its own hue family — this is a darkening
+// along the existing ramp, not a new palette — and each one is measured by
+// `tools/check-design-token-contrast.mjs`, which fails the build if a later edit
+// takes a pair back below its target.
+//
+// The brand primary `#e8475f` is **unchanged**. §15 is explicit that the brand
+// swatch keeps its authority and must not be forced to serve every semantic
+// action role, so the filled-action role moved to its own token instead.
 
 // Background
 $color-background-primary: #faf8f5;
@@ -17,17 +31,55 @@ $color-surface-secondary: #fcfbf8;
 
 // Text
 $color-text-primary: #171717;
-$color-text-secondary: #6b7280;
-$color-text-tertiary: #9ca3af;
+// Corrected from #6b7280 (4.36:1 on $color-background-secondary — PO-APP12-004).
+// Now 5.46:1 on the page and 5.22:1 inside a card.
+$color-text-secondary: #5f6672;
+// Corrected from #9ca3af (2.29:1 on $color-background-secondary). Now 4.77:1
+// and 4.56:1. It is deliberately still lighter than $color-text-secondary: §15
+// requires the hierarchy to be carried by size, weight and spacing once both
+// tones are legible, rather than by making one of them unreadable.
+$color-text-tertiary: #6a6f77;
 
 // Border
 $color-border-primary: #e7e5e4;
 $color-border-secondary: #d6d3d1;
+// The boundary of an **interactive** control, where WCAG 2.2 1.4.11 asks for
+// 3:1 against the surface behind it. The two tones above are dividers and card
+// edges — decoration, at 1.4:1 — and were never meant to carry that job; an
+// outlined button drawn in one is a control whose edge a low-vision user cannot
+// find. 3.48:1 on the page, 3.33:1 inside a card.
+$color-border-strong: #8a8480;
 
 // Action / brand
+// The brand swatch, and the authority for it. Unchanged by APP12-V02: it is the
+// identity, and §15 forbids mutating it to satisfy a text-contrast target.
+// It paints brand accents, marks and rules — never a white label on a fill.
 $color-action-primary: #e8475f;
 $color-action-hover: #d73850;
 $color-action-active: #c92e45;
+
+// The **filled action** role (PO-APP12-004, V02 §15).
+//
+// White on $color-action-primary measured 3.82:1, so every filled primary
+// button in the product carried a label below AA. The fill therefore steps one
+// place down the same approved ramp rather than the brand colour being altered:
+// the fill is the approved hover tone, its hover is the approved active tone,
+// and the pressed state continues the ramp by the same proportion.
+$color-action-fill: #d73850; // 4.59:1 with $color-surface-primary
+$color-action-fill-hover: #c92e45; // 5.30:1
+$color-action-fill-active: #b52a3e; // 6.24:1
+
+// The keyboard focus indicator (V01-UX-007, V02 §16).
+//
+// Focus used to be drawn in $color-action-primary — the brand red, which is
+// also the family the error state lives in — so a keyboard user tabbing through
+// a form saw every control they touched framed in the colour the product uses
+// to refuse them. On the payment surface the ring landed on the page title.
+//
+// Derived from the approved $color-status-info blue, one step darker, so it is
+// unmistakably not the error red and reads as an indicator rather than a state.
+// 6.32:1 on the page and 6.05:1 inside a card, against a 3:1 non-text target.
+$color-focus-ring: #1d4ed8;
 
 // Overlay
 //
@@ -39,7 +91,11 @@ $color-action-active: #c92e45;
 $color-overlay-scrim: rgba(23, 23, 23, 0.45);
 
 // Status
-$color-status-success: #16a34a;
-$color-status-warning: #d97706;
-$color-status-error: #dc2626;
+// Corrected from #16a34a (2.97:1 inside a card). Now 4.60:1.
+$color-status-success: #117f3a;
+// Corrected from #d97706 (2.87:1 inside a card — PO-APP12-004). Now 4.54:1.
+$color-status-warning: #a75c05;
+// Corrected from #dc2626 (4.36:1 inside a card). §15 asks for this one to be
+// measured in its paired alert state and changed only if it fails; it did.
+$color-status-error: #d02222;
 $color-status-info: #2563eb;

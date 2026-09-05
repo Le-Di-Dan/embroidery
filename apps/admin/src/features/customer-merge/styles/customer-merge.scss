@@ -157,42 +157,29 @@ $customer-merge-slot-min: 420px;
     color: styles.$color-text-primary;
   }
 
-  &__primary,
-  &__danger,
-  &__secondary {
-    align-self: flex-start;
-    padding: styles.spacing(8) styles.spacing(16);
-    border-radius: styles.$radius-sm;
-    font-family: inherit;
-    font-size: styles.$font-size-body-s;
-    font-weight: styles.$font-weight-medium;
-    cursor: pointer;
-
-    &:disabled {
-      cursor: not-allowed;
-      opacity: 0.6;
-    }
-  }
-
-  &__primary {
-    border: 1px solid styles.$color-action-primary;
-    background: styles.$color-action-primary;
-    color: styles.$color-surface-primary;
-  }
-
-  // Execute and reject are visually distinct: the irreversible one carries the
-  // error tint, the reversible-by-reopening one is secondary. Neither relies on
+  // The shared action hierarchy (`APP12-V02` §13). Three tones, assigned by
+  // consequence and declared once in `@embroidery/styles`, so this screen and
+  // the order detail beside it stop being two different rules.
+  //
+  // Execute and reject stay visually distinct: the irreversible one carries the
+  // error tone, the reversible-by-reopening one is secondary. Neither relies on
   // colour alone — both carry their own verb.
+  &__primary {
+    @include styles.action-primary;
+
+    align-self: flex-start;
+  }
+
   &__danger {
-    border: 1px solid styles.$color-status-error;
-    background: styles.$color-status-error;
-    color: styles.$color-surface-primary;
+    @include styles.action-destructive;
+
+    align-self: flex-start;
   }
 
   &__secondary {
-    border: 1px solid styles.$color-border-primary;
-    background: styles.$color-surface-primary;
-    color: styles.$color-text-primary;
+    @include styles.action-secondary;
+
+    align-self: flex-start;
   }
 }
 

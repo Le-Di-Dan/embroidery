@@ -1,0 +1,100 @@
+// Product Detail — the purchase-decision hero.
+//
+// The media and the decision (identity, purchase panel, share) as one band:
+// stacked below 1024, two columns at and above it.
+//
+// New at `APP12-V02` (T2, `V01-UX-002`). It lives in its own partial rather than
+// in `_product-detail-shell.scss` because it is the one part of this page whose
+// job is a *commercial* composition rather than page chrome, and because §41
+// forbids appending to an already-large stylesheet when a bounded responsibility
+// can come out whole.
+@use '@embroidery/styles' as styles;
+@use 'product-detail-tokens' as tokens;
+
+// --- The band ---------------------------------------------------------------
+
+.product-detail__hero {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+}
+
+.product-detail__decision {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+}
+
+// --- Two columns from 1024 --------------------------------------------------
+
+// `V01-UX-002` measured 1024 as well as 1440 — 52 characters above the fold —
+// so the split has to start at the audited tablet width, not above it. That is
+// why this is `$bp-detail-hero-split` (1024) and not the page's existing
+// `$bp-detail-desktop` (1025), which marks the *tablet/desktop* frame boundary
+// and would leave the width V01 actually measured in the single column.
+@media (min-width: tokens.$bp-detail-hero-split) {
+  .product-detail__hero {
+    display: grid;
+    // The media leads and the decision is a real column rather than a rail: the
+    // panel holds two option groups, a quantity stepper and the primary action,
+    // and a narrow rail is what turns those into a stack of half-width controls.
+    grid-template-columns: minmax(0, 1.1fr) minmax(tokens.$decision-column-min, 0.9fr);
+    gap: styles.spacing(48);
+    align-items: start;
+  }
+
+  // Centred text is a gallery composition. Once the name sits beside the media
+  // rather than under it, the column has a left edge and the eye needs it.
+  .product-detail__identity {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .product-detail__share {
+    align-items: flex-start;
+  }
+
+  // The gallery's own stack (stage over thumbnails) stays centred inside its
+  // column, which is where the media *should* be centred.
+  .product-detail__gallery {
+    position: sticky;
+    // Below the shell header, so scrolling the story does not scroll the image
+    // out of the page while the decision column is still being read.
+    top: styles.spacing(24);
+  }
+}
+
+// --- The media may not push the decision out of the fold --------------------
+
+// The stage caps at 70vh page-wide, which is correct for the stacked layout
+// where the image *is* the first screen. Beside a purchase panel it is not:
+// a portrait image in a 640px column is 800px tall, and the fold this whole
+// theme exists to fix would close again on the first tall photograph.
+//
+// `min()` rather than a flat `vh`, so the cap is viewport-relative on a short
+// laptop screen and stops growing on a tall one — a 1400px-tall image on a
+// 1440×1200 display is not more useful than a 620px one, it just moves the
+// thumbnails off the screen.
+@media (min-width: tokens.$bp-detail-hero-split) {
+  .product-detail__stage-image {
+    max-height: min(58vh, tokens.$stage-max-height-split);
+  }
+}
+
+// --- And it may not own the whole of the stacked fold either -----------------
+
+// Below the split the page is one column, so the media is genuinely the first
+// thing — but at 70vh plus its thumbnail strip it was *all* of the first thing.
+// Measured at 390×844 after the split landed: the product's name still began at
+// y=700 and its primary action at y=1047, so a phone visitor read a photograph,
+// a strip of smaller photographs, and then had to scroll to find out what they
+// were looking at.
+//
+// §12 asks for the product's facts "visible much earlier" on the stacked
+// layout. Half the fold is the honest division: the image stays the hero and
+// the name, price and availability start on the first screen with it.
+@media (max-width: #{tokens.$bp-detail-hero-split - 1px}) {
+  .product-detail__stage-image {
+    max-height: min(46vh, tokens.$stage-max-height-stacked);
+  }
+}

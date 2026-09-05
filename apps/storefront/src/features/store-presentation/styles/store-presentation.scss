@@ -148,7 +148,7 @@ $link-padding-y: 10px;
   word-break: keep-all;
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
   }
 }
@@ -182,7 +182,7 @@ $link-padding-y: 10px;
   }
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
   }
 }

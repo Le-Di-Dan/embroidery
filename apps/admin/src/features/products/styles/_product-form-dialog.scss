@@ -80,7 +80,7 @@
   @extend %product-form-button;
 
   border: 1px solid styles.$color-action-primary;
-  background: styles.$color-action-primary;
+  background: styles.$color-action-fill;
   color: styles.$color-background-primary;
 }
 
@@ -131,7 +131,7 @@
   cursor: pointer;
 
   &:focus-within {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 1px;
   }
 }

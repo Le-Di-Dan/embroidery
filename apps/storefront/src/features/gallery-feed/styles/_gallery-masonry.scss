@@ -121,7 +121,7 @@
 
   // Focus is never removed, only replaced with a visible ring of our own.
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
   }
 }

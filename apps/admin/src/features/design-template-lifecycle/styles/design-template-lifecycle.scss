@@ -273,14 +273,14 @@ $lifecycle-actions-min: 380px;
     padding: styles.spacing(12) styles.spacing(24);
     border: 0;
     border-radius: styles.$radius-xs;
-    background: styles.$color-action-primary;
+    background: styles.$color-action-fill;
     color: styles.$color-surface-primary;
     font-size: styles.$font-size-body-s;
     font-weight: styles.$font-weight-medium;
     cursor: pointer;
 
     &:hover:not(:disabled) {
-      background: styles.$color-action-hover;
+      background: styles.$color-action-fill-hover;
     }
 
     // `604:3` — refused, not hidden: the operator must see what they cannot do.
@@ -370,14 +370,14 @@ $lifecycle-actions-min: 380px;
     padding: styles.spacing(12) styles.spacing(24);
     border: 0;
     border-radius: styles.$radius-xs;
-    background: styles.$color-action-primary;
+    background: styles.$color-action-fill;
     color: styles.$color-surface-primary;
     font-size: styles.$font-size-body-s;
     font-weight: styles.$font-weight-medium;
     cursor: pointer;
 
     &:hover:not(:disabled) {
-      background: styles.$color-action-hover;
+      background: styles.$color-action-fill-hover;
     }
 
     &:disabled {
@@ -501,7 +501,7 @@ $lifecycle-actions-min: 380px;
 
   &__primary {
     border: 0;
-    background: styles.$color-action-primary;
+    background: styles.$color-action-fill;
     color: styles.$color-surface-primary;
   }
 

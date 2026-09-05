@@ -42,7 +42,7 @@
   // Never removed, only replaced: keyboard users reach these before anything
   // else on the page.
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
   }
 }
@@ -130,7 +130,7 @@
   word-break: keep-all;
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
   }
 }
@@ -163,7 +163,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
   }
 }

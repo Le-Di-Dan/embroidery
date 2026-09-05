@@ -30,7 +30,10 @@
 
 .product-detail__title {
   margin: 0;
-  font-size: styles.$font-size-heading-l;
+  // The page-title role rather than the raw scale step: at 390 a 40px name
+  // wrapped to two lines and took about 120 of the 844 available pixels, which
+  // is the fold this theme exists to protect (`V01-UX-023`).
+  font-size: styles.$type-page-title;
   font-weight: styles.$font-weight-semibold;
   line-height: tokens.$line-height-snug;
   color: styles.$color-text-primary;
@@ -57,7 +60,7 @@
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
   }
 }
@@ -131,7 +134,7 @@
   text-decoration: none;
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
   }
 }

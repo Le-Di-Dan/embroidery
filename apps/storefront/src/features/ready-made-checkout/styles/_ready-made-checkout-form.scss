@@ -35,7 +35,7 @@
     color: styles.$color-text-primary;
 
     &:focus-visible {
-      outline: 2px solid styles.$color-action-primary;
+      outline: 2px solid styles.$color-focus-ring;
       outline-offset: 2px;
     }
 
@@ -87,7 +87,7 @@
     cursor: pointer;
 
     &:focus-visible {
-      outline: 2px solid styles.$color-action-primary;
+      outline: 2px solid styles.$color-focus-ring;
       outline-offset: 2px;
     }
   }

@@ -862,6 +862,12 @@ async function main() {
                     E2E_RUN_ID: runId,
                     E2E_REPO_ROOT: config.repoRoot,
                     E2E_DATABASE_URL: env.database.url,
+                    // Which `evidences/<dir>` this run writes into. `APP12-V02` §35
+                    // re-runs the V01 harness for the after-state and must not
+                    // overwrite the before-state it is being compared against.
+                    ...(process.env['E2E_EVIDENCE_DIR'] === undefined
+                      ? {}
+                      : { E2E_EVIDENCE_DIR: process.env['E2E_EVIDENCE_DIR'] }),
                     ...app4SecretEnv(app4Secrets),
                     // The in-process `AppModule` composes the deposit module, so it
                     // needs the same four merchant values the API HTTP process got.

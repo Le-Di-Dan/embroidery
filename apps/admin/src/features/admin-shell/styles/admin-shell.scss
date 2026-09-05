@@ -46,7 +46,7 @@ $scrim-expiry: rgba(styles.$color-text-primary, 0.2);
   font-family: styles.$font-family-primary;
   font-size: styles.$font-size-body-s;
   color: styles.$color-surface-primary;
-  background: styles.$color-action-primary;
+  background: styles.$color-action-fill;
   border-radius: styles.$radius-sm;
   // Parked off-canvas (relative to its own height) until focused — no magic
   // offset, so it reveals in place on keyboard focus.
@@ -103,7 +103,7 @@ $scrim-expiry: rgba(styles.$color-text-primary, 0.2);
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
   }
 
@@ -224,7 +224,7 @@ $scrim-expiry: rgba(styles.$color-text-primary, 0.2);
       position: absolute;
       inset: 0;
       width: 40%;
-      background: styles.$color-action-primary;
+      background: styles.$color-action-fill;
       border-radius: inherit;
       content: '';
       animation: admin-shell-progress 1s styles.$motion-easing-standard infinite;
@@ -341,7 +341,7 @@ $scrim-expiry: rgba(styles.$color-text-primary, 0.2);
   }
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
   }
 
@@ -370,7 +370,7 @@ $scrim-expiry: rgba(styles.$color-text-primary, 0.2);
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
   }
 }
@@ -573,7 +573,7 @@ $scrim-expiry: rgba(styles.$color-text-primary, 0.2);
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
   }
 }
@@ -632,7 +632,7 @@ $scrim-expiry: rgba(styles.$color-text-primary, 0.2);
   font-size: styles.$font-size-body-m;
   font-weight: styles.$font-weight-medium;
   color: styles.$color-surface-primary; // text/inverse (white); no inverse token
-  background: styles.$color-action-primary;
+  background: styles.$color-action-fill;
   border: none;
   border-radius: styles.$radius-md;
   cursor: pointer;
@@ -642,11 +642,11 @@ $scrim-expiry: rgba(styles.$color-text-primary, 0.2);
   }
 
   &:hover {
-    background: styles.$color-action-hover;
+    background: styles.$color-action-fill-hover;
   }
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-active;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
   }
 }

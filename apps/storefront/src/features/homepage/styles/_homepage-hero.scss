@@ -17,25 +17,22 @@
   }
 }
 
-// The page's single <h1>. It scales across the three approved tiers rather than
-// shrinking one desktop size down: 390 gets heading-l, 1024 display-m, 1440
-// display-l, which is what keeps the mobile composition a composition.
+// The page's single <h1>. It scales with the viewport rather than shrinking one
+// desktop size down — the shared display role interpolates between the approved
+// heading-m and display-l endpoints, which is what keeps the mobile composition
+// a composition.
 .homepage-hero__heading {
   margin: 0;
   max-width: styles.$layout-reading-max;
   font-family: styles.$font-family-primary;
-  font-size: styles.$font-size-heading-l;
+  // The shared display role (`APP12-V02` §14/§26). It replaces two hand-placed
+  // breakpoints with one continuous interpolation between the same approved
+  // sizes, so 768 and 1024 get an intermediate value rather than whichever side
+  // of a threshold they landed on.
+  font-size: styles.$type-display;
   font-weight: styles.$font-weight-semibold;
   line-height: tokens.$line-height-tight;
   color: styles.$color-text-primary;
-
-  @media (min-width: tokens.$bp-medium) {
-    font-size: styles.$font-size-display-m;
-  }
-
-  @media (min-width: tokens.$bp-large) {
-    font-size: styles.$font-size-display-l;
-  }
 }
 
 .homepage-hero__lead {

@@ -56,7 +56,7 @@ $quotation-dialog-width: 480px;
   text-decoration: underline;
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 1px;
   }
 }
@@ -260,7 +260,7 @@ $quotation-dialog-width: 480px;
     min-height: styles.spacing(48);
 
     &:focus-visible {
-      outline: 2px solid styles.$color-action-primary;
+      outline: 2px solid styles.$color-focus-ring;
       outline-offset: 1px;
     }
 
@@ -344,7 +344,7 @@ $quotation-dialog-width: 480px;
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 1px;
   }
 
@@ -356,11 +356,11 @@ $quotation-dialog-width: 480px;
 
 .request-quotation__button--primary {
   border-color: styles.$color-action-primary;
-  background: styles.$color-action-primary;
+  background: styles.$color-action-fill;
   color: styles.$color-surface-primary;
 
   &:hover:not(:disabled) {
-    background: styles.$color-action-hover;
+    background: styles.$color-action-fill-hover;
   }
 }
 
@@ -476,7 +476,7 @@ $quotation-dialog-width: 480px;
   background: styles.$color-surface-primary;
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
   }
 }

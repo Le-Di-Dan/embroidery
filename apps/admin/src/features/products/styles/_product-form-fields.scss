@@ -35,7 +35,7 @@
   font-size: styles.$font-size-body-m;
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 1px;
   }
 

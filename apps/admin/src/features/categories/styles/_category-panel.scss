@@ -124,7 +124,7 @@
 // and this is the pairing the Product form already uses.
 .category-button--primary {
   color: styles.$color-background-primary;
-  background: styles.$color-action-primary;
+  background: styles.$color-action-fill;
   border-color: styles.$color-action-primary;
 
   &:disabled {

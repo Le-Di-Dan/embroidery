@@ -123,7 +123,7 @@
 
   // Focus has to stay visible on a control whose input is transparent.
   &__option-input:focus-visible + &__option-pill {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
   }
 
@@ -167,7 +167,7 @@
     }
 
     &:focus-visible {
-      outline: 2px solid styles.$color-action-primary;
+      outline: 2px solid styles.$color-focus-ring;
       outline-offset: -2px;
     }
   }
@@ -193,7 +193,7 @@
     }
 
     &:focus-visible {
-      outline: 2px solid styles.$color-action-primary;
+      outline: 2px solid styles.$color-focus-ring;
       outline-offset: -2px;
     }
   }
@@ -224,7 +224,7 @@
     padding: styles.spacing(12) styles.spacing(24);
     border: 0;
     border-radius: styles.$radius-button;
-    background: styles.$color-action-primary;
+    background: styles.$color-action-fill;
     font-family: inherit;
     font-size: styles.$font-size-body-m;
     font-weight: styles.$font-weight-medium;
@@ -234,25 +234,37 @@
     cursor: pointer;
 
     &:hover {
-      background: styles.$color-action-hover;
+      background: styles.$color-action-fill-hover;
     }
 
     &:active {
-      background: styles.$color-action-active;
+      background: styles.$color-action-fill-active;
     }
 
     &:focus-visible {
-      outline: 2px solid styles.$color-action-primary;
+      outline: 2px solid styles.$color-focus-ring;
       outline-offset: 2px;
     }
 
-    // 183:49 — the disabled Primary. Its own label states the reason, or the
-    // fieldset error beside it does, so the state is never appearance-only.
+    // 183:49 — the disabled Primary, repainted at `APP12-V02` (`V01-UX-025`).
+    // Its own label states the reason, or the prompt beneath it does, so the
+    // state is never appearance-only.
     &:disabled {
-      background: tokens.$action-disabled;
-      color: styles.$color-text-tertiary;
+      border: 1px solid tokens.$action-disabled-border;
+      background: tokens.$action-disabled-surface;
+      color: tokens.$action-disabled-label;
       cursor: default;
     }
+  }
+
+  // The arrival-state prompt beneath a disabled action (`V01-UX-025`).
+  // Supporting text, deliberately not an error: nothing has been refused, the
+  // panel is waiting.
+  &__pending {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+    text-align: center;
   }
 
   &__panel--unavailable {

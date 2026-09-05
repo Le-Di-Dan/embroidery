@@ -560,10 +560,7 @@
           "paragraphs": [
             "Sau khi thêu xong và bạn đã thanh toán đủ, xưởng bàn giao thành phẩm theo cách bạn chọn khi đặt hàng."
           ],
-          "bullets": [
-            "Nhận trực tiếp tại xưởng.",
-            "Xưởng gửi tới địa chỉ bạn cung cấp."
-          ]
+          "bullets": ["Nhận trực tiếp tại xưởng.", "Xưởng gửi tới địa chỉ bạn cung cấp."]
         },
         "fee": {
           "heading": "Phí giao hàng",

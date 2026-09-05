@@ -102,6 +102,27 @@ export function ReadyMadePurchasePanel({ slug, basePrice, purchase }: ReadyMadeP
     setSelection((current) => ({ ...current, [axis]: value }));
   };
 
+  /**
+   * What is still missing, said from the moment the panel renders.
+   *
+   * `errorFor` below is deliberately gated on `engaged`: a refusal belongs to a
+   * customer who has started choosing, not to one who has just arrived
+   * (`906:186`). That left the arrival state silent, which is what
+   * `V01-UX-025` recorded — the biggest control on the panel disabled, with
+   * nothing anywhere saying why. This is the arrival-state counterpart: a
+   * prompt, not an error, and it names the axis the resolver is waiting for.
+   */
+  const pendingPrompt = (() => {
+    if (sku !== undefined || outOfStock) return undefined;
+    const needsColor =
+      resolution.colorOptions.length > 0 && resolution.selection.color === undefined;
+    const needsSize = resolution.sizeOptions.length > 0 && resolution.selection.size === undefined;
+    if (needsColor && needsSize) return READY_MADE_PURCHASE_COPY.selectOptionsPrompt;
+    if (needsColor) return READY_MADE_PURCHASE_COPY.selectVariantPrompt;
+    if (needsSize) return READY_MADE_PURCHASE_COPY.selectSizePrompt;
+    return undefined;
+  })();
+
   const errorFor = (axis: 'color' | 'size', message: string) =>
     engaged && resolution.missingAxis === axis ? message : undefined;
 
@@ -157,11 +178,23 @@ export function ReadyMadePurchasePanel({ slug, basePrice, purchase }: ReadyMadeP
         )}
 
         {sku === undefined ? (
-          <button type="button" className="ready-made-purchase__cta" disabled>
-            {outOfStock
-              ? READY_MADE_PURCHASE_COPY.continueOutOfStock
-              : READY_MADE_PURCHASE_COPY.continue}
-          </button>
+          <>
+            <button
+              type="button"
+              className="ready-made-purchase__cta"
+              aria-describedby={pendingPrompt === undefined ? undefined : 'ready-made-pending'}
+              disabled
+            >
+              {outOfStock
+                ? READY_MADE_PURCHASE_COPY.continueOutOfStock
+                : READY_MADE_PURCHASE_COPY.continue}
+            </button>
+            {pendingPrompt === undefined ? null : (
+              <p className="ready-made-purchase__pending" id="ready-made-pending">
+                {pendingPrompt}
+              </p>
+            )}
+          </>
         ) : (
           <a
             className="ready-made-purchase__cta"

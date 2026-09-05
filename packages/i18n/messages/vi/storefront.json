@@ -235,7 +235,10 @@
     "continueOutOfStock": "Tạm hết hàng",
     "unavailableHeading": "Chưa thể tải thông tin mua hàng",
     "unavailableBody": "Vui lòng thử lại sau.",
-    "availabilityLabel": "Còn {String} sản phẩm"
+    "availabilityLabel": "Còn {available} sản phẩm",
+    "selectVariantPrompt": "Chọn phân loại để tiếp tục.",
+    "selectSizePrompt": "Chọn kích thước để tiếp tục.",
+    "selectOptionsPrompt": "Chọn phân loại và kích thước để tiếp tục."
   },
   "storePresentation": {
     "regionLabel": "Thông tin cửa hàng",

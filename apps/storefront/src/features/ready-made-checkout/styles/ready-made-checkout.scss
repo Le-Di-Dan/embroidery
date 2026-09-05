@@ -23,7 +23,8 @@
 
   &__title {
     margin: 0;
-    font-size: styles.$font-size-heading-l;
+    // The shared page-title role (`APP12-V02` §14/§26).
+    font-size: styles.$type-page-title;
     font-weight: styles.$font-weight-semibold;
     line-height: tokens.$line-height-snug;
     color: styles.$color-text-primary;
@@ -68,7 +69,7 @@
     }
 
     .ready-made-checkout__submit:disabled {
-      background: styles.$color-action-primary;
+      background: styles.$color-action-fill;
       cursor: default;
     }
   }

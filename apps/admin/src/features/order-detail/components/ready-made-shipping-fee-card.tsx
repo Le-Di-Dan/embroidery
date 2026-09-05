@@ -162,9 +162,15 @@ export function ReadyMadeShippingFeeCard({
         </p>
       ) : null}
 
+      {/*
+        Primary (`V01-UX-003`; `APP12-V02` §13.1). Confirming the fee is what
+        opens payment for the customer — the consequential forward action of
+        this whole screen — and it was drawn as a white 1px outline identical to
+        every reversible control around it.
+      */}
       <button
         type="button"
-        className="order-card__action"
+        className="order-card__action order-card__action--primary"
         data-testid="shipping-fee-submit"
         disabled={save.isPending}
         onClick={submit}

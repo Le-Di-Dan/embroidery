@@ -103,7 +103,7 @@ $line-height-body: 1.5;
     // programmatic focus with no visible indicator is a keyboard user losing
     // their place silently.
     &:focus-visible {
-      outline: 2px solid styles.$color-action-primary;
+      outline: 2px solid styles.$color-focus-ring;
       outline-offset: 4px;
     }
   }

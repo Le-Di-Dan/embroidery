@@ -45,7 +45,6 @@ export function OpenFinalPaymentCard({ orderId }: OpenFinalPaymentCardProps) {
         </h2>
         <p className="order-card__help">{COPY.finalPayment.readyHelp}</p>
 
-
         <div className="order-fulfillment__actions">
           <button
             type="button"

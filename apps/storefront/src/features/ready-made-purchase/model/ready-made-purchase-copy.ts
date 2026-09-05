@@ -68,6 +68,20 @@ export const READY_MADE_PURCHASE_COPY = {
    */
   unavailableHeading: purchaseMessage.text('unavailableHeading'),
   unavailableBody: purchaseMessage.text('unavailableBody'),
+
+  /**
+   * What is still needed before the purchase action can be pressed
+   * (`V01-UX-025`, `APP12-V02` §13.4).
+   *
+   * The panel used to open on a multi-variant product with a dead grey slab and
+   * no explanation: the fieldset errors appear only once the customer has
+   * *started* choosing, so a visitor who had just arrived saw the page's largest
+   * element disabled and was told nothing. This says what is missing from the
+   * moment the panel renders, and it names the axis rather than the control.
+   */
+  selectVariantPrompt: purchaseMessage.text('selectVariantPrompt'),
+  selectSizePrompt: purchaseMessage.text('selectSizePrompt'),
+  selectOptionsPrompt: purchaseMessage.text('selectOptionsPrompt'),
 } as const;
 
 /**
@@ -78,5 +92,5 @@ export const READY_MADE_PURCHASE_COPY = {
  * quantity, not an urgency.
  */
 export function availabilityLabel(availableQuantity: number): string {
-  return purchaseMessage.text('availabilityLabel', { String: String(availableQuantity) });
+  return purchaseMessage.text('availabilityLabel', { available: availableQuantity });
 }

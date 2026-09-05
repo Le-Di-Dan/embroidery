@@ -45,7 +45,7 @@
   // Focus. Never `outline: none` without a replacement — the outline is the
   // only indication a keyboard operator has of where they are.
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 1px;
     border-color: styles.$color-action-primary;
   }

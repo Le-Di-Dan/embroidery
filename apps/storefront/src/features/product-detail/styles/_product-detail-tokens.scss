@@ -37,6 +37,27 @@ $detail-mobile-gutter: styles.spacing(24);
 // would widen the column past the value the correction locked.
 $story-measure-max: 640px;
 
+// The width at which the hero becomes a purchase decision beside its media
+// (`APP12-V02` §12). 1024 rather than 1025: `V01-UX-002` measured the fold at
+// 1024 as well as at 1440 and found 52 characters above it, so the audited
+// tablet width is inside the correction rather than beside it.
+$bp-detail-hero-split: 1024px;
+
+// The minimum the decision column may narrow to before the grid gives it back
+// to the media. Two option groups, a quantity stepper and the primary action
+// stop being a column below roughly this width and become a stack of
+// half-width controls.
+$decision-column-min: 340px;
+
+// The stage cap once the media shares the band with the decision. The page-wide
+// 70vh is right when the image *is* the first screen and wrong beside a panel.
+$stage-max-height-split: 620px;
+
+// The same cap for the stacked layout, where the media is still the hero but may
+// not be the whole of the first screen. Measured at 390: without it the name
+// began at y=700 of an 844px fold.
+$stage-max-height-stacked: 420px;
+
 // Local composition constants (no shared token).
 $line-height-snug: 1.35;
 $line-height-body: 1.6;

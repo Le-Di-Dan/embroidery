@@ -37,7 +37,18 @@ $option-padding-inline: 20px;
 $control-min-target: 44px;
 $stepper-value-width: 56px;
 
-// The disabled action fill (183:49). The same value the foundation binds to
-// $color-border-secondary; aliased here so the intent reads as "disabled
-// action" rather than as a border colour reused for a surface.
-$action-disabled: styles.$color-border-secondary;
+// The disabled action (183:49), corrected at `APP12-V02` (`V01-UX-025`).
+//
+// It was a #d6d3d1 slab with a #9ca3af label — 1.5:1 — and on every
+// multi-variant product that is the state the page **opens** in. The largest
+// element on the purchase panel was a dead grey rectangle whose text was
+// barely readable, which made the panel look broken rather than waiting.
+//
+// Disabled is still the correct behaviour; this is the paint of it. The
+// control now reads as an empty outlined slot: the card surface, a real
+// boundary, and a legible label at 5.22:1. Nothing about it invites a click —
+// it has no fill, no shadow and no pointer — and everything about it is
+// readable while the customer works out what is still missing.
+$action-disabled-surface: styles.$color-background-secondary;
+$action-disabled-border: styles.$color-border-strong;
+$action-disabled-label: styles.$color-text-secondary;

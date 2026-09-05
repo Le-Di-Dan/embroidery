@@ -18,3 +18,8 @@
 @use 'product-detail-content';
 @use 'product-detail-lightbox';
 @use 'product-detail-states';
+
+// Last on purpose. The hero's two-column band and its stage cap are corrections
+// (`APP12-V02` T2) that must win over the single-column declarations above at
+// the same specificity, and Sass emits in `@use` order.
+@use 'product-detail-hero';

@@ -190,7 +190,7 @@ $customer-access-right-min: 520px;
     padding: styles.spacing(8) styles.spacing(16);
     border: 0;
     border-radius: styles.$radius-button;
-    background: styles.$color-action-primary;
+    background: styles.$color-action-fill;
     color: styles.$color-surface-primary;
     font-family: inherit;
     font-size: styles.$font-size-body-s;
@@ -198,7 +198,7 @@ $customer-access-right-min: 520px;
     cursor: pointer;
 
     &:hover:not(:disabled) {
-      background: styles.$color-action-hover;
+      background: styles.$color-action-fill-hover;
     }
 
     &:disabled {
@@ -301,10 +301,10 @@ $customer-access-right-min: 520px;
   }
 
   &__primary {
-    background: styles.$color-action-primary;
+    background: styles.$color-action-fill;
 
     &:hover:not(:disabled) {
-      background: styles.$color-action-hover;
+      background: styles.$color-action-fill-hover;
     }
   }
 
@@ -635,7 +635,7 @@ $customer-access-right-min: 520px;
   }
 
   &__primary {
-    background: styles.$color-action-primary;
+    background: styles.$color-action-fill;
     color: styles.$color-surface-primary;
   }
 

@@ -64,7 +64,7 @@ $scrim-drawer: rgba(styles.$color-text-primary, 0.45);
   font-family: styles.$font-family-primary;
   font-size: styles.$font-size-body-s;
   color: styles.$color-surface-primary;
-  background: styles.$color-action-primary;
+  background: styles.$color-action-fill;
   border-radius: styles.$radius-sm;
   transform: translateY(-200%);
 
@@ -137,7 +137,7 @@ $scrim-drawer: rgba(styles.$color-text-primary, 0.45);
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
   }
 
@@ -161,7 +161,7 @@ $scrim-drawer: rgba(styles.$color-text-primary, 0.45);
   text-decoration: none;
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 4px;
     border-radius: styles.$radius-xs;
   }
@@ -226,7 +226,7 @@ $scrim-drawer: rgba(styles.$color-text-primary, 0.45);
   text-decoration: none;
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 4px;
   }
 }
@@ -403,7 +403,7 @@ $scrim-drawer: rgba(styles.$color-text-primary, 0.45);
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
   }
 }

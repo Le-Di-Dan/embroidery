@@ -1,8 +1,10 @@
 /**
  * The `APP12-V01` evidence writer.
  *
- * Everything the audit produces lands under `evidences/v01/`, which the
- * checkpoint makes mandatory: a reviewer must be able to browse the folder and
+ * Everything the audit produces lands under `evidences/<run>/` — `v01` by
+ * default, and whatever `E2E_EVIDENCE_DIR` names when `APP12-V02` §35 re-runs
+ * the same harness for the after-state. The checkpoint makes the directory
+ * mandatory: a reviewer must be able to browse the folder and
  * follow the audit without opening the final report, and the Product Owner must
  * be able to watch it accumulate **while the run is happening** rather than
  * receive it all at the end.
@@ -43,9 +45,37 @@ function repoRoot() {
   return root;
 }
 
-/** `<repo>/evidences/v01`, created on first use. */
+/**
+ * The evidence directory segment this run writes into.
+ *
+ * `v01` by default, which is where the audit that produced this harness put
+ * everything and what its report's paths refer to.
+ *
+ * `APP12-V02` §35 re-runs the *same* harness after the corrections and needs the
+ * after-state beside the before-state rather than on top of it, so the directory
+ * is an environment variable rather than a constant. It is deliberately only the
+ * final segment: an absolute path here would let a run write outside the
+ * repository, and the audit's own hygiene rules (§7 of the V01 index) depend on
+ * every artifact being inside it.
+ */
+function evidenceDirectory() {
+  const directory = process.env['E2E_EVIDENCE_DIR'] ?? 'v01';
+  if (!/^[a-z0-9][a-z0-9-]*$/u.test(directory)) {
+    throw new Error(
+      `E2E_EVIDENCE_DIR must be one lower-case path segment; received "${directory}".`,
+    );
+  }
+  return directory;
+}
+
+/** `evidences/<directory>`, repository-relative. */
+function relativeEvidenceRoot() {
+  return join('evidences', evidenceDirectory());
+}
+
+/** The absolute evidence root for this run, created on first use. */
 export function evidenceRoot() {
-  const root = join(repoRoot(), 'evidences', 'v01');
+  const root = join(repoRoot(), relativeEvidenceRoot());
   mkdirSync(root, { recursive: true });
   return root;
 }
@@ -75,9 +105,11 @@ export async function capture(page, where) {
     );
   }
   const shot = where.shot ?? (where.fullPage === false ? 'above-fold' : 'full');
+  // Relative to the repository, and to the *same* directory the ledger and the
+  // log write into, so a re-run under `E2E_EVIDENCE_DIR` cannot file its images
+  // beside the previous run's while its measurements go somewhere else.
   const relative = join(
-    'evidences',
-    'v01',
+    relativeEvidenceRoot(),
     where.surface,
     where.route,
     where.viewport,
@@ -146,7 +178,7 @@ export function appendAuditLog(entry) {
   appendFileSync(path, lines.join('\n'), 'utf8');
 }
 
-/** Writes an arbitrary JSON artifact under `evidences/v01/data/`. */
+/** Writes an arbitrary JSON artifact under the run's `data/` directory. */
 export function writeData(name, value) {
   const path = ensureFile(join(evidenceRoot(), 'data', name));
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, 'utf8');

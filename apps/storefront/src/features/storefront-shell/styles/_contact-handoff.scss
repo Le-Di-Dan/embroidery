@@ -109,7 +109,7 @@ $dock-shadow-hover: 0 6px 20px rgba(styles.$color-text-primary, 0.26);
   text-decoration: none;
   border: 1px solid transparent;
   border-radius: 50%;
-  background: styles.$color-action-primary;
+  background: styles.$color-action-fill;
   box-shadow: $dock-shadow;
   transition:
     background-color styles.$motion-duration-fast styles.$motion-easing-standard,
@@ -117,12 +117,12 @@ $dock-shadow-hover: 0 6px 20px rgba(styles.$color-text-primary, 0.26);
     transform styles.$motion-duration-fast styles.$motion-easing-standard;
 
   &:hover {
-    background: styles.$color-action-hover;
+    background: styles.$color-action-fill-hover;
     box-shadow: $dock-shadow-hover;
   }
 
   &:active {
-    background: styles.$color-action-active;
+    background: styles.$color-action-fill-active;
   }
 
   // Keyboard focus must stay visible: these are the only affordances that leave

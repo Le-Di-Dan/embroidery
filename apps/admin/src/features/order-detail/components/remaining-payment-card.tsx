@@ -53,7 +53,6 @@ export function RemainingPaymentCard() {
           testId="remaining-payment-status"
         />
         <p className="order-card__help">{COPY.finalPayment.awaitingHelp}</p>
-
       </section>
 
       <section className="order-card" aria-labelledby="fulfillment-verification-heading">

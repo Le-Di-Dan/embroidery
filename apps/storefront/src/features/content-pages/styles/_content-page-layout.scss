@@ -69,14 +69,13 @@
 .content-page__title {
   margin: 0;
   font-family: styles.$font-family-primary;
-  font-size: styles.$font-size-heading-m;
+  // The shared page-title role (`APP12-V02` §14/§26): one responsive step,
+  // declared once in `@embroidery/styles`, interpolating between the same two
+  // approved sizes this rule stepped between at one breakpoint.
+  font-size: styles.$type-page-title;
   font-weight: styles.$font-weight-semibold;
   line-height: tokens.$line-height-tight;
   color: styles.$color-text-primary;
-
-  @media (min-width: tokens.$bp-large) {
-    font-size: styles.$font-size-heading-l;
-  }
 }
 
 .content-page__lead {

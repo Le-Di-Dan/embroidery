@@ -150,9 +150,18 @@ export function ParticipantSlot({
               if (blank) setBlank(false);
             }}
           />
+          {/*
+           * Secondary, not primary (`V01-UX-003`, `V01-UX-020`; `APP12-V02` §13).
+           *
+           * Resolving a contact is a **lookup**: it reads, it changes nothing,
+           * and it can be run again with a different value. It was painted solid
+           * brand red on both slots while `Mở hồ sơ gộp` — the irreversible step
+           * this screen exists for — sat below them as a pale disabled pink. The
+           * screen was telling the operator the opposite of what it meant.
+           */}
           <button
             type="button"
-            className="customer-merge__primary"
+            className="customer-merge__secondary"
             data-testid={`merge-slot-${role}-resolve`}
             disabled={busy}
             onClick={submit}

@@ -23,13 +23,33 @@ import { DetailStory } from './detail-story';
  * continuation section are where a visitor navigates by category; a chip that
  * also filtered would give the same destination two different-looking doors.
  *
- * `APP12-S01` adds exactly one child: the Ready-Made purchase panel, placed
- * after the identity group and before the story, as `902:4` / `905:67` /
- * `905:187` draw it. Nothing else moved. The media hierarchy, the breadcrumb,
- * the category chip, Share, the 640 story measure and the continuation section
- * are labelled `UNCHANGED` in those frames and are unchanged here — the panel is
- * a sibling in the same centred column, not a buy box that restructures the
- * hero into a two-column commerce layout.
+ * ## The hero is a two-column purchase decision at 1024 and above
+ *
+ * `APP12-S01` placed the purchase panel as a sibling in the approved single
+ * centred column (`902:4` / `905:67` / `905:187`). That composition is
+ * superseded by `APP12-V02` §12.
+ *
+ * `V01-UX-002` measured what it produced at 1440×900: the `h1` began at
+ * y=1045, the price below it, and the panel's primary action at y=1494. Above
+ * the fold there were **70 visible characters**, a breadcrumb and one 1152×662
+ * image. The page answered none of "what is this", "what does it cost", "is it
+ * available" and "which one am I buying" until the customer had scrolled a
+ * full screen — on every Product, which is what made it the most expensive
+ * composition decision in the audit.
+ *
+ * So the media and the decision are now siblings inside one `__hero`. It stacks
+ * below 1024 exactly as it did before and becomes two columns at and above it.
+ * The DOM order is media → identity → purchase → share at every width, so the
+ * stacked order *is* the reading order and the grid moves nothing a keyboard or
+ * a screen reader can perceive.
+ *
+ * Share moves to the foot of the decision column. It sat between the name and
+ * the purchase panel, which put the page's lowest-consequence action in the
+ * middle of its highest-consequence one (`V01-UX-003`).
+ *
+ * The approved frames draw the single column, and are superseded for the
+ * runtime under §33: runtime quality is primary, and here the approved
+ * composition is the defect.
  */
 export function ProductDetailScreen({
   product,
@@ -46,19 +66,28 @@ export function ProductDetailScreen({
         categorySlug={product.categorySlug}
       />
 
-      <DetailGallery media={product.media} name={product.name} />
+      <div className="product-detail__hero">
+        <DetailGallery media={product.media} name={product.name} />
 
-      <div className="product-detail__identity">
-        <p className="product-detail__category">{product.categoryName}</p>
-        <h1 className="product-detail__title">{product.name}</h1>
-        <DetailShareButton
-          name={product.name}
-          path={buildStorefrontProductDetailPath(product.slug)}
-          {...(product.description === undefined ? {} : { description: product.description })}
-        />
+        <div className="product-detail__decision">
+          <div className="product-detail__identity">
+            <p className="product-detail__category">{product.categoryName}</p>
+            <h1 className="product-detail__title">{product.name}</h1>
+          </div>
+
+          <ReadyMadePurchasePanel
+            slug={product.slug}
+            basePrice={product.price}
+            purchase={purchase}
+          />
+
+          <DetailShareButton
+            name={product.name}
+            path={buildStorefrontProductDetailPath(product.slug)}
+            {...(product.description === undefined ? {} : { description: product.description })}
+          />
+        </div>
       </div>
-
-      <ReadyMadePurchasePanel slug={product.slug} basePrice={product.price} purchase={purchase} />
 
       {product.description === undefined ? null : <DetailStory description={product.description} />}
 

@@ -56,7 +56,7 @@
     // a programmatic focus with no visible indicator is a keyboard user losing
     // their place silently.
     &:focus-visible {
-      outline: 2px solid styles.$color-action-primary;
+      outline: 2px solid styles.$color-focus-ring;
       outline-offset: 4px;
     }
   }
@@ -267,18 +267,18 @@
     cursor: pointer;
 
     &--primary {
-      background: styles.$color-action-primary;
+      background: styles.$color-action-fill;
       border-color: styles.$color-action-primary;
       color: styles.$color-surface-primary;
 
       &:hover:not(:disabled) {
-        background: styles.$color-action-hover;
+        background: styles.$color-action-fill-hover;
         border-color: styles.$color-action-hover;
       }
     }
 
     &:focus-visible {
-      outline: 2px solid styles.$color-action-primary;
+      outline: 2px solid styles.$color-focus-ring;
       outline-offset: 2px;
     }
 

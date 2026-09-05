@@ -1,0 +1,152 @@
+// The action hierarchy — what a control's appearance means.
+//
+// `V01-UX-003` recorded the defect these mixins exist to close: *there was no
+// rule*. The accent was loud on one screen and silent on the next; a reversible
+// lookup outranked an irreversible commit on a third; a plain navigation link
+// was painted in the brand red. Fifteen features had each decided for
+// themselves what a button looks like, so nothing a customer or an operator
+// learned on one screen transferred to another.
+//
+// ## The rule
+//
+// Appearance is assigned by **consequence**, never by importance-to-the-page:
+//
+// ```text
+// primary    the consequential forward action for the current task.
+//            Filled. Normally one per decision region.
+// secondary  a reversible lookup, an alternative, a cancel, a supporting action.
+//            Outlined.
+// tertiary   real navigation, and low-priority supporting actions. Text only.
+// destructive a primary whose consequence is loss. Filled, in the error tone.
+// disabled   unavailable, and still legible.
+// ```
+//
+// A `Tra cứu` must not outrank a `Thực hiện gộp`. A `Mua ngay` and a
+// `Hiện thông tin chuyển khoản` are the same object on two screens. And the
+// brand accent is not the paint of a link that only navigates.
+//
+// ## Why mixins and not a component
+//
+// The two applications hold roughly sixty controls across fifteen features, each
+// with its own class name, its own layout constraints and its own tests. A
+// shared React button would mean touching every one of them in the checkpoint
+// that is *also* rewriting their copy and their layout — two large diffs on top
+// of each other, and no way to review either. These mixins put the decision in
+// one file and leave each control where it is, which is the same trade the copy
+// migration made and for the same reason.
+@use '../settings/color';
+@use '../settings/layout';
+@use '../settings/radius';
+@use '../settings/typography';
+@use 'functions' as fn;
+
+/// Shared geometry. Every action is at least the approved touch target, whatever
+/// its tone: `V01-UX-026` found a table row whose only action was a 16px-tall
+/// text link.
+@mixin action-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: fn.spacing(8);
+  min-height: layout.$size-touch-target-min;
+  padding-inline: fn.spacing(24);
+  border: 1px solid transparent;
+  border-radius: radius.$radius-button;
+  font-family: typography.$font-family-primary;
+  font-size: typography.$font-size-body-m;
+  font-weight: typography.$font-weight-medium;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:focus-visible {
+    // Never the action colour and never the error colour (`V01-UX-007`).
+    outline: 2px solid color.$color-focus-ring;
+    outline-offset: 2px;
+  }
+}
+
+/// The consequential forward action. One per decision region, normally.
+@mixin action-primary {
+  @include action-base;
+
+  background: color.$color-action-fill;
+  color: color.$color-surface-primary;
+
+  &:hover:not(:disabled) {
+    background: color.$color-action-fill-hover;
+  }
+
+  &:active:not(:disabled) {
+    background: color.$color-action-fill-active;
+  }
+
+  &:disabled {
+    @include action-disabled;
+  }
+}
+
+/// A reversible lookup, an alternative, a cancel, a supporting action.
+@mixin action-secondary {
+  @include action-base;
+
+  // `$color-border-strong` rather than a decorative border tone: this is the
+  // boundary of a control, and WCAG 2.2 1.4.11 asks for 3:1 against the surface
+  // behind it. The two lighter border tokens are dividers, at 1.4:1.
+  border-color: color.$color-border-strong;
+  background: color.$color-surface-primary;
+  color: color.$color-text-primary;
+
+  &:hover:not(:disabled) {
+    background: color.$color-background-secondary;
+  }
+
+  &:disabled {
+    @include action-disabled;
+  }
+}
+
+/// Real navigation, and low-priority supporting actions.
+@mixin action-tertiary {
+  @include action-base;
+
+  // No accent paint. A link that only navigates is not a consequence, and
+  // `V01-UX-003` found the brand red spent on exactly that.
+  padding-inline: 0;
+  background: none;
+  color: color.$color-text-primary;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+
+  &:hover:not(:disabled) {
+    color: color.$color-action-fill;
+  }
+
+  &:disabled {
+    @include action-disabled;
+  }
+}
+
+/// A primary whose consequence is loss.
+@mixin action-destructive {
+  @include action-base;
+
+  background: color.$color-status-error;
+  color: color.$color-surface-primary;
+
+  &:disabled {
+    @include action-disabled;
+  }
+}
+
+/// Unavailable — and still readable (`V01-UX-025`).
+///
+/// The old treatment was a #d6d3d1 slab with a #9ca3af label at 1.5:1, which is
+/// the state a multi-variant product page *opens* in. Disabled must read as
+/// waiting, not as broken: no fill, a real boundary, and a legible label.
+@mixin action-disabled {
+  border-color: color.$color-border-strong;
+  background: color.$color-background-secondary;
+  color: color.$color-text-secondary;
+  cursor: default;
+}

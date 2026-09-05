@@ -113,7 +113,7 @@ $content-measure: 560px;
 // Primary recovery — dominant, links to the home route.
 .storefront-not-found__action--primary {
   color: styles.$color-surface-primary;
-  background: styles.$color-action-primary;
+  background: styles.$color-action-fill;
   border: 1px solid styles.$color-action-primary;
 
   @include styles.motion-safe {
@@ -121,17 +121,17 @@ $content-measure: 560px;
   }
 
   &:hover {
-    background: styles.$color-action-hover;
+    background: styles.$color-action-fill-hover;
     border-color: styles.$color-action-hover;
   }
 
   &:active {
-    background: styles.$color-action-active;
+    background: styles.$color-action-fill-active;
     border-color: styles.$color-action-active;
   }
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
   }
 }

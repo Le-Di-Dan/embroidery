@@ -1,0 +1,114 @@
+// Admin order queue — the page shell and the filter bar.
+//
+// Split out of `order-queue.scss` by `APP12-V02` §41 (see
+// `_order-queue-tokens.scss`). Design authority, tokens and every declaration
+// are unchanged.
+
+@use '@embroidery/styles' as styles;
+@use 'order-queue-tokens' as tokens;
+
+.orders {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  padding: styles.spacing(24);
+}
+
+.orders__breadcrumb {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.orders__title {
+  margin: styles.spacing(4) 0 0;
+  font-size: styles.$font-size-heading-m;
+  color: styles.$color-text-primary;
+}
+
+.orders__subtitle {
+  margin: styles.spacing(4) 0 0;
+  color: styles.$color-text-secondary;
+}
+
+// ---------------------------------------------------------------------------
+// The one approved filter: a native checkbox group, not a custom listbox
+// ---------------------------------------------------------------------------
+.order-filters {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+.order-filters__group {
+  margin: 0;
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+}
+
+.order-filters__legend {
+  display: flex;
+  gap: styles.spacing(8);
+  align-items: baseline;
+  padding: 0 styles.spacing(4);
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.order-filters__summary {
+  color: styles.$color-action-primary;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.order-filters__options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: styles.spacing(4) styles.spacing(16);
+  margin: styles.spacing(8) 0 0;
+  padding: 0;
+  list-style: none;
+
+  @media (max-width: tokens.$order-filter-narrow) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.order-filters__label {
+  display: flex;
+  gap: styles.spacing(8);
+  align-items: center;
+  padding: styles.spacing(4);
+  cursor: pointer;
+}
+
+.order-filters__option-label {
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+}
+
+// The stored contract value beside the label. Tertiary and small: it is a
+// reconciliation aid, not the primary reading.
+.order-filters__option-token {
+  margin-left: auto;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.order-filters__scope {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.order-filters__reset {
+  align-self: flex-start;
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  cursor: pointer;
+}

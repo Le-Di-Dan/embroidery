@@ -142,7 +142,7 @@ $line-height-body: 1.5;
 
     // The radio is visually hidden, so the label carries its focus ring.
     &:focus-within {
-      outline: 2px solid styles.$color-action-primary;
+      outline: 2px solid styles.$color-focus-ring;
       outline-offset: 2px;
     }
   }
@@ -176,7 +176,7 @@ $line-height-body: 1.5;
     }
 
     &:focus-visible {
-      outline: 2px solid styles.$color-action-primary;
+      outline: 2px solid styles.$color-focus-ring;
       outline-offset: 2px;
     }
 
@@ -259,7 +259,7 @@ $line-height-body: 1.5;
   &__submit {
     min-height: styles.$size-touch-target-min;
     padding: styles.spacing(16);
-    background: styles.$color-action-primary;
+    background: styles.$color-action-fill;
     border: 0;
     border-radius: styles.$radius-sm;
     font-family: inherit;
@@ -271,7 +271,7 @@ $line-height-body: 1.5;
     cursor: pointer;
 
     &:focus-visible {
-      outline: 2px solid styles.$color-action-primary;
+      outline: 2px solid styles.$color-focus-ring;
       outline-offset: 2px;
     }
 
@@ -303,7 +303,7 @@ $line-height-body: 1.5;
     cursor: pointer;
 
     &:focus-visible {
-      outline: 2px solid styles.$color-action-primary;
+      outline: 2px solid styles.$color-focus-ring;
       outline-offset: 2px;
     }
 

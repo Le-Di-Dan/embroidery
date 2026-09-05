@@ -41,16 +41,16 @@
 .gallery__primary-action,
 .gallery-dialog__primary {
   border-color: styles.$color-action-primary;
-  background: styles.$color-action-primary;
+  background: styles.$color-action-fill;
   color: styles.$color-background-primary;
 
   &:hover:not(:disabled) {
-    background: styles.$color-action-hover;
+    background: styles.$color-action-fill-hover;
     border-color: styles.$color-action-hover;
   }
 
   &:active:not(:disabled) {
-    background: styles.$color-action-active;
+    background: styles.$color-action-fill-active;
     border-color: styles.$color-action-active;
   }
 

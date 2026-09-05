@@ -115,7 +115,7 @@ $editor-inspector-min: 260px;
   padding: styles.spacing(8) styles.spacing(16);
   border: 1px solid styles.$color-action-primary;
   border-radius: styles.$radius-sm;
-  background: styles.$color-action-primary;
+  background: styles.$color-action-fill;
   color: styles.$color-surface-primary;
   cursor: pointer;
 
@@ -599,7 +599,7 @@ $editor-inspector-min: 260px;
   padding: styles.spacing(8) styles.spacing(16);
   border: 1px solid styles.$color-action-primary;
   border-radius: styles.$radius-sm;
-  background: styles.$color-action-primary;
+  background: styles.$color-action-fill;
   color: styles.$color-surface-primary;
   cursor: pointer;
 
@@ -661,7 +661,7 @@ $editor-inspector-min: 260px;
   padding: styles.spacing(8) styles.spacing(16);
   border: 1px solid styles.$color-action-primary;
   border-radius: styles.$radius-sm;
-  background: styles.$color-action-primary;
+  background: styles.$color-action-fill;
   color: styles.$color-surface-primary;
   cursor: pointer;
 }

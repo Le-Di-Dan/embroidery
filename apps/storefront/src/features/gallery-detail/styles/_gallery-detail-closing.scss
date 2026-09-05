@@ -45,7 +45,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
   }
 }
@@ -84,18 +84,18 @@
   min-height: styles.$size-touch-target-min;
   padding-inline: styles.spacing(24);
   border-radius: styles.$radius-button;
-  background: styles.$color-action-primary;
+  background: styles.$color-action-fill;
   font-size: styles.$font-size-body-m;
   font-weight: styles.$font-weight-medium;
   color: styles.$color-surface-primary;
   text-decoration: none;
 
   &:hover {
-    background: styles.$color-action-hover;
+    background: styles.$color-action-fill-hover;
   }
 
   &:active {
-    background: styles.$color-action-active;
+    background: styles.$color-action-fill-active;
   }
 
   &:focus-visible {
@@ -134,7 +134,7 @@
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
   }
 }

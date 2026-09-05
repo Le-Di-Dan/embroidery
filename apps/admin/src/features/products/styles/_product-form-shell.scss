@@ -186,11 +186,11 @@
   @extend %product-form-button;
 
   border: 1px solid styles.$color-action-primary;
-  background: styles.$color-action-primary;
+  background: styles.$color-action-fill;
   color: styles.$color-background-primary;
 
   &:hover:not(:disabled) {
-    background: styles.$color-action-hover;
+    background: styles.$color-action-fill-hover;
     border-color: styles.$color-action-hover;
   }
 }

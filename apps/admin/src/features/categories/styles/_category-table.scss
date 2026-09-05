@@ -50,20 +50,32 @@
   background: styles.$color-background-secondary;
 }
 
-// 915:382 — the row's name is the control that opens the form, drawn in the
-// action colour. A real button with the anchor's affordance, because it opens a
-// panel rather than navigating.
+// 915:382 — the row's name is the control that opens the form. A real button
+// with an anchor's affordance, because it opens a panel rather than navigating.
+//
+// Corrected at `APP12-V02` (`V01-UX-026`, §22). It rendered at 14px/400 with a
+// transparent background and no underline — the same paint as the plain text in
+// the columns beside it — so nothing said the name was the way in. It is
+// underlined at rest now, and it carries the approved touch target rather than
+// being a 14px line you have to aim at.
 .category-table__name {
+  display: inline-flex;
+  align-items: center;
+  min-height: styles.$size-touch-target-min;
   padding: 0;
   font: inherit;
-  color: styles.$color-action-primary;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
   text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
   background: none;
   border: 0;
   cursor: pointer;
 
-  &:hover {
-    text-decoration: underline;
+  &:hover,
+  &:focus-visible {
+    color: styles.$color-action-fill;
   }
 }
 

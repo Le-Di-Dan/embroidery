@@ -58,7 +58,9 @@ $line-height-relaxed: 1.6;
 .discover__title {
   margin: 0;
   font-family: styles.$font-family-primary;
-  font-size: styles.$font-size-heading-l;
+  // The shared page-title role (`APP12-V02` §14/§26): one responsive step,
+  // declared once in `@embroidery/styles`, rather than a per-feature breakpoint.
+  font-size: styles.$type-page-title;
   font-weight: styles.$font-weight-semibold;
   line-height: $line-height-tight;
   color: styles.$color-text-primary;
@@ -108,7 +110,7 @@ $line-height-relaxed: 1.6;
   text-decoration: none;
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
   }
 }
@@ -248,7 +250,7 @@ $line-height-relaxed: 1.6;
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
   }
 }
