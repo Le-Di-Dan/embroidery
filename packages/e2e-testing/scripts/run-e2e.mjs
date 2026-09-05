@@ -138,6 +138,7 @@ const APP12_V01 = [
   'app12-v01-commerce-chromium',
   'app12-v01-admin-shell-chromium',
   'app12-v01-admin-order-chromium',
+  'app12-v02-perf-chromium',
 ];
 
 /**

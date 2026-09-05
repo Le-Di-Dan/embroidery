@@ -7,7 +7,7 @@ ROADMAP_STATUS         = LOCKED
 ROADMAP_LOCK           = LOCKED
 IMPLEMENTATION_STARTED = true
 CHECKPOINTS            = 38
-NEXT                   = APP12-V02
+NEXT                   = APP12-G03
 CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
                          APP12-G02-C1 (2026-09-01, 1/1 — no C2)
                          APP12-C01-C1 (2026-09-01, 1/1 — no C2)
@@ -260,7 +260,7 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | 7 | `APP12-C02` | Admin category management authority (**MANDATORY**) | `COMPLETE` |
 | 8 | `APP12-A01` | Admin category management UI (**MANDATORY**) | `COMPLETE` |
 | 9 | `APP12-C03` | Storefront dynamic category discovery, breadcrumb, CTA, sitemap, gate reconciliation | `COMPLETE` |
-| 10 | `APP12-G03` | Representative UAT dataset | `NOT_STARTED` |
+| 10 | `APP12-G03` | Representative UAT dataset | **`NEXT`** |
 | 11 | `APP12-B01` | Public purchasable SKU projection | `COMPLETE_AFTER_C1` |
 | 11·C1 | `APP12-B01-C1` | Dev data provenance cleanup | `COMPLETE` |
 | 12 | `APP12-B02` | Ready-Made order creation and reservation | `COMPLETE` |
@@ -287,7 +287,7 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | 26 | `APP12-H07` | Operational runbooks (Wave 1) | `COMPLETE` |
 | 27 | `APP12-H08` | Accessibility and compatibility (Wave 1) | `COMPLETE` |
 | 28 | `APP12-V01` | Runtime Visual & Content UAT — audit | `COMPLETE` |
-| 29 | `APP12-V02` | Runtime Visual & Content corrections and live re-verification | **`NEXT`** |
+| 29 | `APP12-V02` | Runtime Visual & Content corrections and live re-verification | `COMPLETE` |
 | 30 | `APP12-U01` | Wave 1 Ready-Made business UAT | `NOT_STARTED` |
 | 31 | `APP12-E01` | Wave 1 commerce regression, positive and negative | `NOT_STARTED` |
 | 32 | `APP12-R01` | **WAVE 1 RELEASE GATE** — Ready-Made GO / NO-GO | `NOT_STARTED` |

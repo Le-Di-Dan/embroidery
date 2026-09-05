@@ -75,5 +75,15 @@ export function app12V01Projects(options: {
       testMatch: '**/app12/v01-admin-order.audit.spec.ts',
       use: { ...common, baseURL: options.adminUrl },
     },
+    {
+      // `APP12-V02` §40 — the performance regression check over the public
+      // surfaces V02 changed. It rides this topology because it needs the same
+      // production build and the same density fixture, and it is a fifth project
+      // rather than a fifth test in an audit spec because it navigates each
+      // surface four times in its own fresh context.
+      name: 'app12-v02-perf-chromium',
+      testMatch: '**/app12/v02-performance.regression.spec.ts',
+      use: { ...common, baseURL: options.storefrontUrl },
+    },
   ] as Project[];
 }

@@ -22,6 +22,7 @@
 // invented here.
 
 @use '@embroidery/styles' as styles;
+@use 'customer-merge-participant';
 
 // The slot floor from the approved frames: two 560px participant columns at
 // 1440, which at 1280 minus the 240 sidebar and the page padding no longer fit
@@ -180,111 +181,6 @@ $customer-merge-slot-min: 420px;
     @include styles.action-secondary;
 
     align-self: flex-start;
-  }
-}
-
-.customer-merge-slot {
-  display: flex;
-  flex-direction: column;
-  gap: styles.spacing(8);
-  padding: styles.spacing(16);
-  min-width: 0;
-  background: styles.$color-surface-primary;
-  border: 1px solid styles.$color-border-primary;
-  border-radius: styles.$radius-card;
-
-  &__title {
-    margin: 0;
-    font-size: styles.$font-size-body-m;
-    font-weight: styles.$font-weight-semibold;
-    color: styles.$color-text-primary;
-  }
-
-  &__meaning,
-  &__empty,
-  &__loading {
-    margin: 0;
-    font-size: styles.$font-size-caption;
-    color: styles.$color-text-secondary;
-  }
-
-  &__form {
-    display: flex;
-    flex-direction: column;
-    gap: styles.spacing(4);
-  }
-}
-
-.customer-merge-participant {
-  display: flex;
-  flex-direction: column;
-  gap: styles.spacing(4);
-  min-width: 0;
-
-  &__name {
-    margin: 0;
-    font-size: styles.$font-size-body-m;
-    font-weight: styles.$font-weight-medium;
-    color: styles.$color-text-primary;
-    overflow-wrap: anywhere;
-  }
-
-  // Why the name is missing, and where one can be set (`V01-UX-032`, §21.4).
-  &__name-hint {
-    margin: 0;
-    font-size: styles.$font-size-caption;
-    line-height: 1.5;
-    color: styles.$color-text-secondary;
-  }
-
-  &__reference,
-  &__verified {
-    margin: 0;
-    font-size: styles.$font-size-caption;
-    color: styles.$color-text-secondary;
-  }
-
-  // The one handle that distinguishes two nameless participants, so it reads as
-  // an identifier rather than as prose.
-  &__reference-value {
-    font-weight: styles.$font-weight-medium;
-    color: styles.$color-text-primary;
-  }
-
-  &__contacts-heading {
-    margin: styles.spacing(4) 0 0;
-    font-size: styles.$font-size-caption;
-    font-weight: styles.$font-weight-semibold;
-    color: styles.$color-text-secondary;
-  }
-
-  &__contacts {
-    display: flex;
-    flex-direction: column;
-    gap: styles.spacing(4);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  &__contact {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: styles.spacing(8);
-    min-width: 0;
-    font-size: styles.$font-size-body-s;
-  }
-
-  &__kind {
-    flex: 0 0 88px;
-    color: styles.$color-text-secondary;
-  }
-
-  &__value {
-    color: styles.$color-text-primary;
-    font-weight: styles.$font-weight-medium;
-    overflow-wrap: anywhere;
   }
 }
 
