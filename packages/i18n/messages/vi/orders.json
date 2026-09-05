@@ -26,7 +26,6 @@
     "pageTitle": "Truy cập an toàn — {brand}"
   },
   "orderAccess": {
-    "title": "Thanh toán đơn hàng",
     "order": {
       "prefix": "Đơn hàng",
       "suffix": "Liên kết chỉ dành cho bạn"
@@ -109,7 +108,9 @@
       "empty": "Bạn chưa gửi ảnh nào.",
       "listLabel": "Ảnh xác nhận chuyển khoản đã gửi",
       "truth": "Ảnh đã nhận không có nghĩa là đã thanh toán. Xưởng vẫn cần đối chiếu khoản chuyển.",
-      "quotaReached": "Bạn đã gửi đủ số ảnh cho lần chuyển khoản này."
+      "quotaReached": "Bạn đã gửi đủ số ảnh cho lần chuyển khoản này.",
+      "chooseAction": "Chọn ảnh chuyển khoản",
+      "selectedFile": "Đã chọn: {name}"
     },
     "evidenceStatus": {
       "UPLOADED": {
@@ -150,7 +151,7 @@
     "attempt": {
       "start": "Hiện thông tin chuyển khoản",
       "starting": "Đang mở…",
-      "opened": "Thông tin chuyển khoản đã sẵn sàng bên dưới.",
+      "opened": "Thông tin chuyển khoản đã sẵn sàng. Xưởng sẽ đối chiếu sau khi bạn chuyển.",
       "superseded": "Xưởng vừa cập nhật phí giao hàng, nên số tiền đã thay đổi. Bạn chuyển khoản theo số tiền mới bên dưới."
     },
     "attemptFailure": {
@@ -187,6 +188,17 @@
       "evidenceUploaded": "Đã gửi ảnh xác nhận."
     },
     "pageTitle": "Đơn hàng của bạn — {brand}",
-    "pageDescription": "Xem trạng thái đơn hàng, số tiền cần thanh toán và thông tin chuyển khoản qua liên kết truy cập an toàn."
+    "pageDescription": "Xem trạng thái đơn hàng, số tiền cần thanh toán và thông tin chuyển khoản qua liên kết truy cập an toàn.",
+    "headings": {
+      "AWAITING_SHIPPING_FEE": "Đang chờ phí giao hàng",
+      "AWAITING_PAYMENT": "Thanh toán đơn hàng",
+      "PAYMENT_UNDER_REVIEW": "Đang đối chiếu thanh toán",
+      "READY_FOR_DELIVERY": "Đơn hàng đang chuẩn bị giao",
+      "DELIVERED": "Đơn hàng đã giao",
+      "COMPLETED": "Đơn hàng hoàn tất",
+      "CANCELLED": "Đơn hàng đã huỷ",
+      "EXPIRED": "Đơn hàng đã hết hạn giữ",
+      "OTHER_STATE": "Đơn hàng của bạn"
+    }
   }
 }

@@ -115,22 +115,43 @@ function renderScreen() {
   return renderWithProviders(<SecureOrderScreen />);
 }
 
-/** Waits for the authorized branch, whichever variant it settles on. */
+/**
+ * Waits for the authorized branch, whichever variant it settles on.
+ *
+ * The `h1` is state-aware since `APP12-V02` §17.1 (`V01-UX-012`): the page used
+ * to be headed `Thanh toán đơn hàng` in all nine states, including the four in
+ * which there is nothing left to pay. So the wait is for *any* level-1 heading
+ * the catalog can produce rather than for one fixed string — which is also what
+ * makes this helper usable from the terminal-state cases below.
+ */
 async function renderAuthorized() {
   const result = renderScreen();
-  await screen.findByRole('heading', { level: 1, name: COPY.title });
+  const headings = Object.values(COPY.headings);
+  await screen.findByRole('heading', {
+    level: 1,
+    name: (name: string) => headings.includes(name),
+  });
   return result;
 }
 
 /**
- * The intake tile's own label, matched exactly.
+ * The file input's accessible name.
  *
- * Composed from the catalog rather than written as a regex, because the approved
- * wording carries a literal `(` that `new RegExp` would read as an unterminated
- * group — and because the count is the server's quota, not a number this suite
- * gets to choose.
+ * `APP12-V02` §18 split the tile's one string in two: the quota is fine print
+ * above the control and the control itself carries the verb. The native chrome
+ * used to supply that verb — `Choose File`, in English, on a Vietnamese payment
+ * surface (`V01-UX-014`) — and the input is clipped behind its label now.
+ *
+ * What this suite asserts is unchanged and is the property that matters: the
+ * input is still reachable *by its label*, which is only true while it is a
+ * real, labelled, focusable file input rather than a styled `<div>`.
  */
 function evidenceLabel(): string {
+  return COPY.evidence.chooseAction;
+}
+
+/** The quota, still stated — now as fine print rather than as the control. */
+function evidenceQuotaText(): string {
   return `${COPY.evidence.choosePrefix} ${MAX_EVIDENCE_PER_ATTEMPT}${COPY.evidence.chooseSuffix}`;
 }
 
@@ -455,6 +476,7 @@ describe('transfer evidence — truth separation (§21, §22, §23)', () => {
   it('offers no intake before an attempt exists', async () => {
     await renderAuthorized();
     expect(screen.queryByLabelText(evidenceLabel())).not.toBeInTheDocument();
+    expect(screen.queryByText(evidenceQuotaText())).not.toBeInTheDocument();
     expect(evidenceStatusMock).not.toHaveBeenCalled();
   });
 

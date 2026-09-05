@@ -316,13 +316,17 @@ describe('navigation activation', () => {
     expect(collections?.route).toBe(STOREFRONT_GALLERY_ROUTE);
   });
 
-  it('leaves the areas that are still unbuilt non-interactive', () => {
+  it('carries no item without a route', () => {
     // Studio has no landing page and Journal was deleted from the approved
-    // Homepage; neither gains an href here.
+    // Homepage. They used to sit in this model with `route: null` and render as
+    // grey `Sắp ra mắt` text; `V01-UX-008` measured that as three of five
+    // header items dead, and `APP12-V02` §9 removed them rather than continuing
+    // to draw them. An item is in the header when it has somewhere to go.
     for (const id of ['studio', 'journal']) {
-      const item = STOREFRONT_PRIMARY_NAV.find((entry) => entry.id === id);
-      expect(item).toBeDefined();
-      expect(item?.route).toBeNull();
+      expect(STOREFRONT_PRIMARY_NAV.find((entry) => entry.id === id)).toBeUndefined();
+    }
+    for (const item of STOREFRONT_PRIMARY_NAV) {
+      expect(item.route.startsWith('/')).toBe(true);
     }
   });
 

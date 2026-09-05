@@ -67,7 +67,23 @@ export const ORDER_ACCESS_PATH = '/truy-cap/don-hang';
  * regression in it. Node ids are in `order-access-copy.ts`.
  */
 export const COPY = {
-  title: 'Thanh toán đơn hàng',
+  /**
+   * The page heading, **per state** (`V01-UX-012`, `APP12-V02` §17.1).
+   *
+   * It was one string, `Thanh toán đơn hàng`, used in all nine states — four of
+   * which have nothing left to pay. Transcribed here per state for the same
+   * reason the rest of this catalog is transcribed: a spec that imported the
+   * Storefront catalog would pass whatever that catalog said.
+   */
+  headingAwaitingFee: 'Đang chờ phí giao hàng',
+  headingAwaitingPayment: 'Thanh toán đơn hàng',
+  headingUnderReview: 'Đang đối chiếu thanh toán',
+  headingReadyForDelivery: 'Đơn hàng đang chuẩn bị giao',
+  headingDelivered: 'Đơn hàng đã giao',
+  headingCompleted: 'Đơn hàng hoàn tất',
+  headingCancelled: 'Đơn hàng đã huỷ',
+  headingExpired: 'Đơn hàng đã hết hạn giữ',
+
   pillAwaitingFee: 'Chờ xưởng báo phí giao hàng',
   pillAwaitingPayment: 'Chờ thanh toán',
   pillUnderReview: 'Xưởng đang đối chiếu',
@@ -110,6 +126,18 @@ export const COPY = {
 
   unavailableTitle: 'Liên kết không sử dụng được',
 } as const;
+
+/** Every heading the authorized surface can render, for "has it loaded" waits. */
+export const ORDER_ACCESS_HEADINGS: readonly string[] = [
+  COPY.headingAwaitingFee,
+  COPY.headingAwaitingPayment,
+  COPY.headingUnderReview,
+  COPY.headingReadyForDelivery,
+  COPY.headingDelivered,
+  COPY.headingCompleted,
+  COPY.headingCancelled,
+  COPY.headingExpired,
+];
 
 /** The three approved viewports (`APP12-D01` §L). */
 export const VIEWPORTS = [
@@ -251,7 +279,8 @@ export async function openSecureOrder(page: Page): Promise<void> {
     .poll(
       async () => {
         const heading = (await page.getByRole('heading', { level: 1 }).innerText()).trim();
-        if (heading === COPY.title) return true;
+        // Any of the state headings means the authorized page has rendered.
+        if (ORDER_ACCESS_HEADINGS.includes(heading)) return true;
         const retry = page.getByRole('button', { name: 'Thử lại' });
         if (await retry.isVisible().catch(() => false)) await retry.click();
         return false;

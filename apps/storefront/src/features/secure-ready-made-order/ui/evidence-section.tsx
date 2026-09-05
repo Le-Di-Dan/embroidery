@@ -113,8 +113,19 @@ export function EvidenceSection({ evidence, intakeOpen }: EvidenceSectionProps) 
 
     return (
       <div className="secure-order__uploader">
-        <label className="secure-order__uploader-label" htmlFor={inputId}>
+        <p className="secure-order__fine-print">
           {`${COPY.evidence.choosePrefix} ${MAX_EVIDENCE_PER_ATTEMPT}${COPY.evidence.chooseSuffix}`}
+        </p>
+        {/*
+          The label is the visible control and the input is clipped behind it
+          (`V01-UX-014`, §18). It is still a real file input: still focusable,
+          still opening the browser's own dialog, still carrying its `accept`
+          list and its label association. Only the painted box is replaced,
+          because the native one reads `Choose File` — in English, on the
+          Vietnamese payment surface.
+        */}
+        <label className="secure-order__uploader-label" htmlFor={inputId}>
+          {COPY.evidence.chooseAction}
         </label>
         <input
           className="secure-order__uploader-input"
@@ -135,12 +146,21 @@ export function EvidenceSection({ evidence, intakeOpen }: EvidenceSectionProps) 
         />
         <p className="secure-order__fine-print">{COPY.evidence.constraint}</p>
 
-        {evidence.uploading ? (
-          <p className="secure-order__body">
-            {evidence.pendingFileName === undefined
-              ? COPY.evidence.uploading
-              : `${COPY.evidence.uploading} ${evidence.pendingFileName}`}
+        {/*
+          The selected-file state §18 asks for. The native control said which
+          file had been chosen — in English, and only until the page moved on —
+          and clipping it took that away, so the surface says it instead.
+        */}
+        {evidence.pendingFileName === undefined ? null : (
+          <p className="secure-order__uploader-selection">
+            {evidence.uploading
+              ? `${COPY.evidence.uploading} ${evidence.pendingFileName}`
+              : COPY.evidence.selectedFile(evidence.pendingFileName)}
           </p>
+        )}
+
+        {evidence.uploading && evidence.pendingFileName === undefined ? (
+          <p className="secure-order__body">{COPY.evidence.uploading}</p>
         ) : null}
 
         {evidence.failure === undefined ? null : (

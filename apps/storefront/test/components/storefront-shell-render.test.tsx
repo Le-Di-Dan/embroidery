@@ -72,7 +72,8 @@ describe('StorefrontShell — navigation & search boundaries', () => {
       const nav = screen.getByRole('navigation', { name: 'Điều hướng chính' });
       const request = within(nav).getByRole('link', { name: 'Đặt thêu' });
       expect(request).toHaveAttribute('href', '/yeu-cau/moi');
-      expect(within(nav).queryAllByRole('link')).toHaveLength(3);
+      // The four Wave-1 items plus the restored one, all still real links.
+      expect(within(nav).queryAllByRole('link')).toHaveLength(5);
     } finally {
       if (previous === undefined) {
         delete process.env[key];
@@ -82,27 +83,30 @@ describe('StorefrontShell — navigation & search boundaries', () => {
     }
   });
 
-  it('links only the areas that are built and leaves the rest non-interactive', () => {
+  it('links every item it renders, and renders no item it cannot link', () => {
     const { container } = renderShell();
     const nav = screen.getByRole('navigation', { name: 'Điều hướng chính' });
 
-    // Two Wave-1 areas are real links on their canonical routes, in IA order:
-    // Discover (APP2-S01, IMP-D038) and Collections (APP11-S02).
+    // Four Wave-1 areas, in IA order, every one a real link on its canonical
+    // route. `V01-UX-008` measured three of the five approved items dead;
+    // `APP12-V02` §9 rebuilt the header from destinations that work, promoting
+    // `Dịch vụ` and `Cửa hàng` — already-released routes that had been
+    // reachable only from the footer.
     const links = within(nav).queryAllByRole('link');
-    expect(links).toHaveLength(2);
-    expect(links[0]).toHaveAccessibleName('Khám phá');
-    expect(links[0]).toHaveAttribute('href', '/kham-pha');
-    expect(links[1]).toHaveAccessibleName('Bộ sưu tập');
-    expect(links[1]).toHaveAttribute('href', '/bo-suu-tap');
+    expect(links.map((link) => [link.getAttribute('href'), link.textContent])).toEqual([
+      ['/kham-pha', 'Khám phá'],
+      ['/bo-suu-tap', 'Bộ sưu tập'],
+      ['/dich-vu', 'Dịch vụ'],
+      ['/cua-hang', 'Cửa hàng'],
+    ]);
 
-    // Every other IA label is flagged unavailable to assistive tech. Studio has
-    // no landing page (APP3 built one per Product) and the approved APP11
-    // Homepage deleted Journal outright, so neither gains an href. `Đặt thêu`
-    // joins them **only while Wave 2 is withheld** (APP12-G02 §9): its route is
-    // built and the server now refuses it, so offering the link would advertise
-    // a deliberate 404. The release-aware half of that is asserted below.
+    // And nothing is drawn as unavailable. §9: a grey disabled item has no
+    // place in primary navigation. `Studio` and `Nhật ký` are gone from the
+    // model — neither ever had a route — and `Đặt thêu` is omitted while the
+    // server refuses its address, rather than shown with a `Sắp ra mắt` tag.
+    expect(container.querySelectorAll('[aria-disabled="true"]')).toHaveLength(0);
     for (const label of ['Studio', 'Nhật ký', 'Đặt thêu']) {
-      expect(within(nav).getByText(label).closest('[aria-disabled="true"]')).not.toBeNull();
+      expect(within(nav).queryByText(label)).toBeNull();
     }
 
     // Still no dead anchors and no invented routes anywhere in the shell.
@@ -110,15 +114,6 @@ describe('StorefrontShell — navigation & search boundaries', () => {
       const href = anchor.getAttribute('href');
       expect(href).not.toBe('#');
       expect(href).not.toBe('');
-      // `#main-content` is the skip link's in-page target, not a route.
-      //
-      // The set grew at `APP11-S05`: the shell now composes the footer
-      // store-presentation block above the DS footer, and its four columns link
-      // the three singular content routes and the four policies. The primary
-      // navigation above is unchanged — S05 activated no header item, because no
-      // existing IA label means Service and `Studio` may not be repurposed to
-      // `/cua-hang`. What this assertion still guards is the property it always
-      // did: every anchor the shell renders resolves to a delivered route.
       expect([
         '/',
         '/kham-pha',
@@ -136,14 +131,19 @@ describe('StorefrontShell — navigation & search boundaries', () => {
     }
   });
 
-  it('renders a non-submitting, non-focusable search affordance (no fake control)', () => {
+  it('renders no search control at all, real or presentational', () => {
     const { container } = renderShell();
-    // Not a real input/button/form: nothing focusable or submittable.
+
+    // The approved header composes a search bar and `APP1-S01A` shipped the
+    // most honest thing available to it: a non-focusable glyph plus a
+    // screen-reader note saying search was unavailable. On a released shop that
+    // is still a search box the customer cannot search with, on every page
+    // (`V01-UX-008`), beside a sentence whose subject is a missing capability
+    // (`V01-UX-004`). §9 removes both.
     expect(container.querySelector('input')).toBeNull();
     expect(container.querySelector('form')).toBeNull();
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
-    // The unavailable capability is announced accessibly instead.
-    expect(screen.getByText('Tìm kiếm sẽ sớm ra mắt.')).toBeInTheDocument();
+    expect(screen.queryByText(/Tìm kiếm/)).toBeNull();
   });
 
   it('exposes a mobile navigation trigger wired to the drawer, collapsed by default', () => {

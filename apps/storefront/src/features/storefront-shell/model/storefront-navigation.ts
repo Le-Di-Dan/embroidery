@@ -101,6 +101,22 @@ export function buildStorefrontStudioPath(slug: string): string {
 export const STOREFRONT_CHECKOUT_ROUTE_BASE = '/mua-hang';
 
 /**
+ * The customer's secure Ready-Made order surface (`APP12-S03`).
+ *
+ * Declared here with every other Storefront path, and **nothing links to it**:
+ * the page is opened by an `ORDER_ACCESS` link the workshop sends, and
+ * `APP12-S02` §25 forbids navigating to it from the checkout. The constant
+ * exists because the shell has to recognise the route to give it the reduced
+ * transactional chrome (`APP12-V02` §10), and recognising it by a literal in
+ * the shell is how a path comes to be written in two places.
+ *
+ * It sits under `/truy-cap` and is deliberately not withheld with the four
+ * custom siblings beneath that prefix — `wave2-route-policy.ts` explains why
+ * the landing may not be blocked wholesale.
+ */
+export const STOREFRONT_SECURE_ORDER_ROUTE = '/truy-cap/don-hang';
+
+/**
  * The one place a Ready-Made checkout URL is built.
  *
  * Slug-addressed, exactly like Product Detail, so `/san-pham/<slug>` continues
@@ -198,45 +214,12 @@ export function isStorefrontNavRouteActive(pathname: string | null, route: strin
 export interface StorefrontNavItem {
   readonly id: string;
   readonly label: string;
-  /** Reserved for the owning phase; `null` renders the item non-interactively. */
-  readonly route: string | null;
+  /**
+   * The area this item opens. Never `null`: §9 removed the two items that had
+   * no route rather than drawing them as unavailable.
+   */
+  readonly route: string;
 }
-
-/**
- * The approved-header primary navigation (canonical IA labels). Three areas are
- * routed: `discover` (`APP2-S01`), `commission` (`APP5-S01`) and `collections`
- * (`APP11-S02`). The other two are not built, so their items stay presentation
- * only. Do not add an `href` here for a route that does not yet exist.
- *
- * `collections` was `route: null` from `APP1-S01A` until the gallery feed
- * existed; this is the "phase that owns the area" the model above describes,
- * and the item becomes a real link in the same change that creates the route.
- * `journal` stays unrouted permanently as far as APP11 is concerned — the
- * approved Homepage deleted the Journal section outright.
- *
- * `studio` stays `route: null` after `APP3-S01`, and that is the correct
- * outcome rather than an oversight. S01 built a Studio *per Product*; there is
- * no Studio landing page, so any `href` here would have to invent one.
- */
-export const STOREFRONT_PRIMARY_NAV: readonly StorefrontNavItem[] = [
-  {
-    id: 'discover',
-    label: navMessage.text('storefrontPrimaryNav.label'),
-    route: STOREFRONT_DISCOVER_ROUTE,
-  },
-  {
-    id: 'collections',
-    label: navMessage.text('storefrontPrimaryNav.label2'),
-    route: STOREFRONT_GALLERY_ROUTE,
-  },
-  { id: 'studio', label: 'Studio', route: null },
-  {
-    id: 'commission',
-    label: navMessage.text('storefrontPrimaryNav.label3'),
-    route: STOREFRONT_CUSTOM_REQUEST_ROUTE,
-  },
-  { id: 'journal', label: navMessage.text('storefrontPrimaryNav.label4'), route: null },
-];
 
 /**
  * The three singular public content routes and the policy family
@@ -285,6 +268,64 @@ export const STOREFRONT_POLICY_ROUTE_BASE = '/chinh-sach';
 export function buildStorefrontPolicyPath(slug: string): string {
   return `${STOREFRONT_POLICY_ROUTE_BASE}/${encodeURIComponent(slug)}`;
 }
+
+/**
+ * The Wave-1 primary navigation.
+ *
+ * ## What it is now, and why
+ *
+ * `V01-UX-008`: three of the five items in the approved header were dead.
+ * `Studio` had no landing page to route to, `Nhật ký` names a section the
+ * approved Homepage deleted outright, and `Đặt thêu` pointed at an address the
+ * release gate answers with a deliberate 404 — so the masthead of a released
+ * shop offered five destinations and delivered two.
+ *
+ * `APP12-V02` §9 rebuilds it from destinations that currently work. `Dịch vụ`
+ * and `Cửa hàng` were already released routes reachable only from the footer;
+ * promoting them is what lets the two dead items go without the header
+ * shrinking to a pair.
+ *
+ * ## Nothing is drawn as unavailable
+ *
+ * `Studio` and `Nhật ký` are **removed**, not disabled. §9 is explicit that a
+ * grey disabled item has no place in primary navigation, and an item that has
+ * never had a route is not a capability being withheld — it is an area nobody
+ * has built. When one is built, its phase adds it here, exactly as `APP2-S01`,
+ * `APP5-S01` and `APP11-S02` each did.
+ *
+ * `commission` keeps its route and is **omitted while that route is withheld**
+ * (`storefront-primary-nav.tsx`), so releasing the capability restores the item
+ * with no change here. That replaces the `Sắp ra mắt` affordance `APP12-G02`
+ * routed it through: publishing the roadmap in the masthead is what §9 and the
+ * release authority both refuse.
+ */
+export const STOREFRONT_PRIMARY_NAV: readonly StorefrontNavItem[] = [
+  {
+    id: 'discover',
+    label: navMessage.text('discover'),
+    route: STOREFRONT_DISCOVER_ROUTE,
+  },
+  {
+    id: 'collections',
+    label: navMessage.text('collections'),
+    route: STOREFRONT_GALLERY_ROUTE,
+  },
+  {
+    id: 'commission',
+    label: navMessage.text('commission'),
+    route: STOREFRONT_CUSTOM_REQUEST_ROUTE,
+  },
+  {
+    id: 'service',
+    label: navMessage.text('service'),
+    route: STOREFRONT_SERVICE_ROUTE,
+  },
+  {
+    id: 'store',
+    label: navMessage.text('store'),
+    route: STOREFRONT_STORE_ROUTE,
+  },
+];
 
 /*
  * ## Why sibling features import this module by path, not through the barrel

@@ -94,7 +94,12 @@ for (const viewport of VIEWPORTS) {
 
       await openSecureOrder(page);
 
-      await expect(page.getByRole('heading', { level: 1, name: COPY.title })).toBeVisible();
+      // The heading is state-aware since `APP12-V02` §17.1: it names the state
+      // the order is actually in rather than saying `Thanh toán đơn hàng` on a
+      // page where nothing is payable yet.
+      await expect(
+        page.getByRole('heading', { level: 1, name: COPY.headingAwaitingFee }),
+      ).toBeVisible();
       await expect(page.getByText(COPY.pillAwaitingFee)).toBeVisible();
       await expect(page.getByText(COPY.bodyAwaitingFee)).toBeVisible();
       await expect(page.getByText(orderCode, { exact: false })).toBeVisible();

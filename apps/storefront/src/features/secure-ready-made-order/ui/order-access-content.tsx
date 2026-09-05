@@ -137,7 +137,7 @@ export function OrderAccessContent({ order, session, headingRef }: OrderAccessCo
 
       <div className="secure-order__heading">
         <h1 className="secure-order__title" id="secure-order-title" ref={headingRef} tabIndex={-1}>
-          {COPY.title}
+          {COPY.headings[variant]}
         </h1>
         <OrderStatusPill tone={variantToneOf(variant)} label={COPY.states[variant].pill} />
       </div>

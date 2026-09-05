@@ -8,15 +8,7 @@
       "primaryLabel": "Điều hướng chính",
       "drawerLabel": "Điều hướng",
       "openMenu": "Mở menu điều hướng",
-      "closeMenu": "Đóng menu điều hướng",
-      "unavailableTag": "Sắp ra mắt",
-      "unavailableAria": "chưa khả dụng",
-      "future": "Các khu vực còn lại sẽ sớm ra mắt."
-    },
-    "search": {
-      "label": "Tìm kiếm",
-      "hint": "Tìm kiếm tác phẩm thêu…",
-      "unavailable": "Tìm kiếm sẽ sớm ra mắt."
+      "closeMenu": "Đóng menu điều hướng"
     },
     "contactHandoff": {
       "title": "Kết nối",
@@ -32,15 +24,22 @@
     },
     "footer": {
       "tagline": "Studio thêu thủ công theo yêu cầu.",
-      "rights": "© {brand} · Studio thêu theo yêu cầu."
+      "rights": "© {brand} · Studio thêu theo yêu cầu.",
+      "supportLabel": "Chính sách và hỗ trợ",
+      "faqLabel": "Câu hỏi thường gặp",
+      "policyLabels": {
+        "shipping": "Giao hàng",
+        "payment": "Thanh toán",
+        "returns": "Đổi trả",
+        "privacy": "Bảo mật"
+      }
     },
     "navItems": {
-      "storefrontPrimaryNav": {
-        "label": "Khám phá",
-        "label2": "Bộ sưu tập",
-        "label3": "Đặt thêu",
-        "label4": "Nhật ký"
-      }
+      "discover": "Khám phá",
+      "collections": "Bộ sưu tập",
+      "commission": "Đặt thêu",
+      "service": "Dịch vụ",
+      "store": "Cửa hàng"
     }
   },
   "notFound": {

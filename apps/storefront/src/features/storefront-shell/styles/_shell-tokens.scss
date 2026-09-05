@@ -1,0 +1,23 @@
+// Storefront shell — local layout constants.
+//
+// Split out of `storefront-shell.scss` by `APP12-V02` §41 so the footer partial
+// can read `$bp-footer` without importing the whole shell. Values unchanged.
+
+// Local layout breakpoints — the design system defers a shared breakpoint scale
+// (FU-A16), so these are shell-local decisions, not tokens. `$bp-nav` is the
+// Full↔Compact header threshold: the Full inline header applies above 1024px
+// (the approved desktop 1440 frame), while the Compact header + drawer covers
+// ≤1024px — matching BOTH approved Compact frames (mobile 390 and tablet 1024,
+// FIG-STOREFRONT-SHELL-{MOBILE,TABLET}-DEFAULT). The D02 audit found the Full
+// header clips at 1024, so 1024 is deliberately Compact, not Full. `$bp-footer`
+// switches the footer between the desktop/tablet and compact-mobile compositions.
+$bp-nav: 1025px;
+$bp-footer: 768px;
+
+// Shell-specific composition constants (no shared token; approved shell values).
+$content-max: 1200px; // approved max content width (~1200, FIG-STOREFRONT-SHELL-NOTES)
+$bar-height: 72px;
+$drawer-width: 320px;
+
+// Local stacking order — @embroidery/styles defines no z-index scale.
+$z-drawer: 100;

@@ -45,18 +45,17 @@ export const STOREFRONT_SHELL_COPY = {
     drawerLabel: shellMessage.text('nav.drawerLabel'),
     openMenu: shellMessage.text('nav.openMenu'),
     closeMenu: shellMessage.text('nav.closeMenu'),
-    /** Small visible tag on nav items whose routes are not built yet. */
-    unavailableTag: shellMessage.text('nav.unavailableTag'),
-    /** Screen-reader suffix marking a nav item as not yet available. */
-    unavailableAria: shellMessage.text('nav.unavailableAria'),
-    /** Truthful once Discover shipped: it names the areas still to come. */
-    future: shellMessage.text('nav.future'),
-  },
-  search: {
-    label: shellMessage.text('search.label'),
-    hint: shellMessage.text('search.hint'),
-    /** Announced state: the affordance is presentational, not functional yet. */
-    unavailable: shellMessage.text('search.unavailable'),
+    /**
+     * The item labels, keyed by the item's id (`storefront-navigation.ts`).
+     *
+     * There is deliberately no `unavailableTag`, `unavailableAria` or `future`
+     * any more, and no `search` group at all (`V01-UX-008`, `APP12-V02` §9).
+     * Every one of them existed to describe something the shop cannot do: a
+     * `Sắp ra mắt` tag on two areas nobody has built, a note naming the rest,
+     * and a search box the customer cannot search with. The header now carries
+     * only destinations that work.
+     */
+    items: shellMessage.group<Record<string, string>>('navItems'),
   },
   /**
    * APP10-I01 external contact handoff, relocated from the footer to a floating
@@ -102,5 +101,15 @@ export const STOREFRONT_SHELL_COPY = {
     tagline: shellMessage.text('footer.tagline'),
     /** Rights line without a hard-coded year (no stale/invented business value). */
     rights: shellMessage.text('footer.rights'),
+    /**
+     * The reduced footer a transactional page gets (`V01-UX-022`, §10).
+     *
+     * Short labels rather than the footer column's full `Chính sách giao hàng`:
+     * this is one row beneath a payment control, and the row's own accessible
+     * name already says these are policies.
+     */
+    supportLabel: shellMessage.text('footer.supportLabel'),
+    faqLabel: shellMessage.text('footer.faqLabel'),
+    policyLabels: shellMessage.group<Record<string, string>>('footer.policyLabels'),
   },
 } as const;

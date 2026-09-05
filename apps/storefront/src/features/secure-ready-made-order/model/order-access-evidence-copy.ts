@@ -47,6 +47,17 @@ export const ORDER_ACCESS_EVIDENCE_COPY = {
      */
     choosePrefix: orderAccessMessage.text('evidence.choosePrefix'),
     chooseSuffix: orderAccessMessage.text('evidence.chooseSuffix'),
+    /**
+     * The label on the control itself (`V01-UX-014`, `APP12-V02` §18).
+     *
+     * The tile's fine print names the quota; the control names the action. They
+     * were one string before, which left the browser to supply the only verb on
+     * the surface — `Choose File`, in English.
+     */
+    chooseAction: orderAccessMessage.text('evidence.chooseAction'),
+    /** What was chosen, once something has been. */
+    selectedFile: (name: string): string =>
+      orderAccessMessage.text('evidence.selectedFile', { name }),
     constraint: orderAccessMessage.text('evidence.constraint'),
     uploading: orderAccessMessage.text('evidence.uploading'),
     /** Said beside the title, so *optional* is stated before the control is. */

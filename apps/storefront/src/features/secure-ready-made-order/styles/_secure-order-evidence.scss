@@ -39,26 +39,52 @@
     border-radius: tokens.$dropzone-radius;
   }
 
+  // The label **is** the control (`V01-UX-014`, `APP12-V02` §18).
+  //
+  // The input stayed native and so did its chrome: Chromium paints
+  // `Choose File` / `No file chosen` — in English, on the Vietnamese payment
+  // surface, at a size and weight nothing else on the page uses. It was the one
+  // unstyled control in the product.
+  //
+  // This is the standard fix and not the classic mistake: the input is still a
+  // real `<input type="file">`, still in the tab order, still opening the
+  // browser's own file dialog, still carrying its `accept` list and its
+  // `<label>` association. Only its *painted* box is replaced — clipped rather
+  // than `display: none`, which would take it out of the tab order and out of
+  // the accessibility tree — and the label is given the appearance the rest of
+  // the page uses for a supporting action.
   &__uploader-label {
-    font-size: styles.$font-size-body-m;
-    font-weight: styles.$font-weight-semibold;
-    line-height: tokens.$line-height-body;
-    color: styles.$color-text-primary;
+    @include styles.action-secondary;
   }
 
-  // The native control, left native. A custom-styled file input is the classic
-  // way to lose keyboard operability and the browser's own file dialog, and this
-  // is a payment surface — there is nothing here worth that trade.
   &__uploader-input {
-    min-height: tokens.$touch-target-min;
-    max-width: 100%;
-    font-size: styles.$font-size-body-s;
-    color: styles.$color-text-primary;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    clip-path: inset(50%);
+    border: 0;
+  }
 
-    &:focus-visible {
-      outline: 2px solid styles.$color-focus-ring;
-      outline-offset: 2px;
-    }
+  // Focus lands on the input, which nobody can see, so the label wears the
+  // ring. `:has()` rather than a sibling selector because the label precedes
+  // the input in source order — the association is what orders them, not the
+  // stylesheet.
+  &__uploader:has(&__uploader-input:focus-visible) &__uploader-label {
+    outline: 2px solid styles.$color-focus-ring;
+    outline-offset: 2px;
+  }
+
+  // The chosen file, named. A file input that has been used and says nothing is
+  // the other half of what §18 asks for.
+  &__uploader-selection {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+    overflow-wrap: anywhere;
   }
 
   &__evidence-list {

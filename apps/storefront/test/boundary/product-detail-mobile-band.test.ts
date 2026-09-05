@@ -36,10 +36,18 @@ function readFeatureStyles(stylesDir: string): string {
     .map((file) => readFileSync(join(stylesDir, file), 'utf8'))
     .join('\n');
 }
-const SHELL_SCSS = join(SRC, 'features', 'storefront-shell', 'styles', 'storefront-shell.scss');
+/**
+ * The shell's whole stylesheet, for the same reason.
+ *
+ * `APP12-V02` §41 split it too: adding the reduced transactional footer would
+ * have taken the single file past the 400-line hard limit, so the footer and the
+ * local layout constants — including the threshold this feature mirrors — came
+ * out into partials. Every value is unchanged; only the file holding it moved.
+ */
+const SHELL_STYLES_DIR = join(SRC, 'features', 'storefront-shell', 'styles');
 
 const detail = readFeatureStyles(DETAIL_STYLES_DIR);
-const shell = readFileSync(SHELL_SCSS, 'utf8');
+const shell = readFeatureStyles(SHELL_STYLES_DIR);
 
 /** The `@media (max-width: …)` block that carries the mobile band. */
 function mobileBlock(text: string): string {

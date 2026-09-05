@@ -72,8 +72,24 @@ const orderAccessMessage = messageView(
 );
 
 export const ORDER_ACCESS_COPY = {
-  /** `910:285` / `911:370`. */
-  title: orderAccessMessage.text('title'),
+  /**
+   * The page's `h1`, **per state** (`V01-UX-012`, `APP12-V02` §17.1).
+   *
+   * `910:285` / `911:370` draw one title, `Thanh toán đơn hàng`, and the
+   * delivered surface used it in all nine states — including the four in which
+   * there is nothing left to pay. A customer opening the link after delivery
+   * read "Pay for your order" above a paid, shipped order.
+   *
+   * The state was never invisible: the pill beside the heading has always
+   * carried it. But the heading is what a page *is*, and this one said the
+   * wrong thing five times out of nine. `FU-APP12-S03-01` recorded the
+   * observation and left it for the Product Owner rather than resolving it;
+   * §17.1 is that decision.
+   *
+   * Keyed by the same variant the pill and the body are, so a tenth state
+   * cannot arrive with a pill and no heading.
+   */
+  headings: orderAccessMessage.group<Record<string, string>>('headings'),
 
   /**
    * `910:289` / `911:374` — the order line.

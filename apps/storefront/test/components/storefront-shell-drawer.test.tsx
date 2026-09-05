@@ -42,15 +42,18 @@ describe('StorefrontShell — mobile navigation drawer', () => {
   /**
    * The trap's property is that focus visits every focusable in the drawer in
    * DOM order and wraps at both ends — not that there are exactly five of them.
-   * `APP12-G02` §9 makes the number release-dependent: while Wave 2 is withheld
-   * the custom-request item renders through the existing non-interactive branch
-   * and is therefore not focusable, and releasing Wave 2 restores it. Running
-   * the same walk in both states proves the trap holds either way, which is
-   * strictly more than the fixed five-stop version proved.
+   * `APP12-G02` §9 made the number release-dependent, and `APP12-V02` §9 changed
+   * how: the custom-request item used to render through a non-interactive branch
+   * that was simply not focusable, and it is now **omitted** while its route is
+   * withheld. The walk is the same either way, which is the point — the trap
+   * visits whatever the nav actually renders and wraps at both ends.
+   *
+   * The Wave-1 list grew to four: §9 rebuilt the header from destinations that
+   * work, promoting `Dịch vụ` and `Cửa hàng`.
    */
   it.each([
-    ['withheld', 'false', ['Khám phá', 'Bộ sưu tập']],
-    ['released', 'true', ['Khám phá', 'Bộ sưu tập', 'Đặt thêu']],
+    ['withheld', 'false', ['Khám phá', 'Bộ sưu tập', 'Dịch vụ', 'Cửa hàng']],
+    ['released', 'true', ['Khám phá', 'Bộ sưu tập', 'Đặt thêu', 'Dịch vụ', 'Cửa hàng']],
   ])('traps focus, cycling on Tab and Shift+Tab (Wave 2 %s)', async (_state, flag, areas) => {
     const key = 'CUSTOM_EMBROIDERY_RELEASE_ENABLED';
     const previous = process.env[key];

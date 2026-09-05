@@ -1,0 +1,101 @@
+// Storefront shell — the footer, in both of its shapes.
+//
+// Split out of `storefront-shell.scss` by `APP12-V02` §41: adding the reduced
+// transactional footer (`V01-UX-022`, §10) would have taken that file past the
+// 400-line hard limit. Every declaration below the split marker is unchanged;
+// the transactional rules are new.
+@use '@embroidery/styles' as styles;
+@use './shell-tokens' as tokens;
+
+// --- Footer -----------------------------------------------------------------
+
+.storefront-shell__footer {
+  margin-top: auto;
+  background: styles.$color-background-secondary;
+  border-top: 1px solid styles.$color-border-primary;
+}
+
+.storefront-shell__footer-inner {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  width: 100%;
+  max-width: tokens.$content-max;
+  margin: 0 auto;
+  padding: styles.spacing(24) styles.spacing(16);
+
+  // Desktop/tablet footer: brand and rights on one row (approved DS Footer).
+  @media (min-width: tokens.$bp-footer) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: styles.spacing(32) styles.spacing(24);
+  }
+}
+
+.storefront-shell__footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+.storefront-shell__footer-tagline {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.5;
+  color: styles.$color-text-secondary;
+}
+
+.storefront-shell__footer-rights {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.5;
+  color: styles.$color-text-tertiary;
+}
+
+// --- The transactional footer ----------------------------------------------
+//
+// The checkout and the secure order surface (`V01-UX-022`, §10). Same brand,
+// same rights line, no four-column marketing block — and one row of policy and
+// support links in its place, because §10 keeps the information a person
+// paying might need to read within reach rather than a page away.
+
+.storefront-shell__footer-support-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8) styles.spacing(24);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.storefront-shell__footer-support-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: styles.$size-touch-target-min;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    color: styles.$color-text-primary;
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-focus-ring;
+    outline-offset: 2px;
+  }
+}
+
+// The three parts sit in one row from the same width the full footer does, so
+// the two shells share a rhythm rather than looking like two products.
+@media (min-width: tokens.$bp-footer) {
+  .storefront-shell__footer--transactional .storefront-shell__footer-inner {
+    align-items: center;
+  }
+}

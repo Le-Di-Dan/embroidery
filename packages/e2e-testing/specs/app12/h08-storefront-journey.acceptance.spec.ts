@@ -362,7 +362,11 @@ test('C — the secure order surface is accessible, and leaks no credential', as
   expect(orderCode, 'the journey created an order').toBeDefined();
   await openSecureOrder(page);
 
-  await expect(page.getByRole('heading', { level: 1, name: S03_COPY.title })).toBeVisible();
+  // The order has just been created, so it is waiting on the shipping fee. The
+  // heading names that state since `APP12-V02` §17.1.
+  await expect(
+    page.getByRole('heading', { level: 1, name: S03_COPY.headingAwaitingFee }),
+  ).toBeVisible();
   await expectShellLandmarks(page, 'secure-order');
   await expectNoSeriousViolations(page, 'secure-order');
   await expectContrastIsTokenOwned(page, 'secure-order@1440');

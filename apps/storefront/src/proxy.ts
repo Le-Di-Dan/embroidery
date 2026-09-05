@@ -1,6 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 import {
+  SHELL_VARIANT_HEADER,
+  resolveShellVariant,
+} from './features/storefront-shell/model/shell-variant';
+
+import {
   CONTENT_SECURITY_POLICY_HEADER,
   buildContentSecurityPolicy,
   createContentSecurityPolicyNonce,
@@ -111,6 +116,12 @@ export default function proxy(request: NextRequest): NextResponse {
   // gateway forwarded (correlation id, forwarded-proto) rather than replacing it.
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(CONTENT_SECURITY_POLICY_HEADER, policy);
+  // Which shell the route gets (`V01-UX-022`, `APP12-V02` §10). A Server
+  // Component cannot read the pathname, and this is the one place per request
+  // that already has it and already clones the headers. Not a security
+  // boundary: a forged value changes which footer a visitor sees and nothing
+  // else — the route gate below is what withholds anything.
+  requestHeaders.set(SHELL_VARIANT_HEADER, resolveShellVariant(request.nextUrl.pathname));
   const forward = { request: { headers: requestHeaders } };
 
   const withheld = !isCustomEmbroideryReleased() && isWithheldWave2Route(request.nextUrl.pathname);

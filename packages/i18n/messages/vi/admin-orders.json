@@ -355,7 +355,6 @@
       "cancel": "Huỷ",
       "pending": "Đang mở kỳ thanh toán…"
     },
-    "apiGap": {},
     "verification": {
       "title": "Xác nhận đã nhận tiền",
       "help": "Căn cứ duy nhất là số tiền thực nhận trong tài khoản ngân hàng. Không có webhook, không có cổng thanh toán, không có đối chiếu ngân hàng tự động.",

@@ -1,10 +1,15 @@
 import { HTML_LANG, VI_MESSAGES, messageView } from '@embroidery/i18n';
+import { headers } from 'next/headers';
 import type { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ReactNode } from 'react';
 
 import { getStorefrontPublicOrigin } from '../config/public-origin';
 import { StorefrontShell } from '../features/storefront-shell';
+import {
+  SHELL_VARIANT_HEADER,
+  readShellVariant,
+} from '../features/storefront-shell/model/shell-variant';
 import '../styles/main.scss';
 
 /**
@@ -90,12 +95,19 @@ export function generateMetadata(): Metadata {
  * landmarks; each page owns its own `<h1>` and business content. The only client
  * interactivity (the mobile drawer) is isolated inside the shell's header island.
  */
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  // Which shell this route gets (`V01-UX-022`, `APP12-V02` §10). Read here
+  // rather than inside the shell because the shell feature’s barrel is imported
+  // by client components for its route constants, and `next/headers` there would
+  // pull a server-only API into their bundles. The route is already dynamic for
+  // the CSP nonce, so this costs no rendering mode.
+  const variant = readShellVariant((await headers()).get(SHELL_VARIANT_HEADER));
+
   return (
     <html lang={HTML_LANG}>
       <body>
         <NextIntlClientProvider>
-          <StorefrontShell>{children}</StorefrontShell>
+          <StorefrontShell variant={variant}>{children}</StorefrontShell>
         </NextIntlClientProvider>
       </body>
     </html>

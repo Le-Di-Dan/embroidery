@@ -52,11 +52,26 @@
   }
 
   // 910:319 / 910:323 — the two values that must not be misread.
+  //
+  // `V01-UX-029`: the transfer reference is the one string the customer and the
+  // workshop must match **exactly**, and it was the smallest text in its card
+  // and wrapped mid-token. §17.4 gives it 16px where the layout permits, and
+  // makes it selectable in one gesture.
   &__account,
   &__reference {
     font-family: tokens.$mono-family;
+    font-size: styles.$font-size-body-m;
     font-weight: styles.$font-weight-semibold;
     letter-spacing: 0.02em;
+    // Break only where a token genuinely cannot fit, never between characters
+    // of one that can: a reference split across two lines is a reference a
+    // customer retypes wrongly. Nothing is clipped on a narrow screen — the
+    // value wraps as a whole and the row grows.
+    word-break: normal;
+    overflow-wrap: break-word;
+    // One click, one selection. The copy control beside it stays the primary
+    // route; this is for the customer who reaches for the value itself.
+    user-select: all;
   }
 
   // 910:286 — symbol, label, tone. Never colour alone (917:424).

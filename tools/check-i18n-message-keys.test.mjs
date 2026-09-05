@@ -21,9 +21,12 @@ import { flattenKeys, readsOf, run } from './check-i18n-message-keys.mjs';
 const REPOSITORY_ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 describe('flattening a message tree', () => {
-  it('addresses every leaf by its dotted path', () => {
+  it('addresses every leaf by its dotted path, and every catalog above it', () => {
+    // The sub-object is addressable too: `group('hero')` takes a whole catalog
+    // at once, which is how an enum-keyed label set is read. Omitting it made
+    // every key under such a catalog look like an orphan.
     const keys = flattenKeys({ hero: { heading: 'a', lead: 'b' }, action: 'c' });
-    assert.deepEqual(keys.sort(), ['action', 'hero.heading', 'hero.lead']);
+    assert.deepEqual(keys.sort(), ['action', 'hero', 'hero.heading', 'hero.lead']);
   });
 
   it('addresses a list both as a whole and per index', () => {

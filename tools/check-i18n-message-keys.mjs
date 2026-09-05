@@ -78,6 +78,10 @@ export function flattenKeys(node, trail = [], out = []) {
     return out;
   }
   if (node !== null && typeof node === 'object') {
+    // A sub-object is addressable too: `group('headings')` takes the whole
+    // catalog at once, which is how an enum-keyed label set is read. The root
+    // is excluded — nothing addresses the namespace itself.
+    if (trail.length > 0) out.push(trail.join('.'));
     for (const [key, value] of Object.entries(node)) flattenKeys(value, [...trail, key], out);
   }
   return out;
@@ -120,7 +124,10 @@ export function readsOf(source) {
 
   const reads = [];
   const unresolved = [];
-  const callPattern = /(\w+)\.(text|list|group|scope)\(\s*([^)]*?)\s*(?:,|\))/gu;
+  // `group` is generic, so a call site reads `group<Record<string, string>>('k')`.
+  // Without the optional type-argument list the whole call is invisible here and
+  // every key under it is reported as an orphan.
+  const callPattern = /(\w+)\.(text|list|group|scope)(?:<[^(]*>)?\(\s*([^)]*?)\s*(?:,|\))/gu;
   for (const match of source.matchAll(callPattern)) {
     const [, ident, , argument] = match;
     const view = views.get(ident);
