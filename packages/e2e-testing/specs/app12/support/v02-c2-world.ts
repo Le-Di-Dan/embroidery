@@ -20,16 +20,18 @@ export const COPY = {
   uploadSubmit: admin.assets.upload.submit,
   acceptedTitle: admin.assets.accepted.title,
   uploadErrorTitle: admin.assets.uploadError.title,
-  thumbnailAlt: admin.assets.identity.thumbnailAlt,
-  thumbnailProcessing: admin.assets.identity.thumbnailProcessing,
-  thumbnailUnavailable: admin.assets.identity.thumbnailUnavailable,
+  // The tile captions live at app-shared scope: three Admin features draw the
+  // same tile, so the words for its states cannot belong to one of them.
+  thumbnailAlt: admin.media.thumbnailAlt,
+  thumbnailProcessing: admin.media.processing,
+  thumbnailUnavailable: admin.media.unavailable,
   statusReady: admin.assets.status.ready,
   logoutName: admin.shell.logout.action,
 } as const;
 
 const LOGIN = {
-  emailInput: 'input#email',
-  passwordInput: 'input#password',
+  emailInput: '#staff-login-email',
+  passwordInput: '#staff-login-password',
   submitName: admin.login.submit.default,
 } as const;
 
@@ -66,9 +68,17 @@ export async function openAssets(page: Page): Promise<void> {
   await expect(page.getByRole('heading', { name: COPY.pageTitle, level: 1 })).toBeVisible();
 }
 
-/** Every tile image currently in the library grid. */
+/**
+ * Every tile image currently in the library grid.
+ *
+ * The class is `asset-card__thumb__image` because the shared tile component
+ * derives it from the block its host passes in (`asset-card__thumb`), so this
+ * selector follows the component's naming rather than the feature's.
+ */
 export function libraryImages(page: Page): Locator {
-  return page.getByRole('list', { name: COPY.collectionLabel }).locator('img.asset-card__image');
+  return page
+    .getByRole('list', { name: COPY.collectionLabel })
+    .locator('img.asset-card__thumb__image');
 }
 
 /**
