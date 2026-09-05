@@ -1,8 +1,16 @@
-// Admin staff login — feature-scoped styles (APP1-A01). Design source:
+// Admin staff login — the feature's stylesheet entry (APP1-A01). Design source:
 // FIG-ADMIN-LOGIN-* (file BQwqV8GdfUIELvsQDB1UQE). Colour/type/radius/spacing
 // come from @embroidery/styles tokens; a few screen-specific dimensions have no
 // shared token and are local literals (documented inline). Mobile-first: the
 // base is the stacked layout; two columns apply from the local login breakpoint.
+//
+// This entry owns the *screen composition* — the row, the brand panel and the
+// form panel that holds the card. The three things drawn inside the card are
+// partials, split at `APP12-V02-C1` §7 by responsibility (CLAUDE.md §6).
+
+@use 'staff-login-form';
+@use 'staff-login-field';
+@use 'staff-login-alert';
 
 @use '@embroidery/styles' as styles;
 
@@ -10,11 +18,18 @@
 // breakpoints; this is the approved login desktop↔mobile transition (1440/390).
 $login-breakpoint: 1024px;
 
+// Where the brand panel can afford its full editorial inset.
+//
+// The two-column row starts at 1024, but 72px on each side of a panel that has
+// already given most of its width to the auth card leaves the headline about
+// 340px to sit in. Above this width the panel is wide enough for the approved
+// inset, and at 1440 nothing about the approved frame changes.
+$login-wide-breakpoint: 1280px;
+
 // Screen-specific composition constants (no shared token; not a token system).
 $brand-panel-width: 780px;
 $auth-card-width: 440px;
 $lede-max-width: 560px;
-$field-height: 48px;
 $mobile-inset: 20px;
 $mobile-top-inset: 56px;
 $stack-gap: 28px;
@@ -39,13 +54,29 @@ $stack-gap: 28px;
   padding: $mobile-top-inset $mobile-inset 0;
   background: transparent;
 
+  // The row's composition used to be fixed on both sides: a 780px panel that
+  // could not shrink, beside a 440px card inside 48px of padding. That needs
+  // 1316px to draw, and the row begins at 1024 — so between those two widths it
+  // simply ran off the right edge, by exactly 292px at 1024
+  // (`APP12-V02-C1` §5/§7).
+  //
+  // The panel still *asks* for 780px, and now yields it. `flex: 0 1` is the
+  // whole correction: it starts from the approved width, never grows past it,
+  // and is the only item in the row allowed to shrink — so at 1440 the row is
+  // unchanged (780 + 660, the approved frame) and at 1024 the panel gives back
+  // exactly the 292px the row was overflowing by. `min-width: 0` is what lets it
+  // go below its longest word instead of pushing the row wider.
   @media (min-width: $login-breakpoint) {
-    flex-shrink: 0;
+    flex: 0 1 $brand-panel-width;
+    min-width: 0;
     justify-content: space-between;
     gap: 0;
-    width: $brand-panel-width;
-    padding: styles.spacing(64) 72px;
+    padding: styles.spacing(64) styles.spacing(48);
     background: styles.$color-background-secondary;
+  }
+
+  @media (min-width: $login-wide-breakpoint) {
+    padding: styles.spacing(64) 72px;
   }
 }
 
@@ -143,7 +174,17 @@ $stack-gap: 28px;
   width: 100%;
   padding: $stack-gap $mobile-inset styles.spacing(24);
 
+  // The card is the half that must not give way. An authentication form
+  // squeezed to fit is the failure §7 forbids by name, so this panel keeps its
+  // intrinsic width — card plus padding — and the brand panel absorbs the
+  // difference. It still *grows*, so above 1316px the leftover width goes here
+  // and the card stays centred in it, exactly as the approved 1440 frame draws.
   @media (min-width: $login-breakpoint) {
+    flex: 1 0 auto;
+    // The base sets `width: 100%` for the stacked layout. Left in place it also
+    // resolves `flex-basis: auto`, so the panel would ask for the whole row and
+    // starve the brand column of every pixel it has.
+    width: auto;
     align-items: center;
     justify-content: center;
     padding: styles.spacing(48);
@@ -162,250 +203,4 @@ $stack-gap: 28px;
     // Elevation/Floating — no shared effect token in @embroidery/styles.
     box-shadow: 0 4px 12px rgba(23, 23, 23, 0.08);
   }
-}
-// --- Form -------------------------------------------------------------------
-
-.staff-login-form {
-  display: flex;
-  flex-direction: column;
-  gap: styles.spacing(24);
-  width: 100%;
-}
-
-.staff-login-form--pending .staff-login-field {
-  opacity: 0.6;
-}
-
-.staff-login-form__title {
-  display: flex;
-  flex-direction: column;
-  gap: styles.spacing(8);
-}
-
-.staff-login-form__heading {
-  margin: 0;
-  font-family: styles.$font-family-primary;
-  font-size: styles.$font-size-heading-s;
-  font-weight: styles.$font-weight-medium;
-  line-height: 1.3;
-  color: styles.$color-text-primary;
-}
-
-.staff-login-form__subtitle {
-  margin: 0;
-  font-family: styles.$font-family-primary;
-  font-size: styles.$font-size-body-s;
-  line-height: 1.5;
-  color: styles.$color-text-secondary;
-}
-
-.staff-login-form__submit {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-height: styles.$size-touch-target-min;
-  padding: styles.spacing(12) styles.spacing(24);
-  font-family: styles.$font-family-primary;
-  font-size: styles.$font-size-body-m;
-  font-weight: styles.$font-weight-medium;
-  line-height: 1.2;
-  color: styles.$color-surface-primary; // text/inverse (white); no inverse token
-  background: styles.$color-action-fill;
-  border: none;
-  border-radius: styles.$radius-md;
-  cursor: pointer;
-
-  @include styles.motion-safe {
-    transition: background-color styles.$motion-duration-fast styles.$motion-easing-standard;
-  }
-
-  &:hover:not(:disabled) {
-    background: styles.$color-action-fill-hover;
-  }
-
-  &:active:not(:disabled) {
-    background: styles.$color-action-fill-active;
-  }
-
-  &:focus-visible {
-    outline: 2px solid styles.$color-focus-ring;
-    outline-offset: 2px;
-  }
-
-  &:disabled {
-    // action/disabled (#d6d3d1) has no token; border-secondary is value-identical.
-    background: styles.$color-border-secondary;
-    color: styles.$color-text-tertiary;
-    cursor: not-allowed;
-  }
-}
-
-.staff-login-form__status {
-  margin: 0;
-  font-family: styles.$font-family-primary;
-  font-size: styles.$font-size-body-s;
-  line-height: 1.5;
-  text-align: center;
-  color: styles.$color-text-tertiary;
-}
-
-.staff-login-form__countdown {
-  margin-left: styles.spacing(4);
-  font-variant-numeric: tabular-nums;
-}
-
-.staff-login-form__footer {
-  margin: 0;
-  font-family: styles.$font-family-primary;
-  font-size: styles.$font-size-body-s;
-  line-height: 1.5;
-  color: styles.$color-text-tertiary;
-}
-// --- Field ------------------------------------------------------------------
-
-.staff-login-field {
-  display: flex;
-  flex-direction: column;
-  gap: styles.spacing(8);
-  width: 100%;
-}
-
-.staff-login-field__label {
-  font-family: styles.$font-family-primary;
-  font-size: styles.$font-size-body-s;
-  line-height: 1.5;
-  color: styles.$color-text-primary;
-}
-
-.staff-login-field__control {
-  display: flex;
-  align-items: center;
-  gap: styles.spacing(12);
-  min-height: $field-height;
-  padding: 0 styles.spacing(16);
-  background: styles.$color-background-secondary;
-  border: 1px solid styles.$color-border-primary;
-  border-radius: styles.$radius-md;
-
-  &:focus-within {
-    border-color: styles.$color-action-primary;
-  }
-}
-
-.staff-login-field__control--error {
-  border-width: 1.5px;
-  border-color: styles.$color-status-error;
-
-  &:focus-within {
-    border-color: styles.$color-status-error;
-  }
-}
-
-.staff-login-field__input {
-  flex: 1 1 auto;
-  min-width: 0;
-  height: $field-height;
-  font-family: styles.$font-family-primary;
-  font-size: styles.$font-size-body-m;
-  line-height: 1.6;
-  color: styles.$color-text-primary;
-  background: transparent;
-  border: none;
-  outline: none;
-
-  &::placeholder {
-    color: styles.$color-text-tertiary;
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-  }
-}
-
-.staff-login-field__toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  min-width: styles.$size-touch-target-min;
-  min-height: styles.$size-touch-target-min;
-  padding: 0 styles.spacing(4);
-  font-family: styles.$font-family-primary;
-  font-size: styles.$font-size-body-s;
-  line-height: 1.5;
-  color: styles.$color-text-secondary;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-
-  &:focus-visible {
-    outline: 2px solid styles.$color-focus-ring;
-    outline-offset: 2px;
-    border-radius: styles.$radius-xs;
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-  }
-}
-
-.staff-login-field__error {
-  display: flex;
-  gap: styles.spacing(4);
-  margin: 0;
-  font-family: styles.$font-family-primary;
-  font-size: styles.$font-size-body-s;
-  line-height: 1.5;
-  color: styles.$color-status-error;
-}
-
-.staff-login-field__error-icon {
-  flex-shrink: 0;
-}
-// --- Alert ------------------------------------------------------------------
-
-.staff-login-alert {
-  display: flex;
-  gap: styles.spacing(12);
-  padding: styles.spacing(12) styles.spacing(16);
-  background: styles.$color-background-secondary;
-  border: 1.5px solid transparent;
-  border-radius: styles.$radius-md;
-
-  &:focus {
-    outline: none;
-  }
-}
-
-.staff-login-alert--error {
-  border-color: styles.$color-status-error;
-
-  .staff-login-alert__icon {
-    color: styles.$color-status-error;
-  }
-}
-
-.staff-login-alert--warning {
-  border-color: styles.$color-status-warning;
-
-  .staff-login-alert__icon {
-    color: styles.$color-status-warning;
-  }
-}
-
-.staff-login-alert__icon {
-  flex-shrink: 0;
-  font-size: styles.$font-size-body-s;
-  line-height: 1.5;
-}
-
-.staff-login-alert__message {
-  flex: 1 1 auto;
-  min-width: 0;
-  margin: 0;
-  font-family: styles.$font-family-primary;
-  font-size: styles.$font-size-body-s;
-  line-height: 1.5;
-  color: styles.$color-text-primary;
 }

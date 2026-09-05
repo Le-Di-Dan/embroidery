@@ -33,7 +33,21 @@ import process from 'node:process';
 
 export const MESSAGES_DIR = 'packages/i18n/messages/vi';
 
-export const SCANNED_ROOTS = ['apps/storefront/src', 'apps/admin/src', 'packages/ui/src'];
+/**
+ * Where a read can come from.
+ *
+ * `packages/i18n/src` joined the list at `APP12-V02-C1`: the brand accessor
+ * (`BRAND_NAME`) reads `common.brand.name` from inside the package that owns the
+ * repository, and without this root that key would be reported as an orphan —
+ * the gate would be telling the truth about its own blind spot rather than about
+ * the repository.
+ */
+export const SCANNED_ROOTS = [
+  'apps/storefront/src',
+  'apps/admin/src',
+  'packages/ui/src',
+  'packages/i18n/src',
+];
 
 const EXEMPT_DIRECTORIES = new Set(['node_modules', '__snapshots__']);
 

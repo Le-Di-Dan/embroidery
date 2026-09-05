@@ -7,6 +7,11 @@
 // directive requires **one** canonical vector-path source per variant: a copy in
 // each app would be two sources that look identical until one is corrected.
 //
+// It publishes the mark and never the name. `Nét Thêu` is human-facing copy,
+// so its authority is `common.brand.name` in the message repository, read
+// through `@embroidery/i18n`'s `BRAND_NAME` (`APP12-V02-C1` §2). `BrandLockup`
+// takes the wordmark as a prop for exactly that reason.
+//
 // This package deliberately ships no stylesheet. Each shell already owns its own
 // brand-slot layout and typography, and a component that carried its own CSS
 // would have to win an argument with three existing stylesheets to render.
@@ -19,9 +24,7 @@ export type { BrandLockupProps } from './brand/brand-lockup';
 
 export {
   BRAND_CANVAS_COLOR,
-  BRAND_DESCRIPTOR,
   BRAND_GESTURE_STROKE_WIDTH,
-  BRAND_NAME,
   BRAND_SEAL_RING,
   BRAND_SIGNATURE_GESTURE_PATH,
   BRAND_SYMBOL_APPLICATION_PX,

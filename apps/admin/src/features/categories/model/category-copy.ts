@@ -53,7 +53,7 @@ export const CATEGORY_COPY = {
     /** `915:376` */
     name: categoriesMessage.text('table.name'),
     /** `915:377` */
-    slug: 'Slug',
+    slug: categoriesMessage.text('table.slug'),
     /** `915:378` */
     status: categoriesMessage.text('table.status'),
     /** `915:379` */

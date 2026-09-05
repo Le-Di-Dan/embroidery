@@ -21,6 +21,7 @@ export type { Messages } from './messages';
 
 export { formatMessage, messageView, resolveMessageNode } from './message-view';
 export { hydrateMessages } from './hydrate';
+export { BRAND_DESCRIPTOR, BRAND_NAME } from './brand';
 export type { MessageValues, MessageView } from './message-view';
 
 export {

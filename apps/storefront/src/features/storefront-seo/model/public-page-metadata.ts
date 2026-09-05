@@ -1,5 +1,4 @@
-import { VI_MESSAGES, messageView } from '@embroidery/i18n';
-import { BRAND_NAME } from '@embroidery/ui';
+import { BRAND_NAME, VI_MESSAGES, messageView } from '@embroidery/i18n';
 
 import type { Metadata } from 'next';
 

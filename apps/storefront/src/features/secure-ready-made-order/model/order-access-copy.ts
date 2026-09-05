@@ -53,8 +53,7 @@
  * by the pill and the next-action sentence beside it, which are the two blocks
  * the design does vary.
  */
-import { VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
-import { BRAND_NAME } from '@embroidery/ui';
+import { BRAND_NAME, VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
 
 import { ORDER_ACCESS_EVIDENCE_COPY } from './order-access-evidence-copy';
 

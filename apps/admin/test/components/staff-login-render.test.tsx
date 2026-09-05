@@ -1,3 +1,4 @@
+import { BRAND_NAME } from '@embroidery/i18n';
 import {
   createNavigationMock as mockCreateNavigationMock,
   renderWithProviders,
@@ -5,7 +6,6 @@ import {
 } from '@embroidery/frontend-testing';
 
 import { StaffLoginScreen } from '../../src/features/staff-auth';
-import { BRAND_NAME } from '@embroidery/ui';
 
 jest.mock('next/navigation', () => mockCreateNavigationMock().module);
 

@@ -32,8 +32,7 @@
  * entry; `634:119` states that state keeps its layout at both sizes.
  */
 
-import { VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
-import { BRAND_NAME } from '@embroidery/ui';
+import { BRAND_NAME, VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
 
 /**
  * Every sentence below lives in the canonical Vietnamese message repository

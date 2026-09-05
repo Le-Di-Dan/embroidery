@@ -48,8 +48,22 @@ import { fileURLToPath } from 'node:url';
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const GEOMETRY_PATH = join(REPO_ROOT, 'packages/ui/src/brand/brand-symbol.geometry.json');
 
-/** The one source. Everything below is derived from it. */
+/** The one source for every number and path below. */
 const geometry = JSON.parse(readFileSync(GEOMETRY_PATH, 'utf8'));
+
+/**
+ * The brand *name*, which is copy rather than geometry.
+ *
+ * It used to sit in the geometry JSON beside the vector paths. `APP12-V02-C1`
+ * §2 moved it to the canonical Vietnamese message repository, so this generator
+ * reads it from there — the same value `@embroidery/i18n`'s `BRAND_NAME`
+ * publishes to the applications. The emitted `aria-label` and `<title>` are the
+ * two places an icon file says anything a person can read, and they are now
+ * spelled by the same authority as every other sentence in the product.
+ */
+const BRAND_NAME = JSON.parse(
+  readFileSync(join(REPO_ROOT, 'packages/i18n/messages/vi/common.json'), 'utf8'),
+).brand.name;
 
 /** iOS home-screen icons are served at 180×180. */
 const APPLE_ICON_PX = 180;
@@ -141,8 +155,8 @@ function renderSvg(variant) {
      $color-text-primary and $color-background-primary tokens. The ground is
      opaque so the ink mark stays legible on dark chrome, and it is a full-bleed
      square, so no corner radius is invented here. -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="${geometry.viewBox}" width="300" height="300" role="img" aria-label="${geometry.brandName}">
-  <title>${geometry.brandName}</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="${geometry.viewBox}" width="300" height="300" role="img" aria-label="${BRAND_NAME}">
+  <title>${BRAND_NAME}</title>
   <rect width="300" height="300" fill="${geometry.canvasColor}"/>${ring}
   <path d="${geometry.signatureGesturePath}" fill="none" stroke="${geometry.toneColor.ink}" stroke-width="${String(geometry.gestureStrokeWidth[variant])}" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

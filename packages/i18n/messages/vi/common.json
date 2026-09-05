@@ -1,4 +1,8 @@
 {
+  "brand": {
+    "name": "Nét Thêu",
+    "descriptor": "Xưởng thêu cá nhân hóa"
+  },
   "value": {
     "unknown": "Không xác định",
     "unknownImage": "Ảnh"

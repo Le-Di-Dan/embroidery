@@ -51,7 +51,14 @@ export default [
     // declared for these two files alone rather than widened across
     // `support/**`, for the reason above: an orchestration script reaching for
     // `document` is a real defect and must keep failing everywhere else.
-    files: ['support/app12/h08-axe.mjs', 'support/app12/h08-measure.mjs'],
+    // `APP12-V02-C1`'s login-reflow runner is the same mixed shape: it spawns
+    // `next start` and drives Chromium from Node, and carries the measurement
+    // bodies Playwright serializes into the page.
+    files: [
+      'support/app12/h08-axe.mjs',
+      'support/app12/h08-measure.mjs',
+      'support/app12/v02-c1-login-reflow.mjs',
+    ],
     languageOptions: {
       globals: {
         ...NODE_GLOBALS,

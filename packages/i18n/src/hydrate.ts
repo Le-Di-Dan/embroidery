@@ -5,16 +5,16 @@ import { formatMessage, type MessageValues } from './message-view';
  *
  * There is exactly one thing this exists for today: the store's name.
  *
- * `Nét Thêu` is brand identity owned by `@embroidery/ui` — the same constant the
- * approved symbol and lockup are built from — and `APP12-H06` had already had to
- * fix a placeholder wordmark that survived in the shell after the brand moved
- * (`FU-APP12-H06-01`). Writing the name into the message repository as literal
- * text would recreate exactly that: two sources for the store's name, identical
- * until one is corrected.
+ * A catalog sentence that mentions the store reads `{brand}` rather than the
+ * name, so the name appears once in the repository — at `common.brand.name` —
+ * and every sentence that needs it interpolates. Writing "Nét Thêu" into forty
+ * sentences would make renaming the business a forty-file edit, and would
+ * recreate the two-sources defect `FU-APP12-H06-01` recorded when a placeholder
+ * wordmark survived in the shell after the brand moved.
  *
- * So the repository holds `{brand}` and the catalogs hydrate it from
- * `BRAND_NAME`. The name still cannot be edited by a Product Owner opening the
- * JSON, which is correct — renaming the business is not a copy change.
+ * Since `APP12-V02-C1` §2 both halves are locale JSON: the placeholder and the
+ * name it resolves to. `BRAND_NAME` (`./brand`) is the typed accessor for the
+ * latter, and it owns no literal of its own.
  *
  * The walk allocates a new tree rather than mutating the imported JSON: the
  * module-level `VI_MESSAGES` object is shared by every catalog and by next-intl,

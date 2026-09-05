@@ -123,11 +123,16 @@ export type BrandSymbolTone = keyof typeof BRAND_SYMBOL_TONE_COLOR;
 /** `$color-background-primary`, the ground the icon files are drawn on. */
 export const BRAND_CANVAS_COLOR = geometry.canvasColor;
 
-/** The brand name, rendered as live text in the application's own typography. */
-export const BRAND_NAME = geometry.brandName;
-
 /**
- * The approved descriptor. Distinct from the brand name and not interchangeable
- * with it: a surface may legitimately say "xưởng thêu" as a common noun.
+ * The brand *name* is deliberately not here.
+ *
+ * It used to be: `BRAND_NAME` read `brandName` out of the geometry JSON, which
+ * put the store's name and the store's vector paths behind one import. The name
+ * is human-facing copy, so `APP12-V02-C1` §2 moved it to the canonical
+ * Vietnamese message repository — `common.brand.name`, read through
+ * `@embroidery/i18n`'s `BRAND_NAME`. This module keeps what it is genuinely the
+ * authority for: the approved `BRD0-F02` geometry, tones and application sizes.
+ *
+ * `BrandLockup` still renders the name as live text; it now receives it as a
+ * `wordmark` prop from the shell, which already reads the message repository.
  */
-export const BRAND_DESCRIPTOR = geometry.brandDescriptor;

@@ -195,6 +195,7 @@
     "table": {
       "caption": "Danh sách danh mục",
       "name": "Tên danh mục",
+      "slug": "Slug",
       "status": "Trạng thái",
       "publishedProducts": "Sản phẩm đang bán",
       "indexable": "Lập chỉ mục",

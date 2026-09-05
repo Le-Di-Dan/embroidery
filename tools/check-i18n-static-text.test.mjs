@@ -129,6 +129,128 @@ describe('what the gate must not flag', () => {
   });
 });
 
+describe('the ASCII escape rule 4 closes (APP12-V02-C1 §3)', () => {
+  // The Product Owner's own four fixtures. Each is ASCII, so rule 3 cannot see
+  // it; each is an identifier rather than JSX text, so rules 1 and 2 cannot
+  // either; and each is read by whoever opens the screen.
+
+  it('flags a constant painted as a JSX child', () => {
+    const source = [
+      'const LABEL = "Order";',
+      'export function A() { return <button>{LABEL}</button>; }',
+    ].join('\n');
+    assert.deepEqual(rules(source), ['jsx-child-copy']);
+    assert.equal(scan(source)[0].text, 'Order');
+  });
+
+  it('flags an empty-state sentence parked in a constant', () => {
+    const source = [
+      'const EMPTY_STATE = "No orders";',
+      'export function A() { return <p>{EMPTY_STATE}</p>; }',
+    ].join('\n');
+    assert.deepEqual(rules(source), ['jsx-child-copy']);
+    assert.equal(scan(source)[0].text, 'No orders');
+  });
+
+  it('flags an accessible name parked in a constant', () => {
+    const source = [
+      'const SR_LABEL = "Close dialog";',
+      'export function A() { return <button aria-label={SR_LABEL} />; }',
+    ].join('\n');
+    assert.deepEqual(rules(source), ['jsx-attribute-copy:aria-label']);
+    assert.equal(scan(source)[0].text, 'Close dialog');
+  });
+
+  it('flags copy reached through an object property', () => {
+    const source = [
+      'const COPY = {',
+      '  title: "Payment",',
+      '  helper: "Check the transfer"',
+      '};',
+      'export function A() { return <section>{COPY.title}</section>; }',
+    ].join('\n');
+    assert.deepEqual(rules(source), ['jsx-child-copy']);
+    assert.equal(scan(source)[0].text, 'Payment');
+  });
+
+  it('flags copy reached through destructuring, which is how the catalogs are read', () => {
+    const source = [
+      'const COPY = { brand: { title: "Workshop admin" } };',
+      'export function A() {',
+      '  const { brand } = COPY;',
+      '  return <p>{brand.title}</p>;',
+      '}',
+    ].join('\n');
+    assert.deepEqual(rules(source), ['jsx-child-copy']);
+    assert.equal(scan(source)[0].text, 'Workshop admin');
+  });
+
+  it('flags either branch of a conditional', () => {
+    const source = [
+      'const OPEN_LABEL = "Open";',
+      'const SHUT_LABEL = "Closed";',
+      'export function A({ open }) { return <span>{open ? OPEN_LABEL : SHUT_LABEL}</span>; }',
+    ].join('\n');
+    assert.equal(scan(source).length, 2);
+  });
+
+  it('reports the literal, not the render site, so the fix is where the string is', () => {
+    const source = [
+      'const LABEL = "Order";',
+      '',
+      'export function A() { return <button>{LABEL}</button>; }',
+    ].join('\n');
+    assert.equal(scan(source)[0].line, 1);
+  });
+
+  it('still stops at a call, which is how every real sentence arrives', () => {
+    const source = [
+      "const copy = message.text('orders.title');",
+      'export function A() { return <h1>{copy}</h1>; }',
+    ].join('\n');
+    assert.deepEqual(scan(source), []);
+  });
+
+  it('does not flag technical values that merely pass through a rendering position', () => {
+    // Every one of these reaches a JSX child or a human-facing attribute, and
+    // none of them is copy: a route the link paints, a dynamic order code, an
+    // ISO timestamp, a class name and a test id. Rule 4 reports the *literal*
+    // behind a rendered value, and there is no literal behind any of these.
+    const source = [
+      'export function A({ order }) {',
+      '  return (',
+      '    <div className="order" data-testid="order-row">',
+      '      <a href="/don-hang">{order.code}</a>',
+      '      <time dateTime={order.placedAt}>{order.placedAtLabel}</time>',
+      '    </div>',
+      '  );',
+      '}',
+    ].join('\n');
+    assert.deepEqual(scan(source), []);
+  });
+
+  it('does not flag a technical constant that never reaches a rendering position', () => {
+    const source = [
+      "const ROUTE = '/quan-tri/don-hang';",
+      "const TESTID = 'order-row';",
+      "const MIME = 'image/webp';",
+      "const OP = 'adminOrderRead';",
+      "const METHOD = 'PATCH';",
+      "const KEY = 'orders.title';",
+      'export function A() { return <a href={ROUTE} data-testid={TESTID} />; }',
+    ].join('\n');
+    assert.deepEqual(scan(source), []);
+  });
+
+  it('honours the escape hatch on the literal, not only on the render site', () => {
+    const source = [
+      'const UNIT = "px"; // i18n-exempt: CSS unit rendered beside a numeric input',
+      'export function A() { return <span>{UNIT}</span>; }',
+    ].join('\n');
+    assert.deepEqual(scan(source), []);
+  });
+});
+
 describe('the escape hatch', () => {
   it('honours an inline exemption that carries a reason', () => {
     const source =

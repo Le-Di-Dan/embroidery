@@ -6,8 +6,7 @@
  * here; footer content is limited to approved generic brand copy until canonical
  * company values exist (see the report's follow-ups).
  */
-import { VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
-import { BRAND_NAME } from '@embroidery/ui';
+import { BRAND_NAME, VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
 
 /**
  * Every sentence below lives in the canonical Vietnamese message repository

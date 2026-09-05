@@ -1,0 +1,107 @@
+// The login form itself: title, submit, retry status and footer (APP1-A01).
+//
+// Split out of the screen stylesheet at `APP12-V02-C1` §7, where the responsive
+// correction pushed the single file past the 400-line limit. The split is by
+// responsibility (CLAUDE.md §6): the screen composes two panels, and the form,
+// the field and the alert are three things inside one of them that change for
+// three different reasons.
+
+@use '@embroidery/styles' as styles;
+
+.staff-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  width: 100%;
+}
+
+.staff-login-form--pending .staff-login-field {
+  opacity: 0.6;
+}
+
+.staff-login-form__title {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+.staff-login-form__heading {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-medium;
+  line-height: 1.3;
+  color: styles.$color-text-primary;
+}
+
+.staff-login-form__subtitle {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.5;
+  color: styles.$color-text-secondary;
+}
+
+.staff-login-form__submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: styles.$size-touch-target-min;
+  padding: styles.spacing(12) styles.spacing(24);
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  line-height: 1.2;
+  color: styles.$color-surface-primary; // text/inverse (white); no inverse token
+  background: styles.$color-action-fill;
+  border: none;
+  border-radius: styles.$radius-md;
+  cursor: pointer;
+
+  @include styles.motion-safe {
+    transition: background-color styles.$motion-duration-fast styles.$motion-easing-standard;
+  }
+
+  &:hover:not(:disabled) {
+    background: styles.$color-action-fill-hover;
+  }
+
+  &:active:not(:disabled) {
+    background: styles.$color-action-fill-active;
+  }
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-focus-ring;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    // action/disabled (#d6d3d1) has no token; border-secondary is value-identical.
+    background: styles.$color-border-secondary;
+    color: styles.$color-text-tertiary;
+    cursor: not-allowed;
+  }
+}
+
+.staff-login-form__status {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.5;
+  text-align: center;
+  color: styles.$color-text-tertiary;
+}
+
+.staff-login-form__countdown {
+  margin-left: styles.spacing(4);
+  font-variant-numeric: tabular-nums;
+}
+
+.staff-login-form__footer {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.5;
+  color: styles.$color-text-tertiary;
+}

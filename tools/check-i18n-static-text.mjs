@@ -16,7 +16,7 @@
  * `data-testid`s, MIME types, query keys. Every one of them would be a false
  * positive, and a gate that cries wolf is a gate somebody turns off.
  *
- * So the source is parsed with the TypeScript compiler and only three kinds of
+ * So the source is parsed with the TypeScript compiler and only four kinds of
  * node are considered, each chosen because it *is* the rendering path:
  *
  * 1. **JSX text** — anything a component paints directly between tags.
@@ -26,6 +26,22 @@
  * 3. **Any string or template literal carrying a Vietnamese diacritic**, in any
  *    position. A route path, a class name and an enum value never carry one;
  *    a Vietnamese sentence almost always does.
+ * 4. **A literal that *reaches* one of those two rendering positions**, however
+ *    many constants, object properties, destructurings and imports it travels
+ *    through. `APP12-V02-C1` §3 added this one, because the Product Owner read
+ *    the first three and found the door they leave open:
+ *
+ *    ```ts
+ *    const LABEL = 'Order';
+ *    return <button>{LABEL}</button>;
+ *    ```
+ *
+ *    That is ASCII, so rule 3 does not see it; it is an identifier rather than
+ *    text, so rules 1 and 2 do not either; and every operator reads it. Rule 4
+ *    is implemented in `i18n-copy-flow.mjs` and classifies by AST *context* —
+ *    where a literal ends up — never by what the string looks like. A route
+ *    path is still never reported, because a route path is never painted as a
+ *    sentence.
  *
  * Comments are never inspected — the catalogs document their keys in Vietnamese
  * on purpose, and the whole point of the migration was to keep that prose next
@@ -33,11 +49,13 @@
  *
  * ## The known gap, stated rather than hidden
  *
- * Rule 3 cannot see an unaccented Vietnamese word in a non-JSX position
- * (`const label = 'Xem'`). Detecting that would mean guessing whether an ASCII
- * string is prose, which produces exactly the false positives §5A.11 rules out.
- * Rules 1 and 2 close the rendering paths, which is where such a string would
- * have to surface to be read by anyone.
+ * Rule 4's walk is syntactic and stops at a call, a function body, a `.map()`
+ * and the edge of the scanned roots. A sentence laundered through a helper is
+ * therefore still invisible to it — but not to rule 3, which sees any
+ * Vietnamese literal in any position at all, and this product ships one
+ * language. What remains uncovered is an unaccented ASCII string laundered
+ * through a function, and closing that would mean guessing whether an ASCII
+ * string is prose — the false positives §5A.11 and §3 both rule out.
  *
  * Cross-platform (Windows + Linux): pure Node, no shell, no network. Never
  * modifies files. Non-zero exit on any violation.
@@ -49,6 +67,9 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import process from 'node:process';
 import { createRequire } from 'node:module';
+
+import { createModuleIndex, literalsReaching, renderedExpressions } from './i18n-copy-flow.mjs';
+import { EOL, exemptionsIn, isExemptInModule, isExemptLine } from './i18n-exemptions.mjs';
 
 const require = createRequire(import.meta.url);
 
@@ -126,8 +147,9 @@ export const EXEMPT_FILES = new Set(
  */
 export const EXEMPT_DIRECTORIES = new Set(['node_modules', '__snapshots__', 'test', 'tests']);
 
-/** The single-line escape hatch, which must carry a reason. */
-export const EXEMPT_COMMENT = /\/\/\s*i18n-exempt:\s*\S+/u;
+// The escape hatch and its inventory live in `i18n-exemptions.mjs`;
+// `EXEMPT_COMMENT` is re-exported because it is part of this gate's contract.
+export { EXEMPT_COMMENT } from './i18n-exemptions.mjs';
 
 /** Vietnamese-specific letters. Latin-1 accents alone are not enough — `é` occurs in loanwords. */
 const VIETNAMESE = /[ăâêôơưđàáảãạằắẳẵặầấẩẫậèéẻẽẹềếểễệìíỉĩịòóỏõọồốổỗộờớởỡợùúủũụừứửữựỳýỷỹỵ]/iu;
@@ -150,12 +172,6 @@ function listFiles(dir, out = []) {
   return out;
 }
 
-/** Whether the line the node starts on carries the documented escape hatch. */
-function isExemptLine(sourceFile, node, lines) {
-  const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
-  return EXEMPT_COMMENT.test(lines[line] ?? '');
-}
-
 function violation(sourceFile, node, rule, text) {
   const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
   return {
@@ -172,9 +188,10 @@ function violation(sourceFile, node, rule, text) {
  * Exported so the gate's own tests can drive it on a fixture without touching
  * the repository.
  */
-export function findStaticText(ts, filePath, source) {
+export function findStaticText(ts, filePath, source, index = createModuleIndex(ts, [filePath])) {
   const sourceFile = ts.createSourceFile(filePath, source, ts.ScriptTarget.ES2022, true);
-  const lines = source.split(/\r?\n/u);
+  index.prime(filePath, sourceFile);
+  const lines = source.split(EOL);
   const found = [];
 
   const literalText = (node) => {
@@ -226,6 +243,27 @@ export function findStaticText(ts, filePath, source) {
       }
     }
 
+    // 4. A literal that reaches a rendering position through any number of
+    //    constants, properties and imports (`APP12-V02-C1` §3).
+    for (const seed of renderedExpressions(ts, node, HUMAN_FACING_ATTRIBUTES)) {
+      if (isExemptLine(sourceFile, seed.node, lines)) continue;
+      for (const literal of literalsReaching(ts, index, filePath, seed.expression)) {
+        if (NOT_PROSE.test(literal.text)) continue;
+        const home = literal.file === filePath ? sourceFile : null;
+        if (home !== null && isExemptLine(home, literal.node, lines)) continue;
+        if (home === null && isExemptInModule(index, literal)) continue;
+        found.push({
+          ...violation(
+            home ?? sourceFile,
+            home === null ? seed.node : literal.node,
+            seed.rule,
+            literal.text,
+          ),
+          ...(home === null ? { origin: relative(process.cwd(), literal.file) } : {}),
+        });
+      }
+    }
+
     ts.forEachChild(node, visit);
   };
 
@@ -236,18 +274,31 @@ export function findStaticText(ts, filePath, source) {
 export function run(rootDir = process.cwd()) {
   const ts = loadTypeScript(rootDir);
   const failures = [];
+  const exemptions = [];
 
+  // Every scanned file, listed before any is parsed: rule 4 follows an import
+  // into another file, and it may only enter one this gate is responsible for.
+  const files = [];
   for (const root of SCANNED_ROOTS) {
     const absolute = join(rootDir, root.split('/').join(sep));
     if (!existsSync(absolute)) continue;
-    for (const file of listFiles(absolute)) {
-      const relativePath = relative(rootDir, file);
-      if (EXEMPT_FILES.has(relativePath)) continue;
-      const found = findStaticText(ts, file, readFileSync(file, 'utf8'));
-      for (const item of found) failures.push({ file: relativePath, ...item });
+    files.push(...listFiles(absolute));
+  }
+  const index = createModuleIndex(ts, files);
+
+  for (const file of files) {
+    const relativePath = relative(rootDir, file);
+    if (EXEMPT_FILES.has(relativePath)) continue;
+    const source = readFileSync(file, 'utf8');
+    exemptions.push(...exemptionsIn(relativePath, source));
+    for (const item of findStaticText(ts, file, source, index)) {
+      failures.push({ file: relativePath, ...item });
     }
   }
 
+  // The gate's own contract has not changed shape: callers that only want the
+  // violations still get an array, and the inventory rides along on it.
+  failures.exemptions = exemptions;
   return failures;
 }
 
@@ -255,8 +306,16 @@ function main() {
   const rootDir = process.argv[2] ?? process.cwd();
   const failures = run(rootDir);
 
+  const { exemptions } = failures;
+
   if (failures.length === 0) {
     console.log('check-i18n-static-text: OK — no hard-coded human-facing text.');
+    console.log(
+      `check-i18n-static-text: ${String(exemptions.length)} explicit exemption(s) in scanned source.`,
+    );
+    for (const item of exemptions) {
+      console.log(`  ${item.file}:${String(item.line)}  ${item.reason}`);
+    }
     return 0;
   }
 
@@ -267,8 +326,12 @@ function main() {
       'it is genuinely a technical value (APP12-V02 §5A.12).\n',
   );
   for (const failure of failures) {
+    // Rule 4 can find a literal that lives in a different file from the one
+    // that paints it. The render site is where it was *proved* human-facing;
+    // the origin is where the fix goes, so both are printed.
+    const origin = failure.origin === undefined ? '' : `  <- ${failure.origin}`;
     console.error(
-      `  ${failure.file}:${failure.line}:${failure.column}  [${failure.rule}]  ${failure.text}`,
+      `  ${failure.file}:${failure.line}:${failure.column}  [${failure.rule}]  ${failure.text}${origin}`,
     );
   }
   return 1;

@@ -1,0 +1,106 @@
+// One labelled login field: label, control, input, visibility toggle, error.
+
+@use '@embroidery/styles' as styles;
+
+// The control height the approved field draws at; no shared size token.
+$field-height: 48px;
+
+.staff-login-field {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  width: 100%;
+}
+
+.staff-login-field__label {
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.5;
+  color: styles.$color-text-primary;
+}
+
+.staff-login-field__control {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(12);
+  min-height: $field-height;
+  padding: 0 styles.spacing(16);
+  background: styles.$color-background-secondary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+
+  &:focus-within {
+    border-color: styles.$color-action-primary;
+  }
+}
+
+.staff-login-field__control--error {
+  border-width: 1.5px;
+  border-color: styles.$color-status-error;
+
+  &:focus-within {
+    border-color: styles.$color-status-error;
+  }
+}
+
+.staff-login-field__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: $field-height;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-m;
+  line-height: 1.6;
+  color: styles.$color-text-primary;
+  background: transparent;
+  border: none;
+  outline: none;
+
+  &::placeholder {
+    color: styles.$color-text-tertiary;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.staff-login-field__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: styles.$size-touch-target-min;
+  min-height: styles.$size-touch-target-min;
+  padding: 0 styles.spacing(4);
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.5;
+  color: styles.$color-text-secondary;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-focus-ring;
+    outline-offset: 2px;
+    border-radius: styles.$radius-xs;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.staff-login-field__error {
+  display: flex;
+  gap: styles.spacing(4);
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.5;
+  color: styles.$color-status-error;
+}
+
+.staff-login-field__error-icon {
+  flex-shrink: 0;
+}

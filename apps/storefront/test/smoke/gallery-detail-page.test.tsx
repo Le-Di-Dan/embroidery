@@ -1,3 +1,4 @@
+import { BRAND_NAME } from '@embroidery/i18n';
 /**
  * @jest-environment node
  *
@@ -21,7 +22,6 @@ import {
   makeSingleImageGalleryDetail,
   GALLERY_DETAIL_SLUG,
 } from '../support/gallery-fixture';
-import { BRAND_NAME } from '@embroidery/ui';
 
 jest.mock('@embroidery/api-client', () => ({
   ...jest.requireActual<Record<string, unknown>>('@embroidery/api-client'),

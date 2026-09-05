@@ -1,5 +1,4 @@
-import { VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
-import { BRAND_NAME } from '@embroidery/ui';
+import { BRAND_NAME, VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
 import {
   STOREFRONT_CUSTOM_REQUEST_ROUTE,
   STOREFRONT_DISCOVER_ROUTE,

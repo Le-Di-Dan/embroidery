@@ -12,8 +12,7 @@
  * It is re-exported into `ORDER_ACCESS_COPY` by spread, so every existing
  * `ORDER_ACCESS_COPY.evidence…` call site is unchanged.
  */
-import { VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
-import { BRAND_NAME } from '@embroidery/ui';
+import { BRAND_NAME, VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
 
 /**
  * Every sentence below lives in the canonical Vietnamese message repository

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { BrandSymbol } from './brand-symbol';
-import { BRAND_NAME, type BrandSymbolTone, type BrandSymbolVariant } from './brand-symbol-geometry';
+import type { BrandSymbolTone, BrandSymbolVariant } from './brand-symbol-geometry';
 
 /**
  * The symbol beside the brand name, as one horizontal lockup.
@@ -29,6 +29,13 @@ import { BRAND_NAME, type BrandSymbolTone, type BrandSymbolVariant } from './bra
  */
 export interface BrandLockupProps {
   readonly variant: BrandSymbolVariant;
+  /**
+   * The brand name, as text. Required and passed in rather than imported: the
+   * name is copy, and its authority is `common.brand.name` in the message
+   * repository (`APP12-V02-C1` §2). This package owns the approved geometry
+   * and nothing a person reads.
+   */
+  readonly wordmark: string;
   readonly size: number;
   readonly tone?: BrandSymbolTone;
   /** Space between symbol and wordmark, in CSS pixels. */
@@ -48,6 +55,7 @@ export interface BrandLockupProps {
 
 export function BrandLockup({
   variant,
+  wordmark,
   size,
   tone = 'ink',
   gap = 10,
@@ -64,11 +72,11 @@ export function BrandLockup({
     >
       {/*
         No `label`: the brand name is right there as visible text, and naming the
-        symbol too would make a screen reader announce "Nét Thêu Nét Thêu".
+        symbol too would make a screen reader announce the brand name twice.
       */}
       <BrandSymbol variant={variant} size={size} tone={tone} />
       <span {...(wordmarkClassName === undefined ? {} : { className: wordmarkClassName })}>
-        {BRAND_NAME}
+        {wordmark}
       </span>
       {children}
     </span>

@@ -961,3 +961,33 @@ PUSHED              false
 ```
 
 Exactly one `NEXT`, and it is `APP12-G03`. Nothing in this checkpoint touched it.
+
+---
+
+## AD. Correction notice — `APP12-V02-C1`
+
+*Appended after the fact. Nothing above this line was edited: the evidence,
+counts, history and finding ledger are as this checkpoint recorded them.*
+
+The Product Owner accepted the overwhelming majority of this report and returned
+it as `CORRECTION_REQUIRED` for exactly two acceptance defects, both now closed
+by `APP12-V02-C1` (`docs/implementation/reports/APP12-V02-C1-COMPLETION-REPORT.md`):
+
+| § here | what the PO rejected | closed by |
+|---|---|---|
+| **D** — `{brand}` hydrated from `@embroidery/ui`'s `BRAND_NAME` | for the web applications `Nét Thêu` **is** human-facing static text, so a presentation package may not be its authority | the name and descriptor moved to `common.brand.name` / `common.brand.descriptor`; `@embroidery/ui` publishes the approved geometry and no brand text at all; the five generated icon files regenerate byte-identical |
+| **F** — the static-text gate's three rules | an ASCII sentence parked in a constant (`const LABEL = "Order"`) is neither a JSX text node nor a diacritic literal, and walks straight through | rule 4: a literal that *reaches* a JSX child or a human-facing attribute through constants, properties, destructuring or an import. It found one live escape — an Admin table header — on its first run |
+| **A**/**R** — `admin/login/1024` recorded at 292px and left | not acceptable in the checkpoint whose purpose is runtime UI/UX correction | root cause is arithmetic (780 + 96 + 440 = 1316 against a 1024 breakpoint); the brand panel now yields with `flex: 0 1 780px`. Measured 0px at 1440 · 1024 · 768 · 390 and both 200 % viewports, with 1440 still exactly 780 + 440 |
+
+`APP12-H08`'s "0px overflow on every audited route" and this report's 292px do
+**not** contradict each other: `h08-admin-shell` case B measures `ORDERS_PATH` at
+each viewport and visits `/login` only as 1440-wide setup inside `openOperator`.
+The login page was never in that reflow assertion. `APP12-V02-C1` §I carries the
+full reconciliation.
+
+```text
+APP12-V02        COMPLETE_AFTER_C1
+APP12-V02-C1     COMPLETE
+CORRECTION_USED  1 / 1        (no V02-C2)
+APP12-G03        NEXT — still NOT STARTED
+```

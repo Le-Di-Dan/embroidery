@@ -19,8 +19,7 @@
  * copying, because none of those can be prevented and a claim that they are
  * would be a lie told to a customer.
  */
-import { VI_MESSAGES, messageView } from '@embroidery/i18n';
-import { BRAND_NAME } from '@embroidery/ui';
+import { BRAND_NAME, VI_MESSAGES, messageView } from '@embroidery/i18n';
 
 /**
  * Every sentence below lives in the canonical Vietnamese message repository

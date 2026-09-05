@@ -7,8 +7,7 @@
  * returned by the API. The shell never renders API-supplied roles or
  * permissions (there is exactly one Admin actor — REQ-IDN-001).
  */
-import { VI_MESSAGES, messageView } from '@embroidery/i18n';
-import { BRAND_NAME } from '@embroidery/ui';
+import { BRAND_NAME, VI_MESSAGES, messageView } from '@embroidery/i18n';
 
 /**
  * Every sentence below lives in the canonical Vietnamese message repository

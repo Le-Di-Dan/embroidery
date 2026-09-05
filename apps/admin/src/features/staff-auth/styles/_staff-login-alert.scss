@@ -1,0 +1,48 @@
+// The login alert — the error and rate-limit surfaces above the form.
+
+@use '@embroidery/styles' as styles;
+
+.staff-login-alert {
+  display: flex;
+  gap: styles.spacing(12);
+  padding: styles.spacing(12) styles.spacing(16);
+  background: styles.$color-background-secondary;
+  border: 1.5px solid transparent;
+  border-radius: styles.$radius-md;
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.staff-login-alert--error {
+  border-color: styles.$color-status-error;
+
+  .staff-login-alert__icon {
+    color: styles.$color-status-error;
+  }
+}
+
+.staff-login-alert--warning {
+  border-color: styles.$color-status-warning;
+
+  .staff-login-alert__icon {
+    color: styles.$color-status-warning;
+  }
+}
+
+.staff-login-alert__icon {
+  flex-shrink: 0;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.5;
+}
+
+.staff-login-alert__message {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.5;
+  color: styles.$color-text-primary;
+}

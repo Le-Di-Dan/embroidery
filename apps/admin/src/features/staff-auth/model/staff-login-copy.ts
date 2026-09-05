@@ -1,4 +1,4 @@
-import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+import { BRAND_NAME, VI_MESSAGES, messageView } from '@embroidery/i18n';
 import type { FieldErrorCode, StaffLoginField } from './staff-login-form';
 
 /**
@@ -7,7 +7,6 @@ import type { FieldErrorCode, StaffLoginField } from './staff-login-form';
  * approved Figma nodes (FIG-ADMIN-LOGIN-* — see the APP1-A01 report). Error
  * copy never reveals which credential was wrong or whether an account exists.
  */
-import { BRAND_NAME } from '@embroidery/ui';
 
 /**
  * Every sentence below lives in the canonical Vietnamese message repository

@@ -19,6 +19,7 @@ CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
                          APP12-H03-C1 (2026-09-04, 1/1 — no C2)
                          APP12-H04-C1 (2026-09-04, 1/1 — no C2)
                          APP12-H05-C1 (2026-09-04, 1/1 — no C2)
+                         APP12-V02-C1 (2026-09-05, 1/1 — no C2)
 LOCKED_AT              = APP12-P01 entry, 2026-09-01, Product Owner authority
 ```
 
@@ -287,7 +288,8 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | 26 | `APP12-H07` | Operational runbooks (Wave 1) | `COMPLETE` |
 | 27 | `APP12-H08` | Accessibility and compatibility (Wave 1) | `COMPLETE` |
 | 28 | `APP12-V01` | Runtime Visual & Content UAT — audit | `COMPLETE` |
-| 29 | `APP12-V02` | Runtime Visual & Content corrections and live re-verification | `COMPLETE` |
+| 29 | `APP12-V02` | Runtime Visual & Content corrections and live re-verification | `COMPLETE_AFTER_C1` |
+| 29·C1 | `APP12-V02-C1` | i18n copy authority and Admin login reflow correction | `COMPLETE` |
 | 30 | `APP12-U01` | Wave 1 Ready-Made business UAT | `NOT_STARTED` |
 | 31 | `APP12-E01` | Wave 1 commerce regression, positive and negative | `NOT_STARTED` |
 | 32 | `APP12-R01` | **WAVE 1 RELEASE GATE** — Ready-Made GO / NO-GO | `NOT_STARTED` |

@@ -1,3 +1,4 @@
+import { BRAND_NAME } from '@embroidery/i18n';
 /**
  * @jest-environment node
  *
@@ -14,7 +15,6 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import DiscoverPage, { generateMetadata } from '../../src/app/kham-pha/page';
 import { makePublicPage, makePublicProduct, publicEnvelope } from '../support/discover-fixture';
-import { BRAND_NAME } from '@embroidery/ui';
 
 jest.mock('@embroidery/api-client', () => ({
   ...jest.requireActual<Record<string, unknown>>('@embroidery/api-client'),
