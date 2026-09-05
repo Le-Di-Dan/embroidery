@@ -87,11 +87,12 @@ describe('APP11-B04 public sitemap inventory contract', () => {
       ]);
     });
 
-    it('leaves the artifact at the frozen 138 operations', () => {
+    it('leaves the artifact at 139 operations', () => {
       // 128 when APP11-B04 published this read. The Ready-Made commerce
-      // checkpoints took the artifact to the 138 `APP12-H01` froze (§19); this
+      // checkpoints took the artifact to the 138 `APP12-H01` froze (§19), and
+      // `APP12-V02-C2` added one Admin image-delivery operation on top. This
       // surface is still exactly one operation, which the assertion above says.
-      expect(allOperations()).toHaveLength(138);
+      expect(allOperations()).toHaveLength(139);
     });
 
     it('reaches the generated client', () => {

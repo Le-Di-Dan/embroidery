@@ -80,14 +80,14 @@ $grid-min-column: 220px;
 // `cover` rather than `contain`: the tile is a fixed-ratio browsing surface and
 // letterboxing every non-matching aspect would make the grid read as broken.
 // The full image is still reachable — this is a tile, not the artwork.
-.asset-card__image {
+.asset-card__thumb__image {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
 
-.asset-card__glyph {
+.asset-card__thumb__glyph {
   font-size: styles.$font-size-heading-s;
   line-height: 1;
 }

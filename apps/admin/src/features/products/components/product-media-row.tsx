@@ -2,6 +2,7 @@
 
 import { AdminProductMediaResponseRole } from '@embroidery/api-client';
 
+import { AssetThumbnail } from '../../../shared/media/asset-thumbnail';
 import { PRODUCT_FORM_COPY } from '../model/product-form-copy';
 import { buildMediaMetaLine, resolveMediaTitle } from '../model/product-media-identity';
 import type { ProductMediaRole } from '../model/product-media-selection';
@@ -27,10 +28,11 @@ interface ProductMediaRowProps {
 /**
  * One selected image (`434:20` — Media row / Ảnh đại diện · Ảnh thư viện).
  *
- * The tile is an honest placeholder, not a broken image: `APP2` exposes no
- * authenticated media-delivery contract, so there is no URL to point at and
- * pretending otherwise would render a permanent broken-image icon. The
- * placeholder is `aria-hidden` with the absence stated in text instead.
+ * The tile shows the selected image, through `adminAsset_preview`
+ * (`APP12-V02-C2`). It was an honest placeholder while `APP2` exposed no
+ * authenticated delivery contract: there was no URL to point at, and inventing
+ * one would have rendered a permanent broken-image icon. Only a row whose image
+ * cannot be fetched falls back now, and it says so.
  *
  * Identity is the server's: a media-type label and `{size} · {createdAt}`.
  * `APP2-B01` stores no original filename, so none is shown or invented.
@@ -59,13 +61,14 @@ export function ProductMediaRow({
   return (
     <li className="product-media-row">
       <div className="product-media-row__top">
-        <span className="product-media-row__placeholder" aria-hidden="true" />
+        <AssetThumbnail
+          assetId={media.assetId}
+          state="READY"
+          className="product-media-row__placeholder"
+        />
         <span className="product-media-row__info">
           <span className="product-media-row__title">{title}</span>
           <span className="product-media-row__meta">{meta}</span>
-          <span className="product-media-row__placeholder-note">
-            {PRODUCT_FORM_COPY.identity.placeholder}
-          </span>
         </span>
         <span className="product-media-row__role">{roleLabel}</span>
       </div>

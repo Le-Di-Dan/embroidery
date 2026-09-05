@@ -193,7 +193,6 @@ export const PRODUCT_FORM_COPY = {
     unitMegabytes: productFormMessage.text('identity.unitMegabytes'),
     metaUnavailable: productFormMessage.text('identity.metaUnavailable'),
     /** There is no media-delivery contract, so no tile ever shows real pixels. */
-    placeholder: productFormMessage.text('identity.placeholder'),
   },
 } as const;
 

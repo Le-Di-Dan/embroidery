@@ -16,6 +16,7 @@ import {
 import { adminAssetList, adminProductDetail, adminProductUpdate } from '@embroidery/api-client';
 
 import { ProductDetailScreen } from '../../src/features/products/components/product-detail-screen';
+import { MEDIA_COPY } from '../../src/shared/media/media-copy';
 import { PRODUCT_FORM_COPY } from '../../src/features/products/model/product-form-copy';
 import { makeApiClientError } from '../support/api-error';
 import { makeAsset, makePage } from '../support/asset-fixture';
@@ -97,12 +98,18 @@ describe('selected media presentation', () => {
     expect(row.textContent).not.toMatch(/\.(png|jpe?g|webp)\b/i);
   });
 
-  it('states that no preview exists rather than rendering a broken image', async () => {
+  it('renders the selected image from the Admin preview route', async () => {
     await renderWithMedia(1);
     const row = mediaRows()[0] as HTMLElement;
 
-    expect(within(row).getByText(PRODUCT_FORM_COPY.identity.placeholder)).toBeInTheDocument();
-    expect(row.querySelector('img')).toBeNull();
+    // This asserted the opposite — that no image was rendered — and was right
+    // while APP2 exposed no delivery contract, because the only alternative
+    // then was a fabricated URL and a permanent broken-image icon.
+    // `APP12-V02-C2` supplies the address, so the row shows its own picture.
+    const image = row.querySelector('img');
+    expect(image).not.toBeNull();
+    expect(image).toHaveAttribute('alt', MEDIA_COPY.thumbnailAlt);
+    expect(image?.getAttribute('src')).toMatch(/^\/api\/admin\/assets\/[0-9a-f-]+\/thumbnail$/);
   });
 
   it('shows the approved empty copy when nothing is selected', async () => {
@@ -257,7 +264,13 @@ describe('asset picker', () => {
     expect(dialog.textContent).not.toMatch(/[0-9a-f]{64}/i);
     expect(dialog.textContent).not.toContain('PRODUCTION_SENSITIVE');
     expect(dialog.textContent).not.toContain('CATALOG_MEDIA');
-    expect(dialog.querySelector('img')).toBeNull();
+
+    // The tile now carries an image, so the disclosure rule has to hold for its
+    // address too: the preview URL names the asset and nothing else — no
+    // checksum, no classification, no bucket, key or storage host.
+    const src = dialog.querySelector('img')?.getAttribute('src') ?? '';
+    expect(src).toMatch(/^\/api\/admin\/assets\/[0-9a-f-]+\/thumbnail$/);
+    expect(src).not.toMatch(/[0-9a-f]{64}|PRODUCTION_SENSITIVE|CATALOG_MEDIA|minio|X-Amz-/i);
   });
 
   it('appends the next cursor page and preserves the loaded rows', async () => {

@@ -146,10 +146,14 @@ describe('the published Admin category surface', () => {
     expect(OPENAPI.paths[COLLECTION]?.['delete']).toBeUndefined();
   });
 
-  it('leaves the artifact at 138 operations, with the public count unchanged at 49', () => {
+  it('leaves the artifact at 139 operations, with the public count unchanged at 49', () => {
     const operations = allOperations();
 
-    expect(operations).toHaveLength(138);
+    // 138 was the `APP12-H01` baseline. `APP12-V02-C2` added exactly one Admin
+    // operation under Human-PO authority — `adminAsset_preview`, the catalog
+    // lane's missing image-delivery contract — taking it to 139. The public
+    // count is the number that guards this surface, and it did not move.
+    expect(operations).toHaveLength(139);
     expect(
       operations.filter(({ operation: op }) => op.operationId?.startsWith('public')),
     ).toHaveLength(49);

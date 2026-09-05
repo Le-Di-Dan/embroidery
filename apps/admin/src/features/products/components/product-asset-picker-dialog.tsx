@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { AssetThumbnail } from '../../../shared/media/asset-thumbnail';
 import { flattenSelectableAssets } from '../model/product-asset-eligibility';
 import { PRODUCT_FORM_COPY } from '../model/product-form-copy';
 import { buildMediaMetaLine, resolveMediaTitle } from '../model/product-media-identity';
@@ -22,8 +23,10 @@ interface ProductAssetPickerDialogProps {
  *
  * Only accepted catalog media appears — the filter is applied to the response,
  * not assumed of it, so an asset still being inspected or already rejected is
- * never offered. Every tile is a placeholder: there is no delivery contract, so
- * there is no image to show and no URL to construct.
+ * never offered. Each tile shows the image itself through `adminAsset_preview`
+ * (`APP12-V02-C2`); before that contract existed there was no address to load
+ * one from, so every tile was a neutral block and an operator chose a product
+ * image by its media type and file size.
  *
  * Continuation is explicit and cursor-based. "Tải thêm tài sản" appears only
  * while `hasNext` holds, a failed page leaves the loaded tiles on screen, and
@@ -149,7 +152,11 @@ export function ProductAssetPickerDialog({
                     checked={checked}
                     onChange={() => toggle(asset.assetId)}
                   />
-                  <span className="product-picker__thumb" aria-hidden="true" />
+                  <AssetThumbnail
+                    assetId={asset.assetId}
+                    state="READY"
+                    className="product-picker__thumb"
+                  />
                   <span className="product-picker__info">
                     <span className="product-picker__title">{title}</span>
                     <span className="product-picker__meta">
@@ -157,9 +164,6 @@ export function ProductAssetPickerDialog({
                     </span>
                     <span className="product-picker__state">
                       {PRODUCT_FORM_COPY.picker.statusReady}
-                    </span>
-                    <span className="product-picker__placeholder-note">
-                      {PRODUCT_FORM_COPY.identity.placeholder}
                     </span>
                   </span>
                 </label>

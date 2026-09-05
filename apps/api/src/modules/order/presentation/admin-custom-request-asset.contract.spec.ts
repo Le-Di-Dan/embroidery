@@ -21,7 +21,12 @@ const DELIVERABLE_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 interface OperationShape {
   readonly operationId?: string;
-  readonly parameters?: readonly { readonly name: string; readonly in: string }[];
+  readonly parameters?: readonly {
+    readonly name: string;
+    readonly in: string;
+    /** Present on an enumerated parameter; read to prove a closed vocabulary. */
+    readonly schema?: { readonly enum?: readonly string[] };
+  }[];
   readonly requestBody?: unknown;
   readonly responses?: Record<string, { readonly content?: Record<string, unknown> }>;
   readonly security?: readonly unknown[];
@@ -90,20 +95,35 @@ describe('APP5-B06 — the published Admin request-asset contract', () => {
           .map(([method]) => `${method.toUpperCase()} ${path}`),
       );
 
-    // Four, and every other one is contextual in exactly the way this is:
+    // Five, and every other one is contextual in exactly the way this is:
     // `APP3-A01`'s placement background belongs to a product side, `APP7-B06`'s
     // transfer screenshot to a payment attempt's evidence association, and
     // `APP11-B02`'s rendition to a single gallery asset. This checkpoint still
-    // adds one and only one, and none of the four is a generic binary or a
-    // companion "download"/"thumbnail" address. Re-measured by `APP12-H01`.
+    // adds one and only one, and none of the five is a generic binary or a
+    // companion "download" address. Re-measured by `APP12-H01`.
+    //
+    // The fifth arrived with `APP12-V02-C2` under Human-PO authority, and it is
+    // contextual in the same way its `gallery-assets` twin is: the lane is
+    // re-checked per request, the rendition is an enum of the two processed
+    // derivatives, and there is no word in that enum for an original — so it
+    // cannot become the generic `GET /assets/:id` escape hatch §1 forbids. The
+    // *count* is not what this guard protects; the shape of each address is.
     expect(adminBinaries.sort()).toEqual(
       [
         `GET ${CONTENT_PATH}`,
+        'GET /api/admin/assets/{assetId}/{rendition}',
         'GET /api/admin/gallery-assets/{assetId}/{rendition}',
         'GET /api/admin/payment-evidence/{evidenceId}/content',
         'GET /api/admin/products/{productId}/sides/{sideId}/background',
       ].sort(),
     );
+
+    // The rendition enum is the reason the address above cannot serve an
+    // original: a request has no word to spell one with.
+    const rendition = document.paths['/api/admin/assets/{assetId}/{rendition}']?.[
+      'get'
+    ]?.parameters?.find((parameter) => parameter.name === 'rendition');
+    expect(rendition?.schema?.enum).toEqual(['thumbnail', 'catalog-preview']);
 
     // `/api/admin/assets/{assetId}` is `APP2-B01`'s catalog-media **metadata**
     // read and predates this checkpoint. B06 neither adds to it nor turns it

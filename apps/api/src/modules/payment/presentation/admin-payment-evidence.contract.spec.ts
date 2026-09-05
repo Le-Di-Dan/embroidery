@@ -117,16 +117,24 @@ describe('APP7-B06 — the published Admin transfer-evidence contract', () => {
           .map(([method]) => `${method.toUpperCase()} ${path}`),
       );
 
-    // Four, and every one is contextual to a single aggregate in exactly the way
+    // Five, and every one is contextual to a single aggregate in exactly the way
     // this one is contextual to a payment attempt's evidence association:
     // `APP3-A01`'s placement background, `APP5-B06`'s request attachment, B06's
-    // own evidence content, and `APP11-B02`'s gallery rendition — the one added
-    // after this checkpoint closed. `APP12-H01` re-measured the artifact and
-    // named it rather than relaxing the fence, so a fifth Admin byte stream, or
-    // any generic "download"/"thumbnail" address, still fails here.
+    // own evidence content, `APP11-B02`'s gallery rendition, and
+    // `APP12-V02-C2`'s catalog-asset rendition — the last two added after this
+    // checkpoint closed. Each new one is **named** here rather than the fence
+    // being relaxed, so an unlisted Admin byte stream, or any generic
+    // "download" address, still fails.
+    //
+    // What matters for *this* checkpoint is the line below it: none of the four
+    // others can reach a payment evidence object. The catalog route serves the
+    // `CATALOG`/`GALLERY` asset lanes only, and customer-private evidence is in
+    // neither, so it stays reachable through B06's authorization and nothing
+    // else.
     expect(adminBinaries.sort()).toEqual(
       [
         `GET ${CONTENT_PATH}`,
+        'GET /api/admin/assets/{assetId}/{rendition}',
         'GET /api/admin/custom-requests/{requestId}/assets/{assetId}/content',
         'GET /api/admin/gallery-assets/{assetId}/{rendition}',
         'GET /api/admin/products/{productId}/sides/{sideId}/background',

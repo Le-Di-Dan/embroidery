@@ -803,8 +803,7 @@
       "unitBytes": "B",
       "unitKilobytes": "KB",
       "unitMegabytes": "MB",
-      "metaUnavailable": "Chưa có thông tin chi tiết",
-      "placeholder": "Chưa có ảnh xem trước"
+      "metaUnavailable": "Chưa có thông tin chi tiết"
     },
     "slug": {
       "cardTitle": "Đường dẫn",
