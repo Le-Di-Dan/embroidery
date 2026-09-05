@@ -4,7 +4,7 @@ import type { AdminProductSummaryResponse } from '@embroidery/api-client';
 
 import { PRODUCT_COPY } from '../model/product-copy';
 import { adminProductDetailRoute } from '../model/product-route';
-import { ProductMediaPlaceholder } from './product-media-placeholder';
+import { ProductMediaTile } from './product-media-tile';
 import { ProductStatusBadge } from './product-status-badge';
 
 interface ProductTableProps {
@@ -49,7 +49,7 @@ export function ProductTable({ items }: ProductTableProps) {
                 aligned; the flex layout lives on this wrapper instead.
               */}
               <span className="product-table__product-cell">
-                <ProductMediaPlaceholder />
+                <ProductMediaTile media={product.primaryMedia} />
                 <span className="product-table__name">{product.name}</span>
               </span>
             </th>

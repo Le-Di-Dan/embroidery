@@ -213,7 +213,6 @@ export const PLACEMENT_COPY = {
      * forbids — so the picker names the media type it can prove and nothing it
      * cannot show.
      */
-    thumbnailPlaceholder: placementMessage.text('picker.thumbnailPlaceholder'),
   },
 
   mobile: {

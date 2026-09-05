@@ -9,6 +9,7 @@
  *
  * Copy is the approved Figma status language (`450:404` — Ánh xạ trạng thái).
  */
+import type { AssetThumbnailState } from '../../../shared/media/asset-thumbnail';
 import { ASSET_COPY } from './asset-copy';
 
 /** What the screen shows; deliberately not the wire vocabulary. */
@@ -49,4 +50,24 @@ export function assetStatusLabel(presentation: AssetStatusPresentation): string 
  */
 export function isReconciliationPending(presentation: AssetStatusPresentation): boolean {
   return presentation === 'PENDING' || presentation === 'PROCESSING';
+}
+
+/**
+ * Maps a lifecycle presentation onto what a tile can show.
+ *
+ * `UNKNOWN` becomes `ABSENT` rather than `PROCESSING`: a status this build
+ * cannot interpret is not evidence that an image is on its way, and promising
+ * one that never arrives is worse than saying nothing.
+ */
+export function toThumbnailState(presentation: AssetStatusPresentation): AssetThumbnailState {
+  if (presentation === 'READY') {
+    return 'READY';
+  }
+  if (presentation === 'PENDING' || presentation === 'PROCESSING') {
+    return 'PROCESSING';
+  }
+  if (presentation === 'REJECTED') {
+    return 'REJECTED';
+  }
+  return 'ABSENT';
 }

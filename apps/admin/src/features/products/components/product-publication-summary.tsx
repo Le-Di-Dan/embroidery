@@ -2,7 +2,7 @@ import type { AdminProductDetailResponse } from '@embroidery/api-client';
 
 import { formatPriceAmount, isPriceUnset } from '../model/product-price';
 import { PRODUCT_PUBLICATION_COPY } from '../model/product-publication-copy';
-import { ProductMediaPlaceholder } from './product-media-placeholder';
+import { ProductMediaTile } from './product-media-tile';
 
 interface ProductPublicationSummaryProps {
   readonly product: AdminProductDetailResponse;
@@ -61,7 +61,7 @@ export function ProductPublicationSummary({ product }: ProductPublicationSummary
               }
               data-testid="publication-media-tile"
             >
-              <ProductMediaPlaceholder />
+              <ProductMediaTile media={item} />
               {index === 0 ? (
                 <span className="product-publication__media-badge">
                   {PRODUCT_PUBLICATION_COPY.screen.primaryMedia}

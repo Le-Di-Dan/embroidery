@@ -4,7 +4,7 @@ import type { AdminProductSummaryResponse } from '@embroidery/api-client';
 
 import { PRODUCT_COPY } from '../model/product-copy';
 import { adminProductDetailRoute } from '../model/product-route';
-import { ProductMediaPlaceholder } from './product-media-placeholder';
+import { ProductMediaTile } from './product-media-tile';
 import { ProductStatusBadge } from './product-status-badge';
 
 interface ProductCardListProps {
@@ -26,7 +26,7 @@ export function ProductCardList({ items }: ProductCardListProps) {
       {items.map((product) => (
         <li key={product.productId} className="product-card">
           <div className="product-card__top">
-            <ProductMediaPlaceholder />
+            <ProductMediaTile media={product.primaryMedia} />
             <div className="product-card__info">
               <p className="product-card__name">{product.name}</p>
               <p className="product-card__category">{product.category.name}</p>

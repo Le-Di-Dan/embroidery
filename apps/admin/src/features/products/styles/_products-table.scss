@@ -22,6 +22,23 @@
   border-radius: styles.$radius-md;
 }
 
+// The image variant keeps the placeholder's exact box, so a row does not change
+// height when its picture arrives. `overflow: hidden` is what lets the radius
+// clip the image; without it a square picture sits over the rounded corners.
+.product-media--image {
+  overflow: hidden;
+}
+
+// `cover`, because the tile is a fixed square identity marker in a dense list.
+// Letterboxing every non-square product photo would make the column read as
+// broken; the full image belongs on the product's own screen.
+.product-media__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .product-media__glyph {
   font-size: styles.$font-size-caption;
   line-height: 1;

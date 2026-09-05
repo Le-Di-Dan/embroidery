@@ -81,6 +81,13 @@
     "retryAfterMinutes": "khoảng {minutes} phút",
     "retryAfterSeconds": "{seconds} giây"
   },
+  "media": {
+    "thumbnailAlt": "Ảnh xem trước của tài sản",
+    "absent": "Chưa có ảnh xem trước",
+    "processing": "Ảnh đang được xử lý",
+    "rejected": "Ảnh đã bị từ chối",
+    "unavailable": "Không tải được ảnh xem trước"
+  },
   "assets": {
     "page": {
       "title": "Tài sản hình ảnh",
@@ -149,12 +156,7 @@
       "unitBytes": "B",
       "unitKilobytes": "KB",
       "unitMegabytes": "MB",
-      "metaUnavailable": "Chưa có thông tin chi tiết",
-      "thumbnailPlaceholder": "Chưa có ảnh xem trước",
-      "thumbnailProcessing": "Ảnh đang được xử lý",
-      "thumbnailRejected": "Ảnh đã bị từ chối",
-      "thumbnailUnavailable": "Không tải được ảnh xem trước",
-      "thumbnailAlt": "Ảnh xem trước của tài sản"
+      "metaUnavailable": "Chưa có thông tin chi tiết"
     },
     "list": {
       "loading": "Đang tải danh sách tài sản…",

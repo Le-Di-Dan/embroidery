@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 
+import { AssetThumbnail } from '../../../shared/media/asset-thumbnail';
 import { PLACEMENT_COPY } from '../model/placement-copy';
 import { flattenEligibleBackgrounds } from '../model/background-eligibility';
 import { useBackgroundAssetQuery } from '../hooks/use-background-asset-query';
@@ -119,12 +120,13 @@ export function PlacementBackgroundDialog({
                     setStaged(asset.assetId);
                   }}
                 />
-                <span className="placement-picker__thumb" aria-hidden="true" />
+                <AssetThumbnail
+                  assetId={asset.assetId}
+                  state={asset.status === 'ACCEPTED' ? 'READY' : 'ABSENT'}
+                  className="placement-picker__thumb"
+                />
                 <span className="placement-picker__info">
                   <span className="placement-picker__type">{asset.mediaType}</span>
-                  <span className="placement-picker__state">
-                    {PLACEMENT_COPY.picker.thumbnailPlaceholder}
-                  </span>
                 </span>
               </label>
             </li>

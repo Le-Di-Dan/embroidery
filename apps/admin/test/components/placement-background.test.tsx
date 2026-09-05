@@ -34,7 +34,9 @@ import {
   placementEnvelope,
   setViewportWidth,
   PLACEMENT_PRODUCT_ID,
+  BACKGROUND_ASSET_ID,
 } from '../support/placement-fixture';
+import { MEDIA_COPY } from '../../src/shared/media/media-copy';
 
 jest.mock(
   'next/navigation',
@@ -184,16 +186,20 @@ describe('storage boundary', () => {
     expect(typeof actual['adminProductPlacementGet']).toBe('function');
   });
 
-  it('keeps picker tiles as placeholders after A01-C1', async () => {
-    // `APP3-B02A` delivers a background by Product + Side, which is the
-    // association it authorizes. There is no asset-by-id route, and inventing
-    // one to draw thumbnails here is the bypass A01-C1 §10 forbids — so the
-    // *preview* gained a real image while the *picker* legitimately did not.
+  it('draws picker tiles from the Admin preview route, not a per-feature URL', async () => {
+    // `APP3-A01-C1` §10 forbade *inventing* an asset-by-id route to draw these
+    // thumbnails, and while none existed the picker was right to show a
+    // placeholder — an operator chose a background by media type alone.
+    // `APP12-V02-C2` added `adminAsset_preview` under Human-PO authority, so
+    // the route is no longer invented and the constraint is satisfied rather
+    // than bypassed: the tile renders through the one shared builder, and this
+    // feature composes no address of its own.
     await openPicker();
     await waitFor(() => {
       expect(screen.getByRole('radio')).toBeInTheDocument();
     });
 
-    expect(screen.getByText(PLACEMENT_COPY.picker.thumbnailPlaceholder)).toBeInTheDocument();
+    const image = await screen.findByRole('img', { name: MEDIA_COPY.thumbnailAlt });
+    expect(image).toHaveAttribute('src', `/api/admin/assets/${BACKGROUND_ASSET_ID}/thumbnail`);
   });
 });

@@ -284,7 +284,7 @@ describe('summary honesty', () => {
     expect(screen.queryByText('Phụ kiện thêu tay')).not.toBeInTheDocument();
   });
 
-  it('renders ordered media as placeholders, marking the first', async () => {
+  it('renders ordered media as real previews, marking the first', async () => {
     await renderLoaded({ media: [makeProductMedia(0), makeProductMedia(1)] });
 
     const tiles = screen.getAllByTestId('publication-media-tile');
@@ -292,7 +292,16 @@ describe('summary honesty', () => {
     expect(
       within(tiles[0] as HTMLElement).getByText(PRODUCT_PUBLICATION_COPY.screen.primaryMedia),
     ).toBeInTheDocument();
-    expect(document.querySelectorAll('img')).toHaveLength(0);
+
+    // `APP12-V02-C2`: an accepted image shows itself. This asserted zero
+    // images while no Admin delivery contract existed; the order it checks is
+    // the same, and now it can check that the tiles address the right assets.
+    const images = [...document.querySelectorAll('img')];
+    expect(images).toHaveLength(2);
+    expect(images.map((image) => image.getAttribute('src'))).toEqual([
+      `/api/admin/assets/${makeProductMedia(0).assetId}/thumbnail`,
+      `/api/admin/assets/${makeProductMedia(1).assetId}/thumbnail`,
+    ]);
   });
 
   it('exposes no filename, storage key or asset classification', async () => {

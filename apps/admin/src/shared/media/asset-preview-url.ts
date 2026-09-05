@@ -11,7 +11,7 @@
  * caller's choice, and leaving it open would invite a screen to ask for the
  * larger derivative where a small one belongs.
  */
-import { toApiOriginBase } from '../../../config/api-base';
+import { toApiOriginBase } from '../../config/api-base';
 
 /** The documented gateway default, matching `browser-api-client`. */
 const DEFAULT_API_BASE_PATH = '/api';

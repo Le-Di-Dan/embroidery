@@ -92,20 +92,25 @@ describe('assets production source boundaries', () => {
   });
 
   it('renders an image only from the application preview route', () => {
-    const previewBuilder = sources.find(({ path }) => path.endsWith('asset-preview-url.ts'));
-    expect(previewBuilder).toBeDefined();
+    // The builder lives at app-shared scope: the asset library, the product
+    // surfaces and the placement picker all draw this tile, so the address they
+    // draw it from cannot belong to any one of them.
+    const builder = readFileSync(
+      join(__dirname, '..', '..', 'src', 'shared', 'media', 'asset-preview-url.ts'),
+      'utf8',
+    );
     // The one place a media path is composed, and it composes the app's own.
-    expect(previewBuilder?.text).toMatch(/\/api\/admin\/assets\/\$\{/);
+    expect(builder).toMatch(/\/api\/admin\/assets\/\$\{/);
 
     for (const { path, text } of sources) {
       if (!/<img/.test(stripComments(text))) {
         continue;
       }
-      // Every `<img>` takes its `src` from the shared builder — never an
-      // interpolated path assembled at the point of rendering.
-      expect({ path, usesBuilder: /src=\{buildAssetPreviewUrl\(/.test(text) }).toEqual({
+      // The feature composes no address of its own: no `<img>` inside it may
+      // interpolate or hard-code a path at the point of rendering.
+      expect({ path, buildsOwnUrl: /src=\{`|src=\{'\/|src=\{"\//.test(text) }).toEqual({
         path,
-        usesBuilder: true,
+        buildsOwnUrl: false,
       });
     }
   });

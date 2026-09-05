@@ -522,8 +522,7 @@
       "loadMoreFailed": "Không tải thêm được. Vui lòng thử lại.",
       "cancel": "Huỷ",
       "confirm": "Dùng ảnh này",
-      "selected": "Đang chọn",
-      "thumbnailPlaceholder": "Ảnh xem trước có sau khi lưu vào mặt sản phẩm."
+      "selected": "Đang chọn"
     },
     "mobile": {
       "title": "Cần màn hình rộng hơn",
