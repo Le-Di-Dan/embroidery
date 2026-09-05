@@ -58,6 +58,12 @@ export interface PaymentTerminology {
   readonly evidenceEmptyBody: string;
   /** A rejected photo is not a failed payment; the branch says so in its words. */
   readonly evidenceRejectedNote: string;
+  /** The obligation row in the decision outcome panel. */
+  readonly outcomeObligation: string;
+  /** What the outcome panel announces when the decision settles the obligation. */
+  readonly outcomeSuccessTitle: string;
+  /** What a recorded review says is unchanged. */
+  readonly outcomeReviewRecordedBody: string;
 }
 
 const CUSTOM_TERMS: PaymentTerminology = {
@@ -68,6 +74,9 @@ const CUSTOM_TERMS: PaymentTerminology = {
   settledNote: custom.text('settledNote'),
   evidenceEmptyBody: custom.text('evidenceEmptyBody'),
   evidenceRejectedNote: custom.text('evidenceRejectedNote'),
+  outcomeObligation: custom.text('outcomeObligation'),
+  outcomeSuccessTitle: custom.text('outcomeSuccessTitle'),
+  outcomeReviewRecordedBody: custom.text('outcomeReviewRecordedBody'),
 };
 
 const READY_MADE_TERMS: PaymentTerminology = {
@@ -78,6 +87,9 @@ const READY_MADE_TERMS: PaymentTerminology = {
   settledNote: readyMade.text('settledNote'),
   evidenceEmptyBody: readyMade.text('evidenceEmptyBody'),
   evidenceRejectedNote: readyMade.text('evidenceRejectedNote'),
+  outcomeObligation: readyMade.text('outcomeObligation'),
+  outcomeSuccessTitle: readyMade.text('outcomeSuccessTitle'),
+  outcomeReviewRecordedBody: readyMade.text('outcomeReviewRecordedBody'),
 };
 
 /**

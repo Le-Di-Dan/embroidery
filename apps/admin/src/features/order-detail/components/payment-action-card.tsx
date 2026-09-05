@@ -82,6 +82,7 @@ export function PaymentActionCard({ orderId, payments, attempt, terms }: Payment
           <ReviewAttemptDialog
             orderId={orderId}
             attemptId={openDialog.attemptId}
+            terms={terms}
             onClose={() => setOpenDialog(null)}
           />
         )}

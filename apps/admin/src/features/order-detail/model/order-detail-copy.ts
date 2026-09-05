@@ -179,13 +179,14 @@ export const ORDER_DETAIL_COPY = {
     referenceRow: detailMessage.text('comparison.referenceRow'),
     serverJudged: detailMessage.text('comparison.serverJudged'),
   },
+  // The three outcome strings that named a deposit live in
+  // `payment-terminology.ts` now (`V01-UX-006`, §24): the obligation row, the
+  // settled announcement and what a recorded review says is unchanged.
   outcome: {
     heading: detailMessage.text('outcome.heading'),
     attempt: detailMessage.text('outcome.attempt'),
-    obligation: detailMessage.text('outcome.obligation'),
     order: detailMessage.text('outcome.order'),
     successBadge: detailMessage.text('outcome.successBadge'),
-    successTitle: detailMessage.text('outcome.successTitle'),
     successBody: detailMessage.text('outcome.successBody'),
     successNote: detailMessage.text('outcome.successNote'),
     reviewBadge: detailMessage.text('outcome.reviewBadge'),
@@ -194,7 +195,6 @@ export const ORDER_DETAIL_COPY = {
     reviewNote: detailMessage.text('outcome.reviewNote'),
     replayed: detailMessage.text('outcome.replayed'),
     reviewRecordedTitle: detailMessage.text('outcome.reviewRecordedTitle'),
-    reviewRecordedBody: detailMessage.text('outcome.reviewRecordedBody'),
     otherTitle: detailMessage.text('outcome.otherTitle'),
     otherBody: detailMessage.text('outcome.otherBody'),
   },

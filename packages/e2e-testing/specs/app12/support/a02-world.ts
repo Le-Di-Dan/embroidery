@@ -72,7 +72,10 @@ export const COPY = {
   correctFee: 'Cập nhật phí',
   refusedTitle: 'Không thể sửa phí',
   paymentHeading: 'Thanh toán',
-  verify: 'Đối chiếu và xác nhận',
+  // `APP12-V02` §24: the Ready-Made workbench branches its payment vocabulary
+  // on the order origin, and this is the READY_MADE branch's submit control. A
+  // deposit on a custom order still reads “Xác nhận đã nhận tiền cọc”.
+  verify: 'Xác nhận đã nhận thanh toán',
   omitted: 'Không hiển thị',
 } as const;
 

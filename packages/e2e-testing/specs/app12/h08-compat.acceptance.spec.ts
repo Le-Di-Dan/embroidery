@@ -266,11 +266,30 @@ test('@admin — an operator can sign in, read the queue and open an order', asy
     // broken control and is not one. What the gate actually asks is whether the
     // operator can filter the queue, so the click is made and the **outcome**
     // is waited for, in the URL as well as on the control.
+    //
+    // Since `APP12-V02` §21.1 the filters are chips: the checkbox is a real,
+    // focusable checkbox that is *clipped* rather than removed — so it keeps its
+    // role, its checked state and its place in the tab order — and the chip
+    // beside it is the visible target. That is what an operator clicks, so it is
+    // what this gate clicks, and the control underneath is what it asserts on.
     const filter = page.getByTestId('order-origin-filter-READY_MADE');
-    await filter.click();
+    const chip = page.locator('label').filter({ has: filter });
+
+    // The state is on the control, not on a class — a screen reader hears it.
+    await expect(filter).not.toBeChecked();
+    await chip.click();
     await expect(filter).toBeChecked({ timeout: 15_000 });
     await expect(page).toHaveURL(/origin=READY_MADE/);
-    await filter.click();
+    await chip.click();
+    await expect(filter).not.toBeChecked({ timeout: 15_000 });
+
+    // And it is still reachable and operable from the keyboard alone, which is
+    // the property a clipped control most easily loses.
+    await filter.focus();
+    await expect(filter).toBeFocused();
+    await page.keyboard.press('Space');
+    await expect(filter).toBeChecked({ timeout: 15_000 });
+    await page.keyboard.press('Space');
     await expect(filter).not.toBeChecked({ timeout: 15_000 });
 
     // Into one order, through the queue's own link — when there is one.

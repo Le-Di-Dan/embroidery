@@ -3,6 +3,7 @@
 import { presentOrderStatus } from '../../../shared/presentation/order-status';
 import { AdminStatusBadge } from '../../../shared/status/admin-status-badge';
 import { ORDER_DETAIL_COPY as COPY } from '../model/order-detail-copy';
+import type { PaymentTerminology } from '../model/payment-terminology';
 import type { PaymentDecisionPhase } from '../hooks/use-payment-decision';
 import {
   attemptStatusCaption,
@@ -15,6 +16,15 @@ interface PaymentDecisionStatusProps {
   readonly phase: PaymentDecisionPhase;
   /** True in the review dialog, whose success wording differs from a verify. */
   readonly fromReview: boolean;
+  /**
+   * The order origin's payment vocabulary (`V01-UX-006`, `APP12-V02` §24).
+   *
+   * Three strings in this panel named a deposit — the obligation row, the
+   * settled announcement and what a recorded review leaves unchanged — and the
+   * live H08 journey caught the second one still reading "Đã xác nhận tiền cọc"
+   * on a Ready-Made `FULL` obligation after everything else had been branched.
+   */
+  readonly terms: PaymentTerminology;
 }
 
 /**
@@ -49,7 +59,7 @@ interface PaymentDecisionStatusProps {
  * `role="status"` for the in-flight bands and `role="alert"` for the settled
  * ones, so a decision the operator is waiting on is announced when it lands.
  */
-export function PaymentDecisionStatus({ phase, fromReview }: PaymentDecisionStatusProps) {
+export function PaymentDecisionStatus({ phase, fromReview, terms }: PaymentDecisionStatusProps) {
   if (phase.kind === 'idle' || phase.kind === 'running') {
     return null;
   }
@@ -135,14 +145,14 @@ export function PaymentDecisionStatus({ phase, fromReview }: PaymentDecisionStat
     outcome.kind === 'verified'
       ? {
           badge: COPY.outcome.successBadge,
-          title: COPY.outcome.successTitle,
+          title: terms.outcomeSuccessTitle,
           body: COPY.outcome.successBody,
         }
       : outcome.kind === 'requiresReview'
         ? {
             badge: COPY.outcome.reviewBadge,
             title: fromReview ? COPY.outcome.reviewRecordedTitle : COPY.outcome.reviewTitle,
-            body: fromReview ? COPY.outcome.reviewRecordedBody : COPY.outcome.reviewBody,
+            body: fromReview ? terms.outcomeReviewRecordedBody : COPY.outcome.reviewBody,
           }
         : { badge: '', title: COPY.outcome.otherTitle, body: COPY.outcome.otherBody };
 
@@ -173,7 +183,7 @@ export function PaymentDecisionStatus({ phase, fromReview }: PaymentDecisionStat
             symbol={attempt.symbol}
           />
         </DefinitionRow>
-        <DefinitionRow label={COPY.outcome.obligation} testId="outcome-deposit">
+        <DefinitionRow label={terms.outcomeObligation} testId="outcome-deposit">
           <AdminStatusBadge
             token={deposit.token}
             label={deposit.label}

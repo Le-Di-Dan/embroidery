@@ -187,10 +187,8 @@
     "outcome": {
       "heading": "TRẠNG THÁI SAU KHI GHI NHẬN",
       "attempt": "Lần thanh toán",
-      "obligation": "Nghĩa vụ tiền cọc",
       "order": "Đơn hàng",
       "successBadge": "THÀNH CÔNG",
-      "successTitle": "Đã xác nhận tiền cọc",
       "successBody": "Ghi nhận thành công. Trang đã tải lại trạng thái hiện hành của đơn hàng.",
       "successNote": "Không có hành động sản xuất, giữ tồn kho hay giao hàng ở đây. Những việc đó thuộc giai đoạn sau và chưa tồn tại.",
       "reviewBadge": "CẦN ĐỐI CHIẾU",
@@ -199,7 +197,6 @@
       "reviewNote": "Đây là một chuyển trạng thái bền vững, đã ghi vào lịch sử đối chiếu — không phải thông báo lỗi biểu mẫu. Sau khi đối soát xong, dùng lại chính hành động Xác nhận để giải quyết.",
       "replayed": "Lần gửi trước đã được ghi nhận; lần này không ghi thêm gì.",
       "reviewRecordedTitle": "Đã treo giao dịch để đối chiếu",
-      "reviewRecordedBody": "Lý do đã được ghi vào lịch sử đối chiếu. Tiền cọc và đơn hàng không đổi.",
       "otherTitle": "Máy chủ đã ghi nhận thao tác",
       "otherBody": "Trạng thái hiện hành của đơn hàng đã được tải lại và hiển thị bên dưới."
     },
@@ -311,9 +308,7 @@
       "attemptAmount": "Số tiền",
       "evidence": "Ảnh khách gửi",
       "evidenceCount": "{count} ảnh",
-      "noAttempt": "Khách chưa bắt đầu chuyển khoản.",
-      "verify": "Đối chiếu và xác nhận",
-      "settled": "Đã xác nhận thanh toán"
+      "noAttempt": "Khách chưa bắt đầu chuyển khoản."
     },
     "fulfillment": {
       "heading": "Giao hàng",
@@ -587,7 +582,10 @@
       "reopenSubmit": "Mở lại xác nhận tiền cọc",
       "settledNote": "Tiền cọc của đơn hàng này đã được xác nhận. Không còn hành động đối chiếu nào ở đây.",
       "evidenceEmptyBody": "Đây là trạng thái bình thường, không phải lỗi. Bạn vẫn xác nhận được tiền cọc mà không cần ảnh — căn cứ là số tiền thực nhận trong tài khoản ngân hàng.",
-      "evidenceRejectedNote": "Ảnh bị từ chối vẫn nằm lại trong lịch sử và KHÔNG có nghĩa là thanh toán thất bại. Nhân viên vẫn xác nhận được tiền cọc bằng sao kê ngân hàng."
+      "evidenceRejectedNote": "Ảnh bị từ chối vẫn nằm lại trong lịch sử và KHÔNG có nghĩa là thanh toán thất bại. Nhân viên vẫn xác nhận được tiền cọc bằng sao kê ngân hàng.",
+      "outcomeObligation": "Nghĩa vụ tiền cọc",
+      "outcomeSuccessTitle": "Đã xác nhận tiền cọc",
+      "outcomeReviewRecordedBody": "Lý do đã được ghi vào lịch sử đối chiếu. Tiền cọc và đơn hàng không đổi."
     },
     "READY_MADE": {
       "dialogTitle": "Xác nhận đã nhận thanh toán",
@@ -596,7 +594,10 @@
       "reopenSubmit": "Mở lại xác nhận thanh toán",
       "settledNote": "Thanh toán của đơn hàng này đã được xác nhận. Không còn hành động đối chiếu nào ở đây.",
       "evidenceEmptyBody": "Đây là trạng thái bình thường, không phải lỗi. Bạn vẫn xác nhận được thanh toán mà không cần ảnh — căn cứ là số tiền thực nhận trong tài khoản ngân hàng.",
-      "evidenceRejectedNote": "Ảnh bị từ chối vẫn nằm lại trong lịch sử và KHÔNG có nghĩa là thanh toán thất bại. Nhân viên vẫn xác nhận được thanh toán bằng sao kê ngân hàng."
+      "evidenceRejectedNote": "Ảnh bị từ chối vẫn nằm lại trong lịch sử và KHÔNG có nghĩa là thanh toán thất bại. Nhân viên vẫn xác nhận được thanh toán bằng sao kê ngân hàng.",
+      "outcomeObligation": "Nghĩa vụ thanh toán",
+      "outcomeSuccessTitle": "Đã xác nhận thanh toán",
+      "outcomeReviewRecordedBody": "Lý do đã được ghi vào lịch sử đối chiếu. Khoản thanh toán và đơn hàng không đổi."
     }
   }
 }

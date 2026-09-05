@@ -25,6 +25,7 @@ import {
   adminPaymentAttemptVerify,
 } from '@embroidery/api-client';
 
+import { paymentTerminologyFor } from '../../src/features/order-detail/model/payment-terminology';
 import { OrderDetailScreen } from '../../src/features/order-detail';
 import { ORDER_DETAIL_COPY as COPY } from '../../src/features/order-detail/model/order-detail-copy';
 import { makeApiClientError, makeNetworkError } from '../support/api-error';
@@ -46,6 +47,9 @@ jest.mock('@embroidery/api-client', () => ({
   adminOrderPaymentRead: jest.fn(),
   adminPaymentAttemptVerify: jest.fn(),
 }));
+
+/** The custom branch keeps the deposit wording APP7 shipped (§24). */
+const CUSTOM_TERMS = paymentTerminologyFor('CUSTOM');
 
 const detailMock = adminOrderDetail as jest.MockedFunction<typeof adminOrderDetail>;
 const paymentsMock = adminOrderPaymentRead as jest.MockedFunction<typeof adminOrderPaymentRead>;
@@ -109,7 +113,7 @@ describe('a lost response', () => {
     const outcome = await screen.findByTestId('payment-outcome');
     expect(outcome).toHaveAttribute('data-outcome', 'verified');
     expect(outcome.querySelector('.payment-outcome__title')).toHaveTextContent(
-      COPY.outcome.successTitle,
+      CUSTOM_TERMS.outcomeSuccessTitle,
     );
     // The outcome was recovered, not reported — the screen says so.
     expect(screen.getByTestId('payment-outcome-replayed')).toBeInTheDocument();

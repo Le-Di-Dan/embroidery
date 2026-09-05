@@ -229,7 +229,7 @@ export function VerifyDepositDialog({
         />
       ) : null}
 
-      <PaymentDecisionStatus phase={decision.phase} fromReview={false} />
+      <PaymentDecisionStatus phase={decision.phase} fromReview={false} terms={terms} />
 
       <p className="payment-dialog__sr-status" role="status" aria-live="polite">
         {decision.phase.kind === 'running' ? COPY.verify.submitting : ''}

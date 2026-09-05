@@ -49,6 +49,9 @@ jest.mock('@embroidery/api-client', () => ({
   adminPaymentAttemptVerify: jest.fn(),
 }));
 
+/** The custom branch keeps the deposit wording APP7 shipped (§24). */
+const CUSTOM_TERMS = paymentTerminologyFor('CUSTOM');
+
 const detailMock = adminOrderDetail as jest.MockedFunction<typeof adminOrderDetail>;
 const paymentsMock = adminOrderPaymentRead as jest.MockedFunction<typeof adminOrderPaymentRead>;
 const verifyMock = adminPaymentAttemptVerify as jest.MockedFunction<
@@ -206,7 +209,7 @@ describe('the two outcomes of a 200', () => {
 
     const outcome = await screen.findByTestId('payment-outcome');
     expect(outcome).toHaveAttribute('data-outcome', 'verified');
-    expect(outcome).toHaveTextContent(COPY.outcome.successTitle);
+    expect(outcome).toHaveTextContent(CUSTOM_TERMS.outcomeSuccessTitle);
     expect(within(outcome).getByTestId('outcome-attempt')).toHaveTextContent('SUCCEEDED');
     expect(within(outcome).getByTestId('outcome-deposit')).toHaveTextContent('Đã thu đủ');
     expect(within(outcome).getByTestId('outcome-order')).toHaveTextContent('Đã xác nhận cọc');
@@ -254,7 +257,7 @@ describe('the two outcomes of a 200', () => {
 
     const outcome = await screen.findByTestId('payment-outcome');
     expect(outcome).toHaveAttribute('data-outcome', 'recorded');
-    expect(outcome).not.toHaveTextContent(COPY.outcome.successTitle);
+    expect(outcome).not.toHaveTextContent(CUSTOM_TERMS.outcomeSuccessTitle);
   });
 
   it('re-reads the payment truth after a decision instead of trusting the receipt', async () => {

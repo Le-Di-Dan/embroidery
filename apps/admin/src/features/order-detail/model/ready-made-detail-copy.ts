@@ -79,6 +79,9 @@ export const READY_MADE_DETAIL_COPY = {
     refusedBody: readyMadeDetailMessage.text('shipping.refusedBody'),
     pendingNote: readyMadeDetailMessage.text('shipping.pendingNote'),
   },
+  // `verify` and `settled` moved to `payment-terminology.ts` at `APP12-V02`
+  // (`V01-UX-006`, §24): both differ between a deposit and a Ready-Made
+  // payment, and one sentence gets one home.
   payment: {
     heading: readyMadeDetailMessage.text('payment.heading'),
     /** The one obligation a Ready-Made order carries (`BR-029`). */
@@ -94,8 +97,6 @@ export const READY_MADE_DETAIL_COPY = {
     evidenceCount: (count: number) =>
       readyMadeDetailMessage.text('payment.evidenceCount', { count }),
     noAttempt: readyMadeDetailMessage.text('payment.noAttempt'),
-    verify: readyMadeDetailMessage.text('payment.verify'),
-    settled: readyMadeDetailMessage.text('payment.settled'),
   },
   fulfillment: {
     heading: readyMadeDetailMessage.text('fulfillment.heading'),

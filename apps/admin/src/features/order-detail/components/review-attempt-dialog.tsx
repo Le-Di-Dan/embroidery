@@ -16,6 +16,7 @@ import {
 } from '../model/payment-decision-command';
 import { reviewPaymentAttempt } from '../services/payment-decision.service';
 import { PaymentDecisionStatus } from './payment-decision-status';
+import type { PaymentTerminology } from '../model/payment-terminology';
 import { PaymentDialog } from './payment-dialog';
 import { PaymentField } from './payment-field';
 
@@ -23,6 +24,8 @@ interface ReviewAttemptDialogProps {
   readonly orderId: string;
   readonly attemptId: string;
   readonly onClose: () => void;
+  /** The order origin's payment vocabulary (§24), forwarded to the outcome panel. */
+  readonly terms: PaymentTerminology;
 }
 
 /**
@@ -51,7 +54,12 @@ interface ReviewAttemptDialogProps {
  * reasons — a review writes an immutable reconciliation row, so concluding
  * failure from a dropped connection would be just as wrong here.
  */
-export function ReviewAttemptDialog({ orderId, attemptId, onClose }: ReviewAttemptDialogProps) {
+export function ReviewAttemptDialog({
+  orderId,
+  attemptId,
+  onClose,
+  terms,
+}: ReviewAttemptDialogProps) {
   const [values, setValues] = useState<ReviewFormValues>(EMPTY_REVIEW_FORM);
   const [errors, setErrors] = useState<ReviewFormErrors>({});
 
@@ -142,7 +150,7 @@ export function ReviewAttemptDialog({ orderId, attemptId, onClose }: ReviewAttem
         </section>
       )}
 
-      <PaymentDecisionStatus phase={decision.phase} fromReview />
+      <PaymentDecisionStatus phase={decision.phase} fromReview terms={terms} />
 
       <p className="payment-dialog__sr-status" role="status" aria-live="polite">
         {decision.phase.kind === 'running' ? COPY.verify.submitting : ''}

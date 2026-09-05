@@ -30,7 +30,7 @@ $order-detail-frozen-column: 660px;
 // The split is not wrong for the custom lifecycle, where the rail carries short
 // summaries. It is wrong for an order whose entire commercial decision lives
 // there, so the Ready-Made branch reverses which column is wide.
-$order-detail-commerce-column: 720px;
+$order-detail-commerce-rail: 448px;
 
 .order-detail {
   display: flex;
@@ -106,11 +106,15 @@ $order-detail-commerce-column: 720px;
 // that order too. Neither column is re-parented and no card moved feature: this
 // is the same two children in the same grid, with the basis swapped.
 .order-detail__columns--commerce {
-  .order-detail__payments {
-    flex: 0 1 $order-detail-commerce-column;
+  // The **rail** is the fixed one, and the decision takes what is left. Sizing
+  // the payment column instead let the frozen column collapse to 288px — worse
+  // than the 348px rail it replaced, and it made the items table 970px tall,
+  // which pushed every light state of the page to the height of its heaviest.
+  .order-detail__frozen {
+    flex: 0 1 $order-detail-commerce-rail;
   }
 
-  .order-detail__frozen {
+  .order-detail__payments {
     flex: 1 1 0;
   }
 }

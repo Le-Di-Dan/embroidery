@@ -495,6 +495,14 @@ test('E — the verification is taken, and dispatch and completion follow', asyn
   expect(outcomeLive?.announced, 'the verification outcome is announced, not only drawn').toBe(
     true,
   );
+  // `V01-UX-006` / `APP12-V02` §24: this order is READY_MADE and carries a FULL
+  // obligation, so nothing on the outcome may call the money a deposit. This
+  // announcement is the string the live journey caught still saying it after
+  // every other visible payment string had already been branched.
+  expect(
+    outcomeLive?.text ?? '',
+    'the settled announcement uses the order origin\x27s own words',
+  ).not.toMatch(/tiền cọc/iu);
   expect(await evidence.orderStatusOf(placedCode as string)).toBe('READY_FOR_DELIVERY');
   await expectNoSeriousViolations(operator, 'admin-payment-settled');
 
