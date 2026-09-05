@@ -92,6 +92,20 @@
   font-size: styles.$font-size-body-s;
   line-height: tokens.$line-height-relaxed;
   color: styles.$color-text-secondary;
+
+  // Three lines at mobile, where the feed is two columns (`V01-UX-024`, §27).
+  //
+  // The paragraph is what made a 390 card tall enough to put nine entries over
+  // 6.4 viewports. It is clamped rather than removed: the sentence still sets
+  // the entry up, and the whole of it is one tap away on the entry's own page.
+  // Above this width the card has the measure UI05 drew it at and the clamp is
+  // lifted entirely.
+  @media (max-width: (tokens.$bp-medium - 1px)) {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+  }
 }
 
 // The one detail action per card (`APP11-S03`), carrying UI05's hover and

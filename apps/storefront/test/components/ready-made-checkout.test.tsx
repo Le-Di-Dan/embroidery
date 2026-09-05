@@ -220,6 +220,47 @@ describe('verification', () => {
     expect(await screen.findByText(validation.contactUnverified)).toBeInTheDocument();
     expect(createMock).not.toHaveBeenCalled();
   });
+
+  it('clears the refusal the moment the verification satisfies it (`V01-UX-011`)', async () => {
+    // The one outright runtime defect in the V01 audit. Pressing "Đặt hàng"
+    // early set the refusal, and completing the verification did not clear it —
+    // so the card rendered "Vui lòng xác minh liên hệ trước khi đặt hàng"
+    // directly above "✓ Đã xác minh", at all three viewports, at the exact
+    // moment the customer decides whether it is safe to press the button.
+    //
+    // The refusal is derived now rather than stored, so it cannot outlive the
+    // condition it names.
+    const user = createUser();
+    renderWithProviders(<CheckoutQueryProvider view={makeCheckoutView()} />);
+
+    await fillDelivery(user);
+    await user.click(screen.getByRole('button', { name: summary.submit }));
+    expect(await screen.findByText(validation.contactUnverified)).toBeInTheDocument();
+
+    await verifyContact(user);
+
+    expect(screen.queryByText(validation.contactUnverified)).not.toBeInTheDocument();
+    expect(screen.getByText(contact.verified)).toBeInTheDocument();
+  });
+
+  it('says once that every delivery field is required (`V01-UX-028`)', async () => {
+    renderWithProviders(<CheckoutQueryProvider view={makeCheckoutView()} />);
+
+    // One sentence on the card, and still no per-field marker: every field here
+    // is required, so four asterisks would be noise. `aria-required` — which
+    // `APP12-H08` added — stays the machine-readable half.
+    expect(await screen.findByText(delivery.allRequired)).toBeInTheDocument();
+    for (const label of [
+      delivery.recipientNameLabel,
+      delivery.recipientPhoneLabel,
+      delivery.addressLineLabel,
+      delivery.provinceLabel,
+    ]) {
+      const field = screen.getByLabelText(label);
+      expect(field).toHaveAttribute('aria-required', 'true');
+      expect(field.closest('label')?.textContent ?? '').not.toContain('*');
+    }
+  });
 });
 
 describe('creating the order', () => {

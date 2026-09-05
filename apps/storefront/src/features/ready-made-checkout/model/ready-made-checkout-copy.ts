@@ -93,6 +93,15 @@ export const READY_MADE_CHECKOUT_COPY = {
   delivery: {
     /** `907:183` / `909:260`. */
     heading: readyMadeMessage.text('delivery.heading'),
+    /**
+     * One sentence, not four asterisks (`V01-UX-028`, `APP12-V02` §32).
+     *
+     * Every field on this card is required, so a per-field marker on all four
+     * would be noise — `checkout-field.tsx` records that reasoning and `H08`
+     * closed the accessibility half with `aria-required`. What was missing is
+     * that the customer had no way to know before submitting.
+     */
+    allRequired: readyMadeMessage.text('delivery.allRequired'),
     /** `907:185`. */
     recipientNameLabel: readyMadeMessage.text('delivery.recipientNameLabel'),
     /** `907:189`. */

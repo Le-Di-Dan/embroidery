@@ -81,7 +81,21 @@ export function CheckoutScreen({ view }: CheckoutScreenProps) {
   const [draft, setDraft] = useState<DeliveryDraft>(EMPTY_DELIVERY_DRAFT);
   /** Empty until the customer asks to submit: errors on an untouched form are noise. */
   const [errors, setErrors] = useState<DeliveryErrors>({});
-  const [contactError, setContactError] = useState<string | undefined>(undefined);
+  // Whether an order was attempted before the contact was verified — **not** the
+  // refusal itself (`V01-UX-011`, `APP12-V02` §31).
+  //
+  // Holding the message meant the state that resolved it could not clear it:
+  // pressing “Đặt hàng” early set the refusal, completing the verification did
+  // nothing to it, and the card then rendered “Vui lòng xác minh liên hệ trước
+  // khi đặt hàng” directly above “✓ Đã xác minh” — the screen contradicting
+  // itself at the moment the customer decides whether it is safe to press the
+  // button. Reproduced at all three viewports.
+  //
+  // The attempt is a fact about the past and stays remembered; the refusal is a
+  // statement about the present and is derived below, so it disappears exactly
+  // when it stops being true. This is the same rule the delivery fields already
+  // follow — a field's error clears as the field is corrected.
+  const [attemptedUnverified, setAttemptedUnverified] = useState(false);
 
   const selection = view.selection;
   const resolved = selection.kind === 'resolved' ? selection.selection : undefined;
@@ -119,9 +133,7 @@ export function CheckoutScreen({ view }: CheckoutScreenProps) {
     const deliveryErrors = validateDelivery(draft);
     setErrors(deliveryErrors);
     const missingContact = verified === undefined;
-    setContactError(
-      missingContact ? READY_MADE_CHECKOUT_COPY.validation.contactUnverified : undefined,
-    );
+    setAttemptedUnverified(missingContact);
     if (hasDeliveryErrors(deliveryErrors) || missingContact) return;
     submission.submit(submissionInput);
   }, [draft, submission, submissionInput, verified]);
@@ -145,6 +157,13 @@ export function CheckoutScreen({ view }: CheckoutScreenProps) {
   }
 
   const submitting = submission.state.kind === 'submitting';
+
+  // Derived, never stored: true only while the customer has attempted an order
+  // *and* the contact is still unverified.
+  const contactError =
+    attemptedUnverified && verified === undefined
+      ? READY_MADE_CHECKOUT_COPY.validation.contactUnverified
+      : undefined;
 
   return (
     <div className="ready-made-checkout">

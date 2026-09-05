@@ -13,12 +13,25 @@
 $bp-medium: 640px;
 $bp-large: 1025px;
 
-// Column counts, straight from the audited UI05 Collections Index frames:
-// desktop 1440 = 3 columns @ ~410px, tablet 1024 = 2 @ ~452px, mobile 390 = 1
-// @ ~342px. Deliberately NOT UI02's 5/3/2 @ 237px: a gallery card carries a
-// title and a paragraph of editorial copy, which needs the wider measure. The
-// masonry architecture is shared with UI02; the density is not.
-$columns-mobile: 1;
+// Column counts, from the audited UI05 Collections Index frames: desktop 1440 =
+// 3 columns @ ~410px, tablet 1024 = 2 @ ~452px. Deliberately NOT UI02's 5/3/2 @
+// 237px: a gallery card carries a title and a paragraph of editorial copy, which
+// needs the wider measure. The masonry architecture is shared with UI02; the
+// density is not.
+//
+// ## Mobile is two columns, and that departs from the UI05 390 frame
+//
+// UI05 draws one column at 390. `V01-UX-024` measured what that costs on a real
+// phone: nine entries over 5,366px — 6.4 viewports — for a feed whose whole
+// purpose is scanning. §27 asks for a two-column grid at 390 with shorter cards,
+// and this is the half of `V01-UX-024` the locked authority does not constrain:
+// §27 names `/kham-pha` for column-count preservation and not this feed.
+//
+// The card gets shorter to earn the narrower measure — the editorial paragraph
+// is clamped at this width in `_gallery-masonry.scss` — rather than the copy
+// being deleted or the title truncated. It is a departure from an approved frame
+// and it is recorded as one.
+$columns-mobile: 2;
 $columns-tablet: 2;
 $columns-desktop: 3;
 

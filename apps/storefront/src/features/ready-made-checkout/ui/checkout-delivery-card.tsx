@@ -65,6 +65,8 @@ export function CheckoutDeliveryCard(props: CheckoutDeliveryCardProps) {
   return (
     <fieldset className="ready-made-checkout__card ready-made-checkout__fieldset">
       <legend className="ready-made-checkout__card-heading">{delivery.heading}</legend>
+      {/* Said once for the card rather than marked four times (`V01-UX-028`). */}
+      <p className="ready-made-checkout__card-note">{delivery.allRequired}</p>
       {DELIVERY_FIELDS.map((field) => (
         <CheckoutField
           key={field}

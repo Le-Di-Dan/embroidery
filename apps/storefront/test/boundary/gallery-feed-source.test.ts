@@ -379,7 +379,11 @@ describe('gallery feed stylesheet boundary', () => {
 
   it('uses UI05 density, not the UI02 product density', () => {
     const tokens = readFileSync(join(FEATURE_DIR, 'styles', '_gallery-tokens.scss'), 'utf8');
-    expect(tokens).toMatch(/\$columns-mobile:\s*1;/);
+    // Mobile is two columns since `APP12-V02` (`V01-UX-024`, §27): UI05 draws
+    // one at 390, and one put nine entries over 6.4 phone viewports on a feed
+    // whose whole purpose is scanning. The card is shortened to earn the
+    // narrower measure rather than the copy being deleted.
+    expect(tokens).toMatch(/\$columns-mobile:\s*2;/);
     expect(tokens).toMatch(/\$columns-tablet:\s*2;/);
     expect(tokens).toMatch(/\$columns-desktop:\s*3;/);
   });

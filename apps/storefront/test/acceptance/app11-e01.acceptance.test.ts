@@ -161,8 +161,12 @@ describe('APP11-E01 — Discover and Gallery are distinct capabilities', () => {
    * sparser because a Gallery card carries a variable-height image and a
    * description rather than a fixed product tile.
    */
-  it('keeps the Gallery feed at 3 / 2 / 1', () => {
-    expect(declaredColumns(gallery)).toEqual({ desktop: '3', tablet: '2', mobile: '1' });
+  it('keeps the Gallery feed at its own, wider density', () => {
+    // 3 / 2 / 2 since `APP12-V02` (`V01-UX-024`, §27). The desktop and tablet
+    // counts are UI05's; mobile went to two because one column put nine entries
+    // over 6.4 phone viewports. The claim this test exists to defend is
+    // unchanged and is asserted below: the gallery is not the product grid.
+    expect(declaredColumns(gallery)).toEqual({ desktop: '3', tablet: '2', mobile: '2' });
   });
 
   /**

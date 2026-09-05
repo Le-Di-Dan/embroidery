@@ -108,6 +108,15 @@
     color: styles.$color-text-primary;
   }
 
+  // The card-level required note (`V01-UX-028`). Secondary type: it is a
+  // condition of the card, not a heading and not an error.
+  &__card-note {
+    margin: 0;
+    font-size: styles.$type-secondary;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-secondary;
+  }
+
   &__body {
     margin: 0;
     font-size: styles.$font-size-body-m;

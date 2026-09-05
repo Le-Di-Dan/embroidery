@@ -11,6 +11,7 @@
     },
     "delivery": {
       "heading": "Giao hàng",
+      "allRequired": "Tất cả các mục đều bắt buộc.",
       "recipientNameLabel": "Người nhận",
       "recipientPhoneLabel": "Số điện thoại người nhận",
       "addressLineLabel": "Địa chỉ nhận hàng",
