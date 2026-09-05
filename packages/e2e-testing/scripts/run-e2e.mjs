@@ -126,6 +126,19 @@ const APP12_H08 = [
   'app12-h08-firefox',
   'app12-h08-webkit',
 ];
+// APP12-V01 — the professional UI/UX live audit. The H08 topology plus the
+// content-density fixture, because the subject is what a *populated* product
+// looks like: a Discover grid with one card and an Admin table with one row are
+// calm by accident, and a critique written from them would be a critique of the
+// fixture. Four projects, split by origin and by what each one has to build —
+// the public browsing surfaces need no order, the commerce audit places one, the
+// Admin audit works it, and the Admin shell tour opens every operator route.
+const APP12_V01 = [
+  'app12-v01-public-chromium',
+  'app12-v01-commerce-chromium',
+  'app12-v01-admin-shell-chromium',
+  'app12-v01-admin-order-chromium',
+];
 
 /**
  * `--app4` (APP4-E01-H01) is not a Playwright mode.
@@ -263,76 +276,82 @@ function parseArgs(argv) {
   const app12A02 = flags.has('--app12-a02');
   // APP12-H08: the accessibility and compatibility gate, on the A02 topology.
   const app12H08 = flags.has('--app12-h08');
+  // APP12-V01: the UI/UX live audit, on the H08 topology plus density content.
+  const app12V01 = flags.has('--app12-v01');
   // APP12-H01: the live security acceptance, and its Wave-2-released sibling.
   const app12H01Wave2 = flags.has('--app12-h01-wave2');
   const app12H01 = flags.has('--app12-h01') || app12H01Wave2;
   // APP4-E01-H02: the browser tier, which IS a Playwright mode.
   const app4Browser = flags.has('--app4-browser') || app4R01 || app4R01C1 || app5E01 || app7E01;
   const full = flags.has('--full');
-  const mode = app4
-    ? 'app4'
-    : app12H08
-      ? 'app12-h08'
-      : app12H06
-        ? 'app12-h06'
-        : app12H01Wave2
-          ? 'app12-h01-wave2'
-          : app12H01
-            ? 'app12-h01'
-            : app12A02
-              ? 'app12-a02'
-              : app12A01
-                ? 'app12-a01'
-                : app12S03
-                  ? 'app12-s03'
-                  : app12S02
-                    ? 'app12-s02'
-                    : app12S01
-                      ? 'app12-s01'
-                      : app7E01
-                        ? 'app7-e01'
-                        : app5E01
-                          ? 'app5-e01'
-                          : app4Browser
-                            ? 'app4-browser'
-                            : app1
-                              ? 'app1'
-                              : full
-                                ? 'full'
-                                : 'smoke';
-  const projects = app12H08
-    ? APP12_H08
-    : app12H06
-      ? APP12_H06
-      : app12H01Wave2
-        ? APP12_H01_WAVE2
-        : app12H01
-          ? APP12_H01
-          : app12A02
-            ? APP12_A02
-            : app12A01
-              ? APP12_A01
-              : app12S03
-                ? APP12_S03
-                : app12S02
-                  ? APP12_S02
-                  : app12S01
-                    ? APP12_S01
-                    : app7E01
-                      ? APP7_E01
-                      : app5E01
-                        ? APP5_E01
-                        : app4R01C1
-                          ? APP4_R01_C1
-                          : app4R01
-                            ? APP4_R01
+  const mode = app12V01
+    ? 'app12-v01'
+    : app4
+      ? 'app4'
+      : app12H08
+        ? 'app12-h08'
+        : app12H06
+          ? 'app12-h06'
+          : app12H01Wave2
+            ? 'app12-h01-wave2'
+            : app12H01
+              ? 'app12-h01'
+              : app12A02
+                ? 'app12-a02'
+                : app12A01
+                  ? 'app12-a01'
+                  : app12S03
+                    ? 'app12-s03'
+                    : app12S02
+                      ? 'app12-s02'
+                      : app12S01
+                        ? 'app12-s01'
+                        : app7E01
+                          ? 'app7-e01'
+                          : app5E01
+                            ? 'app5-e01'
                             : app4Browser
-                              ? APP4
+                              ? 'app4-browser'
                               : app1
-                                ? APP1
+                                ? 'app1'
                                 : full
-                                  ? FULL
-                                  : SMOKE;
+                                  ? 'full'
+                                  : 'smoke';
+  const projects = app12V01
+    ? APP12_V01
+    : app12H08
+      ? APP12_H08
+      : app12H06
+        ? APP12_H06
+        : app12H01Wave2
+          ? APP12_H01_WAVE2
+          : app12H01
+            ? APP12_H01
+            : app12A02
+              ? APP12_A02
+              : app12A01
+                ? APP12_A01
+                : app12S03
+                  ? APP12_S03
+                  : app12S02
+                    ? APP12_S02
+                    : app12S01
+                      ? APP12_S01
+                      : app7E01
+                        ? APP7_E01
+                        : app5E01
+                          ? APP5_E01
+                          : app4R01C1
+                            ? APP4_R01_C1
+                            : app4R01
+                              ? APP4_R01
+                              : app4Browser
+                                ? APP4
+                                : app1
+                                  ? APP1
+                                  : full
+                                    ? FULL
+                                    : SMOKE;
   // The E01 suite is always host/Chromium; it cannot run in the container.
   const runner =
     app1 ||
@@ -344,7 +363,8 @@ function parseArgs(argv) {
     app12A01 ||
     app12H01 ||
     app12H06 ||
-    app12H08
+    app12H08 ||
+    app12V01
       ? 'host'
       : runnerArg
         ? runnerArg.split('=')[1]
@@ -374,6 +394,7 @@ function parseArgs(argv) {
     app12H01Wave2,
     app12H06,
     app12H08,
+    app12V01,
   };
 }
 
@@ -412,6 +433,7 @@ async function main() {
     app12H01Wave2,
     app12H06,
     app12H08,
+    app12V01,
   } = parseArgs(process.argv.slice(2));
 
   // APP7-E01-U01 owns its own lean topology and teardown and starts no browser
@@ -460,7 +482,15 @@ async function main() {
   // rather than to insert policy rows behind it. The Admin account it creates
   // is a by-product; nothing in the S02 suite logs in.
   const adminCredentials =
-    app1 || app4Browser || app12S02 || app12S03 || app12A01 || app12A02 || app12H01 || app12H08
+    app1 ||
+    app4Browser ||
+    app12S02 ||
+    app12S03 ||
+    app12A01 ||
+    app12A02 ||
+    app12H01 ||
+    app12H08 ||
+    app12V01
       ? createAdminCredentials(runId)
       : undefined;
   // The browser tier overrides one non-secret value: the canonical origin the
@@ -497,7 +527,8 @@ async function main() {
     app12A01 ||
     app12H01 ||
     app12H06 ||
-    app12H08
+    app12H08 ||
+    app12V01
       ? { ...createApp4SecretConfig(runId), storefrontOrigin: config.baseUrls.storefront }
       : undefined;
   // `APP7-B03`'s merchant bank configuration is a module-scoped fail-fast
@@ -564,7 +595,14 @@ async function main() {
       // other's operations, and neither grant can exist unless the capability
       // that mints it is released. The API reads the same value below, because a
       // released route in front of a withheld operation would prove nothing.
-      ...(app12S01 || app12S02 || app12S03 || app12A02 || app12H01 || app12H06 || app12H08
+      ...(app12S01 ||
+      app12S02 ||
+      app12S03 ||
+      app12A02 ||
+      app12H01 ||
+      app12H06 ||
+      app12H08 ||
+      app12V01
         ? {
             withStorefront: {
               INTERNAL_API_BASE_URL: `http://localhost:${config.ports.api}/api`,
@@ -683,9 +721,51 @@ async function main() {
       app12A01Fixture = await seedS01Catalog({ databaseUrl: env.database.url, log });
     }
     let app12S02Fixture;
-    if (app12S02 || app12S03 || app12A02 || app12H01 || app12H08) {
+    if (app12S02 || app12S03 || app12A02 || app12H01 || app12H08 || app12V01) {
       const { seedS02Catalog } = await import('../support/app12/s02-checkout-fixture.mjs');
       app12S02Fixture = await seedS02Catalog({ databaseUrl: env.database.url, log });
+    }
+    // APP12-V01: the content-density layer, on top of the S02 catalog the
+    // commerce journeys need. Seeded second and deliberately so — it renames the
+    // two S02 fixture rows into the shop content they stand in for, which it can
+    // only do once they exist. `sharp` and the S3 client are resolved from the
+    // workspaces that declare them, exactly as the H06 mode does and for the
+    // reason recorded there: pnpm's isolated `node_modules` provides no hoist,
+    // and adding a native image dependency to a test harness would be the wrong
+    // trade.
+    let app12V01Fixture;
+    if (app12V01) {
+      const { seedV01Density } = await import('../support/app12/v01-density-fixture.mjs');
+      const workerRequire = createRequire(join(config.repoRoot, 'apps/worker/package.json'));
+      const storageRequire = createRequire(
+        join(config.repoRoot, 'packages/object-storage/package.json'),
+      );
+      const sharp = workerRequire('sharp');
+      const { S3Client, PutObjectCommand } = storageRequire('@aws-sdk/client-s3');
+      const s3 = new S3Client({
+        endpoint: config.storage.endpoint,
+        region: 'us-east-1',
+        forcePathStyle: true,
+        credentials: {
+          accessKeyId: config.storage.accessKeyId,
+          secretAccessKey: config.storage.secretAccessKey,
+        },
+      });
+      app12V01Fixture = await seedV01Density({
+        databaseUrl: env.database.url,
+        sharp,
+        putObject: async ({ storageKey, body, contentType }) => {
+          await s3.send(
+            new PutObjectCommand({
+              Bucket: config.storage.derivativesBucket,
+              Key: storageKey,
+              Body: body,
+              ContentType: contentType,
+            }),
+          );
+        },
+        log,
+      });
     }
     // E01 specs need the bootstrap Admin credentials and the disposable database
     // URL (for the session-mutation seam); passed only through the child env.
@@ -765,7 +845,7 @@ async function main() {
                   E2E_ADMIN_EMAIL: adminCredentials.email,
                   E2E_ADMIN_PASSWORD: adminCredentials.password,
                 }
-              : app12S02 || app12S03 || app12A02 || app12H01 || app12H08
+              : app12S02 || app12S03 || app12A02 || app12H01 || app12H08 || app12V01
                 ? {
                     // The seeded slugs and SKU ids, for the same reason. The SKU ids
                     // matter more here than in S01: the spec composes checkout
@@ -796,12 +876,26 @@ async function main() {
                     //
                     // The password travels the child environment only — never an
                     // argument, never a log line.
-                    ...(app12S03 || app12A02 || app12H01 || app12H08
+                    ...(app12S03 || app12A02 || app12H01 || app12H08 || app12V01
                       ? {
                           E2E_BASE_ADMIN: config.baseUrls.admin,
                           E2E_ADMIN_EMAIL: adminCredentials.email,
                           E2E_ADMIN_PASSWORD: adminCredentials.password,
                           ...objectStorageEnv(config.storage),
+                        }
+                      : {}),
+                    // APP12-V01 only: the density fixture's own slugs, plus the
+                    // Storefront origin the public tour navigates. Every value is
+                    // a public catalog slug — nothing secret travels here.
+                    ...(app12V01
+                      ? {
+                          E2E_BASE_STOREFRONT: config.baseUrls.storefront,
+                          E2E_APP12_V01_CATEGORIES: app12V01Fixture.categorySlugs.join(','),
+                          E2E_APP12_V01_PRODUCTS: app12V01Fixture.productSlugs.join(','),
+                          E2E_APP12_V01_GALLERY: app12V01Fixture.gallerySlugs.join(','),
+                          E2E_APP12_V01_IN_STOCK: app12V01Fixture.inStockSlug,
+                          E2E_APP12_V01_OUT_OF_STOCK: app12V01Fixture.outOfStockSlug,
+                          E2E_APP12_V01_MULTI_VARIANT: app12V01Fixture.multiVariantSlug,
                         }
                       : {}),
                   }

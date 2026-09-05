@@ -61,4 +61,22 @@ export default [
       },
     },
   },
+  {
+    // The `APP12-V01` UX probe is the third, and the purest of them: its whole
+    // body is one `page.evaluate` argument, so it runs **only** in Chromium and
+    // never in Node. `Node` (the DOM interface, not the runtime) is declared
+    // because the probe distinguishes an element's own text nodes from its
+    // descendants' — which is what separates a paragraph from the container
+    // around it, and therefore what the whole density measurement rests on.
+    files: ['support/app12/v01-ux-probe.mjs'],
+    languageOptions: {
+      globals: {
+        ...NODE_GLOBALS,
+        window: 'readonly',
+        document: 'readonly',
+        HTMLElement: 'readonly',
+        Node: 'readonly',
+      },
+    },
+  },
 ];

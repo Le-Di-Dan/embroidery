@@ -7,7 +7,7 @@ ROADMAP_STATUS         = LOCKED
 ROADMAP_LOCK           = LOCKED
 IMPLEMENTATION_STARTED = true
 CHECKPOINTS            = 38
-NEXT                   = APP12-V01
+NEXT                   = APP12-V02
 CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
                          APP12-G02-C1 (2026-09-01, 1/1 — no C2)
                          APP12-C01-C1 (2026-09-01, 1/1 — no C2)
@@ -286,8 +286,8 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | 25 | `APP12-H06` | SEO and public readiness (Wave 1) | `COMPLETE` |
 | 26 | `APP12-H07` | Operational runbooks (Wave 1) | `COMPLETE` |
 | 27 | `APP12-H08` | Accessibility and compatibility (Wave 1) | `COMPLETE` |
-| 28 | `APP12-V01` | Runtime Visual & Content UAT — audit | **`NEXT`** |
-| 29 | `APP12-V02` | Runtime Visual & Content corrections and live re-verification | `NOT_STARTED` |
+| 28 | `APP12-V01` | Runtime Visual & Content UAT — audit | `COMPLETE` |
+| 29 | `APP12-V02` | Runtime Visual & Content corrections and live re-verification | **`NEXT`** |
 | 30 | `APP12-U01` | Wave 1 Ready-Made business UAT | `NOT_STARTED` |
 | 31 | `APP12-E01` | Wave 1 commerce regression, positive and negative | `NOT_STARTED` |
 | 32 | `APP12-R01` | **WAVE 1 RELEASE GATE** — Ready-Made GO / NO-GO | `NOT_STARTED` |

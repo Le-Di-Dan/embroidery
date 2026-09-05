@@ -9,6 +9,8 @@
  */
 import { defineConfig, devices } from '@playwright/test';
 
+import { app12V01Projects } from './playwright.projects.v01';
+
 const STOREFRONT_URL = process.env.E2E_BASE_STOREFRONT ?? 'http://embroidery.local:8090';
 const ADMIN_URL = process.env.E2E_BASE_ADMIN ?? 'http://admin.embroidery.local:8090';
 const IS_CI = !!process.env.CI;
@@ -375,6 +377,15 @@ export default defineConfig({
         screenshot: 'off',
       },
     },
+    // APP12-V01 — the UI/UX live audit. Its four projects, and the reasoning,
+    // viewport policy and security rules behind them, live in
+    // `playwright.projects.v01.ts`: four more here would have carried this file
+    // past the 400-line hard limit.
+    ...app12V01Projects({
+      storefrontUrl: STOREFRONT_URL,
+      adminUrl: ADMIN_URL,
+      chromiumLaunch,
+    }),
     {
       name: 'app7-e01-chromium',
       testMatch: '**/app7/*.acceptance.spec.ts',
