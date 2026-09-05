@@ -10,6 +10,7 @@ import type { SchemaObject } from '@nestjs/swagger/dist/interfaces/open-api-spec
 import { z } from 'zod';
 
 import { createZodDto, registerZodDtos } from '../../../../platform/validation';
+import { ADMIN_ASSET_PREVIEW_RENDITIONS } from '../../domain/admin-asset-preview.policy';
 import { ADMIN_ASSET_SCOPES } from '../../domain/admin-asset-scope.policy';
 import {
   ACCEPTED_MEDIA_TYPES,
@@ -82,7 +83,24 @@ export const listAssetsQuerySchema = z
 
 export class ListAssetsQuery extends createZodDto(listAssetsQuerySchema) {}
 
-registerZodDtos(AssetIdParam, AssetScopeQuery, ListAssetsQuery);
+/**
+ * The preview address: which asset, and which of its two processed renditions.
+ *
+ * The rendition is an enum rather than a free string, so an unknown word is a
+ * 400 before any lookup runs. There is no member that names an original, which
+ * is what keeps a private original unreachable through this route by
+ * vocabulary rather than by a check.
+ */
+export const assetPreviewParamsSchema = z
+  .object({
+    assetId: z.string().uuid(),
+    rendition: z.enum(ADMIN_ASSET_PREVIEW_RENDITIONS),
+  })
+  .strict();
+
+export class AssetPreviewParams extends createZodDto(assetPreviewParamsSchema) {}
+
+registerZodDtos(AssetIdParam, AssetPreviewParams, AssetScopeQuery, ListAssetsQuery);
 
 /**
  * Documentation-only description of the multipart body.

@@ -217,7 +217,14 @@ describe('failure translation', () => {
       ['IDEMPOTENCY_CONFLICT', 409, ASSET_COPY.errors.idempotencyConflict, false],
       ['ASSET_UPLOAD_IN_PROGRESS', 409, ASSET_COPY.errors.uploadInProgress, true],
       ['ASSET_UPLOAD_TIMEOUT', 408, ASSET_COPY.errors.timeout, true],
-      ['INTERNAL_SERVER_ERROR', 503, ASSET_COPY.errors.unavailable, true],
+      // The storage message belongs to the storage code and to nothing else.
+      ['ASSET_STORAGE_UNAVAILABLE', 503, ASSET_COPY.errors.unavailable, true],
+      // An unrecognised 5xx says the server failed, not that storage is down.
+      // `APP12-V02-C2`: a primary-key collision inside the upload transaction
+      // was reported to the operator as an object-storage outage, and the
+      // object storage was healthy the whole time.
+      ['INTERNAL_SERVER_ERROR', 500, ASSET_COPY.errors.serverFault, true],
+      ['INTERNAL_SERVER_ERROR', 503, ASSET_COPY.errors.serverFault, true],
     ];
     for (const [code, httpStatus, message, retryable] of cases) {
       const failure = describeApiFailure({ code, message: 'raw server text', httpStatus });

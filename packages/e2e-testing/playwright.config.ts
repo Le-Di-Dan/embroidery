@@ -232,6 +232,30 @@ export default defineConfig({
         viewport: { width: 1440, height: 900 },
       },
     },
+    // APP12-V02-C2 — media upload, processing and image delivery.
+    //
+    // The Admin origin, because the library is where the correction's subject
+    // lives: the operator uploads there and the tile that showed a placeholder
+    // is there. Serial within the file, and the whole project runs alone — the
+    // stability sequence counts library tiles, so a second worker uploading
+    // into the same account would move the number out from under it.
+    //
+    // The timeout is generous on purpose. Each of the six uploads posts real
+    // bytes through the gateway and then waits for the real worker to inspect
+    // the image and encode two derivatives; that is the chain under test, and
+    // shortening the wait would only convert a slow machine into a false
+    // failure.
+    {
+      name: 'app12-v02-c2-chromium',
+      testMatch: '**/app12/v02-c2-*.acceptance.spec.ts',
+      timeout: 300_000,
+      use: {
+        ...devices['Desktop Chrome'],
+        ...chromiumLaunch,
+        baseURL: ADMIN_URL,
+        viewport: { width: 1440, height: 900 },
+      },
+    },
     // APP12-A02-C1 — the Admin Ready-Made order branch.
     //
     // The Admin origin is the baseURL because the operator's screen is what is

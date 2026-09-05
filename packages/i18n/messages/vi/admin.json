@@ -88,7 +88,6 @@
       "collectionLabel": "Danh sách tài sản hình ảnh"
     },
     "upload": {
-      "action": "Tải ảnh lên",
       "dropTitle": "Kéo và thả ảnh vào đây",
       "dropHint": "hoặc chọn tệp từ máy của bạn",
       "browse": "Chọn tệp",
@@ -151,7 +150,11 @@
       "unitKilobytes": "KB",
       "unitMegabytes": "MB",
       "metaUnavailable": "Chưa có thông tin chi tiết",
-      "thumbnailPlaceholder": "Chưa có ảnh xem trước"
+      "thumbnailPlaceholder": "Chưa có ảnh xem trước",
+      "thumbnailProcessing": "Ảnh đang được xử lý",
+      "thumbnailRejected": "Ảnh đã bị từ chối",
+      "thumbnailUnavailable": "Không tải được ảnh xem trước",
+      "thumbnailAlt": "Ảnh xem trước của tài sản"
     },
     "list": {
       "loading": "Đang tải danh sách tài sản…",
@@ -179,6 +182,7 @@
       "stateConflict": "Lượt tải lên này không còn hiệu lực. Hãy chọn lại ảnh và thử lại.",
       "timeout": "Quá trình tải lên mất quá nhiều thời gian và đã dừng lại. Hãy thử lại.",
       "unavailable": "Dịch vụ lưu trữ ảnh tạm thời không khả dụng. Hãy thử lại sau giây lát.",
+      "serverFault": "Máy chủ không xử lý được lượt tải lên này. Lỗi nằm ở hệ thống, không phải ở tệp ảnh bạn chọn. Hãy thử lại sau giây lát.",
       "rateLimited": "Bạn đang thao tác quá nhanh. Hãy đợi một lát rồi thử lại.",
       "network": "Không có kết nối tới máy chủ. Hãy kiểm tra kết nối mạng và thử lại.",
       "notFound": "Không tìm thấy tài sản này.",

@@ -76,8 +76,38 @@ describe('assets production source boundaries', () => {
     expect(allText).not.toMatch(/minio|s3\.|presign|bucket|storageKey|storage_key|objectKey/i);
   });
 
-  it('never builds a media URL or an object URL for a server-backed asset', () => {
-    expect(allText).not.toMatch(/createObjectURL|URL\.create|<img|blob:/);
+  /**
+   * The rule this replaces banned `<img>` outright, and was right to while it
+   * held: before `APP12-V02-C2` there was no Admin delivery contract, so any
+   * `src` the feature could have produced would have been fabricated.
+   * `adminAsset_preview` is that contract, so an `<img>` is now legitimate —
+   * but only pointing at the application's own route.
+   *
+   * What has not changed is the part that was always the point: the browser
+   * never manufactures an address out of bytes it holds. No `createObjectURL`,
+   * no `blob:`, no data URI.
+   */
+  it('never builds an object URL, a blob URL or a data URI', () => {
+    expect(allText).not.toMatch(/createObjectURL|URL\.create|blob:|data:image/);
+  });
+
+  it('renders an image only from the application preview route', () => {
+    const previewBuilder = sources.find(({ path }) => path.endsWith('asset-preview-url.ts'));
+    expect(previewBuilder).toBeDefined();
+    // The one place a media path is composed, and it composes the app's own.
+    expect(previewBuilder?.text).toMatch(/\/api\/admin\/assets\/\$\{/);
+
+    for (const { path, text } of sources) {
+      if (!/<img/.test(stripComments(text))) {
+        continue;
+      }
+      // Every `<img>` takes its `src` from the shared builder — never an
+      // interpolated path assembled at the point of rendering.
+      expect({ path, usesBuilder: /src=\{buildAssetPreviewUrl\(/.test(text) }).toEqual({
+        path,
+        usesBuilder: true,
+      });
+    }
   });
 
   it('never reads file bytes: no decode, no base64, no duplicate buffer', () => {

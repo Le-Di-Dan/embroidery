@@ -208,6 +208,15 @@ services:
       # same reason as the two above: both Next apps consume this package as
       # TypeScript source, so an edit must reach the dev server without a rebuild.
       - ../../packages/ui/src:/app/packages/ui/src
+      # The Vietnamese locale (@embroidery/i18n). Both Next apps import the
+      # message JSON directly as source, so without this an added key is
+      # missing at runtime until the image is rebuilt — and `messageView`
+      # throws on a missing key, so the page 500s rather than degrading.
+      # `APP12-V02-C2` hit exactly that: the static-copy and message-key gates
+      # both passed against the repository while the container served a stale
+      # copy of the same file.
+      - ../../packages/i18n/src:/app/packages/i18n/src
+      - ../../packages/i18n/messages:/app/packages/i18n/messages
     healthcheck:
       test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3000/healthz']
       interval: 15s
@@ -240,6 +249,15 @@ services:
       # same reason as the two above: both Next apps consume this package as
       # TypeScript source, so an edit must reach the dev server without a rebuild.
       - ../../packages/ui/src:/app/packages/ui/src
+      # The Vietnamese locale (@embroidery/i18n). Both Next apps import the
+      # message JSON directly as source, so without this an added key is
+      # missing at runtime until the image is rebuilt — and `messageView`
+      # throws on a missing key, so the page 500s rather than degrading.
+      # `APP12-V02-C2` hit exactly that: the static-copy and message-key gates
+      # both passed against the repository while the container served a stale
+      # copy of the same file.
+      - ../../packages/i18n/src:/app/packages/i18n/src
+      - ../../packages/i18n/messages:/app/packages/i18n/messages
     depends_on:
       # The public Admin must not be advertised ready until a bootstrap admin
       # exists (or was intentionally skipped in production). A development

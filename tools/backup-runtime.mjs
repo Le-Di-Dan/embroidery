@@ -122,6 +122,83 @@ export function tableRowCounts(container, database) {
   return counts;
 }
 
+/**
+ * Every identity sequence whose next value would collide with a row already in
+ * its table.
+ *
+ * Row-count parity says the rows arrived; it says nothing about whether the
+ * sequence that mints their keys came with them. `pg_restore` loads an identity
+ * column through `COPY`, and `COPY` does not advance the owned sequence, so a
+ * restore can be byte-perfect and still leave every sequence at its start
+ * value. Nothing is wrong until the first insert, which then fails on the
+ * **primary key** — a constraint no application-level `ON CONFLICT` guard is
+ * written against, because the guard targets the business key. That is exactly
+ * how `APP12-V02-C2` began: an Admin image upload returning HTTP 500 in four
+ * milliseconds, reported to the operator as an object-storage outage.
+ *
+ * `last_value` is read through `pg_sequences`, which reports it without
+ * consuming a value, so this check is safe to run on a live database.
+ * A sequence that has never been called reports `NULL`, and any populated table
+ * behind one is drifted by definition.
+ */
+export function identitySequenceDrift(container, database) {
+  const statement = `
+    select c.relname || '=' || coalesce(s.last_value::text, 'never') || '=' || (
+      xpath('/row/c/text()', query_to_xml(
+        format('select max(%I) as c from public.%I', a.attname, c.relname), false, true, ''))
+    )[1]::text
+    from pg_class c
+    join pg_attribute a
+      on a.attrelid = c.oid and a.attnum > 0 and a.attidentity <> ''
+    left join pg_sequences s
+      on s.schemaname = 'public'
+     and s.sequencename = replace(pg_get_serial_sequence(c.relname, a.attname), 'public.', '')
+    where c.relkind = 'r' and c.relnamespace = 'public'::regnamespace
+    order by c.relname`;
+  const drifted = [];
+  for (const line of psql(container, database, statement).split('\n')) {
+    if (line.trim() === '') continue;
+    const [table, last, max] = line.trim().split('=');
+    if (max === '' || max === undefined) continue;
+    const highest = Number(max);
+    const current = last === 'never' ? 0 : Number(last);
+    if (current < highest) {
+      drifted.push({ table, sequenceLastValue: last, maxId: highest });
+    }
+  }
+  return drifted;
+}
+
+/**
+ * Advances every identity sequence to its table's highest key.
+ *
+ * `setval(..., max(id), true)` marks the value as consumed, so the next insert
+ * receives `max + 1`. Tables the drift report did not name are left untouched:
+ * a sequence that is legitimately *ahead* of its rows (values burned by rolled
+ * back transactions) is correct as it stands, and pulling it back would create
+ * the collision this repairs.
+ */
+export function resyncIdentitySequences(container, database, drifted) {
+  for (const { table } of drifted) {
+    assertSafeIdentifier('table', table);
+    psql(
+      container,
+      database,
+      `select setval(pg_get_serial_sequence('public.${table}', a.attname),
+                     (xpath('/row/c/text()', query_to_xml(
+                        format('select max(%I) as c from public.%I', a.attname, '${table}'),
+                        false, true, '')))[1]::text::bigint,
+                     true)
+         from pg_attribute a
+         join pg_class c on c.oid = a.attrelid
+        where c.relname = '${table}'
+          and c.relnamespace = 'public'::regnamespace
+          and a.attnum > 0 and a.attidentity <> ''`,
+    );
+  }
+  return drifted.length;
+}
+
 /** The applied-migration count from the drizzle journal schema, or null if absent. */
 export function migrationJournalCount(container, database) {
   try {

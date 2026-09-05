@@ -1,0 +1,114 @@
+// One asset tile in the library grid, and the grid that lays them out.
+//
+// Split out of `assets.scss` by `APP12-V02-C2`, which is the checkpoint that
+// gave the tile a real image to show: the thumbnail stopped being a single
+// static placeholder and grew an image variant beside the four states that are
+// not an image, and the file it lived in was already past the §6 limit.
+
+@use '@embroidery/styles' as styles;
+
+// Shared with the shell and the rest of the feature so the Admin surfaces
+// switch layout at one threshold; the design system defers breakpoints (FU-A16).
+$assets-breakpoint: 1024px;
+
+// Screen-specific composition constants (no shared token; not a token system).
+$thumb-height: 148px;
+// Sized so the approved four-column desktop grid actually resolves to four
+// tracks inside the shell's main region at 1440 (the rail and the page padding
+// leave ~1015px), and degrades to three and two as the viewport narrows.
+$grid-min-column: 220px;
+
+.asset-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: styles.spacing(16);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  @media (min-width: $assets-breakpoint) {
+    grid-template-columns: repeat(auto-fill, minmax($grid-min-column, 1fr));
+    gap: styles.spacing(24);
+  }
+}
+
+.asset-card {
+  display: flex;
+  flex-direction: row;
+  gap: styles.spacing(16);
+  padding: styles.spacing(12);
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+
+  @media (min-width: $assets-breakpoint) {
+    flex-direction: column;
+    gap: styles.spacing(12);
+    border-radius: styles.$radius-card;
+  }
+}
+
+// A neutral placeholder, never an image: APP2 exposes no media-delivery
+// operation, and a private original must never be addressed from a browser.
+.asset-card__thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: styles.spacing(64);
+  height: styles.spacing(64);
+  color: styles.$color-text-tertiary;
+  background: styles.$color-background-secondary;
+  border-radius: styles.$radius-sm;
+
+  @media (min-width: $assets-breakpoint) {
+    width: 100%;
+    height: $thumb-height;
+  }
+}
+
+// The image variant keeps the placeholder's exact box, so a tile does not
+// change size when its preview arrives. `overflow: hidden` is what lets the
+// radius clip the picture; without it a square image sits over the rounded
+// corners the placeholder had.
+.asset-card__thumb--image {
+  overflow: hidden;
+  padding: 0;
+  background: styles.$color-background-secondary;
+}
+
+// `cover` rather than `contain`: the tile is a fixed-ratio browsing surface and
+// letterboxing every non-matching aspect would make the grid read as broken.
+// The full image is still reachable — this is a tile, not the artwork.
+.asset-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.asset-card__glyph {
+  font-size: styles.$font-size-heading-s;
+  line-height: 1;
+}
+
+.asset-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: 0;
+}
+
+.asset-card__title {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+}
+
+.asset-card__meta {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-secondary;
+  overflow-wrap: anywhere;
+}

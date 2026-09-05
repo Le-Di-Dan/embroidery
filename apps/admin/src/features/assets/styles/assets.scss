@@ -10,6 +10,7 @@
 // the desktop grid and drop target apply from the shell breakpoint upward.
 
 @use 'sass:math';
+@use 'asset-card';
 @use '@embroidery/styles' as styles;
 
 // Shared with the shell (admin-shell.scss) so the Admin surfaces switch layout
@@ -138,10 +139,6 @@ $spinner-size: 16px;
   border-radius: styles.$radius-card;
 }
 
-.assets__primary-action {
-  @extend %assets-control-primary;
-}
-
 // Visually hidden but still exposed to assistive tech and keyboard focus.
 .assets__sr-status {
   position: absolute;
@@ -211,8 +208,12 @@ $spinner-size: 16px;
   color: styles.$color-text-secondary;
 }
 
+// Primary, because it is now the only way to open the file picker. It was
+// secondary while the header carried a primary action beside it; with that
+// duplicate removed, the remaining button is the screen's main call to action
+// and is weighted as one.
 .assets-upload__browse {
-  @extend %assets-control-secondary;
+  @extend %assets-control-primary;
 }
 
 // Drag and drop is never the only way in: below the breakpoint the hint
@@ -444,81 +445,6 @@ $spinner-size: 16px;
   @extend %assets-control-secondary;
 
   align-self: center;
-}
-
-.asset-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: styles.spacing(16);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-
-  @media (min-width: $assets-breakpoint) {
-    grid-template-columns: repeat(auto-fill, minmax($grid-min-column, 1fr));
-    gap: styles.spacing(24);
-  }
-}
-
-.asset-card {
-  display: flex;
-  flex-direction: row;
-  gap: styles.spacing(16);
-  padding: styles.spacing(12);
-  background: styles.$color-surface-primary;
-  border: 1px solid styles.$color-border-primary;
-  border-radius: styles.$radius-md;
-
-  @media (min-width: $assets-breakpoint) {
-    flex-direction: column;
-    gap: styles.spacing(12);
-    border-radius: styles.$radius-card;
-  }
-}
-
-// A neutral placeholder, never an image: APP2 exposes no media-delivery
-// operation, and a private original must never be addressed from a browser.
-.asset-card__thumb {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  width: styles.spacing(64);
-  height: styles.spacing(64);
-  color: styles.$color-text-tertiary;
-  background: styles.$color-background-secondary;
-  border-radius: styles.$radius-sm;
-
-  @media (min-width: $assets-breakpoint) {
-    width: 100%;
-    height: $thumb-height;
-  }
-}
-
-.asset-card__glyph {
-  font-size: styles.$font-size-heading-s;
-  line-height: 1;
-}
-
-.asset-card__info {
-  display: flex;
-  flex-direction: column;
-  gap: styles.spacing(4);
-  min-width: 0;
-}
-
-.asset-card__title {
-  margin: 0;
-  font-size: styles.$font-size-body-m;
-  font-weight: styles.$font-weight-medium;
-  color: styles.$color-text-primary;
-}
-
-.asset-card__meta {
-  margin: 0;
-  font-size: styles.$font-size-caption;
-  color: styles.$color-text-secondary;
-  overflow-wrap: anywhere;
 }
 
 // Status ----------------------------------------------------------------------

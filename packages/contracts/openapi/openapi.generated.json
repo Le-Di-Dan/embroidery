@@ -12188,6 +12188,189 @@
         ]
       }
     },
+    "/api/admin/assets/{assetId}/{rendition}": {
+      "get": {
+        "description": "Streams one processed rendition of an Admin asset to an authenticated operator, so the library shows the image itself rather than a placeholder standing in for it. The lane is re-checked on every request — an asset outside the requested `scope` is absent, exactly as `adminAsset_detail` reports it — and only the two derivative renditions the public routes serve can be named. There is no rendition word for an original, so a private original is unreachable here. No storage key, bucket or signed URL is ever exposed, and responses are never cached.",
+        "operationId": "adminAsset_preview",
+        "parameters": [
+          {
+            "description": "Which asset lane to read, matching `adminAsset_detail`. Defaults to `CATALOG`, the product-media lane the Admin library shows.",
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "enum": [
+                "CATALOG",
+                "GALLERY"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "`thumbnail` for library tiles and pickers, `catalog-preview` for a larger view.",
+            "in": "path",
+            "name": "rendition",
+            "required": true,
+            "schema": {
+              "enum": [
+                "thumbnail",
+                "catalog-preview"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "assetId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The image bytes.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Always `no-store`.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Content-Type-Options": {
+                "description": "Always `nosniff`.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed id, unknown rendition, or unknown scope.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No image is available at this address. Returned identically for an unknown asset, one outside the requested lane, a tombstoned one, and one whose rendition is not yet ready.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Image storage is temporarily unavailable.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Preview one rendition of an asset",
+        "tags": [
+          "adminAsset"
+        ]
+      }
+    },
     "/api/admin/categories": {
       "get": {
         "description": "The canonical Admin category inventory: draft, published and archived alike, ordered by `displayOrder` then `slug`. Unpaged and unfiltered — a taxonomy is navigation, not a feed, and a screen that wants a subset filters on the `status` each item carries. Each item reports `publishedProductCount`, counted from the products themselves, so an operator can see before attempting it whether an archive will be refused. This is the Admin authority for which categories exist; `publicCategory_list` answers the different question of which ones a customer may browse.",

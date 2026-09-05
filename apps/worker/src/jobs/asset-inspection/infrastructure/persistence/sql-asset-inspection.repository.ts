@@ -153,6 +153,14 @@ export class SqlAssetInspectionRepository
         }
       }
 
+      // The four metadata columns are written here and only here. The encoder
+      // measured them (`DerivativeGenerationService.measure`) and they travelled
+      // this far unused, so `APP12-H05-C1` published an intrinsic size that the
+      // catalog lane never stored: every THUMBNAIL and CATALOG_PREVIEW row was
+      // NULL, and its CLS correction was inert for all of them. They are set
+      // together because `ck_asset_derivatives__metadata_all_or_none` accepts
+      // all four or none — a partial write is rejected by the database, which is
+      // exactly the guarantee the projection reads back.
       for (const derivative of input.derivatives) {
         const promoted = await executeRaw<{ id: string }>(
           this.db,
@@ -162,6 +170,10 @@ export class SqlAssetInspectionRepository
                    storage_key = ${derivative.storageKey},
                    checksum = ${derivative.checksum},
                    is_watermarked = false,
+                   width_px = ${derivative.width},
+                   height_px = ${derivative.height},
+                   media_type = ${derivative.mediaType},
+                   byte_size = ${derivative.byteSize},
                    updated_at = ${input.at}
              where asset_id = ${input.assetId}
                and kind = ${derivative.kind}

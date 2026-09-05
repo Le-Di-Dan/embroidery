@@ -11,9 +11,11 @@ import { UploadReclaimService } from './application/upload-reclaim.service';
 import { UploadTransactionsService } from './application/upload-transactions.service';
 import { UploadTimer } from './application/ports/upload-timer';
 import { AdminAssetController } from './presentation/admin-asset.controller';
+import { AdminAssetPreviewController } from './presentation/admin-asset-preview.controller';
+import { AdminAssetPreviewService } from './application/admin-asset-preview.service';
 
 /**
- * APP2-B01 — the Admin asset-intake feature: upload, detail, list.
+ * APP2-B01 — the Admin asset-intake feature: upload, detail, list, preview.
  *
  * Separate from `AssetModule` so the persistence contract stays usable on its
  * own. This module is where the HTTP surface, the object-storage binding and
@@ -27,7 +29,7 @@ import { AdminAssetController } from './presentation/admin-asset.controller';
  */
 @Module({
   imports: [DatabaseModule, AssetModule, IdentityModule, ObjectStorageModule],
-  controllers: [AdminAssetController],
+  controllers: [AdminAssetController, AdminAssetPreviewController],
   providers: [
     ObjectStorageBootstrapService,
     UploadTimer,
@@ -35,6 +37,7 @@ import { AdminAssetController } from './presentation/admin-asset.controller';
     UploadTransactionsService,
     AssetIntakeService,
     AssetCatalogQuery,
+    AdminAssetPreviewService,
   ],
   // Exported for the production startup sequence in `main.ts`, which must
   // verify the private buckets before the port opens (APP2-I03).

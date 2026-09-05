@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ChangeEvent, type DragEvent, type RefObject } from 'react';
+import { useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 
 import { ASSET_COPY, withToken } from '../model/asset-copy';
 import { ASSET_FILE_ACCEPT } from '../model/asset-upload-policy';
@@ -8,8 +8,6 @@ import type { AssetUploadController } from '../hooks/use-asset-upload';
 
 interface AssetUploadPanelProps {
   readonly controller: AssetUploadController;
-  /** Shared with the header action so both affordances drive one input. */
-  readonly inputRef: RefObject<HTMLInputElement | null>;
 }
 
 /**
@@ -24,9 +22,12 @@ interface AssetUploadPanelProps {
  * decode, no `ArrayBuffer`, no base64 copy of a file that may be 25 MiB. The
  * API re-validates everything, including the magic bytes the browser cannot see.
  */
-export function AssetUploadPanel({ controller, inputRef }: AssetUploadPanelProps) {
+export function AssetUploadPanel({ controller }: AssetUploadPanelProps) {
   const { state, select, submit } = controller;
   const [dragActive, setDragActive] = useState(false);
+  // Owned here rather than passed in: this component holds the only two buttons
+  // that open the picker, so nothing outside it needs the handle.
+  const inputRef = useRef<HTMLInputElement>(null);
 
   function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
     select(Array.from(event.target.files ?? []));

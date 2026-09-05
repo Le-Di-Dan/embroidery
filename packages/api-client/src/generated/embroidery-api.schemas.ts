@@ -6476,6 +6476,21 @@ export type AdminAssetDetail200 = ApiSuccessResponse & {
   data: AdminAssetDetailResponse;
 };
 
+export type AdminAssetPreviewParams = {
+  /**
+   * Which asset lane to read, matching `adminAsset_detail`. Defaults to `CATALOG`, the product-media lane the Admin library shows.
+   */
+  scope?: AdminAssetPreviewScope;
+};
+
+export type AdminAssetPreviewScope =
+  (typeof AdminAssetPreviewScope)[keyof typeof AdminAssetPreviewScope];
+
+export const AdminAssetPreviewScope = {
+  CATALOG: 'CATALOG',
+  GALLERY: 'GALLERY',
+} as const;
+
 export type AdminCategoryList200 = ApiSuccessResponse & {
   data: AdminCategoryListResponse;
 };

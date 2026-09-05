@@ -34,7 +34,6 @@ export const ASSET_COPY = {
   },
 
   upload: {
-    action: assetsMessage.text('upload.action'),
     dropTitle: assetsMessage.text('upload.dropTitle'),
     dropHint: assetsMessage.text('upload.dropHint'),
     browse: assetsMessage.text('upload.browse'),
@@ -109,6 +108,11 @@ export const ASSET_COPY = {
     metaUnavailable: assetsMessage.text('identity.metaUnavailable'),
     /** Accessible description of the placeholder tile — there is no image yet. */
     thumbnailPlaceholder: assetsMessage.text('identity.thumbnailPlaceholder'),
+    /** The tile states that are not an image, each naming its own reason. */
+    thumbnailProcessing: assetsMessage.text('identity.thumbnailProcessing'),
+    thumbnailRejected: assetsMessage.text('identity.thumbnailRejected'),
+    thumbnailUnavailable: assetsMessage.text('identity.thumbnailUnavailable'),
+    thumbnailAlt: assetsMessage.text('identity.thumbnailAlt'),
   },
 
   list: {
@@ -144,6 +148,7 @@ export const ASSET_COPY = {
     stateConflict: assetsMessage.text('errors.stateConflict'),
     timeout: assetsMessage.text('errors.timeout'),
     unavailable: assetsMessage.text('errors.unavailable'),
+    serverFault: assetsMessage.text('errors.serverFault'),
     rateLimited: assetsMessage.text('errors.rateLimited'),
     network: assetsMessage.text('errors.network'),
     notFound: assetsMessage.text('errors.notFound'),

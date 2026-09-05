@@ -93,6 +93,15 @@ export function describeLocalRejection(reason: FileRejectionReason): AssetFailur
  * Maps a normalized API error to safe copy. A 5xx that the platform filter
  * already collapsed to a generic code is treated as retryable; an unrecognised
  * 4xx is not, because repeating a rejected request cannot help.
+ *
+ * An unrecognised 5xx says "the server failed", never "storage is down". Those
+ * are not the same claim, and this fallback used to make the second one: in
+ * `APP12-V02-C2` a primary-key collision inside the upload transaction reached
+ * the operator as `errors.unavailable` — an object-storage outage — and the
+ * object storage was healthy throughout. Naming a subsystem the error never
+ * implicated sends whoever reads it to the wrong place, so `errors.unavailable`
+ * is now reachable only from `ASSET_STORAGE_UNAVAILABLE`, the one code that
+ * actually means it.
  */
 export function describeApiFailure(error: NormalizedApiError): AssetFailure {
   if (error.httpStatus === UNAUTHORIZED) {
@@ -114,7 +123,7 @@ export function describeApiFailure(error: NormalizedApiError): AssetFailure {
 
   const serverFault = error.httpStatus !== undefined && error.httpStatus >= 500;
   return {
-    message: serverFault ? ASSET_COPY.errors.unavailable : ASSET_COPY.errors.unexpected,
+    message: serverFault ? ASSET_COPY.errors.serverFault : ASSET_COPY.errors.unexpected,
     retryable: serverFault,
     sessionExpired: false,
   };

@@ -14,6 +14,7 @@ import type {
   AdminAssetDetailParams,
   AdminAssetList200,
   AdminAssetListParams,
+  AdminAssetPreviewParams,
   AdminAssetUpload202,
   AdminAssetUploadBody,
   AdminCategoryCreate201,
@@ -265,6 +266,27 @@ export const adminAssetDetail = (
 ) => {
   return apiRequest<AdminAssetDetail200>(
     { url: `/api/admin/assets/${assetId}`, method: 'GET', params },
+    options,
+  );
+};
+
+/**
+ * Streams one processed rendition of an Admin asset to an authenticated operator, so the library shows the image itself rather than a placeholder standing in for it. The lane is re-checked on every request — an asset outside the requested `scope` is absent, exactly as `adminAsset_detail` reports it — and only the two derivative renditions the public routes serve can be named. There is no rendition word for an original, so a private original is unreachable here. No storage key, bucket or signed URL is ever exposed, and responses are never cached.
+ * @summary Preview one rendition of an asset
+ */
+export const adminAssetPreview = (
+  assetId: unknown,
+  rendition: 'thumbnail' | 'catalog-preview',
+  params?: AdminAssetPreviewParams,
+  options?: SecondParameter<typeof apiRequest<Blob>>,
+) => {
+  return apiRequest<Blob>(
+    {
+      url: `/api/admin/assets/${assetId}/${rendition}`,
+      method: 'GET',
+      params,
+      responseType: 'blob',
+    },
     options,
   );
 };
@@ -2675,6 +2697,7 @@ export const staffSessionCreate = (
 export type AdminAssetListResult = NonNullable<Awaited<ReturnType<typeof adminAssetList>>>;
 export type AdminAssetUploadResult = NonNullable<Awaited<ReturnType<typeof adminAssetUpload>>>;
 export type AdminAssetDetailResult = NonNullable<Awaited<ReturnType<typeof adminAssetDetail>>>;
+export type AdminAssetPreviewResult = NonNullable<Awaited<ReturnType<typeof adminAssetPreview>>>;
 export type AdminCategoryListResult = NonNullable<Awaited<ReturnType<typeof adminCategoryList>>>;
 export type AdminCategoryCreateResult = NonNullable<
   Awaited<ReturnType<typeof adminCategoryCreate>>

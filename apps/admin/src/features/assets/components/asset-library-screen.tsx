@@ -1,7 +1,5 @@
 'use client';
 
-import { useRef } from 'react';
-
 import { ASSET_COPY } from '../model/asset-copy';
 import { useAssetUpload } from '../hooks/use-asset-upload';
 import { AssetCollection } from './asset-collection';
@@ -15,14 +13,15 @@ import { AssetUploadPanel } from './asset-upload-panel';
  * lives in `AssetCollection`, and the upload intent — file, abort controller,
  * idempotency key, progress and reconciliation — lives in `useAssetUpload`.
  *
- * The header action and the drop target's own button drive the same hidden
- * native input, which is why the ref is created here and passed down: two
- * approved affordances, one file input, one validation path.
+ * There is one way to open the file picker, and it is the drop target's own
+ * button. The header used to carry a second action beside it that opened the
+ * same native input: two buttons, one behaviour, and no way for an operator to
+ * tell what distinguished them. The panel keeps the affordance because that is
+ * where the drop target and the format hint already are, so the choice and its
+ * explanation stay in one place.
  */
 export function AssetLibraryScreen() {
   const controller = useAssetUpload();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const busy = controller.state.kind === 'uploading';
 
   return (
     <section className="assets">
@@ -31,17 +30,9 @@ export function AssetLibraryScreen() {
           <h1 className="assets__title">{ASSET_COPY.page.title}</h1>
           <p className="assets__subtitle">{ASSET_COPY.page.subtitle}</p>
         </div>
-        <button
-          type="button"
-          className="assets__primary-action"
-          onClick={() => inputRef.current?.click()}
-          disabled={busy}
-        >
-          {ASSET_COPY.upload.action}
-        </button>
       </header>
 
-      <AssetUploadPanel controller={controller} inputRef={inputRef} />
+      <AssetUploadPanel controller={controller} />
       <AssetUploadBanner controller={controller} />
       <AssetCollection />
     </section>

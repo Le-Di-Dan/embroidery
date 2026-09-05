@@ -28,10 +28,12 @@ import {
   assertSafeIdentifier,
   databaseExists,
   execInContainer,
+  identitySequenceDrift,
   migrationJournalCount,
   parseArgs,
   psql,
   readManifest,
+  resyncIdentitySequences,
   serverReachable,
   sha256OfFile,
   tableRowCounts,
@@ -217,6 +219,32 @@ async function main() {
     }
     abandonTarget(EXIT.failed, `row-count parity FAILED for ${differences.length} table(s).`);
     return;
+  }
+
+  // Sequence parity, checked before the restore is called verified. A restored
+  // database whose identity sequences still sit at their start value looks
+  // perfect by row count and fails on the first insert into any table it
+  // carried; repairing it here is part of the restore, not a later incident.
+  const drifted = identitySequenceDrift(container, target);
+  if (drifted.length > 0) {
+    for (const entry of drifted.slice(0, 20)) {
+      log(
+        `  identity sequence behind: ${entry.table} (last_value ${entry.sequenceLastValue}, ` +
+          `max id ${entry.maxId})`,
+      );
+    }
+    resyncIdentitySequences(container, target, drifted);
+    const remaining = identitySequenceDrift(container, target);
+    if (remaining.length > 0) {
+      abandonTarget(
+        EXIT.failed,
+        `identity sequences still behind after resync: ${remaining.map((e) => e.table).join(', ')}`,
+      );
+      return;
+    }
+    log(`identity sequences resynchronised — ${drifted.length} advanced past their rows.`);
+  } else {
+    log('identity sequence parity OK.');
   }
 
   const journal = migrationJournalCount(container, target);
