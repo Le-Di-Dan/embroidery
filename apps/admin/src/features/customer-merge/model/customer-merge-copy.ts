@@ -196,7 +196,6 @@ export const CUSTOMER_MERGE_COPY = {
     body: mergeMessage.text('executed.body'),
     // Says in place why no figures and no timeline appear, so their absence
     // reads as a decision rather than as a screen that failed to load them.
-    noCountsNote: mergeMessage.text('executed.noCountsNote'),
     noUndoNote: mergeMessage.text('executed.noUndoNote'),
   },
 
@@ -205,6 +204,5 @@ export const CUSTOMER_MERGE_COPY = {
     body: mergeMessage.text('rejected.body'),
     // The rejection reason has no column and no read operation; saying so is
     // more honest than an empty field the operator would read as missing data.
-    noReasonNote: mergeMessage.text('rejected.noReasonNote'),
   },
 } as const;

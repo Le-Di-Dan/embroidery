@@ -180,7 +180,6 @@ export function MergeCaseScreen({ mergeCaseId }: MergeCaseScreenProps) {
         <section className="customer-merge__outcome" data-testid="merge-case-executed">
           <h2 className="customer-merge__section-title">{COPY.executed.heading}</h2>
           <p className="customer-merge__note">{COPY.executed.body}</p>
-          <p className="customer-merge__note">{COPY.executed.noCountsNote}</p>
           <p className="customer-merge__note">{COPY.executed.noUndoNote}</p>
         </section>
       ) : null}
@@ -189,7 +188,6 @@ export function MergeCaseScreen({ mergeCaseId }: MergeCaseScreenProps) {
         <section className="customer-merge__outcome" data-testid="merge-case-rejected">
           <h2 className="customer-merge__section-title">{COPY.rejected.heading}</h2>
           <p className="customer-merge__note">{COPY.rejected.body}</p>
-          <p className="customer-merge__note">{COPY.rejected.noReasonNote}</p>
         </section>
       ) : null}
 

@@ -35,7 +35,7 @@
       "shippingPending": "Xưởng xác nhận sau",
       "totalLabel": "Tổng thanh toán",
       "totalPending": "Có sau khi xác nhận phí",
-      "notice": "Xưởng xác nhận phí giao hàng rồi gửi bạn liên kết thanh toán. Không có tổng tiền nào được hiển thị trước bước đó.",
+      "notice": "Xưởng xác nhận phí giao hàng, rồi gửi bạn liên kết để thanh toán một lần.",
       "submit": "Đặt hàng",
       "submitPending": "Đang gửi…",
       "submitPendingNotice": "Vui lòng không đóng trang."

@@ -2,112 +2,162 @@
   "faq": {
     "eyebrow": "Hỗ trợ",
     "heading": "Câu hỏi thường gặp",
-    "lead": "Những câu hỏi khách hàng hay đặt ra trước khi bắt đầu một đơn thêu theo yêu cầu tại {brand}.",
+    "lead": "Những câu hỏi khách hàng hay đặt ra khi mua sản phẩm thêu tại {brand}.",
     "metaTitle": "Câu hỏi thường gặp — {brand}",
-    "metaDescription": "Giải đáp về cách gửi yêu cầu thêu, chuẩn bị thiết kế, duyệt bản thêu, đặt cọc, thanh toán và nhận hàng tại {brand}.",
-    "sections": [
-      {
+    "metaDescription": "Giải đáp về đặt mua, thanh toán, phí giao hàng và nhận hàng tại {brand}.",
+    "sections": {
+      "faq-list": {
         "heading": "Giải đáp",
-        "items": [
-          {
+        "items": {
+          "how-to-start": {
             "question": "Tôi bắt đầu một đơn thêu theo yêu cầu như thế nào?",
             "answer": [
               "Bạn gửi yêu cầu trực tuyến, mô tả sản phẩm muốn thêu, nội dung cần thêu, vùng thêu và kích thước mong muốn, kèm hình ảnh thiết kế của bạn.",
               "Để xưởng gửi lại báo giá và bản thiết kế cho đúng người, bạn cần xác minh email hoặc số điện thoại. Sau đó xưởng gửi bạn một đường liên kết riêng để theo dõi yêu cầu."
             ]
           },
-          {
+          "what-to-prepare": {
             "question": "Tôi cần chuẩn bị gì trước khi gửi yêu cầu?",
             "answer": [
               "Nội dung cần thêu ở chất lượng hình ảnh tốt nhất bạn có, sản phẩm bạn muốn thêu lên, vùng thêu, kích thước mong muốn và số lượng.",
               "Bạn không cần chuẩn bị file kỹ thuật cho máy thêu. Xưởng dựng bản thêu từ thiết kế bạn gửi."
             ]
           },
-          {
+          "own-product": {
             "question": "Tôi mang sản phẩm của mình tới thêu được không?",
             "answer": [
               "Được. Khi gửi yêu cầu, bạn chọn hướng sản phẩm do bạn cung cấp, mô tả sản phẩm và gửi kèm hình ảnh cùng kích thước.",
               "Xưởng sẽ xem sản phẩm và cho bạn biết vùng thêu nào khả thi trước khi báo giá."
             ]
           },
-          {
+          "design-review": {
             "question": "Tôi được xem bản thêu trước khi xưởng làm chứ?",
             "answer": [
               "Có. Xưởng dựng bản thêu và gửi bạn duyệt qua đường liên kết riêng. Xưởng chỉ vào sản xuất sau khi bạn duyệt.",
               "Bạn có thể yêu cầu chỉnh sửa. Mỗi lần chỉnh sửa tạo một phiên bản mới, nên bạn luôn đối chiếu được với bản trước đó."
             ]
           },
-          {
+          "quotation": {
             "question": "Báo giá được tính như thế nào?",
             "answer": [
               "Xưởng báo giá thủ công theo kích thước bản thêu, số màu chỉ, độ phức tạp, số lượng, giá sản phẩm nền nếu bạn mua của xưởng, và phí giao hàng nếu có.",
               "Báo giá có bảng chi tiết và thời hạn hiệu lực. Mức giá đã báo cho bạn không thay đổi theo bảng giá về sau."
             ]
           },
-          {
+          "payment": {
             "question": "Tôi thanh toán vào lúc nào?",
             "answer": [
               "Sau khi bạn duyệt thiết kế, bạn đặt cọc 40% để xưởng vào sản xuất. Phần 60% còn lại thanh toán trước khi nhận hàng.",
               "Xưởng nhận chuyển khoản ngân hàng. Chi tiết ở trang chính sách thanh toán."
             ]
           },
-          {
+          "delivery": {
             "question": "Tôi nhận hàng bằng cách nào?",
             "answer": [
               "Bạn có thể nhận trực tiếp tại xưởng, hoặc để xưởng gửi tới địa chỉ của bạn. Phí giao hàng, nếu có, nằm trong báo giá bạn đã xem.",
               "Chi tiết ở trang chính sách giao hàng."
             ]
           },
-          {
+          "revisions": {
             "question": "Tôi được sửa thiết kế bao nhiêu lần?",
             "answer": [
               "Không có giới hạn cứng về số vòng chỉnh sửa. Xưởng làm việc cùng bạn tới khi bản thêu đúng ý.",
               "Nếu một thay đổi làm khác đi phạm vi đã báo giá — chẳng hạn đổi kích thước hay tăng số màu — xưởng sẽ báo lại giá trước khi làm tiếp."
             ]
           },
-          {
+          "see-examples": {
             "question": "Tôi xem tác phẩm xưởng đã làm ở đâu?",
             "answer": [
               "Bộ sưu tập tập hợp những tác phẩm xưởng đã hoàn thiện, kèm mô tả chất liệu và kỹ thuật."
             ]
           }
-        ]
+        }
       },
-      {
+      "faq-next": {
         "heading": "Xem thêm",
-        "links": [
-          {
+        "links": {
+          "service": {
             "label": "Dịch vụ và quy trình",
             "hint": "Toàn bộ các bước từ yêu cầu tới thành phẩm."
           },
-          {
+          "gallery": {
             "label": "Bộ sưu tập",
             "hint": "Tác phẩm xưởng đã hoàn thiện."
           },
-          {
+          "commission": {
             "label": "Gửi yêu cầu thêu"
           },
-          {
+          "policy-payment": {
             "label": "Chính sách thanh toán"
           },
-          {
+          "policy-shipping": {
             "label": "Chính sách giao hàng"
           },
-          {
+          "store": {
             "label": "Ghé xưởng"
           }
-        ]
+        }
+      },
+      "faq-list-wave1": {
+        "heading": "Giải đáp",
+        "items": {
+          "what-to-buy": {
+            "question": "Tôi mua được gì trên trang này?",
+            "answer": [
+              "Những sản phẩm thêu tay đã hoàn thiện tại xưởng. Mỗi sản phẩm có ảnh thật, kích thước và số lượng còn lại."
+            ]
+          },
+          "how-to-order": {
+            "question": "Tôi đặt hàng như thế nào?",
+            "answer": [
+              "Chọn sản phẩm và kích thước, điền thông tin người nhận, rồi xác minh email hoặc số điện thoại của bạn.",
+              "Sau khi đặt, xưởng gửi bạn một đường liên kết riêng để xem trạng thái và thanh toán đơn hàng."
+            ]
+          },
+          "when-to-pay": {
+            "question": "Tôi thanh toán vào lúc nào?",
+            "answer": [
+              "Sau khi đặt hàng, xưởng xác nhận phí giao hàng cho địa chỉ của bạn. Khi đó bạn thanh toán một lần toàn bộ giá trị đơn hàng.",
+              "Không có đặt cọc. Bạn không phải trả gì trước khi biết số tiền cuối cùng."
+            ]
+          },
+          "how-to-pay": {
+            "question": "Tôi thanh toán bằng cách nào?",
+            "answer": [
+              "Chuyển khoản ngân hàng. Trang thanh toán của đơn hàng hiển thị mã QR kèm đúng số tiền và nội dung chuyển khoản.",
+              "Bạn có thể gửi kèm ảnh chụp biên lai để xưởng đối chiếu nhanh hơn. Đây là tùy chọn, không bắt buộc."
+            ]
+          },
+          "shipping-fee": {
+            "question": "Phí giao hàng được tính thế nào?",
+            "answer": [
+              "Xưởng xác nhận phí theo địa chỉ nhận hàng của bạn sau khi đơn được tạo, rồi hiển thị trên trang đơn hàng trước khi bạn thanh toán."
+            ]
+          },
+          "track-order": {
+            "question": "Tôi theo dõi đơn hàng ở đâu?",
+            "answer": [
+              "Qua đường liên kết riêng xưởng gửi cho bạn. Trang đó luôn hiển thị trạng thái hiện tại của đơn hàng."
+            ]
+          },
+          "see-work": {
+            "question": "Tôi xem tác phẩm xưởng đã làm ở đâu?",
+            "answer": [
+              "Bộ sưu tập tập hợp những tác phẩm xưởng đã hoàn thiện, kèm mô tả chất liệu và kỹ thuật."
+            ]
+          }
+        }
       }
-    ]
+    }
   },
   "service": {
     "eyebrow": "Dịch vụ",
     "heading": "Dịch vụ thêu theo yêu cầu",
-    "lead": "{brand} là xưởng thêu cá nhân hóa: mỗi bản thêu được dựng riêng theo ý tưởng của bạn, trên sản phẩm của xưởng hoặc trên sản phẩm bạn tự mang tới.",
+    "lead": "{brand} thêu tay từng sản phẩm tại xưởng. Dưới đây là những gì xưởng làm và cách bạn đặt mua.",
     "metaTitle": "Dịch vụ thêu theo yêu cầu — {brand}",
-    "metaDescription": "Thêu cá nhân hóa theo yêu cầu tại {brand}: gửi yêu cầu, nhận báo giá, duyệt thiết kế, đặt cọc và nhận thành phẩm. Xem quy trình và những gì xưởng nhận làm.",
-    "sections": [
-      {
+    "metaDescription": "Sản phẩm thêu tay hoàn thiện tại {brand}: cách xưởng làm, cách đặt mua và cách thanh toán.",
+    "sections": {
+      "what-we-do": {
         "heading": "Xưởng nhận làm gì",
         "paragraphs": [
           "{brand} thêu tên, chữ, hình và logo lên sản phẩm cá nhân hóa. Bạn có thể chọn một sản phẩm nền có sẵn của xưởng, hoặc gửi tới sản phẩm của riêng bạn để xưởng thêu lên.",
@@ -120,7 +170,7 @@
           "Nhận cả đơn lẻ và đơn số lượng ít."
         ]
       },
-      {
+      "journey": {
         "heading": "Quy trình làm việc",
         "paragraphs": [
           "Từ lúc bạn gửi yêu cầu tới lúc nhận thành phẩm, mọi bước đều có xác nhận của bạn trước khi xưởng đi tiếp. Bạn theo dõi toàn bộ tiến trình qua đường liên kết riêng mà xưởng gửi sau khi bạn xác minh email hoặc số điện thoại."
@@ -134,7 +184,7 @@
           "Hoàn tất: bạn thanh toán 60% còn lại trước khi nhận hàng, rồi nhận thành phẩm."
         ]
       },
-      {
+      "before-you-start": {
         "heading": "Chuẩn bị trước khi gửi yêu cầu",
         "paragraphs": [
           "Yêu cầu càng rõ thì báo giá càng sát và số vòng chỉnh sửa càng ít. Bạn không cần chuẩn bị file kỹ thuật — xưởng lo phần dựng bản thêu."
@@ -146,96 +196,135 @@
           "Số lượng, và bất kỳ ghi chú nào về màu chỉ hay thời điểm bạn cần dùng."
         ]
       },
-      {
+      "service-next": {
         "heading": "Bắt đầu từ đâu",
-        "links": [
-          {
+        "links": {
+          "discover": {
             "label": "Khám phá sản phẩm nền",
             "hint": "Xem các sản phẩm xưởng có sẵn để thêu lên."
           },
-          {
+          "gallery": {
             "label": "Xem bộ sưu tập",
             "hint": "Những tác phẩm xưởng đã hoàn thiện."
           },
-          {
+          "commission": {
             "label": "Gửi yêu cầu thêu",
             "hint": "Mô tả ý tưởng của bạn để xưởng báo giá."
           },
-          {
+          "faq": {
             "label": "Câu hỏi thường gặp",
             "hint": "Giải đáp về quy trình, thanh toán và nhận hàng."
           },
-          {
+          "store": {
             "label": "Ghé xưởng",
             "hint": "Thông tin liên hệ và cách tới xưởng."
           }
+        }
+      },
+      "craft": {
+        "heading": "Xưởng làm gì",
+        "paragraphs": [
+          "Mỗi sản phẩm được thêu tay tại xưởng, không sản xuất hàng loạt.",
+          "Chúng tôi làm số lượng nhỏ để giữ được chất lượng từng đường thêu."
+        ],
+        "bullets": [
+          "Thêu tay trên vải và sản phẩm do xưởng chọn.",
+          "Phối chỉ và bố cục do xưởng dựng cho từng mẫu.",
+          "Kiểm tra từng sản phẩm trước khi đưa lên trang bán."
         ]
+      },
+      "how-to-buy": {
+        "heading": "Đặt mua như thế nào",
+        "paragraphs": [
+          "Bạn chọn sản phẩm, để lại thông tin nhận hàng, rồi xác minh email hoặc số điện thoại. Xưởng gửi bạn một đường liên kết riêng để theo dõi và thanh toán đơn hàng."
+        ],
+        "bullets": [
+          "Chọn sản phẩm và kích thước còn hàng.",
+          "Điền thông tin người nhận và xác minh liên hệ.",
+          "Xưởng xác nhận phí giao hàng, rồi bạn thanh toán một lần bằng chuyển khoản."
+        ]
+      },
+      "service-next-wave1": {
+        "heading": "Xem tiếp",
+        "links": {
+          "discover": {
+            "label": "Khám phá sản phẩm",
+            "hint": "Những sản phẩm đang bán tại xưởng."
+          },
+          "gallery": {
+            "label": "Xem bộ sưu tập",
+            "hint": "Những tác phẩm xưởng đã hoàn thiện."
+          },
+          "faq": {
+            "label": "Câu hỏi thường gặp",
+            "hint": "Đặt mua, thanh toán và nhận hàng."
+          }
+        }
       }
-    ]
+    }
   },
   "store": {
     "eyebrow": "Ghé xưởng",
     "heading": "Xưởng thêu {brand}",
-    "lead": "{brand} là một xưởng thêu cá nhân hóa. Mọi đơn thêu đều đi qua cùng một xưởng, cùng những người thợ đã dựng nên bản thêu của bạn.",
+    "lead": "{brand} là một xưởng thêu nhỏ. Mọi sản phẩm bán trên trang này đều được thêu tay tại đây.",
     "metaTitle": "Ghé xưởng — {brand}",
     "metaDescription": "Thông tin về xưởng thêu {brand} và cách liên hệ để đặt thêu theo yêu cầu, nhận tư vấn hoặc nhận hàng trực tiếp.",
-    "sections": [
-      {
-        "heading": "Thông tin xưởng",
-        "fallback": "Thông tin địa chỉ và giờ mở cửa của xưởng sẽ được cập nhật tại đây. Trong lúc này, bạn liên hệ với {brand} qua biểu mẫu gửi yêu cầu hoặc các kênh nhắn tin trên website — xưởng sẽ trao đổi trực tiếp với bạn về việc tới xưởng."
+    "sections": {
+      "store-facts": {
+        "heading": "Thông tin xưởng"
       },
-      {
+      "visiting": {
         "heading": "Tới xưởng",
         "paragraphs": [
-          "{brand} làm việc theo từng đơn hàng riêng, nên xưởng hẹn trước với bạn thay vì tiếp khách vãng lai. Cách nhanh nhất để sắp xếp một buổi tới xưởng là gửi yêu cầu hoặc nhắn cho xưởng qua các kênh trên website.",
-          "Bạn có thể tới xưởng để xem chất liệu và màu chỉ trước khi chốt thiết kế, hoặc để nhận thành phẩm trực tiếp thay vì gửi chuyển phát."
+          "{brand} làm việc theo từng đơn hàng, nên xưởng hẹn trước với bạn thay vì tiếp khách vãng lai. Nhắn cho xưởng qua các kênh trên website để sắp xếp một buổi tới xưởng.",
+          "Bạn có thể tới xưởng để xem sản phẩm trực tiếp, hoặc để nhận hàng thay vì gửi chuyển phát."
         ]
       },
-      {
+      "contact-channels": {
         "heading": "Liên hệ với xưởng",
         "paragraphs": [
-          "Nếu yêu cầu của bạn đã có sẵn nội dung và sản phẩm cụ thể, gửi yêu cầu trực tuyến là cách nhanh nhất để nhận báo giá — bạn mô tả một lần và xưởng có đủ thông tin để trả lời.",
-          "Nếu bạn mới đang cân nhắc và muốn hỏi trước, các kênh nhắn tin ở góc màn hình luôn sẵn sàng khi xưởng đã bật."
+          "Các kênh nhắn tin ở góc màn hình là cách nhanh nhất để hỏi xưởng về một sản phẩm, về tình trạng còn hàng hoặc về đơn hàng bạn đã đặt.",
+          "Nếu bạn đã đặt hàng, đường liên kết riêng xưởng gửi cho bạn luôn hiển thị trạng thái mới nhất của đơn."
         ]
       },
-      {
+      "local-next": {
         "heading": "Trước khi ghé",
-        "links": [
-          {
+        "links": {
+          "commission": {
             "label": "Gửi yêu cầu thêu",
             "hint": "Cách nhanh nhất để xưởng nắm được yêu cầu của bạn."
           },
-          {
+          "service": {
             "label": "Dịch vụ và quy trình",
             "hint": "Những gì xưởng nhận làm, và các bước làm việc."
           },
-          {
+          "gallery": {
             "label": "Bộ sưu tập",
             "hint": "Tác phẩm xưởng đã hoàn thiện."
           },
-          {
+          "discover": {
             "label": "Sản phẩm nền",
             "hint": "Các sản phẩm có sẵn của xưởng."
           },
-          {
+          "faq": {
             "label": "Câu hỏi thường gặp"
           }
-        ]
+        }
       }
-    ]
+    }
   },
   "policies": {
     "payment": {
       "eyebrow": "Chính sách",
       "heading": "Chính sách thanh toán",
-      "lead": "Bạn thanh toán khi nào, bằng cách nào, và {brand} xác nhận khoản thanh toán của bạn ra sao.",
+      "lead": "Bạn thanh toán khi nào, bằng cách nào, và {brand} xác nhận ra sao.",
       "metaTitle": "Chính sách thanh toán — {brand}",
-      "metaDescription": "Thanh toán tại {brand}: đặt cọc 40% sau khi duyệt thiết kế, 60% còn lại trước khi nhận hàng, chuyển khoản ngân hàng theo đúng số tiền trên báo giá.",
+      "metaDescription": "Thanh toán tại {brand}: một lần chuyển khoản sau khi xưởng xác nhận phí giao hàng, và cách xưởng đối chiếu khoản thanh toán của bạn.",
       "trail": {
         "parentLabel": "Chính sách"
       },
-      "sections": [
-        {
+      "sections": {
+        "when": {
           "heading": "Hai mốc thanh toán",
           "paragraphs": [
             "Bạn không phải trả tiền để nhận báo giá, và không phải trả trước khi duyệt thiết kế."
@@ -245,55 +334,74 @@
             "Thanh toán 60% còn lại trước khi xưởng bàn giao thành phẩm."
           ]
         },
-        {
+        "quotation": {
           "heading": "Số tiền bạn thanh toán",
           "paragraphs": [
             "Mỗi báo giá có bảng chi tiết, tổng tiền, số tiền đặt cọc, số tiền còn lại và thời hạn hiệu lực. Bạn xem toàn bộ trước khi quyết định.",
             "Mức giá đã báo cho bạn được giữ nguyên; bảng giá thay đổi về sau không làm thay đổi báo giá bạn đang có. Nếu bạn yêu cầu thay đổi làm khác đi phạm vi đã báo giá, xưởng báo lại giá và chờ bạn xác nhận."
           ]
         },
-        {
+        "method": {
           "heading": "Hình thức thanh toán",
           "paragraphs": [
             "{brand} nhận chuyển khoản ngân hàng. Ở bước thanh toán, xưởng hiển thị mã QR chuyển khoản kèm đúng số tiền của đơn hàng, để bạn không phải tự nhập lại.",
             "Bạn có thể gửi kèm ảnh chụp biên lai chuyển khoản để xưởng đối chiếu nhanh hơn. Đây là tùy chọn hỗ trợ, không bắt buộc."
           ]
         },
-        {
+        "verification": {
           "heading": "Xác nhận thanh toán",
           "paragraphs": [
             "{brand} đối chiếu và xác nhận từng khoản thanh toán thủ công. Đơn hàng chỉ được ghi nhận là đã thanh toán sau khi xưởng xác nhận, chứ không phải ngay khi trình duyệt của bạn quay về trang kết quả.",
             "Vì vậy, giữa lúc bạn chuyển khoản và lúc trạng thái đơn hàng cập nhật có thể có một khoảng chờ. Nếu bạn đã chuyển khoản mà trạng thái chưa đổi sau một thời gian hợp lý, hãy liên hệ xưởng kèm thông tin đơn hàng của bạn."
           ]
         },
-        {
+        "security": {
           "heading": "An toàn khi thanh toán",
           "paragraphs": [
             "{brand} không yêu cầu bạn cung cấp mật khẩu, mã OTP ngân hàng hay thông tin đăng nhập tài khoản ngân hàng — không qua điện thoại, tin nhắn hay bất kỳ kênh nào.",
             "Bạn chỉ thanh toán theo thông tin hiển thị trong trang thanh toán của chính đơn hàng bạn, mở từ đường liên kết riêng xưởng đã gửi cho bạn."
           ]
         },
-        {
+        "payment-related": {
           "heading": "Liên quan",
-          "links": [
-            {
+          "links": {
+            "policy-shipping": {
               "label": "Chính sách giao hàng"
             },
-            {
+            "policy-returns": {
               "label": "Chính sách đổi trả"
             },
-            {
+            "service": {
               "label": "Dịch vụ và quy trình"
             },
-            {
+            "faq": {
               "label": "Câu hỏi thường gặp"
             },
-            {
+            "commission": {
               "label": "Gửi yêu cầu thêu"
             }
+          }
+        },
+        "when-wave1": {
+          "heading": "Một lần thanh toán",
+          "paragraphs": [
+            "Đơn hàng tại {brand} được thanh toán một lần, sau khi xưởng xác nhận phí giao hàng cho địa chỉ của bạn.",
+            "Không có đặt cọc, và bạn không phải trả gì trước khi biết tổng số tiền."
+          ],
+          "bullets": [
+            "Bạn đặt hàng và để lại thông tin nhận hàng.",
+            "Xưởng xác nhận phí giao hàng và mở thanh toán.",
+            "Bạn chuyển khoản đúng số tiền hiển thị trên trang đơn hàng."
+          ]
+        },
+        "amount-wave1": {
+          "heading": "Số tiền bạn thanh toán",
+          "paragraphs": [
+            "Trang đơn hàng hiển thị giá sản phẩm, phí giao hàng và tổng số tiền cần chuyển. Tổng tiền chỉ xuất hiện sau khi phí giao hàng được xác nhận, vì trước đó nó chưa tồn tại.",
+            "Số tiền đã hiển thị cho đơn hàng của bạn không thay đổi theo bảng giá về sau."
           ]
         }
-      ]
+      }
     },
     "privacy": {
       "eyebrow": "Chính sách",
@@ -304,8 +412,8 @@
       "trail": {
         "parentLabel": "Chính sách"
       },
-      "sections": [
-        {
+      "sections": {
+        "what": {
           "heading": "Thông tin {brand} thu thập",
           "paragraphs": [
             "Xưởng chỉ thu thập những thông tin cần để xử lý yêu cầu của bạn. Tất cả đều do bạn cung cấp trong quá trình đặt thêu."
@@ -318,7 +426,7 @@
             "Trao đổi giữa bạn và xưởng trong quá trình xử lý đơn hàng."
           ]
         },
-        {
+        "why": {
           "heading": "Mục đích sử dụng",
           "paragraphs": [
             "Thông tin của bạn được dùng để thực hiện chính đơn hàng của bạn, và để xưởng liên lạc với bạn về đơn hàng đó."
@@ -331,47 +439,47 @@
             "Bàn giao thành phẩm cho bạn."
           ]
         },
-        {
+        "secure-link": {
           "heading": "Đường liên kết riêng của bạn",
           "paragraphs": [
             "Sau khi bạn xác minh email hoặc số điện thoại, xưởng gửi cho bạn một đường liên kết riêng để xem yêu cầu, báo giá, các phiên bản thiết kế và thực hiện thanh toán.",
             "Đường liên kết này dành riêng cho bạn, có thời hạn và có thể được thu hồi. Bạn không nên chia sẻ nó cho người khác, vì ai có đường liên kết cũng xem được nội dung đơn hàng của bạn."
           ]
         },
-        {
+        "design-files": {
           "heading": "Thiết kế bạn gửi lên",
           "paragraphs": [
             "Hình ảnh thiết kế bạn tải lên được dùng để thực hiện đơn hàng của bạn. {brand} không đăng công khai thiết kế của khách lên website.",
             "Những tác phẩm xuất hiện trong bộ sưu tập công khai là do xưởng chủ động chọn và đưa lên; đây là một bước riêng do xưởng thực hiện, không phải hệ quả tự động của việc bạn đặt hàng."
           ]
         },
-        {
+        "contact": {
           "heading": "Liên hệ về thông tin của bạn",
           "paragraphs": [
             "Nếu bạn muốn hỏi, chỉnh sửa hoặc trao đổi về thông tin cá nhân của mình, hãy liên hệ {brand} qua các kênh trên website kèm thông tin đơn hàng của bạn, để xưởng xác định đúng yêu cầu cần xử lý."
           ]
         },
-        {
+        "privacy-related": {
           "heading": "Liên quan",
-          "links": [
-            {
+          "links": {
+            "policy-payment": {
               "label": "Chính sách thanh toán"
             },
-            {
+            "policy-returns": {
               "label": "Chính sách đổi trả"
             },
-            {
+            "service": {
               "label": "Dịch vụ và quy trình"
             },
-            {
+            "faq": {
               "label": "Câu hỏi thường gặp"
             },
-            {
+            "store": {
               "label": "Ghé xưởng"
             }
-          ]
+          }
         }
-      ]
+      }
     },
     "returns": {
       "eyebrow": "Chính sách",
@@ -382,22 +490,22 @@
       "trail": {
         "parentLabel": "Chính sách"
       },
-      "sections": [
-        {
+      "sections": {
+        "nature": {
           "heading": "Vì sao sản phẩm thêu theo yêu cầu khác hàng có sẵn",
           "paragraphs": [
             "Mỗi bản thêu tại {brand} được dựng theo nội dung, kích thước và sản phẩm của riêng một khách hàng. Thành phẩm mang dấu riêng của bạn và không thể bán lại cho người khác.",
             "Vì vậy xưởng không nhận đổi trả vì lý do đổi ý sau khi thành phẩm đã thêu xong. Đổi lại, xưởng đặt bước duyệt thiết kế trước khi sản xuất, để bạn thấy chính xác bản thêu sẽ ra sao trước khi xưởng bắt đầu."
           ]
         },
-        {
+        "before-production": {
           "heading": "Trước khi vào sản xuất",
           "paragraphs": [
             "Ở giai đoạn trao đổi và duyệt thiết kế, bạn có thể yêu cầu chỉnh sửa nhiều lần, hoặc dừng lại nếu bản thêu chưa đúng ý. Đây là thời điểm dễ điều chỉnh nhất và không tốn thêm chi phí thêu lại.",
             "Xưởng chỉ vào sản xuất sau khi bạn duyệt. Bản thiết kế bạn duyệt là bản mà xưởng thêu và cũng là bản mà hai bên đối chiếu về sau."
           ]
         },
-        {
+        "if-something-is-wrong": {
           "heading": "Nếu thành phẩm có vấn đề",
           "paragraphs": [
             "Hãy liên hệ {brand} sớm nhất có thể sau khi nhận hàng, kèm hình ảnh thành phẩm và thông tin đơn hàng của bạn.",
@@ -409,99 +517,116 @@
             "Nếu vấn đề nằm ở nội dung mà bạn đã duyệt, xưởng vẫn sẵn sàng cùng bạn tìm phương án, và sẽ báo trước nếu phát sinh chi phí."
           ]
         },
-        {
+        "statutory": {
           "heading": "Quyền của bạn theo quy định pháp luật",
           "paragraphs": [
             "Chính sách này mô tả cách {brand} làm việc trên thực tế. Nó không thay thế và không hạn chế các quyền mà pháp luật bảo vệ người tiêu dùng dành cho bạn."
           ]
         },
-        {
+        "returns-related": {
           "heading": "Liên quan",
-          "links": [
-            {
+          "links": {
+            "service": {
               "label": "Dịch vụ và quy trình"
             },
-            {
+            "policy-shipping": {
               "label": "Chính sách giao hàng"
             },
-            {
+            "policy-payment": {
               "label": "Chính sách thanh toán"
             },
-            {
+            "faq": {
               "label": "Câu hỏi thường gặp"
             },
-            {
+            "store": {
               "label": "Ghé xưởng"
             }
-          ]
+          }
         }
-      ]
+      }
     },
     "shipping": {
       "eyebrow": "Chính sách",
       "heading": "Chính sách giao hàng",
       "lead": "Cách {brand} bàn giao thành phẩm cho bạn, và những gì được thống nhất trước khi hàng rời xưởng.",
       "metaTitle": "Chính sách giao hàng — {brand}",
-      "metaDescription": "Cách {brand} bàn giao thành phẩm: nhận tại xưởng hoặc gửi tới địa chỉ của bạn, phí giao hàng báo trước trong báo giá.",
+      "metaDescription": "Cách {brand} bàn giao thành phẩm: nhận tại xưởng hoặc gửi tới địa chỉ của bạn, phí giao hàng xưởng xác nhận trước khi bạn thanh toán.",
       "trail": {
         "parentLabel": "Chính sách"
       },
-      "sections": [
-        {
+      "sections": {
+        "handover": {
           "heading": "Hai cách nhận hàng",
           "paragraphs": [
             "Sau khi thêu xong và bạn đã thanh toán đủ, xưởng bàn giao thành phẩm theo cách bạn chọn khi đặt hàng."
           ],
-          "bullets": ["Nhận trực tiếp tại xưởng.", "Xưởng gửi tới địa chỉ bạn cung cấp."]
+          "bullets": [
+            "Nhận trực tiếp tại xưởng.",
+            "Xưởng gửi tới địa chỉ bạn cung cấp."
+          ]
         },
-        {
+        "fee": {
           "heading": "Phí giao hàng",
           "paragraphs": [
             "Nếu đơn hàng của bạn cần giao tới địa chỉ, phí giao hàng được xưởng ghi rõ trong báo giá trước khi bạn đặt cọc. Bạn xem được khoản này trong bảng chi tiết báo giá.",
             "Xưởng không tự động tính phí từ bên thứ ba. Nếu chi phí giao hàng thay đổi so với báo giá ban đầu, xưởng báo lại và chờ bạn xác nhận trước khi tiếp tục."
           ]
         },
-        {
+        "timing": {
           "heading": "Thời điểm bàn giao",
           "paragraphs": [
             "Xưởng chỉ bàn giao sau khi bản thêu hoàn tất và phần thanh toán còn lại đã được ghi nhận.",
             "{brand} thêu thủ công theo từng yêu cầu riêng, nên thời gian hoàn thiện phụ thuộc vào độ phức tạp và số lượng của đơn hàng. Xưởng trao đổi mốc thời gian dự kiến với bạn trong quá trình báo giá, thay vì áp một mốc cố định cho mọi đơn."
           ]
         },
-        {
+        "tracking": {
           "heading": "Theo dõi đơn hàng",
           "paragraphs": [
             "Bạn theo dõi tiến trình đơn hàng qua đường liên kết riêng mà xưởng gửi cho bạn, và xưởng chủ động báo khi có bước mới.",
             "Website của {brand} không tích hợp hệ thống tra cứu hành trình của đơn vị vận chuyển. Nếu đơn hàng của bạn được gửi qua một đơn vị vận chuyển, xưởng cung cấp thông tin xưởng có khi bạn hỏi."
           ]
         },
-        {
+        "on-arrival": {
           "heading": "Khi nhận hàng",
           "paragraphs": [
             "Bạn nên kiểm tra thành phẩm ngay khi nhận. Nếu có vấn đề, liên hệ {brand} sớm nhất có thể để xưởng xem xét cùng bạn."
           ]
         },
-        {
+        "shipping-related": {
           "heading": "Liên quan",
-          "links": [
-            {
+          "links": {
+            "policy-payment": {
               "label": "Chính sách thanh toán"
             },
-            {
+            "policy-returns": {
               "label": "Chính sách đổi trả"
             },
-            {
+            "faq": {
               "label": "Câu hỏi thường gặp"
             },
-            {
+            "store": {
               "label": "Ghé xưởng"
             },
-            {
+            "commission": {
               "label": "Gửi yêu cầu thêu"
             }
+          }
+        },
+        "fee-wave1": {
+          "heading": "Phí giao hàng",
+          "paragraphs": [
+            "Nếu đơn hàng được gửi tới địa chỉ của bạn, xưởng xác nhận phí giao hàng sau khi đơn được tạo và hiển thị nó trên trang đơn hàng trước khi bạn thanh toán.",
+            "Xưởng tự xác nhận từng khoản phí thay vì lấy tự động từ bên thứ ba, nên bạn luôn thấy con số cuối cùng trước khi chuyển khoản."
+          ]
+        },
+        "timing-wave1": {
+          "heading": "Thời điểm bàn giao",
+          "paragraphs": [
+            "Xưởng chuẩn bị và gửi hàng sau khi khoản thanh toán của bạn được xác nhận.",
+            "Bạn theo dõi từng bước qua đường liên kết riêng xưởng đã gửi cho bạn."
           ]
         }
-      ]
+      }
     }
   }
 }

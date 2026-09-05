@@ -75,15 +75,6 @@ function anchorTargets(container: HTMLElement): string[] {
     .filter((href): href is string => href !== null);
 }
 
-/** The related-links section of a content page, which every page has exactly one of. */
-function linksSectionOf(page: ContentPage) {
-  const section = page.sections.find((candidate) => candidate.kind === 'links');
-  if (section === undefined || section.kind !== 'links') {
-    throw new Error(`no links section on ${page.path}`);
-  }
-  return section;
-}
-
 /**
  * The released compositions a Wave-1 visitor can reach, and the route each one
  * renders on. The shell is listed first because it composes the header
@@ -184,13 +175,17 @@ describe('releasing Wave 2 restores every delivered CTA unchanged', () => {
     });
   });
 
-  it('brings back the footer contact action without touching its prose', () => {
-    const withheldProse = withCustomEmbroideryRelease(false, () => {
+  it('brings back the footer contact action, and the sentence that goes with it', () => {
+    // The column's sentence is now release-dependent too (`APP12-V02` §7.1).
+    // It used to name the request form in both states, which told a Wave-1
+    // visitor the fastest way to reach the workshop was a form the server
+    // answers with a 404. Each state names only channels that exist in it.
+    withCustomEmbroideryRelease(false, () => {
       const { container } = renderWithProviders(<StorePresentationBlock />);
       expect(within(container).queryByRole('link', { name: 'Gửi yêu cầu thêu' })).toBeNull();
-      // The column keeps its sentence and its heading either way; only the
-      // action is release-dependent.
-      return within(container).getByText(STORE_PRESENTATION_COPY.contact.fallback).textContent;
+      expect(
+        within(container).getByText(STORE_PRESENTATION_COPY.contact.fallback),
+      ).toBeInTheDocument();
     });
 
     withCustomEmbroideryRelease(true, () => {
@@ -200,26 +195,29 @@ describe('releasing Wave 2 restores every delivered CTA unchanged', () => {
         '/yeu-cau/moi',
       );
       expect(
-        within(container).getByText(STORE_PRESENTATION_COPY.contact.fallback).textContent,
-      ).toBe(withheldProse);
+        within(container).getByText(STORE_PRESENTATION_COPY.contact.commissionFallback),
+      ).toBeInTheDocument();
     });
   });
 
   /**
-   * The five content pages whose related-links block lists the request route.
-   * The other two policies never listed it, so they are absent here and their
-   * link counts are unaffected in both states — asserted by the withheld sweep
-   * above, which covers all seven.
+   * The four content pages whose related-links block merely *filters* the
+   * request route out.
+   *
+   * `/dich-vu` is deliberately not among them any more. `APP12-V02` §7.1 gives
+   * it a Wave-1 body and withholds the Wave-2 one whole — commission steps,
+   * deposit and all — so its links block is swapped rather than filtered, and it
+   * gets its own assertions below.
    */
-  const CONTENT_PAGES_WITH_A_COMMISSION_LINK: readonly (readonly [string, ContentPage])[] = [
-    ['/dich-vu', SERVICE_PAGE],
-    ['/cau-hoi-thuong-gap', FAQ_PAGE],
-    ['/cua-hang', LOCAL_PAGE],
-    ['/chinh-sach/thanh-toan', policy('thanh-toan')],
-    ['/chinh-sach/giao-hang', policy('giao-hang')],
-  ];
+  const CONTENT_PAGES_WITH_A_FILTERED_COMMISSION_LINK: readonly (readonly [string, ContentPage])[] =
+    [
+      ['/cau-hoi-thuong-gap', FAQ_PAGE],
+      ['/cua-hang', LOCAL_PAGE],
+      ['/chinh-sach/thanh-toan', policy('thanh-toan')],
+      ['/chinh-sach/giao-hang', policy('giao-hang')],
+    ];
 
-  it.each(CONTENT_PAGES_WITH_A_COMMISSION_LINK)(
+  it.each(CONTENT_PAGES_WITH_A_FILTERED_COMMISSION_LINK)(
     '%s drops exactly one related link and restores it',
     (_path, page) => {
       const withheldCount = withCustomEmbroideryRelease(false, () => {
@@ -241,20 +239,70 @@ describe('releasing Wave 2 restores every delivered CTA unchanged', () => {
 
       // And the definition itself is untouched, in both states: the model stays
       // the authority for what the page links to.
-      expect(linksSectionOf(page).links.some((link) => link.href === '/yeu-cau/moi')).toBe(true);
+      expect(
+        page.sections.some(
+          (section) =>
+            section.kind === 'links' && section.links.some((link) => link.href === '/yeu-cau/moi'),
+        ),
+      ).toBe(true);
     },
   );
+
+  /**
+   * `/dich-vu` swaps its whole body between the two releases.
+   *
+   * `V01-UX-001` found this page documenting a six-step commission ending in a
+   * 40% deposit — the clearest single instance of the release selling a service
+   * it cannot perform. §7.1 replaces the Wave-1 body outright rather than
+   * removing a link from it, so what has to hold is that neither body leaks into
+   * the other release.
+   */
+  it('/dich-vu publishes the Wave-1 body and none of the commission journey', () => {
+    withCustomEmbroideryRelease(false, () => {
+      const { container } = renderWithProviders(<ContentPageScreen page={SERVICE_PAGE} />);
+
+      expect(anchorTargets(container)).not.toContain('/yeu-cau/moi');
+      // The deposit split is the sentence a customer who just bought a
+      // ready-made item would read as their own payment terms.
+      expect(container.textContent ?? '').not.toMatch(/đặt cọc 40%|60% còn lại/i);
+      // And what replaces it is about buying something that exists.
+      expect(screen.getByRole('link', { name: 'Khám phá sản phẩm' })).toHaveAttribute(
+        'href',
+        '/kham-pha',
+      );
+    });
+  });
+
+  it('/dich-vu restores the commission journey when the capability is released', () => {
+    withCustomEmbroideryRelease(true, () => {
+      const { container } = renderWithProviders(<ContentPageScreen page={SERVICE_PAGE} />);
+
+      expect(within(container).getByRole('link', { name: 'Gửi yêu cầu thêu' })).toHaveAttribute(
+        'href',
+        '/yeu-cau/moi',
+      );
+      expect(container.textContent ?? '').toMatch(/đặt cọc 40%/i);
+      // The Wave-1 body is gone, rather than both being published at once.
+      expect(container.textContent ?? '').not.toMatch(/Đặt mua như thế nào/i);
+    });
+  });
 
   /**
    * The related-links block still has something to show on every page it
    * renders on. A block reduced to a heading over an empty list would pass the
    * withheld sweep and still be a defect.
    */
-  it.each(CONTENT_PAGES_WITH_A_COMMISSION_LINK)('%s keeps a usable links block', (_path, page) => {
-    withCustomEmbroideryRelease(false, () => {
-      renderWithProviders(<ContentPageScreen page={page} />);
-      const block = screen.getByRole('region', { name: linksSectionOf(page).heading });
-      expect(within(block).getAllByRole('link').length).toBeGreaterThanOrEqual(4);
-    });
-  });
+  it.each([...CONTENT_PAGES_WITH_A_FILTERED_COMMISSION_LINK, ['/dich-vu', SERVICE_PAGE] as const])(
+    '%s keeps a usable links block',
+    (_path, page) => {
+      withCustomEmbroideryRelease(false, () => {
+        const { container } = renderWithProviders(<ContentPageScreen page={page} />);
+        const links = anchorTargets(container);
+
+        expect(links.length).toBeGreaterThanOrEqual(3);
+        // And every one of them is a route this release actually serves.
+        expect(links).not.toContain('/yeu-cau/moi');
+      });
+    },
+  );
 });

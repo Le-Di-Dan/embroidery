@@ -102,10 +102,6 @@ export function ReadyMadeFrozenFactsCard({ order, shipping }: ReadyMadeFrozenFac
           )}
         </DefinitionRow>
       </dl>
-
-      <p className="order-card__omitted" data-testid="order-detail-omitted">
-        {COPY.frozen.omitted}
-      </p>
     </section>
   );
 }

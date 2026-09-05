@@ -115,8 +115,10 @@ describe('the origin branch', () => {
     expect(await screen.findByTestId('order-detail-origin')).toBeInTheDocument();
 
     // `BR-031` — the four custom-only sections are absent, and the absence is
-    // stated once rather than drawn as empty cards.
-    expect(screen.getByTestId('order-detail-omitted')).toHaveTextContent(COPY.frozen.omitted);
+    // no longer *narrated* either. `V01-UX-004`: the screen used to carry a
+    // sentence listing the four things it does not show, painted at the same
+    // weight as the facts around it, on an order where none of them can exist.
+    expect(screen.queryByTestId('order-detail-omitted')).not.toBeInTheDocument();
 
     // Not hidden and not disabled: **not mounted**. Each of these test ids is
     // rendered by a delivered custom-only panel.

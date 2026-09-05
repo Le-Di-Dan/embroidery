@@ -40,10 +40,13 @@ const storeMessage = messageView(
  * ## The page ships without the four facts it was drawn around
  *
  * `resolveStoreFacts()` returns nothing today (see `store-facts.ts` for the
- * audit). The store-information block therefore renders its `fallback` sentence
- * instead of an address and opening-hours grid, and **no row is drawn for a
- * fact that has no canonical value** — not a placeholder, not `TBD`, not a
- * plausible-looking invention.
+ * audit), and **no row is drawn for a fact that has no canonical value** — not
+ * a placeholder, not `TBD`, not a plausible-looking invention.
+ *
+ * The block therefore does not render at all. It used to render a fallback
+ * sentence saying the address and opening hours would arrive later;
+ * `V01-UX-027` recorded that as published placeholder copy and `APP12-V02` §11
+ * forbids it, so the section is omitted and the page's other three carry it.
  *
  * That is why the copy below never depends on those values. It says what is
  * genuinely true and useful without them — that this is one workshop, that work
@@ -64,53 +67,54 @@ export const LOCAL_PAGE: ContentPage = {
     {
       kind: 'store-info',
       id: 'store-facts',
-      heading: storeMessage.text('sections.0.heading'),
-      fallback: storeMessage.text('sections.0.fallback'),
+      heading: storeMessage.text('sections.store-facts.heading'),
     },
     {
       kind: 'prose',
       id: 'visiting',
-      heading: storeMessage.text('sections.1.heading'),
-      paragraphs: storeMessage.list('sections.1.paragraphs'),
+      heading: storeMessage.text('sections.visiting.heading'),
+      paragraphs: storeMessage.list('sections.visiting.paragraphs'),
     },
     {
       kind: 'prose',
       id: 'contact-channels',
-      heading: storeMessage.text('sections.2.heading'),
-      paragraphs: storeMessage.list('sections.2.paragraphs'),
+      heading: storeMessage.text('sections.contact-channels.heading'),
+      paragraphs: storeMessage.list('sections.contact-channels.paragraphs'),
     },
     {
       kind: 'links',
       id: 'local-next',
-      heading: storeMessage.text('sections.3.heading'),
+      heading: storeMessage.text('sections.local-next.heading'),
       links: [
         {
           id: 'commission',
-          label: storeMessage.text('sections.3.links.0.label'),
+          label: storeMessage.text('sections.local-next.links.commission.label'),
+          // The commission intake is a deliberate 404 while Wave 2 is withheld.
+          release: 'wave2',
           href: STOREFRONT_CUSTOM_REQUEST_ROUTE,
-          hint: storeMessage.text('sections.3.links.0.hint'),
+          hint: storeMessage.text('sections.local-next.links.commission.hint'),
         },
         {
           id: 'service',
-          label: storeMessage.text('sections.3.links.1.label'),
+          label: storeMessage.text('sections.local-next.links.service.label'),
           href: STOREFRONT_SERVICE_ROUTE,
-          hint: storeMessage.text('sections.3.links.1.hint'),
+          hint: storeMessage.text('sections.local-next.links.service.hint'),
         },
         {
           id: 'gallery',
-          label: storeMessage.text('sections.3.links.2.label'),
+          label: storeMessage.text('sections.local-next.links.gallery.label'),
           href: STOREFRONT_GALLERY_ROUTE,
-          hint: storeMessage.text('sections.3.links.2.hint'),
+          hint: storeMessage.text('sections.local-next.links.gallery.hint'),
         },
         {
           id: 'discover',
-          label: storeMessage.text('sections.3.links.3.label'),
+          label: storeMessage.text('sections.local-next.links.discover.label'),
           href: STOREFRONT_DISCOVER_ROUTE,
-          hint: storeMessage.text('sections.3.links.3.hint'),
+          hint: storeMessage.text('sections.local-next.links.discover.hint'),
         },
         {
           id: 'faq',
-          label: storeMessage.text('sections.3.links.4.label'),
+          label: storeMessage.text('sections.local-next.links.faq.label'),
           href: STOREFRONT_FAQ_ROUTE,
         },
       ],

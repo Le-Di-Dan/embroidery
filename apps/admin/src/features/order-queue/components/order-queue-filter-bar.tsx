@@ -115,8 +115,6 @@ export function OrderQueueFilterBar({
         </ul>
       </fieldset>
 
-      <p className="order-filters__scope">{ORDER_QUEUE_COPY.filters.scope}</p>
-
       {isOrderQueueFiltered(filters) ? (
         <button
           type="button"

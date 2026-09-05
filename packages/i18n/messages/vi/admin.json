@@ -194,8 +194,7 @@
     "page": {
       "title": "Danh mục",
       "subtitle": "Danh mục điều khiển bộ lọc Khám phá, breadcrumb và sitemap. Cấu trúc phẳng — không có danh mục cha.",
-      "create": "Tạo danh mục",
-      "footnote": "Nhãn danh mục lấy từ tên đã lưu — không có bảng ánh xạ tiếng Việt biên dịch sẵn trong Storefront hay Admin (BR-034)."
+      "create": "Tạo danh mục"
     },
     "table": {
       "caption": "Danh sách danh mục",
@@ -948,15 +947,15 @@
       "availableNote": "Tính dưới khoá dòng, không lưu trữ. Chỉ đúng trong giao dịch đã tính ra nó."
     },
     "threshold": {
-      "lowStockTitle": "Dưới ngưỡng cảnh báo (lowStockThreshold = {threshold})",
-      "lowStockBody": "lowStock so sánh tồn THỰC TẾ với ngưỡng — giữ mềm và giữ chính thức không làm cờ này bật. Khả dụng âm là hệ quả hợp lệ của giữ kho vượt tồn, không phải lỗi dữ liệu. Ngưỡng do hệ thống cấu hình; APP8 không có thao tác sửa ngưỡng nên màn này chỉ hiển thị.",
-      "configured": "lowStockThreshold = {threshold} · lowStock = false. Không có thao tác sửa ngưỡng trong APP8 — B01 không công bố API nào cho việc đó.",
-      "absent": "lowStockThreshold vắng mặt · lowStock = false. Khi không cấu hình ngưỡng, cờ luôn false — không suy diễn ngưỡng từ số lượng."
+      "lowStockTitle": "Dưới ngưỡng cảnh báo ({threshold})",
+      "lowStockBody": "Cảnh báo so ngưỡng với tồn thực tế, nên hàng đang được giữ cho đơn khác không làm tắt cảnh báo này. Ngưỡng do hệ thống đặt và không sửa được tại đây.",
+      "configured": "Ngưỡng cảnh báo: {threshold}. Tồn hiện trên ngưỡng.",
+      "absent": "SKU này chưa đặt ngưỡng cảnh báo."
     },
     "ledger": {
       "title": "Lịch sử chuyển động",
       "bound": "Mới nhất trước · tối đa 100 bản ghi",
-      "source": "Nguồn: GET …/stock/ledger. Không có API phân trang — hợp đồng chỉ trả một trang kèm cờ truncated. Không thiết kế cuộn vô hạn giả.",
+      "source": "Các chuyển động gần nhất, mới nhất trước.",
       "columns": {
         "entryKind": "Loại chuyển động",
         "quantity": "Số lượng",
@@ -978,17 +977,17 @@
     },
     "failure": {
       "missingTitle": "Không tìm thấy SKU",
-      "missingBody": "INVENTORY_SKU_NOT_FOUND · 404. Khoá ngoại là thẩm quyền duy nhất về việc SKU có tồn tại hay không — giao diện không tự kiểm tra trước. Kiểm tra lại mã SKU hoặc mở lại từ danh mục.",
+      "missingBody": "Không tìm thấy SKU này. Kiểm tra lại mã SKU, hoặc mở lại từ danh mục sản phẩm.",
       "backToCatalog": "Mở lại từ danh mục",
       "retryTitle": "Không tải được tồn kho",
-      "retryBody": "Lỗi máy chủ · 500. Dữ liệu tồn kho chưa hiển thị được. Không có số liệu nào được đoán và không có điều chỉnh nào được gửi.",
+      "retryBody": "Chưa tải được dữ liệu tồn kho. Không có số liệu nào bị đoán và không có điều chỉnh nào được gửi.",
       "reload": "Tải lại",
       "retry": "Thử lại",
       "unauthenticatedTitle": "Phiên đăng nhập đã hết hạn",
-      "unauthenticatedBody": "401. Đăng nhập lại để tiếp tục. Mọi thao tác kho đều yêu cầu phiên quản trị hợp lệ.",
+      "unauthenticatedBody": "Phiên đăng nhập đã hết hạn. Đăng nhập lại để tiếp tục.",
       "signIn": "Đăng nhập lại",
       "forbiddenTitle": "Thao tác bị từ chối",
-      "forbiddenBody": "403. Thực hiện lại từ giao diện quản trị chính thức."
+      "forbiddenBody": "Tài khoản của bạn không có quyền thực hiện thao tác này."
     },
     "adjust": {
       "title": "Điều chỉnh tồn kho",
@@ -1034,12 +1033,12 @@
       "negativeHeading": "Không thể áp dụng điều chỉnh",
       "negativeContext": "SKU {skuId} · tồn hiện tại {onHand}",
       "negativeTitle": "Điều chỉnh sẽ làm tồn kho âm",
-      "negativeBody": "INVENTORY_STOCK_WOULD_GO_NEGATIVE · 409. Tồn thực tế là {onHand}; {movement} sẽ đưa về {resulting}. Không có gì được ghi: không đổi tồn, không thêm dòng sổ. Hãy nhập chênh lệch không vượt quá {onHand}, hoặc kiểm kho lại trước.",
+      "negativeBody": "Tồn thực tế là {onHand}; {movement} sẽ đưa về {resulting}, nên điều chỉnh bị từ chối. Không có gì được ghi. Hãy nhập chênh lệch không vượt quá {onHand}, hoặc kiểm kho lại trước.",
       "overrideTitle": "Vì sao không có quyền ghi đè",
       "overrideBody": "Quyền ghi đè của quản trị viên áp dụng cho việc điều chỉnh, nhưng KHÔNG BAO GIỜ cho tồn kho âm. Ràng buộc CSDL là chốt chặn cuối; đây là câu trả lời mà quản trị viên hành động được.",
       "editDelta": "Sửa chênh lệch",
       "missingTitle": "Không tìm thấy SKU",
-      "missingBody": "INVENTORY_SKU_NOT_FOUND · 404. Không có gì được ghi. Kiểm tra lại mã SKU hoặc mở lại từ danh mục.",
+      "missingBody": "Không tìm thấy SKU này. Không có gì được ghi. Kiểm tra lại mã SKU hoặc mở lại từ danh mục.",
       "unauthenticatedTitle": "Phiên đăng nhập đã hết hạn",
       "unauthenticatedBody": "401. Không có gì được ghi. Đăng nhập lại để tiếp tục.",
       "forbiddenTitle": "Thao tác bị từ chối",

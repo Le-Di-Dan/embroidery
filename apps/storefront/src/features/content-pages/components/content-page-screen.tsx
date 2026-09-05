@@ -1,4 +1,5 @@
 import type { ContentPage } from '../model/content-page';
+import { resolveContentPageForRelease } from '../model/content-page-release';
 import { ContentFaqDisclosure } from './content-faq-disclosure';
 import { ContentLinksBlock } from './content-links-block';
 import { ContentPageHero } from './content-page-hero';
@@ -27,14 +28,24 @@ import { ContentStoreInfo } from './content-store-info';
  * deliberately renders none (`storefront-shell.tsx`). The section headings below
  * it are `<h2>` and the FAQ questions inside a section are `<h3>`, so the
  * outline never skips a level.
+ *
+ * ## The page is resolved for the current release before it is rendered
+ *
+ * `APP12-V02` §7.1. The definitions hold the content of **both** waves; what a
+ * visitor may read is whatever is true of the release they are looking at. The
+ * resolution happens here, once, rather than in the four route segments, for
+ * the same reason the layout does: four copies of a rule is four places for it
+ * to be forgotten when a fifth page arrives.
  */
 export function ContentPageScreen({ page }: { page: ContentPage }) {
+  const published = resolveContentPageForRelease(page);
+
   return (
     <article className="content-page">
-      <ContentPageHero page={page} />
+      <ContentPageHero page={published} />
 
       <div className="content-page__sections">
-        {page.sections.map((section) => {
+        {published.sections.map((section) => {
           switch (section.kind) {
             case 'prose':
               return <ContentProseBlock key={section.id} section={section} />;

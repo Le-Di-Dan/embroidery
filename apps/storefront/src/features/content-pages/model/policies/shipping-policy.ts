@@ -59,65 +59,91 @@ export const SHIPPING_POLICY: ContentPage = {
   metaDescription: policiesShippingMessage.text('metaDescription'),
   trail: { parentLabel: policiesShippingMessage.text('trail.parentLabel') },
   sections: [
+    // The Wave-1 fee and hand-over (`APP12-V02` §7.2). The fee is set by the
+    // workshop **after** the order and shown before payment (`BR-029`); the
+    // Wave-2 sections below place it inside a quotation, which is true only
+    // once commissions are released.
+    {
+      kind: 'prose',
+      id: 'fee-wave1',
+      release: 'wave1',
+      heading: policiesShippingMessage.text('sections.fee-wave1.heading'),
+      paragraphs: policiesShippingMessage.list('sections.fee-wave1.paragraphs'),
+    },
+    {
+      kind: 'prose',
+      id: 'timing-wave1',
+      release: 'wave1',
+      heading: policiesShippingMessage.text('sections.timing-wave1.heading'),
+      paragraphs: policiesShippingMessage.list('sections.timing-wave1.paragraphs'),
+    },
     {
       kind: 'prose',
       id: 'handover',
-      heading: policiesShippingMessage.text('sections.0.heading'),
-      paragraphs: policiesShippingMessage.list('sections.0.paragraphs'),
-      bullets: policiesShippingMessage.list('sections.0.bullets'),
+      heading: policiesShippingMessage.text('sections.handover.heading'),
+      paragraphs: policiesShippingMessage.list('sections.handover.paragraphs'),
+      bullets: policiesShippingMessage.list('sections.handover.bullets'),
     },
     {
       kind: 'prose',
       id: 'fee',
-      heading: policiesShippingMessage.text('sections.1.heading'),
-      paragraphs: policiesShippingMessage.list('sections.1.paragraphs'),
+      release: 'wave2',
+      heading: policiesShippingMessage.text('sections.fee.heading'),
+      paragraphs: policiesShippingMessage.list('sections.fee.paragraphs'),
     },
     {
       kind: 'prose',
       id: 'timing',
-      heading: policiesShippingMessage.text('sections.2.heading'),
-      paragraphs: policiesShippingMessage.list('sections.2.paragraphs'),
+      release: 'wave2',
+      heading: policiesShippingMessage.text('sections.timing.heading'),
+      paragraphs: policiesShippingMessage.list('sections.timing.paragraphs'),
     },
     {
       kind: 'prose',
       id: 'tracking',
-      heading: policiesShippingMessage.text('sections.3.heading'),
-      paragraphs: policiesShippingMessage.list('sections.3.paragraphs'),
+      heading: policiesShippingMessage.text('sections.tracking.heading'),
+      paragraphs: policiesShippingMessage.list('sections.tracking.paragraphs'),
     },
     {
       kind: 'prose',
       id: 'on-arrival',
-      heading: policiesShippingMessage.text('sections.4.heading'),
-      paragraphs: policiesShippingMessage.list('sections.4.paragraphs'),
+      heading: policiesShippingMessage.text('sections.on-arrival.heading'),
+      paragraphs: policiesShippingMessage.list('sections.on-arrival.paragraphs'),
     },
     {
       kind: 'links',
       id: 'shipping-related',
-      heading: policiesShippingMessage.text('sections.5.heading'),
+      heading: policiesShippingMessage.text('sections.shipping-related.heading'),
       links: [
         {
           id: 'policy-payment',
-          label: policiesShippingMessage.text('sections.5.links.0.label'),
+          label: policiesShippingMessage.text(
+            'sections.shipping-related.links.policy-payment.label',
+          ),
           href: buildStorefrontPolicyPath(POLICY_SLUG.payment),
         },
         {
           id: 'policy-returns',
-          label: policiesShippingMessage.text('sections.5.links.1.label'),
+          label: policiesShippingMessage.text(
+            'sections.shipping-related.links.policy-returns.label',
+          ),
           href: buildStorefrontPolicyPath(POLICY_SLUG.returns),
         },
         {
           id: 'faq',
-          label: policiesShippingMessage.text('sections.5.links.2.label'),
+          label: policiesShippingMessage.text('sections.shipping-related.links.faq.label'),
           href: STOREFRONT_FAQ_ROUTE,
         },
         {
           id: 'store',
-          label: policiesShippingMessage.text('sections.5.links.3.label'),
+          label: policiesShippingMessage.text('sections.shipping-related.links.store.label'),
           href: STOREFRONT_STORE_ROUTE,
         },
         {
           id: 'commission',
-          label: policiesShippingMessage.text('sections.5.links.4.label'),
+          label: policiesShippingMessage.text('sections.shipping-related.links.commission.label'),
+          // The commission intake is a deliberate 404 while Wave 2 is withheld.
+          release: 'wave2',
           href: STOREFRONT_CUSTOM_REQUEST_ROUTE,
         },
       ],

@@ -117,8 +117,6 @@ describe('PRODUCTION_COMPLETED — opening the balance', () => {
 
     // No shipping read is issued in a stage that has no surface for one.
     expect(shippingReadMock).not.toHaveBeenCalled();
-    // The API gap stands where the approved frame sketches a subtraction.
-    expect(screen.getByTestId('remaining-amount-gap')).toBeInTheDocument();
     // The order total is on the page header; the *balance* is nowhere, because
     // "total − deposit" is exactly the arithmetic a fee increase falsifies.
     expect(screen.queryByText('7.650.000 VND')).not.toBeInTheDocument();
@@ -130,12 +128,15 @@ describe('AWAITING_FINAL_PAYMENT — a named gap, not an invented read model', (
     detailMock.mockResolvedValue(atStatus('AWAITING_FINAL_PAYMENT'));
   });
 
-  it('renders the limitation and no fabricated balance, history or transport name', async () => {
+  it('fabricates no balance, history or transport name', async () => {
     render();
 
     const panel = await screen.findByTestId('fulfillment-panel');
     expect(panel).toHaveAttribute('data-stage', 'awaiting-final-payment');
-    expect(screen.getByTestId('remaining-amount-gap')).toHaveTextContent(COPY.apiGap.title);
+    // The screen no longer prints a "KNOWN API LIMITATION" banner at an
+    // operator (`V01-UX-005`, `V01-UX-004`). What it must still do is refuse to
+    // invent the balance, which is what the rest of this test asserts.
+    expect(screen.queryByTestId('remaining-amount-gap')).not.toBeInTheDocument();
     expect(screen.getByTestId('remaining-verify-unavailable')).toBeInTheDocument();
 
     // The two transport spellings must never reach the screen (FU-APP9-B03-01).

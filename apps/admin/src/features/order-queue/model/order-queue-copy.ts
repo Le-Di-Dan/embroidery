@@ -44,7 +44,6 @@ export const ORDER_QUEUE_COPY = {
     all: queueMessage.text('filters.all'),
     selected: (count: number) => queueMessage.text('filters.selected', { count }),
     reset: queueMessage.text('filters.reset'),
-    scope: queueMessage.text('filters.scope'),
   },
   actions: {
     openOrder: queueMessage.text('actions.openOrder'),
@@ -67,6 +66,5 @@ export const ORDER_QUEUE_COPY = {
     cursorErrorTitle: queueMessage.text('states.cursorErrorTitle'),
     cursorErrorBody: queueMessage.text('states.cursorErrorBody'),
     loadMoreFailed: queueMessage.text('states.loadMoreFailed'),
-    pagination: queueMessage.text('states.pagination'),
   },
 } as const;

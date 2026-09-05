@@ -54,10 +54,6 @@ export function RemainingPaymentCard() {
         />
         <p className="order-card__help">{COPY.finalPayment.awaitingHelp}</p>
 
-        <div className="order-fulfillment__gap" data-testid="remaining-amount-gap">
-          <p className="order-fulfillment__gap-title">{COPY.apiGap.title}</p>
-          <p className="order-fulfillment__gap-body">{COPY.apiGap.body}</p>
-        </div>
       </section>
 
       <section className="order-card" aria-labelledby="fulfillment-verification-heading">

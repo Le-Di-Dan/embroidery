@@ -239,9 +239,10 @@ describe('the decided states', () => {
     expect(screen.getByTestId('merge-case-rejected')).toBeInTheDocument();
     expect(screen.queryByTestId('merge-execute-open')).not.toBeInTheDocument();
     expect(screen.queryByTestId('merge-reject-open')).not.toBeInTheDocument();
-    // The declining reason has no column and no read; the screen says so rather
-    // than showing an empty field or inventing one.
-    expect(screen.getByTestId('merge-case-rejected')).toHaveTextContent(COPY.rejected.noReasonNote);
+    // The declining reason has no column and no read, so no field is shown and
+    // none is invented. The screen no longer *explains* the gap either
+    // (`V01-UX-004`): an operator cannot act on an unpublished audit record,
+    // and a paragraph about it is a specification note, not operator copy.
     expect(screen.queryByTestId('merge-rejection-reason')).not.toBeInTheDocument();
     // The *opening* reason is published and stays visible; it is a different field.
     expect(screen.getByTestId('merge-case-open-reason')).toBeInTheDocument();

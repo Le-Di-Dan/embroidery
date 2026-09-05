@@ -21,8 +21,7 @@
       "originLegend": "Nguồn đơn",
       "all": "Tất cả",
       "selected": "{count} đã chọn",
-      "reset": "Bỏ lọc",
-      "scope": "Bộ lọc khả dụng: trạng thái và nguồn đơn. Không có tìm kiếm, khoảng ngày hay bộ lọc bằng chứng."
+      "reset": "Bỏ lọc"
     },
     "actions": {
       "openOrder": "Mở đơn hàng",
@@ -43,8 +42,7 @@
       "errorBody": "Kết nối tới máy chủ đang gặp sự cố. Thử lại sau ít phút.",
       "cursorErrorTitle": "Không tải tiếp được trang này",
       "cursorErrorBody": "Danh sách cần được tải lại từ đầu.",
-      "loadMoreFailed": "Không tải thêm được. Các đơn hàng đã tải vẫn còn nguyên.",
-      "pagination": "Phân trang bằng con trỏ — không có số trang và không có tổng số bản ghi."
+      "loadMoreFailed": "Không tải thêm được. Các đơn hàng đã tải vẫn còn nguyên."
     }
   },
   "detail": {
@@ -57,7 +55,7 @@
     "sections": {
       "frozenFacts": "Dữ kiện đơn hàng — đông cứng",
       "frozenFactsHelp": "Toàn bộ giá trị dưới đây là ảnh chụp tại thời điểm tạo đơn. Màn hình không đọc lại Catalog, nên Catalog thay đổi về sau không làm đổi đơn hàng này.",
-      "items": "Dòng hàng (OrderItem) — đông cứng",
+      "items": "Sản phẩm trong đơn",
       "itemsHelp": "Loại dòng hàng quyết định trường nào tồn tại. Không bịa SKU, biến thể hay kích cỡ cho hàng khách tự gửi.",
       "deposit": "Tiền cọc (DEPOSIT)",
       "depositHelp": "Nguồn sự thật duy nhất của bảng này là dữ liệu thanh toán của đơn hàng.",
@@ -277,7 +275,6 @@
       "createdAt": "Tạo lúc",
       "paymentDeadline": "Giữ hàng đến",
       "paymentDeadlineAbsent": "Không còn giữ hàng",
-      "omitted": "Không hiển thị: yêu cầu thêu riêng · báo giá đã chấp nhận · bản thiết kế đã duyệt · lệnh sản xuất.",
       "totalUnknown": "Tổng đơn hàng chưa xác định",
       "code": "Mã đơn"
     },
@@ -287,11 +284,11 @@
       "sku": "SKU",
       "quantity": "SL",
       "unitPrice": "Đơn giá",
-      "help": "Ảnh chụp tại thời điểm tạo đơn. Sửa Catalog sau đó không làm thay đổi đơn này (BR-021)."
+      "help": "Ảnh chụp tại thời điểm tạo đơn. Sửa sản phẩm trong danh mục sau đó không làm thay đổi đơn này."
     },
     "shipping": {
       "heading": "Phí giao hàng",
-      "help": "Xưởng tự nhập. Không có tính tự động, không có báo giá hãng vận chuyển.",
+      "help": "Xưởng nhập phí giao hàng cho địa chỉ này.",
       "feeLabel": "Phí giao hàng (VND)",
       "feePlaceholder": "35000",
       "requiredLabel": "Bắt buộc",
@@ -307,11 +304,11 @@
       "frozenHeading": "Phí đã chốt",
       "refusedTitle": "Không thể sửa phí",
       "refusedBody": "Nghĩa vụ FULL đã được thanh toán. Mọi điều chỉnh thương mại phải đi qua quy trình huỷ/hoàn tiền.",
-      "pendingNote": "Khi FULL còn PENDING, sửa phí sẽ thay thế nghĩa vụ hiện tại bằng nghĩa vụ kế nhiệm và đơn vẫn ở AWAITING_PAYMENT."
+      "pendingNote": "Khi khách chưa thanh toán, sửa phí sẽ thay số tiền cần thu và đơn vẫn chờ thanh toán."
     },
     "payment": {
       "heading": "Thanh toán",
-      "note": "Ready-Made dùng đúng một nghĩa vụ FULL. Không có DEPOSIT/REMAINING và không có tỷ lệ 40/60 (BR-029).",
+      "note": "Đơn bán sẵn thanh toán một lần, sau khi phí giao hàng được xác nhận.",
       "emptyBody": "Chưa có nghĩa vụ thanh toán. Nghĩa vụ FULL được tạo khi bạn xác nhận phí giao hàng.",
       "amount": "Số tiền phải trả",
       "status": "Trạng thái nghĩa vụ",
@@ -328,7 +325,7 @@
     },
     "fulfillment": {
       "heading": "Giao hàng",
-      "lockedHelp": "Mở sau khi thanh toán FULL được xác nhận. Đơn bán sẵn không tạo lệnh sản xuất (BR-030)."
+      "lockedHelp": "Mở sau khi thanh toán được xác nhận."
     },
     "failure": {
       "loading": "Đang tải thông tin thanh toán…",
@@ -350,22 +347,19 @@
     },
     "openDialog": {
       "title": "Yêu cầu thanh toán phần còn lại?",
-      "body": "Đơn hàng sẽ chuyển sang AWAITING_FINAL_PAYMENT. Khách sẽ thấy số tiền còn lại và hướng dẫn chuyển khoản trên trang thanh toán bảo mật của họ.",
+      "body": "Đơn hàng chuyển sang chờ thanh toán phần còn lại. Khách sẽ thấy số tiền còn lại và hướng dẫn chuyển khoản trên trang đơn hàng của họ.",
       "effectLabel": "Trạng thái sau khi xác nhận",
-      "effectValue": "AWAITING_FINAL_PAYMENT",
+      "effectValue": "Chờ thanh toán phần còn lại",
       "effectNote": "Không sinh nghĩa vụ mới, không gửi thông báo tự động, không thu tiền.",
       "confirm": "Xác nhận mở thanh toán",
       "cancel": "Huỷ",
       "pending": "Đang mở kỳ thanh toán…"
     },
-    "apiGap": {
-      "title": "GIỚI HẠN API ĐÃ BIẾT",
-      "body": "Hiện không có endpoint quản trị nào chiếu nghĩa vụ còn lại: không đọc được số tiền còn lại, danh sách lần chuyển khoản, ảnh giao dịch hay lịch sử đối chiếu của nó. Vì vậy màn hình không suy ra số còn lại bằng \"tổng đơn trừ tiền cọc\": một lần tăng phí vận chuyển sẽ thay thế nghĩa vụ và làm phép trừ đó sai."
-    },
+    "apiGap": {},
     "verification": {
       "title": "Xác nhận đã nhận tiền",
       "help": "Căn cứ duy nhất là số tiền thực nhận trong tài khoản ngân hàng. Không có webhook, không có cổng thanh toán, không có đối chiếu ngân hàng tự động.",
-      "unavailable": "Chưa thể mở thao tác xác nhận từ màn hình này: cả xác nhận lẫn đưa vào đối chiếu đều cần mã lần chuyển khoản của khoản còn lại, mà không endpoint quản trị nào đang trả về. Xem giới hạn API ở trên."
+      "unavailable": "Đối chiếu khoản còn lại được thực hiện ở màn hình thanh toán của đơn."
     },
     "shipping": {
       "title": "Thông tin giao hàng",
@@ -461,7 +455,7 @@
     "locked": {
       "title": "Chưa khả dụng ở bước này",
       "shipping": "Thông tin giao hàng",
-      "shippingWhy": "Chỉ mở khi đơn sang READY_FOR_DELIVERY",
+      "shippingWhy": "Chỉ mở khi đơn đã sẵn sàng giao",
       "dispatch": "Giao hàng",
       "dispatchWhy": "Cần thanh toán còn lại được xác nhận trước",
       "completion": "Hoàn tất đơn",

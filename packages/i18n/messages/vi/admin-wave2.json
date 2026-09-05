@@ -17,7 +17,7 @@
       "statusAll": "Tất cả trạng thái",
       "productLabel": "Sản phẩm",
       "productAll": "Tất cả sản phẩm",
-      "constraint": "Danh sách sắp xếp theo thời gian tạo, mới nhất trước. Không có tìm kiếm hay sắp xếp tuỳ chọn.",
+      "constraint": "Mới nhất trước.",
       "productUnavailable": "Không tải được danh sách sản phẩm để lọc."
     },
     "status": {

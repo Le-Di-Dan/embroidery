@@ -68,61 +68,121 @@ export const SERVICE_PAGE: ContentPage = {
   metaTitle: serviceMessage.text('metaTitle'),
   metaDescription: serviceMessage.text('metaDescription'),
   sections: [
+    // The Wave-1 page (`APP12-V02` §7.1, §8). Short, and every exit it offers
+    // is a released route. The three Wave-2 sections below it document a
+    // commission the release cannot take, and are withheld rather than deleted
+    // so releasing the capability restores the page it was reviewed as.
+    //
+    // §7.1 also permits "a short statement that commissions open later", and
+    // this page deliberately does not carry one. `APP12-RELEASE-WAVE-AUTHORITY`
+    // §7 forbids publishing the roadmap on a public surface, the Homepage
+    // already omits its commission section whole rather than announcing it, and
+    // a Service page that promises a service for an unnamed later date is the
+    // same unfulfillable promise `V01-UX-001` recorded, just further off. From
+    // outside, Wave 2 is simply not there.
+    {
+      kind: 'prose',
+      id: 'craft',
+      release: 'wave1',
+      heading: serviceMessage.text('sections.craft.heading'),
+      paragraphs: serviceMessage.list('sections.craft.paragraphs'),
+      bullets: serviceMessage.list('sections.craft.bullets'),
+    },
+    {
+      kind: 'prose',
+      id: 'how-to-buy',
+      release: 'wave1',
+      heading: serviceMessage.text('sections.how-to-buy.heading'),
+      paragraphs: serviceMessage.list('sections.how-to-buy.paragraphs'),
+      bullets: serviceMessage.list('sections.how-to-buy.bullets'),
+    },
+    {
+      kind: 'links',
+      id: 'service-next-wave1',
+      release: 'wave1',
+      heading: serviceMessage.text('sections.service-next-wave1.heading'),
+      links: [
+        {
+          id: 'discover',
+          label: serviceMessage.text('sections.service-next-wave1.links.discover.label'),
+          href: STOREFRONT_DISCOVER_ROUTE,
+          hint: serviceMessage.text('sections.service-next-wave1.links.discover.hint'),
+        },
+        {
+          id: 'gallery',
+          label: serviceMessage.text('sections.service-next-wave1.links.gallery.label'),
+          href: STOREFRONT_GALLERY_ROUTE,
+          hint: serviceMessage.text('sections.service-next-wave1.links.gallery.hint'),
+        },
+        {
+          id: 'faq',
+          label: serviceMessage.text('sections.service-next-wave1.links.faq.label'),
+          href: STOREFRONT_FAQ_ROUTE,
+          hint: serviceMessage.text('sections.service-next-wave1.links.faq.hint'),
+        },
+      ],
+    },
     {
       kind: 'prose',
       id: 'what-we-do',
-      heading: serviceMessage.text('sections.0.heading'),
-      paragraphs: serviceMessage.list('sections.0.paragraphs'),
-      bullets: serviceMessage.list('sections.0.bullets'),
+      release: 'wave2',
+      heading: serviceMessage.text('sections.what-we-do.heading'),
+      paragraphs: serviceMessage.list('sections.what-we-do.paragraphs'),
+      bullets: serviceMessage.list('sections.what-we-do.bullets'),
     },
     {
       kind: 'prose',
       id: 'journey',
-      heading: serviceMessage.text('sections.1.heading'),
-      paragraphs: serviceMessage.list('sections.1.paragraphs'),
-      bullets: serviceMessage.list('sections.1.bullets'),
+      release: 'wave2',
+      heading: serviceMessage.text('sections.journey.heading'),
+      paragraphs: serviceMessage.list('sections.journey.paragraphs'),
+      bullets: serviceMessage.list('sections.journey.bullets'),
     },
     {
       kind: 'prose',
       id: 'before-you-start',
-      heading: serviceMessage.text('sections.2.heading'),
-      paragraphs: serviceMessage.list('sections.2.paragraphs'),
-      bullets: serviceMessage.list('sections.2.bullets'),
+      release: 'wave2',
+      heading: serviceMessage.text('sections.before-you-start.heading'),
+      paragraphs: serviceMessage.list('sections.before-you-start.paragraphs'),
+      bullets: serviceMessage.list('sections.before-you-start.bullets'),
     },
     {
       kind: 'links',
       id: 'service-next',
-      heading: serviceMessage.text('sections.3.heading'),
+      release: 'wave2',
+      heading: serviceMessage.text('sections.service-next.heading'),
       links: [
         {
           id: 'discover',
-          label: serviceMessage.text('sections.3.links.0.label'),
+          label: serviceMessage.text('sections.service-next.links.discover.label'),
           href: STOREFRONT_DISCOVER_ROUTE,
-          hint: serviceMessage.text('sections.3.links.0.hint'),
+          hint: serviceMessage.text('sections.service-next.links.discover.hint'),
         },
         {
           id: 'gallery',
-          label: serviceMessage.text('sections.3.links.1.label'),
+          label: serviceMessage.text('sections.service-next.links.gallery.label'),
           href: STOREFRONT_GALLERY_ROUTE,
-          hint: serviceMessage.text('sections.3.links.1.hint'),
+          hint: serviceMessage.text('sections.service-next.links.gallery.hint'),
         },
         {
           id: 'commission',
-          label: serviceMessage.text('sections.3.links.2.label'),
+          label: serviceMessage.text('sections.service-next.links.commission.label'),
+          // The commission intake is a deliberate 404 while Wave 2 is withheld.
+          release: 'wave2',
           href: STOREFRONT_CUSTOM_REQUEST_ROUTE,
-          hint: serviceMessage.text('sections.3.links.2.hint'),
+          hint: serviceMessage.text('sections.service-next.links.commission.hint'),
         },
         {
           id: 'faq',
-          label: serviceMessage.text('sections.3.links.3.label'),
+          label: serviceMessage.text('sections.service-next.links.faq.label'),
           href: STOREFRONT_FAQ_ROUTE,
-          hint: serviceMessage.text('sections.3.links.3.hint'),
+          hint: serviceMessage.text('sections.service-next.links.faq.hint'),
         },
         {
           id: 'store',
-          label: serviceMessage.text('sections.3.links.4.label'),
+          label: serviceMessage.text('sections.service-next.links.store.label'),
           href: STOREFRONT_STORE_ROUTE,
-          hint: serviceMessage.text('sections.3.links.4.hint'),
+          hint: serviceMessage.text('sections.service-next.links.store.hint'),
         },
       ],
     },

@@ -11,8 +11,14 @@ import { resolveStoreFacts } from '../model/store-facts';
  * A fact with no canonical value produces **no row at all**: the block does not
  * emit a label with an empty value, a `TBD`, a `—`, or the bracketed D01
  * placeholder. When every fact is absent — which is the state today — the block
- * renders its truthful fallback sentence instead of an empty definition list, so
- * the page never shows a heading over nothing.
+ * renders **nothing at all**.
+ *
+ * It used to render a fallback sentence saying the address and opening hours
+ * would be published later. `V01-UX-027` recorded that as published placeholder
+ * copy, and `APP12-V02` §11 forbids it: a public page that admits its own
+ * address is missing reads worse than a page that simply does not have a store
+ * block. The other sections carry the page, and the block returns the moment a
+ * fact becomes canonical — with no change here.
  *
  * ## `tel:` and `mailto:` never rewrite the value
  *
@@ -28,6 +34,8 @@ import { resolveStoreFacts } from '../model/store-facts';
  */
 export function ContentStoreInfo({ section }: { section: ContentStoreInfoSection }) {
   const facts = resolveStoreFacts();
+  if (facts.length === 0) return null;
+
   const headingId = `content-${section.id}-heading`;
 
   return (
@@ -35,26 +43,22 @@ export function ContentStoreInfo({ section }: { section: ContentStoreInfoSection
       <h2 className="content-page__block-heading" id={headingId}>
         {section.heading}
       </h2>
-      {facts.length === 0 ? (
-        <p className="content-page__paragraph">{section.fallback}</p>
-      ) : (
-        <dl className="content-page__store-facts">
-          {facts.map((fact) => (
-            <div className="content-page__store-fact" key={fact.id}>
-              <dt className="content-page__store-fact-label">{fact.label}</dt>
-              <dd className="content-page__store-fact-value">
-                {fact.href === undefined ? (
-                  fact.value
-                ) : (
-                  <a className="content-page__store-fact-link" href={fact.href}>
-                    {fact.value}
-                  </a>
-                )}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      )}
+      <dl className="content-page__store-facts">
+        {facts.map((fact) => (
+          <div className="content-page__store-fact" key={fact.id}>
+            <dt className="content-page__store-fact-label">{fact.label}</dt>
+            <dd className="content-page__store-fact-value">
+              {fact.href === undefined ? (
+                fact.value
+              ) : (
+                <a className="content-page__store-fact-link" href={fact.href}>
+                  {fact.value}
+                </a>
+              )}
+            </dd>
+          </div>
+        ))}
+      </dl>
     </section>
   );
 }

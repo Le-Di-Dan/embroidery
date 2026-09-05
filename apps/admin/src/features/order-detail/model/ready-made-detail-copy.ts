@@ -39,7 +39,6 @@ export const READY_MADE_DETAIL_COPY = {
     /** Shown where the hold has lapsed, been released or been consumed. */
     paymentDeadlineAbsent: readyMadeDetailMessage.text('frozen.paymentDeadlineAbsent'),
     /** `BR-031` — the omission is stated, not left as an empty card. */
-    omitted: readyMadeDetailMessage.text('frozen.omitted'),
     /** Before the fee is confirmed there is no payable total to name. */
     totalUnknown: readyMadeDetailMessage.text('frozen.totalUnknown'),
   },

@@ -180,7 +180,7 @@
     },
     "selection": {
       "heading": "Chọn hai khách hàng",
-      "intro": "Tra cứu từng khách hàng bằng một liên hệ đã xác minh. Không có danh sách hay tìm kiếm gần đúng.",
+      "intro": "Tra cứu khách hàng bằng một liên hệ đã xác minh — email hoặc số điện thoại.",
       "survivorTitle": "Khách giữ lại",
       "survivorMeaning": "Hồ sơ này vẫn hoạt động sau khi gộp và nhận toàn bộ dữ liệu đang sống.",
       "loserTitle": "Khách được gộp",
@@ -321,13 +321,11 @@
     "executed": {
       "heading": "Đã gộp xong",
       "body": "Khách được gộp đã được đánh dấu gộp vào khách giữ lại.",
-      "noCountsNote": "Màn hình này không hiển thị số lượng bản ghi đã chuyển: hệ thống không công bố lịch sử sự kiện gộp qua API, và con số xem trước là số liệu trước khi gộp — hiển thị lại chúng như “đã chuyển” sẽ là một khẳng định sai.",
       "noUndoNote": "Không có thao tác huỷ gộp."
     },
     "rejected": {
       "heading": "Hồ sơ gộp đã bị từ chối",
-      "body": "Không có gì được chuyển. Cả hai khách hàng giữ nguyên như trước.",
-      "noReasonNote": "Lý do từ chối được ghi trong nhật ký kiểm toán và không được công bố lại qua API, nên không hiển thị ở đây."
+      "body": "Không có gì được chuyển. Cả hai khách hàng giữ nguyên như trước."
     }
   }
 }

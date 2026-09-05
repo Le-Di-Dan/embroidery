@@ -58,93 +58,143 @@ export const FAQ_PAGE: ContentPage = {
   metaTitle: faqMessage.text('metaTitle'),
   metaDescription: faqMessage.text('metaDescription'),
   sections: [
+    // The Wave-1 answers (`APP12-V02` §7.1, §7.2). `V01-UX-001` found this page
+    // answering "when do I pay?" with the 40/60 deposit split, which no Wave-1
+    // order uses — the customer most likely to ask had just bought a ready-made
+    // item. The Wave-2 list below is withheld rather than deleted.
+    {
+      kind: 'faq',
+      id: 'faq-list-wave1',
+      release: 'wave1',
+      heading: faqMessage.text('sections.faq-list-wave1.heading'),
+      items: [
+        {
+          id: 'what-to-buy',
+          question: faqMessage.text('sections.faq-list-wave1.items.what-to-buy.question'),
+          answer: faqMessage.list('sections.faq-list-wave1.items.what-to-buy.answer'),
+        },
+        {
+          id: 'how-to-order',
+          question: faqMessage.text('sections.faq-list-wave1.items.how-to-order.question'),
+          answer: faqMessage.list('sections.faq-list-wave1.items.how-to-order.answer'),
+        },
+        {
+          id: 'when-to-pay',
+          question: faqMessage.text('sections.faq-list-wave1.items.when-to-pay.question'),
+          answer: faqMessage.list('sections.faq-list-wave1.items.when-to-pay.answer'),
+        },
+        {
+          id: 'how-to-pay',
+          question: faqMessage.text('sections.faq-list-wave1.items.how-to-pay.question'),
+          answer: faqMessage.list('sections.faq-list-wave1.items.how-to-pay.answer'),
+        },
+        {
+          id: 'shipping-fee',
+          question: faqMessage.text('sections.faq-list-wave1.items.shipping-fee.question'),
+          answer: faqMessage.list('sections.faq-list-wave1.items.shipping-fee.answer'),
+        },
+        {
+          id: 'track-order',
+          question: faqMessage.text('sections.faq-list-wave1.items.track-order.question'),
+          answer: faqMessage.list('sections.faq-list-wave1.items.track-order.answer'),
+        },
+        {
+          id: 'see-work',
+          question: faqMessage.text('sections.faq-list-wave1.items.see-work.question'),
+          answer: faqMessage.list('sections.faq-list-wave1.items.see-work.answer'),
+        },
+      ],
+    },
     {
       kind: 'faq',
       id: 'faq-list',
-      heading: faqMessage.text('sections.0.heading'),
+      release: 'wave2',
+      heading: faqMessage.text('sections.faq-list.heading'),
       items: [
         {
           id: 'how-to-start',
-          question: faqMessage.text('sections.0.items.0.question'),
-          answer: faqMessage.list('sections.0.items.0.answer'),
+          question: faqMessage.text('sections.faq-list.items.how-to-start.question'),
+          answer: faqMessage.list('sections.faq-list.items.how-to-start.answer'),
         },
         {
           id: 'what-to-prepare',
-          question: faqMessage.text('sections.0.items.1.question'),
-          answer: faqMessage.list('sections.0.items.1.answer'),
+          question: faqMessage.text('sections.faq-list.items.what-to-prepare.question'),
+          answer: faqMessage.list('sections.faq-list.items.what-to-prepare.answer'),
         },
         {
           id: 'own-product',
-          question: faqMessage.text('sections.0.items.2.question'),
-          answer: faqMessage.list('sections.0.items.2.answer'),
+          question: faqMessage.text('sections.faq-list.items.own-product.question'),
+          answer: faqMessage.list('sections.faq-list.items.own-product.answer'),
         },
         {
           id: 'design-review',
-          question: faqMessage.text('sections.0.items.3.question'),
-          answer: faqMessage.list('sections.0.items.3.answer'),
+          question: faqMessage.text('sections.faq-list.items.design-review.question'),
+          answer: faqMessage.list('sections.faq-list.items.design-review.answer'),
         },
         {
           id: 'quotation',
-          question: faqMessage.text('sections.0.items.4.question'),
-          answer: faqMessage.list('sections.0.items.4.answer'),
+          question: faqMessage.text('sections.faq-list.items.quotation.question'),
+          answer: faqMessage.list('sections.faq-list.items.quotation.answer'),
         },
         {
           id: 'payment',
-          question: faqMessage.text('sections.0.items.5.question'),
-          answer: faqMessage.list('sections.0.items.5.answer'),
+          question: faqMessage.text('sections.faq-list.items.payment.question'),
+          answer: faqMessage.list('sections.faq-list.items.payment.answer'),
         },
         {
           id: 'delivery',
-          question: faqMessage.text('sections.0.items.6.question'),
-          answer: faqMessage.list('sections.0.items.6.answer'),
+          question: faqMessage.text('sections.faq-list.items.delivery.question'),
+          answer: faqMessage.list('sections.faq-list.items.delivery.answer'),
         },
         {
           id: 'revisions',
-          question: faqMessage.text('sections.0.items.7.question'),
-          answer: faqMessage.list('sections.0.items.7.answer'),
+          question: faqMessage.text('sections.faq-list.items.revisions.question'),
+          answer: faqMessage.list('sections.faq-list.items.revisions.answer'),
         },
         {
           id: 'see-examples',
-          question: faqMessage.text('sections.0.items.8.question'),
-          answer: faqMessage.list('sections.0.items.8.answer'),
+          question: faqMessage.text('sections.faq-list.items.see-examples.question'),
+          answer: faqMessage.list('sections.faq-list.items.see-examples.answer'),
         },
       ],
     },
     {
       kind: 'links',
       id: 'faq-next',
-      heading: faqMessage.text('sections.1.heading'),
+      heading: faqMessage.text('sections.faq-next.heading'),
       links: [
         {
           id: 'service',
-          label: faqMessage.text('sections.1.links.0.label'),
+          label: faqMessage.text('sections.faq-next.links.service.label'),
           href: STOREFRONT_SERVICE_ROUTE,
-          hint: faqMessage.text('sections.1.links.0.hint'),
+          hint: faqMessage.text('sections.faq-next.links.service.hint'),
         },
         {
           id: 'gallery',
-          label: faqMessage.text('sections.1.links.1.label'),
+          label: faqMessage.text('sections.faq-next.links.gallery.label'),
           href: STOREFRONT_GALLERY_ROUTE,
-          hint: faqMessage.text('sections.1.links.1.hint'),
+          hint: faqMessage.text('sections.faq-next.links.gallery.hint'),
         },
         {
           id: 'commission',
-          label: faqMessage.text('sections.1.links.2.label'),
+          label: faqMessage.text('sections.faq-next.links.commission.label'),
+          // The commission intake is a deliberate 404 while Wave 2 is withheld.
+          release: 'wave2',
           href: STOREFRONT_CUSTOM_REQUEST_ROUTE,
         },
         {
           id: 'policy-payment',
-          label: faqMessage.text('sections.1.links.3.label'),
+          label: faqMessage.text('sections.faq-next.links.policy-payment.label'),
           href: buildStorefrontPolicyPath(POLICY_SLUG.payment),
         },
         {
           id: 'policy-shipping',
-          label: faqMessage.text('sections.1.links.4.label'),
+          label: faqMessage.text('sections.faq-next.links.policy-shipping.label'),
           href: buildStorefrontPolicyPath(POLICY_SLUG.shipping),
         },
         {
           id: 'store',
-          label: faqMessage.text('sections.1.links.5.label'),
+          label: faqMessage.text('sections.faq-next.links.store.label'),
           href: STOREFRONT_STORE_ROUTE,
         },
       ],

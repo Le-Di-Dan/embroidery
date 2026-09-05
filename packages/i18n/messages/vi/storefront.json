@@ -51,8 +51,8 @@
   },
   "homepage": {
     "hero": {
-      "heading": "Xưởng thêu thủ công theo yêu cầu",
-      "lead": "Mỗi tác phẩm được thêu tay theo câu chuyện riêng của bạn — từ ý tưởng đầu tiên đến bản thêu hoàn chỉnh.",
+      "heading": "Thêu tay, làm tại xưởng",
+      "lead": "Những sản phẩm thêu thủ công đã hoàn thiện tại xưởng, sẵn sàng để bạn chọn và đặt mua.",
       "exploreAction": "Khám phá tác phẩm",
       "commissionAction": "Đặt thêu theo yêu cầu"
     },
@@ -74,9 +74,9 @@
     "story": {
       "heading": "Câu chuyện của xưởng",
       "paragraphs": [
-        "{brand} làm việc trực tiếp với từng khách hàng, trên từng tác phẩm một.",
-        "Chúng tôi bắt đầu từ ý tưởng của bạn, dựng bản thiết kế, rồi cùng bạn chỉnh sửa cho đến khi bản thiết kế đúng với điều bạn hình dung.",
-        "Chỉ khi đó khung thêu mới bắt đầu chạy. Không có sản phẩm hàng loạt — mỗi đơn hàng là một lần hợp tác."
+        "{brand} là một xưởng nhỏ. Mỗi sản phẩm được thêu tay tại đây, từng chiếc một.",
+        "Chúng tôi chọn vải, phối chỉ và canh từng đường kim cho tới khi bản thêu đứng vững trên sản phẩm.",
+        "Những gì bạn thấy trên trang này đều đã hoàn thiện và có thể đặt mua ngay."
       ]
     },
     "commission": {
@@ -102,7 +102,7 @@
     "works": {
       "loading": "Đang tải tác phẩm…",
       "empty": "Các tác phẩm sẽ xuất hiện tại đây sau khi được xưởng hoàn thiện.",
-      "error": "Chưa thể tải các tác phẩm. Bạn vẫn có thể khám phá hoặc gửi yêu cầu thêu.",
+      "error": "Chưa thể tải các tác phẩm. Bạn có thể thử lại hoặc xem bộ sưu tập.",
       "imageMissing": "Chưa có ảnh cho tác phẩm này."
     }
   },
@@ -241,14 +241,13 @@
     "regionLabel": "Thông tin cửa hàng",
     "identity": {
       "heading": "{brand}",
-      "descriptor": "Xưởng thêu cá nhân hóa",
-      "fallback": "Thông tin địa chỉ và giờ mở cửa sẽ được cập nhật.",
-      "action": "Ghé xưởng"
+      "descriptor": "Xưởng thêu cá nhân hóa"
     },
     "contact": {
       "heading": "Liên hệ",
-      "fallback": "Gửi yêu cầu trực tuyến để xưởng báo giá, hoặc nhắn cho xưởng qua các kênh ở góc màn hình.",
-      "action": "Gửi yêu cầu thêu"
+      "fallback": "Nhắn cho xưởng qua các kênh ở góc màn hình. Xưởng trả lời trong giờ làm việc.",
+      "action": "Gửi yêu cầu thêu",
+      "commissionFallback": "Gửi yêu cầu trực tuyến để xưởng báo giá, hoặc nhắn cho xưởng qua các kênh ở góc màn hình."
     },
     "service": {
       "heading": "Dịch vụ & hỗ trợ",

@@ -80,7 +80,6 @@ export function OrderQueuePagination({
             ? ORDER_QUEUE_COPY.actions.retry
             : ORDER_QUEUE_COPY.actions.loadMore}
       </button>
-      <p className="order-pagination__note">{ORDER_QUEUE_COPY.states.pagination}</p>
     </div>
   );
 }

@@ -45,10 +45,6 @@ export function OpenFinalPaymentCard({ orderId }: OpenFinalPaymentCardProps) {
         </h2>
         <p className="order-card__help">{COPY.finalPayment.readyHelp}</p>
 
-        <div className="order-fulfillment__gap" data-testid="remaining-amount-gap">
-          <p className="order-fulfillment__gap-title">{COPY.apiGap.title}</p>
-          <p className="order-fulfillment__gap-body">{COPY.apiGap.body}</p>
-        </div>
 
         <div className="order-fulfillment__actions">
           <button

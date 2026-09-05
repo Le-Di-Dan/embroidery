@@ -112,29 +112,40 @@ describe('store facts degrade truthfully', () => {
   });
 
   /**
-   * `Ghé xưởng` is Wave-1 and unconditional. The contact column's request action
-   * is Wave-2, so `APP12-G02-C1` makes it follow the release: the block renders
-   * on every page, which made it the widest-reaching offer of a route the server
-   * refuses. Both states are asserted, and the reversibility of the second is
-   * what keeps the suppression from becoming a deletion.
+   * The identity column no longer carries a `Ghé xưởng` action.
+   *
+   * `V01-UX-027`: it sat immediately beneath "Thông tin địa chỉ và giờ mở cửa
+   * sẽ được cập nhật." — an invitation to visit an address the site had just
+   * admitted it does not have. `APP12-V02` §11 removes both halves rather than
+   * one, and `/cua-hang` is reached from the header navigation instead, so the
+   * route is not orphaned.
+   *
+   * The contact column's request action is Wave-2 and still follows the release
+   * (`APP12-G02-C1`): the block renders on every page, which made it the
+   * widest-reaching offer of a route the server refuses.
    */
-  it('still routes the visitor somewhere real, in both release states', () => {
+  it('offers no visit action while no address is canonical', () => {
+    renderWithProviders(<StorePresentationBlock />);
+
+    expect(screen.queryByRole('link', { name: 'Ghé xưởng' })).toBeNull();
+    expect(screen.queryByText(/sẽ được cập nhật/)).toBeNull();
+  });
+
+  it('follows the release for the commission action, and is reversible', () => {
     withCustomEmbroideryRelease(false, () => {
       renderWithProviders(<StorePresentationBlock />);
-      expect(screen.getByRole('link', { name: 'Ghé xưởng' })).toHaveAttribute('href', '/cua-hang');
       expect(screen.queryByRole('link', { name: 'Gửi yêu cầu thêu' })).toBeNull();
+      // Wave 1 still tells the visitor how to reach the workshop.
+      expect(screen.getByText(/Nhắn cho xưởng qua các kênh/)).toBeInTheDocument();
     });
 
     withCustomEmbroideryRelease(true, () => {
       renderWithProviders(<StorePresentationBlock />);
-      expect(screen.getAllByRole('link', { name: 'Ghé xưởng' })[0]).toHaveAttribute(
-        'href',
-        '/cua-hang',
-      );
       expect(screen.getByRole('link', { name: 'Gửi yêu cầu thêu' })).toHaveAttribute(
         'href',
         '/yeu-cau/moi',
       );
+      expect(screen.getByText(/Gửi yêu cầu trực tuyến/)).toBeInTheDocument();
     });
   });
 });

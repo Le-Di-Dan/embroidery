@@ -46,7 +46,6 @@ export const CATEGORY_COPY = {
     /** `915:372` */
     create: categoriesMessage.text('page.create'),
     /** `915:426` */
-    footnote: categoriesMessage.text('page.footnote'),
   },
   table: {
     /** AUTHORED — the accessible name of the table, never shown visually. */

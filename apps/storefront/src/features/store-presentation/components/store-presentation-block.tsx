@@ -68,9 +68,7 @@ export function StorePresentationBlock() {
         {/* 1 — Store identity. First in source and first on screen at every width. */}
         <StorePresentationColumn heading={identity.heading}>
           <p className="store-presentation__text">{identity.descriptor}</p>
-          {facts.length === 0 ? (
-            <p className="store-presentation__text">{identity.fallback}</p>
-          ) : (
+          {facts.length === 0 ? null : (
             <dl className="store-presentation__facts">
               {facts.map((fact) => (
                 <div className="store-presentation__fact" key={fact.id}>
@@ -88,14 +86,13 @@ export function StorePresentationBlock() {
               ))}
             </dl>
           )}
-          <Link className="store-presentation__link" href={identity.actionHref}>
-            {identity.action}
-          </Link>
         </StorePresentationColumn>
 
         {/* 2 — Contact. Prose plus the request route; the dock keeps the externals. */}
         <StorePresentationColumn heading={contact.heading}>
-          <p className="store-presentation__text">{contact.fallback}</p>
+          <p className="store-presentation__text">
+            {contactActionWithheld ? contact.fallback : contact.commissionFallback}
+          </p>
           {contactActionWithheld ? null : (
             <Link className="store-presentation__link" href={contact.actionHref}>
               {contact.action}

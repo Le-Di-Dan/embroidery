@@ -68,10 +68,6 @@ export const ORDER_FULFILLMENT_COPY = {
    * never subtract the deposit from the total, because a shipping-fee increase
    * supersedes the obligation and falsifies that arithmetic.
    */
-  apiGap: {
-    title: fulfillmentMessage.text('apiGap.title'),
-    body: fulfillmentMessage.text('apiGap.body'),
-  },
   verification: {
     title: fulfillmentMessage.text('verification.title'),
     help: fulfillmentMessage.text('verification.help'),

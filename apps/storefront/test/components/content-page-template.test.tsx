@@ -16,8 +16,24 @@ import {
   getStorefrontPolicy,
   type ContentPage,
 } from '../../src/features/content-pages';
+import { resolveContentPageForRelease } from '../../src/features/content-pages/model/content-page-release';
 
 const ALL_PAGES = [SERVICE_PAGE, FAQ_PAGE, LOCAL_PAGE, ...STOREFRONT_POLICY_PAGES];
+
+/**
+ * The FAQ items the page actually publishes in the current release.
+ *
+ * The definition holds both waves (`APP12-V02` §7.1); the template renders
+ * whichever list is true of the release under test. Counting from here rather
+ * than from a literal is what stops these tests asserting the *number* of
+ * questions, which is a Product Owner decision, instead of the disclosure
+ * behaviour, which is theirs to keep.
+ */
+function publishedFaqItems() {
+  return resolveContentPageForRelease(FAQ_PAGE).sections.flatMap((section) =>
+    section.kind === 'faq' ? section.items : [],
+  );
+}
 
 /**
  * One policy page, by slug and narrowed. Indexing `STOREFRONT_POLICY_PAGES`
@@ -96,7 +112,12 @@ describe('the FAQ disclosure', () => {
     const { container } = renderWithProviders(<ContentPageScreen page={FAQ_PAGE} />);
     const triggers = triggersIn(container);
 
-    expect(triggers).toHaveLength(9);
+    // Counted from the page as published rather than hard-coded. `APP12-V02`
+    // §7.1 gives the FAQ a Wave-1 list and withholds the Wave-2 one, so the
+    // number is a release fact; what this test is actually about is that every
+    // question rendered is a real disclosure over a panel that exists.
+    expect(triggers.length).toBe(publishedFaqItems().length);
+    expect(triggers.length).toBeGreaterThan(0);
     for (const trigger of triggers) {
       expect(trigger).toHaveAttribute('role', 'button');
       expect(trigger).toHaveAttribute('aria-expanded', 'false');
@@ -131,13 +152,11 @@ describe('the FAQ disclosure', () => {
   it('keeps every answer in the DOM while collapsed', () => {
     renderWithProviders(<ContentPageScreen page={FAQ_PAGE} />);
 
-    // Nine questions, nine answers, none removed by being closed — a crawler and
-    // an un-hydrated visitor read the whole page.
-    const items = FAQ_PAGE.sections.flatMap((section) =>
-      section.kind === 'faq' ? section.items : [],
-    );
+    // Every question, every answer, none removed by being closed — a crawler
+    // and an un-hydrated visitor read the whole page.
+    const items = publishedFaqItems();
 
-    expect(items).toHaveLength(9);
+    expect(items.length).toBeGreaterThan(0);
     for (const item of items) {
       const [firstParagraph] = item.answer;
       expect(firstParagraph).toBeDefined();
@@ -155,10 +174,15 @@ describe('the FAQ disclosure', () => {
 });
 
 describe('the store-information block', () => {
-  it('renders the truthful fallback while no store fact is canonical', () => {
-    renderWithProviders(<ContentPageScreen page={LOCAL_PAGE} />);
+  it('renders nothing at all while no store fact is canonical', () => {
+    // It used to render a fallback sentence saying the address and opening
+    // hours would arrive later. `V01-UX-027` recorded that as published
+    // placeholder copy and `APP12-V02` §11 forbids it, so the block is omitted
+    // and the page's other sections carry it.
+    const { container } = renderWithProviders(<ContentPageScreen page={LOCAL_PAGE} />);
 
-    expect(screen.getByText(/sẽ được cập nhật tại đây/)).toBeInTheDocument();
+    expect(container.querySelector('.content-page__store')).toBeNull();
+    expect(screen.queryByText(/sẽ được cập nhật/)).toBeNull();
   });
 
   it('renders no empty fact row, no placeholder and no tel:/mailto: link', () => {

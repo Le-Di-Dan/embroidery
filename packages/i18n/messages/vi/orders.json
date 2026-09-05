@@ -35,7 +35,7 @@
       "AWAITING_SHIPPING_FEE": {
         "pill": "Chờ xưởng báo phí giao hàng",
         "body": "Xưởng đang tính phí giao hàng cho địa chỉ của bạn.",
-        "note": "Chưa có mã QR và chưa có tổng tiền — cả hai chỉ xuất hiện sau khi phí được xác nhận."
+        "note": "Xưởng sẽ báo phí giao hàng cho địa chỉ của bạn, rồi mở thanh toán tại đây."
       },
       "AWAITING_PAYMENT": {
         "pill": "Chờ thanh toán",

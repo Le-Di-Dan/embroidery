@@ -41,6 +41,8 @@
  * six components.
  */
 
+import type { ContentRelease } from './content-page-release';
+
 /** One internal link out of a content page. External links are never modelled. */
 export interface ContentLink {
   readonly id: string;
@@ -49,6 +51,14 @@ export interface ContentLink {
   readonly href: string;
   /** Optional one-line description rendered beneath the link label. */
   readonly hint?: string;
+  /**
+   * The release this link belongs to; absent means both (`APP12-V02` §7.1).
+   *
+   * A link to a withheld route is a dead anchor, and `content-page-release.ts`
+   * is what removes it. See that file for why the Wave-2 content is marked
+   * rather than deleted.
+   */
+  readonly release?: ContentRelease;
 }
 
 /** One question and its answer. The answer stays in the DOM at all times. */
@@ -65,6 +75,8 @@ export interface ContentFaqItem {
 export interface ContentProseSection {
   readonly kind: 'prose';
   readonly id: string;
+  /** The release this section belongs to; absent means both. */
+  readonly release?: ContentRelease;
   readonly heading: string;
   readonly paragraphs: readonly string[];
   readonly bullets?: readonly string[];
@@ -74,6 +86,8 @@ export interface ContentProseSection {
 export interface ContentFaqSection {
   readonly kind: 'faq';
   readonly id: string;
+  /** The release this section belongs to; absent means both. */
+  readonly release?: ContentRelease;
   readonly heading: string;
   readonly items: readonly ContentFaqItem[];
 }
@@ -81,20 +95,25 @@ export interface ContentFaqSection {
 /**
  * The store-information block. Only `/cua-hang` instantiates it, and it carries
  * no values of its own: it renders whatever `resolveStoreFacts` finds canonical,
- * which today is nothing (see `store-facts.ts`).
+ * which today is nothing (see `store-facts.ts`) — in which case the block is not
+ * rendered at all (`V01-UX-027`, `APP12-V02` §11). It once carried a fallback
+ * sentence for that case; publishing "the address will be updated" is exactly
+ * what §11 forbids.
  */
 export interface ContentStoreInfoSection {
   readonly kind: 'store-info';
   readonly id: string;
+  /** The release this section belongs to; absent means both. */
+  readonly release?: ContentRelease;
   readonly heading: string;
-  /** Shown when no store fact is canonical, so the block is never empty. */
-  readonly fallback: string;
 }
 
 /** Related internal navigation. Every page instantiates exactly one. */
 export interface ContentLinksSection {
   readonly kind: 'links';
   readonly id: string;
+  /** The release this section belongs to; absent means both. */
+  readonly release?: ContentRelease;
   readonly heading: string;
   readonly links: readonly ContentLink[];
 }

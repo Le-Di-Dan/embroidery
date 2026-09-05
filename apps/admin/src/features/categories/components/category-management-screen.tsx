@@ -84,7 +84,6 @@ export function CategoryManagementScreen() {
             }}
             onRetry={() => void inventory.refetch()}
           />
-          <p className="categories__footnote">{CATEGORY_COPY.page.footnote}</p>
         </div>
 
         {panelOpen ? (

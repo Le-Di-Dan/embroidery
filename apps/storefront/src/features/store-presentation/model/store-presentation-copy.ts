@@ -5,7 +5,6 @@ import {
   STOREFRONT_FAQ_ROUTE,
   STOREFRONT_GALLERY_ROUTE,
   STOREFRONT_SERVICE_ROUTE,
-  STOREFRONT_STORE_ROUTE,
   buildStorefrontPolicyPath,
 } from '../../storefront-shell/model/storefront-navigation';
 import { POLICY_IDS, POLICY_SLUG } from '../../content-pages';
@@ -69,10 +68,22 @@ export const STORE_PRESENTATION_COPY = {
   identity: {
     heading: storePresentationMessage.text('identity.heading'),
     descriptor: storePresentationMessage.text('identity.descriptor'),
-    /** Rendered only when no store fact is canonical, so the column is never bare. */
-    fallback: storePresentationMessage.text('identity.fallback'),
-    action: storePresentationMessage.text('identity.action'),
-    actionHref: STOREFRONT_STORE_ROUTE,
+    /*
+     * There is deliberately no fallback sentence and no visit action here any
+     * more (`V01-UX-027`, `APP12-V02` §11).
+     *
+     * The column used to publish "Thông tin địa chỉ và giờ mở cửa sẽ được cập
+     * nhật." on every route, immediately above a `Ghé xưởng` link inviting the
+     * customer to come in person. A public site that admits its own address is
+     * missing, next to an invitation to visit it, undercuts the tone of
+     * everything around it — and §11 forbids both halves: no "sẽ cập nhật" as
+     * production copy, and no invitation to an address nobody has.
+     *
+     * The store facts are still external pre-R01 input. When one becomes
+     * canonical, `resolveStoreFacts()` publishes the rows here with no change
+     * to this file, and the visit action is a separate Product Owner decision
+     * rather than something that returns by accident.
+     */
   },
   contact: {
     heading: storePresentationMessage.text('contact.heading'),
@@ -82,6 +93,12 @@ export const STORE_PRESENTATION_COPY = {
      * describes the dock without duplicating its links.
      */
     fallback: storePresentationMessage.text('contact.fallback'),
+    /**
+     * The same column once the commission intake is released: the request form
+     * becomes the fastest way to reach the workshop, and the sentence says so.
+     * Wave 1 has no such form, so it names only the channels that exist.
+     */
+    commissionFallback: storePresentationMessage.text('contact.commissionFallback'),
     action: storePresentationMessage.text('contact.action'),
     actionHref: STOREFRONT_CUSTOM_REQUEST_ROUTE,
   },

@@ -41,7 +41,9 @@ function textOf(page: ContentPage): string[] {
         for (const item of section.items) parts.push(item.question, ...item.answer);
         break;
       case 'store-info':
-        parts.push(section.fallback);
+        // The block carries no copy of its own beyond its heading: it renders
+        // whatever `resolveStoreFacts()` finds canonical, and nothing when that
+        // is empty (`V01-UX-027`, `APP12-V02` §11).
         break;
       case 'links':
         for (const link of section.links) {
