@@ -991,3 +991,39 @@ APP12-V02-C1     COMPLETE
 CORRECTION_USED  1 / 1        (no V02-C2)
 APP12-G03        NEXT — still NOT STARTED
 ```
+
+---
+
+## Correction notice — `APP12-V02-C2`
+
+The block above closed as `COMPLETE_AFTER_C1` with `CORRECTION_USED 1 / 1`. The
+Human Product Owner subsequently tested live, found a release-critical media
+defect, and authorised a **one-time exception** raising `V02_MAX_CORRECTIONS` to
+2. Nothing in V02's or V02-C1's evidence changes; this notice records what came
+after it.
+
+`APP12-V02-C2` — *Media Upload, Processing & Image Delivery Reliability
+Correction*. Full account:
+`docs/implementation/reports/APP12-V02-C2-COMPLETION-REPORT.md`.
+
+The reported symptom — an Admin image upload answering *"Dịch vụ lưu trữ ảnh tạm
+thời không khả dụng"* — was never object storage. MinIO was healthy throughout.
+Four defects and two non-defects:
+
+| | Finding |
+|---|---|
+| D1 | Identity sequences behind their rows, so the upload failed on the **primary key** — which the business-scoped `ON CONFLICT` does not cover — and escaped as a 500 in ~4 ms. `db-restore` verified row counts and the migration journal and never sequence parity. |
+| D2 | Any unrecognised 5xx rendered as a storage outage. That one fallback is what pointed the investigation at MinIO. |
+| D3 | No Admin binary preview contract for catalog assets, so four Admin surfaces drew a permanent placeholder — including the dialog where an operator *chooses* a product image. |
+| D4 | The encoder measured every derivative and the promotion discarded it, so `APP12-H05-C1`'s intrinsic-dimension publication was inert for the whole catalog lane. |
+| — | Storefront product cards: `LEGITIMATE_NO_MEDIA_DATA`, not a defect. |
+| — | Gallery: never broken; serving real pixels throughout. |
+
+```text
+APP12-V02        COMPLETE_AFTER_C2
+APP12-V02-C2     COMPLETE
+CORRECTION_USED  2 / 2        (no V02-C3)
+OpenAPI          126 paths · 139 operations · 278 schemas · 49 public (+1 Admin operation)
+migrations       38 · tables 79 · both unchanged
+APP12-G03        NEXT — still NOT STARTED
+```
