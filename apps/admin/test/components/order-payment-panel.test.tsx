@@ -20,6 +20,7 @@ import {
 } from '@embroidery/frontend-testing';
 import { adminOrderDetail, adminOrderPaymentRead } from '@embroidery/api-client';
 
+import { paymentTerminologyFor } from '../../src/features/order-detail/model/payment-terminology';
 import { OrderDetailScreen } from '../../src/features/order-detail';
 import { ORDER_DETAIL_COPY as COPY } from '../../src/features/order-detail/model/order-detail-copy';
 import {
@@ -42,6 +43,9 @@ jest.mock('@embroidery/api-client', () => ({
   adminOrderDetail: jest.fn(),
   adminOrderPaymentRead: jest.fn(),
 }));
+
+/** The custom branch keeps the deposit wording APP7 shipped (§24). */
+const CUSTOM_TERMS = paymentTerminologyFor('CUSTOM');
 
 const detailMock = adminOrderDetail as jest.MockedFunction<typeof adminOrderDetail>;
 const paymentsMock = adminOrderPaymentRead as jest.MockedFunction<typeof adminOrderPaymentRead>;
@@ -171,7 +175,7 @@ describe('evidence', () => {
     expect(screen.getByTestId(`evidence-preview-${EVIDENCE_REJECTED_ID}`)).toBeDisabled();
     // A rejected image is not a payment failure.
     expect(screen.getByTestId('open-verify-dialog')).toBeEnabled();
-    expect(screen.getByText(COPY.evidence.rejectedNote)).toBeInTheDocument();
+    expect(screen.getByText(CUSTOM_TERMS.evidenceRejectedNote)).toBeInTheDocument();
   });
 
   it('enables the preview only for an eligible image, and never shows an asset id', async () => {

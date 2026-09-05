@@ -6,12 +6,16 @@ import type { AdminOrderPaymentsResponse } from '@embroidery/api-client';
 
 import { formatAmountWithCurrency } from '../../../shared/presentation/exact-amount';
 import { AdminStatusBadge } from '../../../shared/status/admin-status-badge';
-import { STATUS_SYMBOLS } from '../../../shared/presentation/order-status';
 import { READY_MADE_DETAIL_COPY as COPY } from '../model/ready-made-detail-copy';
 import { selectActionableAttempt } from '../model/actionable-attempt';
+import { paymentTerminologyFor } from '../model/payment-terminology';
+import { presentAttemptStatus, presentObligationStatus } from '../model/payment-vocabulary';
 import { DefinitionRow } from './definition-row';
 import { PaymentEvidenceList } from './payment-evidence-list';
 import { VerifyDepositDialog } from './verify-deposit-dialog';
+
+/** This workbench is the Ready-Made composition; the branch is stated, not implied. */
+const READY_MADE_ORIGIN = 'READY_MADE';
 
 interface FullPaymentPanelProps {
   readonly orderId: string;
@@ -63,6 +67,10 @@ interface FullPaymentPanelProps {
  * which is a durable business outcome and not a form error.
  */
 export function FullPaymentPanel({ orderId, payments, onMetadataStale }: FullPaymentPanelProps) {
+  // A Ready-Made order has no deposit, and this panel exists only on that
+  // branch — but §24 requires the branch to be explicit rather than implied by
+  // which component is mounted, so the origin is named.
+  const terms = paymentTerminologyFor(READY_MADE_ORIGIN);
   // The **attempt id**, not a boolean. A verification that settles makes the
   // attempt stop being actionable, so a dialog gated on `actionable` would
   // unmount at the exact moment it had an outcome to report — the operator
@@ -91,6 +99,7 @@ export function FullPaymentPanel({ orderId, payments, onMetadataStale }: FullPay
   // workbench uses, and it addresses the same list.
   const current = payments.attempts.at(-1);
   const settled = obligation.status === 'SATISFIED';
+  const obligationStatus = presentObligationStatus(obligation.status);
 
   return (
     <section className="order-card" aria-labelledby="full-payment-heading">
@@ -103,16 +112,25 @@ export function FullPaymentPanel({ orderId, payments, onMetadataStale }: FullPay
           {formatAmountWithCurrency(obligation.expectedAmount, obligation.expectedCurrencyCode)}
         </DefinitionRow>
         <DefinitionRow label={COPY.payment.status} testId="full-payment-status">
+          {/* The shared obligation vocabulary (`V01-UX-005`, §20). This badge
+              printed `obligation.status` as its own label, so the operator read
+              `PENDING` — a stored contract value — where a Vietnamese state
+              belongs. The tone and the symbol come from the same table now, so
+              the FULL obligation and the deposit beside it cannot drift. */}
           <AdminStatusBadge
-            token={obligation.status}
-            label={obligation.status}
-            tone={settled ? 'success' : 'warning'}
-            symbol={settled ? STATUS_SYMBOLS.succeeded : STATUS_SYMBOLS.waiting}
+            token={obligationStatus.token}
+            label={obligationStatus.label}
+            tone={obligationStatus.tone}
+            symbol={obligationStatus.symbol}
             testId="full-payment-obligation-badge"
           />
         </DefinitionRow>
         <DefinitionRow label={COPY.payment.reference} testId="full-payment-reference">
-          {obligation.expectedTransferReference}
+          {/* The one string an operator matches against a bank statement, and
+              V01 measured it wrapping mid-token across two lines inside the
+              300px rail. It is unbreakable now and scrolls rather than wraps
+              (`V01-UX-010`). */}
+          <span className="order-card__reference">{obligation.expectedTransferReference}</span>
         </DefinitionRow>
       </dl>
 
@@ -125,7 +143,9 @@ export function FullPaymentPanel({ orderId, payments, onMetadataStale }: FullPay
           <h3 className="order-card__subtitle">{COPY.payment.attemptHeading}</h3>
           <dl className="order-card__definitions">
             <DefinitionRow label={COPY.payment.attemptStatus} testId="full-attempt-status">
-              {current.status}
+              {/* Same correction, one level down: the attempt state was rendered
+                  as its raw token too. */}
+              {presentAttemptStatus(current.status).label}
             </DefinitionRow>
             <DefinitionRow label={COPY.payment.attemptAmount} testId="full-attempt-amount">
               {formatAmountWithCurrency(current.amount, current.currencyCode)}
@@ -138,8 +158,12 @@ export function FullPaymentPanel({ orderId, payments, onMetadataStale }: FullPay
             orderId={orderId}
             evidence={current.evidence}
             onMetadataStale={onMetadataStale}
+            terms={terms}
           />
-          <p className="order-card__note">{COPY.payment.evidenceNote}</p>
+          {/* The evidence list directly above already carries both notes —
+              which images can be opened, and that a rejected one is not a
+              failed payment. A third paragraph repeating it was one of the nine
+              explanations `V01-UX-010` counted against two actions. */}
         </section>
       )}
 
@@ -156,23 +180,27 @@ export function FullPaymentPanel({ orderId, payments, onMetadataStale }: FullPay
           data-testid="full-payment-verify"
           onClick={() => setVerifyingAttemptId(actionable.attemptId)}
         >
-          {COPY.payment.verify}
+          {terms.submit}
         </button>
       )}
 
       {settled ? (
         <p className="order-card__settled" data-testid="full-payment-settled">
-          {COPY.payment.settled}
+          {terms.settledNote}
         </p>
       ) : null}
 
-      <p className="order-card__note">{COPY.payment.note}</p>
+      {/* The one-payment rule explains the *absence* of an obligation, which is
+          why it stays in the empty branch above and not here: once the
+          obligation exists the screen is showing it, and the sentence is
+          restating what the operator is looking at (`V01-UX-004`, §23). */}
 
       {verifyingAttemptId === null ? null : (
         <VerifyDepositDialog
           orderId={orderId}
           attemptId={verifyingAttemptId}
           payments={payments}
+          terms={terms}
           onClose={() => setVerifyingAttemptId(null)}
         />
       )}

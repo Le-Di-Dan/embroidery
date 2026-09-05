@@ -6,6 +6,7 @@ import { useOrderPaymentsQuery, useOrderRefresh } from '../hooks/use-order-detai
 import { selectActionableAttempt } from '../model/actionable-attempt';
 import { ORDER_DETAIL_COPY as COPY } from '../model/order-detail-copy';
 import { classifyOrderReadFailure } from '../model/order-detail-failure';
+import { paymentTerminologyFor } from '../model/payment-terminology';
 import { DepositSummaryCard } from './deposit-summary-card';
 import { PaymentActionCard } from './payment-action-card';
 import { PaymentAttemptList } from './payment-attempt-list';
@@ -14,6 +15,13 @@ import { ReconciliationHistory } from './reconciliation-history';
 
 interface DepositPaymentPanelProps {
   readonly orderId: string;
+  /**
+   * The order origin's payment vocabulary (`V01-UX-006`, `APP12-V02` §24).
+   *
+   * Passed down rather than derived: §24 requires the branch to be explicit,
+   * and `origin` is the only authority for it.
+   */
+  readonly origin: string;
 }
 
 /**
@@ -42,7 +50,8 @@ interface DepositPaymentPanelProps {
  * re-read — a refetch of the same query, not a mutation. Opening or failing to
  * open an image changes no payment state anywhere.
  */
-export function DepositPaymentPanel({ orderId }: DepositPaymentPanelProps) {
+export function DepositPaymentPanel({ orderId, origin }: DepositPaymentPanelProps) {
+  const terms = paymentTerminologyFor(origin);
   const query = useOrderPaymentsQuery(orderId);
   const { refreshPayments } = useOrderRefresh(orderId);
 
@@ -99,8 +108,9 @@ export function DepositPaymentPanel({ orderId }: DepositPaymentPanelProps) {
         orderId={orderId}
         evidence={payments.attempts.flatMap((candidate) => candidate.evidence)}
         onMetadataStale={handleMetadataStale}
+        terms={terms}
       />
-      <PaymentActionCard orderId={orderId} payments={payments} attempt={attempt} />
+      <PaymentActionCard orderId={orderId} payments={payments} attempt={attempt} terms={terms} />
       <ReconciliationHistory reconciliations={payments.reconciliations} />
     </div>
   );

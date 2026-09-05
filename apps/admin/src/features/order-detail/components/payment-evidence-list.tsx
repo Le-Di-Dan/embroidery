@@ -8,6 +8,7 @@ import { formatInstant } from '../../../shared/presentation/instant';
 import { AdminStatusBadge } from '../../../shared/status/admin-status-badge';
 import { ORDER_DETAIL_COPY as COPY } from '../model/order-detail-copy';
 import { presentEvidenceStatus } from '../model/payment-vocabulary';
+import type { PaymentTerminology } from '../model/payment-terminology';
 import { EvidencePreviewDialog } from './evidence-preview-dialog';
 
 interface PaymentEvidenceListProps {
@@ -15,6 +16,15 @@ interface PaymentEvidenceListProps {
   readonly evidence: readonly AdminPaymentEvidenceResponse[];
   /** Re-reads the payment metadata when a preview proves `previewEligible` stale. */
   readonly onMetadataStale: () => void;
+  /**
+   * The order origin's own vocabulary (`V01-UX-006`, `APP12-V02` §24).
+   *
+   * Two of this list's sentences named a deposit, and a Ready-Made order has
+   * none — the empty state told the operator they could confirm a deposit
+   * without a photo on a screen that elsewhere says the order has no deposit.
+   * The caller passes the branch; nothing here infers one.
+   */
+  readonly terms: PaymentTerminology;
 }
 
 /** Bytes per binary kilobyte and megabyte — display units, not business values. */
@@ -64,6 +74,7 @@ export function PaymentEvidenceList({
   orderId,
   evidence,
   onMetadataStale,
+  terms,
 }: PaymentEvidenceListProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const eligible = evidence.filter((item) => item.previewEligible);
@@ -77,7 +88,7 @@ export function PaymentEvidenceList({
         <p className="order-card__help">{COPY.sections.evidenceHelp}</p>
         <div className="order-evidence__empty" data-testid="order-evidence-empty">
           <p className="order-evidence__empty-title">{COPY.evidence.empty}</p>
-          <p className="order-evidence__empty-body">{COPY.evidence.emptyBody}</p>
+          <p className="order-evidence__empty-body">{terms.evidenceEmptyBody}</p>
         </div>
       </section>
     );
@@ -142,7 +153,7 @@ export function PaymentEvidenceList({
       </ul>
 
       <p className="order-card__note">{COPY.evidence.authorityNote}</p>
-      <p className="order-card__note">{COPY.evidence.rejectedNote}</p>
+      <p className="order-card__note">{terms.evidenceRejectedNote}</p>
 
       {openIndex === null || eligible[openIndex] === undefined ? null : (
         <EvidencePreviewDialog

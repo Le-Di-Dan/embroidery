@@ -18,6 +18,20 @@ $order-detail-stack: 1180px;
 // The width the frozen column holds while both columns are side by side.
 $order-detail-frozen-column: 660px;
 
+// The width the *commercial* column holds on the Ready-Made branch.
+//
+// `V01-UX-010` measured the custom split applied to Ready-Made commerce: nine
+// explanatory blocks, the fee card, the whole FULL workbench and the fulfilment
+// rail compressed into the narrow column, against a left column that ended at
+// y≈810 while the rail ran to y≈1590 — roughly 780×780 CSS pixels of empty
+// canvas beside the densest content in the audit, and a transfer reference
+// wrapping mid-token because 300px could not hold it.
+//
+// The split is not wrong for the custom lifecycle, where the rail carries short
+// summaries. It is wrong for an order whose entire commercial decision lives
+// there, so the Ready-Made branch reverses which column is wide.
+$order-detail-commerce-column: 720px;
+
 .order-detail {
   display: flex;
   flex-direction: column;
@@ -84,9 +98,30 @@ $order-detail-frozen-column: 660px;
   min-width: 0;
 }
 
+// The Ready-Made branch: the decision takes the wide column and the frozen
+// facts become the quieter rail beside it (`V01-UX-010`, `APP12-V02` §23).
+//
+// The DOM order matches — payment first — so the operator meets the required
+// action before the record of what was bought, and a screen reader reads them in
+// that order too. Neither column is re-parented and no card moved feature: this
+// is the same two children in the same grid, with the basis swapped.
+.order-detail__columns--commerce {
+  .order-detail__payments {
+    flex: 0 1 $order-detail-commerce-column;
+  }
+
+  .order-detail__frozen {
+    flex: 1 1 0;
+  }
+}
+
 @media (max-width: $order-detail-stack) {
   .order-detail__frozen,
-  .order-detail__payments {
+  .order-detail__payments,
+  // Same specificity as the commerce rule above, or the swap would keep the
+  // two columns side by side below the threshold that exists to stop them.
+  .order-detail__columns--commerce .order-detail__frozen,
+  .order-detail__columns--commerce .order-detail__payments {
     flex-basis: 100%;
   }
 }

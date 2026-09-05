@@ -90,3 +90,18 @@ export function makeBlockedCase(): AdminCustomerMergeCaseResponse {
     }),
   });
 }
+
+/**
+ * The same participant with no display name at all.
+ *
+ * `exactOptionalPropertyTypes` is on, so `{ displayName: undefined }` is not a
+ * legal override — and it would be the wrong fixture anyway: the contract's
+ * absent name is a missing property, which is what a Wave-1 customer minted
+ * from a verified contact actually has (`V01-UX-032`).
+ */
+export function withoutDisplayName(
+  participant: MergeParticipantResponse,
+): MergeParticipantResponse {
+  const { displayName: _omitted, ...rest } = participant;
+  return rest;
+}

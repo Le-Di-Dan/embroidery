@@ -48,6 +48,7 @@ import {
   SURVIVOR_MASK,
   makeLoser,
   makeSurvivor,
+  withoutDisplayName,
   makeBlockedCase,
   makeMergeCase,
   makePreview,
@@ -303,8 +304,8 @@ describe('a nameless participant (`V01-UX-032`, `APP12-V02` §21.4)', () => {
     detailMock.mockResolvedValue(
       envelope(
         makeMergeCase({
-          survivor: makeSurvivor({ displayName: undefined }),
-          loser: makeLoser({ displayName: undefined }),
+          survivor: withoutDisplayName(makeSurvivor()),
+          loser: withoutDisplayName(makeLoser()),
         }),
       ),
     );
@@ -328,8 +329,8 @@ describe('a nameless participant (`V01-UX-032`, `APP12-V02` §21.4)', () => {
     detailMock.mockResolvedValue(
       envelope(
         makeMergeCase({
-          survivor: makeSurvivor({ displayName: undefined }),
-          loser: makeLoser({ displayName: undefined }),
+          survivor: withoutDisplayName(makeSurvivor()),
+          loser: withoutDisplayName(makeLoser()),
         }),
       ),
     );

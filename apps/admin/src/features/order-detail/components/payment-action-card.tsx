@@ -9,6 +9,7 @@ import type {
 
 import { ORDER_DETAIL_COPY as COPY } from '../model/order-detail-copy';
 import { ReviewAttemptDialog } from './review-attempt-dialog';
+import type { PaymentTerminology } from '../model/payment-terminology';
 import { VerifyDepositDialog } from './verify-deposit-dialog';
 
 interface PaymentActionCardProps {
@@ -16,6 +17,8 @@ interface PaymentActionCardProps {
   readonly payments: AdminOrderPaymentsResponse;
   /** The attempt the controls address, or `undefined` when none is open. */
   readonly attempt: AdminPaymentAttemptResponse | undefined;
+  /** The origin's payment vocabulary, forwarded to the verification dialog. */
+  readonly terms: PaymentTerminology;
 }
 
 const REQUIRES_REVIEW = 'REQUIRES_REVIEW';
@@ -61,7 +64,7 @@ const REQUIRES_REVIEW = 'REQUIRES_REVIEW';
  */
 type OpenDialog = { readonly kind: 'verify' | 'review'; readonly attemptId: string };
 
-export function PaymentActionCard({ orderId, payments, attempt }: PaymentActionCardProps) {
+export function PaymentActionCard({ orderId, payments, attempt, terms }: PaymentActionCardProps) {
   const [openDialog, setOpenDialog] = useState<OpenDialog | null>(null);
 
   const dialogs =
@@ -72,6 +75,7 @@ export function PaymentActionCard({ orderId, payments, attempt }: PaymentActionC
             orderId={orderId}
             attemptId={openDialog.attemptId}
             payments={payments}
+            terms={terms}
             onClose={() => setOpenDialog(null)}
           />
         ) : (
@@ -98,7 +102,7 @@ export function PaymentActionCard({ orderId, payments, attempt }: PaymentActionC
 
       {attempt === undefined ? (
         <p className="order-card__note" data-testid="order-actions-settled">
-          {COPY.actions.settledNote}
+          {terms.settledNote}
         </p>
       ) : (
         <>
@@ -116,7 +120,7 @@ export function PaymentActionCard({ orderId, payments, attempt }: PaymentActionC
               data-testid="open-verify-dialog"
               onClick={() => setOpenDialog({ kind: 'verify', attemptId: attempt.attemptId })}
             >
-              {awaitingReview ? COPY.actions.reopenVerify : COPY.actions.verify}
+              {awaitingReview ? terms.reopenSubmit : terms.submit}
             </button>
             <button
               type="button"

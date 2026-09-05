@@ -20,6 +20,7 @@ import {
   renderWithProviders,
   screen,
   waitFor,
+  within,
 } from '@embroidery/frontend-testing';
 import {
   adminOrderDetail,
@@ -301,7 +302,12 @@ describe('once a FULL obligation exists', () => {
 
     renderWithProviders(<OrderDetailScreen orderId={ORDER_ID} />);
 
-    expect(await screen.findByTestId('full-attempt-status')).toHaveTextContent('PENDING');
+    // The Vietnamese state, not the stored token (`V01-UX-005`, §20): this row
+    // printed `PENDING` at the operator until `APP12-V02` gave the FULL
+    // workbench the same vocabulary the deposit workbench beside it uses.
+    const attemptStatus = await screen.findByTestId('full-attempt-status');
+    expect(attemptStatus).toHaveTextContent('chờ đối chiếu');
+    expect(attemptStatus).not.toHaveTextContent('PENDING');
     expect(screen.getByTestId('full-payment-verify')).toBeInTheDocument();
   });
 
@@ -391,5 +397,79 @@ describe('once a FULL obligation exists', () => {
     // The work is done, so the money-moving control is gone rather than
     // disabled — even if another operator did it.
     expect(screen.queryByTestId('full-payment-verify')).not.toBeInTheDocument();
+  });
+});
+
+describe('the payment vocabulary on a Ready-Made order (`V01-UX-006`, §24)', () => {
+  /** Every form of the word the deposit workbench uses, and none of them is true here. */
+  const DEPOSIT_WORDS = [/tiền cọc/iu, /số tiền cọc/iu, /nghĩa vụ cọc/iu];
+
+  it('never says "tiền cọc" anywhere on the panel — a Ready-Made order has none', async () => {
+    // `APP12-A02-C1` reused the delivered APP7 workbench, which was right; what
+    // came with it was its vocabulary. V01 measured five strings calling a FULL
+    // obligation a deposit, on the same screen that elsewhere states the order
+    // has no deposit at all.
+    detailMock.mockResolvedValue(envelope(readyMadeOrder({ status: 'AWAITING_PAYMENT' })));
+    paymentsMock.mockResolvedValue(
+      envelope(
+        fullPayments('PENDING', [
+          {
+            attemptId: '019f0000-0000-7000-8000-0000000000d1',
+            method: 'BANK_TRANSFER',
+            status: 'PENDING',
+            amount: FULL_AMOUNT,
+            currencyCode: 'VND',
+            createdAt: '2026-09-01T12:00:00.000Z',
+            updatedAt: '2026-09-01T12:00:00.000Z',
+            evidence: [],
+          },
+        ]),
+      ),
+    );
+    shippingMock.mockResolvedValue(envelope(makeShippingDetail({ feeAmount: '35000.00' })));
+
+    renderWithProviders(<OrderDetailScreen orderId={ORDER_ID} />);
+    await screen.findByTestId('full-payment-verify');
+
+    const rendered = document.body.textContent ?? '';
+    for (const word of DEPOSIT_WORDS) {
+      expect(rendered).not.toMatch(word);
+    }
+  });
+
+  it('opens a verification dialog titled and submitted in the truthful words', async () => {
+    const user = createUser();
+    detailMock.mockResolvedValue(envelope(readyMadeOrder({ status: 'AWAITING_PAYMENT' })));
+    paymentsMock.mockResolvedValue(
+      envelope(
+        fullPayments('PENDING', [
+          {
+            attemptId: '019f0000-0000-7000-8000-0000000000d1',
+            method: 'BANK_TRANSFER',
+            status: 'PENDING',
+            amount: FULL_AMOUNT,
+            currencyCode: 'VND',
+            createdAt: '2026-09-01T12:00:00.000Z',
+            updatedAt: '2026-09-01T12:00:00.000Z',
+            evidence: [],
+          },
+        ]),
+      ),
+    );
+    shippingMock.mockResolvedValue(envelope(makeShippingDetail({ feeAmount: '35000.00' })));
+
+    renderWithProviders(<OrderDetailScreen orderId={ORDER_ID} />);
+    await user.click(await screen.findByTestId('full-payment-verify'));
+
+    const dialog = within(await screen.findByTestId('verify-dialog'));
+    expect(dialog.getByRole('heading', { level: 2 })).toHaveTextContent(
+      'Xác nhận đã nhận thanh toán',
+    );
+    expect(dialog.getByTestId('verify-expected-amount')).toHaveTextContent('Số tiền cần đối chiếu');
+    expect(dialog.getByTestId('verify-submit')).toHaveTextContent('Xác nhận đã nhận thanh toán');
+
+    // The expected/observed separation the deposit dialog established is
+    // untouched — only the words changed, never the reconciliation.
+    expect(dialog.getByTestId('verify-observed-amount')).toBeInTheDocument();
   });
 });

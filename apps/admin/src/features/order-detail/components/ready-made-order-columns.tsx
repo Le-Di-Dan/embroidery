@@ -58,12 +58,18 @@ export function ReadyMadeOrderColumns({ orderId, order }: ReadyMadeOrderColumnsP
   const detail = shipping.data ?? null;
 
   return (
-    <div className="order-detail__columns">
-      <div className="order-detail__frozen">
-        <ReadyMadeFrozenFactsCard order={order} shipping={detail} />
-        <OrderItemsTable items={order.items} />
-      </div>
+    <div className="order-detail__columns order-detail__columns--commerce">
+      {/*
+        Payment first, in the wide column (`V01-UX-010`, `APP12-V02` §23).
 
+        The custom split gives the rail short lifecycle summaries; a Ready-Made
+        order puts its whole commercial decision there, and V01 measured the
+        result — the fee card, the FULL workbench and the fulfilment rail in a
+        300px column running to y≈1590, beside a left column that ended at y≈810.
+        Swapping the basis and the DOM order means the operator meets the
+        required action before the record of what was bought, and a screen reader
+        reads them in that order too.
+      */}
       <div className="order-detail__payments">
         {payments.isPending ? (
           <p className="order-card__help" role="status" data-testid="ready-made-payments-loading">
@@ -109,6 +115,11 @@ export function ReadyMadeOrderColumns({ orderId, order }: ReadyMadeOrderColumnsP
         )}
 
         <ReadyMadeFulfillmentPanel order={order} detail={detail} />
+      </div>
+
+      <div className="order-detail__frozen">
+        <ReadyMadeFrozenFactsCard order={order} shipping={detail} />
+        <OrderItemsTable items={order.items} />
       </div>
     </div>
   );

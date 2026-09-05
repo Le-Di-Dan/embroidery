@@ -120,12 +120,10 @@
       "countLabel": "{count} ảnh",
       "readOnly": "Chỉ đọc — Admin không xoá, không thay, không sắp xếp lại ảnh.",
       "empty": "Khách chưa gửi ảnh giao dịch",
-      "emptyBody": "Đây là trạng thái bình thường, không phải lỗi. Bạn vẫn xác nhận được tiền cọc mà không cần ảnh — căn cứ là số tiền thực nhận trong tài khoản ngân hàng.",
       "preview": "Xem ảnh",
       "previewChecking": "Đang kiểm tra",
       "previewBlocked": "Không xem được",
       "authorityNote": "Chỉ ảnh đã được tiếp nhận mới xem được. Ảnh đang kiểm tra và ảnh không hợp lệ đều tắt nút xem, và không trạng thái nào nói lên điều gì về việc thanh toán thành hay bại.",
-      "rejectedNote": "Ảnh bị từ chối vẫn nằm lại trong lịch sử và KHÔNG có nghĩa là thanh toán thất bại. Nhân viên vẫn xác nhận được tiền cọc bằng sao kê ngân hàng.",
       "dialogTitle": "Ảnh giao dịch",
       "dialogClose": "Đóng",
       "previousImage": "Ảnh trước",
@@ -140,18 +138,14 @@
       "retry": "Thử lại"
     },
     "actions": {
-      "verify": "Xác nhận đã nhận tiền cọc",
       "review": "Đưa vào cần đối chiếu",
-      "reopenVerify": "Mở lại xác nhận tiền cọc",
       "reviewAgain": "Đưa vào đối chiếu lần nữa",
       "note": "Xác nhận ghi nhận số tiền thực nhận; đưa vào đối chiếu treo giao dịch để đối soát. Không có ô “ảnh chứng minh đã thanh toán”: ảnh không phải căn cứ.",
-      "settledNote": "Tiền cọc của đơn hàng này đã được xác nhận. Không còn hành động đối chiếu nào ở đây.",
       "dismiss": "Huỷ",
       "close": "Đóng",
       "viewHistory": "Xem lịch sử đối chiếu"
     },
     "verify": {
-      "title": "Xác nhận đã nhận tiền cọc",
       "help": "So khớp thủ công giữa giá trị hệ thống kỳ vọng và số tiền thực sự về tài khoản. Ảnh giao dịch không phải căn cứ.",
       "expectedBadge": "KỲ VỌNG",
       "expectedBadgeNote": "hệ thống sinh ra · chỉ đọc",
@@ -318,7 +312,6 @@
       "evidence": "Ảnh khách gửi",
       "evidenceCount": "{count} ảnh",
       "noAttempt": "Khách chưa bắt đầu chuyển khoản.",
-      "evidenceNote": "Ảnh chuyển khoản là tài liệu hỗ trợ. Ảnh được duyệt không có nghĩa là tiền đã về.",
       "verify": "Đối chiếu và xác nhận",
       "settled": "Đã xác nhận thanh toán"
     },
@@ -585,5 +578,25 @@
       }
     },
     "unknownLabel": "Không xác định"
+  },
+  "paymentTerminology": {
+    "CUSTOM": {
+      "dialogTitle": "Xác nhận đã nhận tiền cọc",
+      "expectedAmount": "Số tiền cọc kỳ vọng",
+      "submit": "Xác nhận đã nhận tiền cọc",
+      "reopenSubmit": "Mở lại xác nhận tiền cọc",
+      "settledNote": "Tiền cọc của đơn hàng này đã được xác nhận. Không còn hành động đối chiếu nào ở đây.",
+      "evidenceEmptyBody": "Đây là trạng thái bình thường, không phải lỗi. Bạn vẫn xác nhận được tiền cọc mà không cần ảnh — căn cứ là số tiền thực nhận trong tài khoản ngân hàng.",
+      "evidenceRejectedNote": "Ảnh bị từ chối vẫn nằm lại trong lịch sử và KHÔNG có nghĩa là thanh toán thất bại. Nhân viên vẫn xác nhận được tiền cọc bằng sao kê ngân hàng."
+    },
+    "READY_MADE": {
+      "dialogTitle": "Xác nhận đã nhận thanh toán",
+      "expectedAmount": "Số tiền cần đối chiếu",
+      "submit": "Xác nhận đã nhận thanh toán",
+      "reopenSubmit": "Mở lại xác nhận thanh toán",
+      "settledNote": "Thanh toán của đơn hàng này đã được xác nhận. Không còn hành động đối chiếu nào ở đây.",
+      "evidenceEmptyBody": "Đây là trạng thái bình thường, không phải lỗi. Bạn vẫn xác nhận được thanh toán mà không cần ảnh — căn cứ là số tiền thực nhận trong tài khoản ngân hàng.",
+      "evidenceRejectedNote": "Ảnh bị từ chối vẫn nằm lại trong lịch sử và KHÔNG có nghĩa là thanh toán thất bại. Nhân viên vẫn xác nhận được thanh toán bằng sao kê ngân hàng."
+    }
   }
 }

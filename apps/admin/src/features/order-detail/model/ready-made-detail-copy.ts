@@ -94,8 +94,6 @@ export const READY_MADE_DETAIL_COPY = {
     evidenceCount: (count: number) =>
       readyMadeDetailMessage.text('payment.evidenceCount', { count }),
     noAttempt: readyMadeDetailMessage.text('payment.noAttempt'),
-    /** Evidence is supporting material and never a payment fact. */
-    evidenceNote: readyMadeDetailMessage.text('payment.evidenceNote'),
     verify: readyMadeDetailMessage.text('payment.verify'),
     settled: readyMadeDetailMessage.text('payment.settled'),
   },

@@ -14,16 +14,31 @@
 // ---------------------------------------------------------------------------
 // Payment dialogs
 // ---------------------------------------------------------------------------
+// The modal layer (`V01-UX-016`, `APP12-V02` §25).
+//
+// The backdrop was `z-index: 1`, and the Admin shell header is sticky at 99 —
+// so the scrim dimmed the content column while the header and the sidebar
+// beside the modal stayed at full brightness, which is the exact ambiguity a
+// scrim exists to remove. The shell declares its own local scale (drawer 100,
+// session-expired 200, skip link 300) and `@embroidery/styles` has none, so
+// this clears the shell's highest veil and stays under the skip link — which is
+// only reachable when focus can leave the page, and this dialog traps it.
+$payment-dialog-layer: 250;
+
+// The frame the panel is bounded by. `dvh` rather than `vh`: on a short window
+// the two differ by the browser chrome, and the difference is exactly the strip
+// the submit button was falling into.
+$payment-dialog-inset: 32px;
+
 .payment-dialog__backdrop {
   position: fixed;
   inset: 0;
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: styles.spacing(32);
-  overflow-y: auto;
+  padding: $payment-dialog-inset;
   background: styles.$color-overlay-scrim;
-  z-index: 1;
+  z-index: $payment-dialog-layer;
 }
 
 .payment-dialog {
@@ -32,15 +47,36 @@
   gap: styles.spacing(16);
   width: 100%;
   max-width: 640px;
+  // Never taller than the viewport it opens into. The body below scrolls
+  // instead, which is what keeps the title and the actions on screen.
+  max-height: calc(100dvh - #{$payment-dialog-inset * 2});
   padding: styles.spacing(24);
   border-radius: styles.$radius-md;
   background: styles.$color-surface-primary;
 }
 
+// Fixed header: the dialog announces what it is in every scroll state.
 .payment-dialog__title {
+  flex: 0 0 auto;
   margin: 0;
   color: styles.$color-text-primary;
   font-size: styles.$font-size-heading-s;
+}
+
+// The one scrolling region. `min-height: 0` is load-bearing — a flex child's
+// default `min-height: auto` refuses to shrink below its content, which is how
+// a bounded panel still ends up taller than its bound.
+.payment-dialog__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  min-height: 0;
+  overflow-y: auto;
+  // Room for the focus ring on the first and last controls, which an
+  // `overflow` container would otherwise clip.
+  padding: 2px;
+  margin: -2px;
 }
 
 .payment-dialog__help,

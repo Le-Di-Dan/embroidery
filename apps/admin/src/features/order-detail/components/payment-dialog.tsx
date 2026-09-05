@@ -102,10 +102,19 @@ export function PaymentDialog({
         tabIndex={-1}
         data-testid={testId}
       >
+        {/*
+          The title is outside the scrolling region (`V01-UX-016`,
+          `APP12-V02` §25). Focus moves to the first field on mount, and when the
+          whole panel was one scroll container that scroll cut the heading in half
+          against the modal edge — the operator's most consequential dialog did
+          not say what it was as it opened. The header is fixed now and only the
+          body below it scrolls, so the title is visible in every state and the
+          action row below stays reachable.
+        */}
         <h2 className="payment-dialog__title" id={titleId}>
           {title}
         </h2>
-        {children}
+        <div className="payment-dialog__body">{children}</div>
       </div>
     </div>
   );

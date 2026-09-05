@@ -27,6 +27,7 @@ import {
   adminPaymentAttemptVerify,
 } from '@embroidery/api-client';
 
+import { paymentTerminologyFor } from '../../src/features/order-detail/model/payment-terminology';
 import { OrderDetailScreen } from '../../src/features/order-detail';
 import { ORDER_DETAIL_COPY as COPY } from '../../src/features/order-detail/model/order-detail-copy';
 import {
@@ -299,7 +300,9 @@ describe('resolving a review', () => {
     render();
 
     expect(await screen.findByTestId('order-requires-review')).toBeInTheDocument();
-    expect(screen.getByTestId('open-verify-dialog')).toHaveTextContent(COPY.actions.reopenVerify);
+    expect(screen.getByTestId('open-verify-dialog')).toHaveTextContent(
+      paymentTerminologyFor('CUSTOM').reopenSubmit,
+    );
     // No third control, and no operation beyond verify/review exists to reach.
     const decisionService = jest.requireActual<Record<string, unknown>>(
       '../../src/features/order-detail/services/payment-decision.service',

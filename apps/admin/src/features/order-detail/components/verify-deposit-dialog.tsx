@@ -15,6 +15,7 @@ import {
   type VerifyFormErrors,
   type VerifyFormValues,
 } from '../model/payment-decision-command';
+import type { PaymentTerminology } from '../model/payment-terminology';
 import { verifyPaymentAttempt } from '../services/payment-decision.service';
 import { DefinitionRow } from './definition-row';
 import { ExpectedObservedTable } from './expected-observed-table';
@@ -27,6 +28,15 @@ interface VerifyDepositDialogProps {
   readonly attemptId: string;
   readonly payments: AdminOrderPaymentsResponse;
   readonly onClose: () => void;
+  /**
+   * The order origin's own vocabulary (`V01-UX-006`, `APP12-V02` §24).
+   *
+   * The title, the expected-amount label and the submit control all said
+   * “tiền cọc” on a Ready-Made `FULL` obligation, which has no deposit. The
+   * caller passes the branch explicitly from the order's `origin`; this dialog
+   * infers nothing from the obligation kind.
+   */
+  readonly terms: PaymentTerminology;
 }
 
 /**
@@ -72,6 +82,7 @@ export function VerifyDepositDialog({
   attemptId,
   payments,
   onClose,
+  terms,
 }: VerifyDepositDialogProps) {
   const [values, setValues] = useState<VerifyFormValues>(EMPTY_VERIFY_FORM);
   const [errors, setErrors] = useState<VerifyFormErrors>({});
@@ -117,7 +128,7 @@ export function VerifyDepositDialog({
 
   return (
     <PaymentDialog
-      title={COPY.verify.title}
+      title={terms.dialogTitle}
       describedBy="verify-dialog-help"
       testId="verify-dialog"
       onDismiss={() => {
@@ -136,7 +147,7 @@ export function VerifyDepositDialog({
           <span className="payment-dialog__badge-note">{COPY.verify.expectedBadgeNote}</span>
         </p>
         <dl className="order-card__definitions">
-          <DefinitionRow label={COPY.deposit.expectedAmount} testId="verify-expected-amount">
+          <DefinitionRow label={terms.expectedAmount} testId="verify-expected-amount">
             {expectedAmount}
           </DefinitionRow>
           <DefinitionRow label={COPY.deposit.expectedReference} testId="verify-expected-reference">
@@ -234,7 +245,7 @@ export function VerifyDepositDialog({
             data-testid="verify-submit"
             onClick={submit}
           >
-            {decision.phase.kind === 'running' ? COPY.verify.submitting : COPY.actions.verify}
+            {decision.phase.kind === 'running' ? COPY.verify.submitting : terms.submit}
           </button>
         )}
         <button

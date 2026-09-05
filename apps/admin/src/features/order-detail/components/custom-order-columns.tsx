@@ -31,7 +31,7 @@ export function CustomOrderColumns({ orderId, order }: CustomOrderColumnsProps) 
       </div>
       <div className="order-detail__payments">
         <FulfillmentPanel order={order} />
-        <DepositPaymentPanel orderId={orderId} />
+        <DepositPaymentPanel orderId={orderId} origin={order.origin} />
       </div>
     </div>
   );

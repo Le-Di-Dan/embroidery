@@ -109,8 +109,15 @@ function present(
     : { token: value as string, ...style, known: true };
 }
 
-/** The DEPOSIT obligation's own state (`751:3` "Nghĩa vụ cọc"). */
-const DEPOSIT_STATUS_STYLES: Readonly<Record<string, StatusStyle>> = {
+/**
+ * The obligation's LC-15 state (`751:3` “Nghĩa vụ cọc”).
+ *
+ * One table for both obligation kinds: `DEPOSIT` on a custom order and `FULL`
+ * on a Ready-Made one carry the same four states, and `APP12-V02` (`V01-UX-005`)
+ * found the FULL workbench rendering `obligation.status` as its own label
+ * because it had no presenter to reach for. It has this one.
+ */
+const OBLIGATION_STATUS_STYLES: Readonly<Record<string, StatusStyle>> = {
   PENDING: {
     label: paymentVocabularyObligationMessage.text('PENDING.label'),
     tone: 'warning',
@@ -133,9 +140,12 @@ const DEPOSIT_STATUS_STYLES: Readonly<Record<string, StatusStyle>> = {
   },
 };
 
-export function presentDepositStatus(status: unknown): StatusPresentation {
-  return present(DEPOSIT_STATUS_STYLES, status);
+export function presentObligationStatus(status: unknown): StatusPresentation {
+  return present(OBLIGATION_STATUS_STYLES, status);
 }
+
+/** The deposit-named alias the APP7 summary card reads. */
+export const presentDepositStatus = presentObligationStatus;
 
 /** One payment attempt's LC-16 state (`751:3` "Lần thanh toán"). */
 const ATTEMPT_STATUS_STYLES: Readonly<Record<string, StatusStyle>> = {

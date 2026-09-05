@@ -105,16 +105,17 @@ export const ORDER_DETAIL_COPY = {
     empty: detailMessage.text('attempts.empty'),
     pendingNote: detailMessage.text('attempts.pendingNote'),
   },
+  // The two sentences that named a deposit moved to `payment-terminology.ts`,
+  // which branches them on the order origin (`V01-UX-006`, §24). They are not
+  // duplicated here: one string, one home.
   evidence: {
     countLabel: (count: number) => detailMessage.text('evidence.countLabel', { count }),
     readOnly: detailMessage.text('evidence.readOnly'),
     empty: detailMessage.text('evidence.empty'),
-    emptyBody: detailMessage.text('evidence.emptyBody'),
     preview: detailMessage.text('evidence.preview'),
     previewChecking: detailMessage.text('evidence.previewChecking'),
     previewBlocked: detailMessage.text('evidence.previewBlocked'),
     authorityNote: detailMessage.text('evidence.authorityNote'),
-    rejectedNote: detailMessage.text('evidence.rejectedNote'),
     dialogTitle: detailMessage.text('evidence.dialogTitle'),
     dialogClose: detailMessage.text('evidence.dialogClose'),
     previousImage: detailMessage.text('evidence.previousImage'),
@@ -128,19 +129,18 @@ export const ORDER_DETAIL_COPY = {
     temporary: detailMessage.text('evidence.temporary'),
     retry: detailMessage.text('evidence.retry'),
   },
+  // `verify`, `reopenVerify` and `settledNote` likewise live in
+  // `payment-terminology.ts` now — they are the controls whose words differ
+  // between a deposit and a Ready-Made payment.
   actions: {
-    verify: detailMessage.text('actions.verify'),
     review: detailMessage.text('actions.review'),
-    reopenVerify: detailMessage.text('actions.reopenVerify'),
     reviewAgain: detailMessage.text('actions.reviewAgain'),
     note: detailMessage.text('actions.note'),
-    settledNote: detailMessage.text('actions.settledNote'),
     dismiss: detailMessage.text('actions.dismiss'),
     close: detailMessage.text('actions.close'),
     viewHistory: detailMessage.text('actions.viewHistory'),
   },
   verify: {
-    title: detailMessage.text('verify.title'),
     help: detailMessage.text('verify.help'),
     expectedBadge: detailMessage.text('verify.expectedBadge'),
     expectedBadgeNote: detailMessage.text('verify.expectedBadgeNote'),

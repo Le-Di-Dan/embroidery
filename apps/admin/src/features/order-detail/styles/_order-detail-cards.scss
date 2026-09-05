@@ -147,3 +147,20 @@
   font-size: styles.$font-size-body-m;
   font-weight: styles.$font-weight-semibold;
 }
+
+// The transfer reference, on one unbroken line (`V01-UX-010`, §23).
+//
+// It is the single string an operator matches character-for-character against a
+// bank statement, and V01 measured it wrapping mid-token across two lines inside
+// the old 300px rail. It never wraps now; if a container is still too narrow it
+// scrolls, because a reference split across lines is one an operator can
+// mis-transcribe and a scrolled one is not.
+.order-card__reference {
+  display: inline-block;
+  max-width: 100%;
+  overflow-x: auto;
+  // At least body size, never the caption it used to inherit (`V01-UX-029`).
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  white-space: nowrap;
+}
