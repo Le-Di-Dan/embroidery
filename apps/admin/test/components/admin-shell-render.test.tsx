@@ -5,7 +5,7 @@ import {
   within,
 } from '@embroidery/frontend-testing';
 
-import { AdminShell, AdminHomePlaceholder } from '../../src/features/admin-shell';
+import { AdminShell, AdminHomeLaunchpad } from '../../src/features/admin-shell';
 import { ADMIN_STAFF_FIXTURE } from '../support/staff-fixture';
 
 jest.mock('next/navigation', () => mockCreateNavigationMock().module);
@@ -19,7 +19,7 @@ jest.mock('../../src/features/admin-shell/services/staff-logout.service', () => 
 function renderShell() {
   return renderWithProviders(
     <AdminShell initialStaff={ADMIN_STAFF_FIXTURE}>
-      <AdminHomePlaceholder />
+      <AdminHomeLaunchpad />
     </AdminShell>,
   );
 }
@@ -69,11 +69,34 @@ describe('AdminShell — authenticated render', () => {
     expect(current.tagName).not.toBe('A');
   });
 
-  it('renders the standalone placeholder with only forward-looking copy', () => {
-    renderWithProviders(<AdminHomePlaceholder />);
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'Quyền truy cập quản trị đã sẵn sàng' }),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  it('lands the operator on the destinations that exist, not on an apology', () => {
+    // `V01-UX-015`: this route used to render a placeholder saying products,
+    // orders, designs and requests "sẽ xuất hiện trong các giai đoạn tiếp
+    // theo" — on a product where all of them had shipped and were two clicks
+    // away. `APP12-V02` §19 replaced it with a launchpad.
+    renderWithProviders(<AdminHomeLaunchpad />);
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Bảng điều hành');
+
+    const targets = screen.getAllByRole('link').map((link) => link.getAttribute('href'));
+    expect(targets).toEqual([
+      '/orders',
+      '/products',
+      '/categories',
+      '/gallery',
+      '/assets',
+      '/support/customer-access',
+    ]);
+
+    // No Wave-2 queue: those have no subject that can exist while the custom
+    // capability is withheld, and offering one would be the same broken promise
+    // the placeholder made.
+    for (const withheld of ['/requests', '/san-xuat', '/design-templates']) {
+      expect(targets).not.toContain(withheld);
+    }
+
+    // And no count anywhere: §19 forbids new dashboard APIs and counters, and a
+    // stale number is worse than none because the operator plans around it.
+    expect(screen.queryAllByText(/[0-9]/u)).toEqual([]);
   });
 });

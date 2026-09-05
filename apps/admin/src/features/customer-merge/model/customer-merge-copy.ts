@@ -64,6 +64,8 @@ export const CUSTOMER_MERGE_COPY = {
     unverified: mergeMessage.text('selection.unverified'),
     primary: mergeMessage.text('selection.primary'),
     displayNameEmpty: mergeMessage.text('selection.displayNameEmpty'),
+    displayNameEmptyHint: mergeMessage.text('selection.displayNameEmptyHint'),
+    customerReference: mergeMessage.text('selection.customerReference'),
     verifiedAt: mergeMessage.text('selection.verifiedAt'),
     maskNote: mergeMessage.text('selection.maskNote'),
   },

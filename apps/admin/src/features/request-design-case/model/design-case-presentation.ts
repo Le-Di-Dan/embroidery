@@ -30,6 +30,8 @@ import type {
   DesignVersionResponse,
 } from '@embroidery/api-client';
 
+import { formatDisplayInstant } from '@embroidery/i18n';
+
 import { REQUEST_DESIGN_CASE_COPY as COPY } from './request-design-case-copy';
 
 /** The two request statuses `TR-LC08-01` allows a version to be authored in. */
@@ -65,7 +67,10 @@ export function presentInstant(instant: string | null | undefined): string {
   if (Number.isNaN(parsed.getTime())) {
     return '—';
   }
-  return parsed.toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
+  // One instant format across both applications (`V01-UX-021`, `APP12-V02` §30):
+  // the shared `dd/MM/yyyy · HH:mm` in `@embroidery/i18n`, in the workshop's
+  // zone, rather than a per-feature `Intl` call with its own field styles.
+  return formatDisplayInstant(parsed) ?? '—';
 }
 
 /** The two subject branches, read from the discriminator and never sniffed. */

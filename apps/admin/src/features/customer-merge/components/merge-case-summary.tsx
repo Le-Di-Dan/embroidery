@@ -32,6 +32,7 @@
 import { AdminCustomerMergeCaseResponseStatus } from '@embroidery/api-client';
 import type { AdminCustomerMergeCaseResponse } from '@embroidery/api-client';
 
+import { formatInstant } from '../../../shared/presentation/instant';
 import { CUSTOMER_MERGE_COPY } from '../model/customer-merge-copy';
 import { MergeParticipantCard } from './merge-participant-card';
 
@@ -67,18 +68,14 @@ export function MergeCaseSummary({ mergeCase }: MergeCaseSummaryProps) {
         <div className="customer-merge__row">
           <dt>{COPY.requestedAt}</dt>
           <dd>
-            <time dateTime={mergeCase.requestedAt}>
-              {new Date(mergeCase.requestedAt).toLocaleString('vi-VN')}
-            </time>
+            <time dateTime={mergeCase.requestedAt}>{formatInstant(mergeCase.requestedAt)}</time>
           </dd>
         </div>
         {mergeCase.decidedAt === undefined ? null : (
           <div className="customer-merge__row">
             <dt>{COPY.decidedAt}</dt>
             <dd data-testid="merge-case-decided-at">
-              <time dateTime={mergeCase.decidedAt}>
-                {new Date(mergeCase.decidedAt).toLocaleString('vi-VN')}
-              </time>
+              <time dateTime={mergeCase.decidedAt}>{formatInstant(mergeCase.decidedAt)}</time>
             </dd>
           </div>
         )}

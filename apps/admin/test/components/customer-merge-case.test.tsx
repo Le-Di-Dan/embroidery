@@ -27,6 +27,7 @@ import {
   renderWithProviders,
   screen,
   waitFor,
+  within,
 } from '@embroidery/frontend-testing';
 import {
   adminCustomerMergeDetail,
@@ -41,8 +42,12 @@ import { FORBIDDEN, envelope } from '../support/customer-access-fixture';
 import {
   LOSER_MASK,
   LOSER_PHONE_MASK,
+  LOSER_CUSTOMER_ID,
   MERGE_CASE_ID,
+  SURVIVOR_CUSTOMER_ID,
   SURVIVOR_MASK,
+  makeLoser,
+  makeSurvivor,
   makeBlockedCase,
   makeMergeCase,
   makePreview,
@@ -283,6 +288,74 @@ describe('the decided states', () => {
       'href',
       '/support/customer-access',
     );
+  });
+});
+
+describe('a nameless participant (`V01-UX-032`, `APP12-V02` §21.4)', () => {
+  it('says why the name is absent, where one can be set, and never invents one', async () => {
+    // Wave-1 identity is minted from a verified contact and carries no display
+    // name, so V01 found both cards reading "Chưa có" beside two masked
+    // addresses: an operator confirming an irreversible merge was choosing
+    // between two blanks. §21.4 forbids the tempting fill — the recipient name
+    // frozen on an order is a property of that order, not the identity of a
+    // person — so the correction is to explain the absence and point at the
+    // screen that can end it.
+    detailMock.mockResolvedValue(
+      envelope(
+        makeMergeCase({
+          survivor: makeSurvivor({ displayName: undefined }),
+          loser: makeLoser({ displayName: undefined }),
+        }),
+      ),
+    );
+    render();
+    await loadedCase();
+
+    for (const testId of ['merge-case-survivor', 'merge-case-loser']) {
+      const card = within(screen.getByTestId(testId));
+      expect(card.getByTestId(`${testId}-display-name`)).toHaveTextContent(
+        COPY.selection.displayNameEmpty,
+      );
+      expect(card.getByText(COPY.selection.displayNameEmptyHint)).toBeInTheDocument();
+    }
+  });
+
+  it('prints a customer reference, because two masks can be identical', async () => {
+    // `maskContact` is deterministic and lossy: two addresses at one domain
+    // sharing a first character mask to the same string. Without a reference the
+    // two cards of a nameless case can be literally indistinguishable, which is
+    // the one thing an irreversible decision may not be.
+    detailMock.mockResolvedValue(
+      envelope(
+        makeMergeCase({
+          survivor: makeSurvivor({ displayName: undefined }),
+          loser: makeLoser({ displayName: undefined }),
+        }),
+      ),
+    );
+    render();
+    await loadedCase();
+
+    const survivor = screen.getByTestId('merge-case-survivor-customer-reference');
+    const loser = screen.getByTestId('merge-case-loser-customer-reference');
+
+    // Shortened for reading, whole for assistive technology and for copying —
+    // and never rendered as text, which is what `V01-UX-009` removed from the
+    // order queue.
+    expect(survivor).toHaveAttribute('title', SURVIVOR_CUSTOMER_ID);
+    expect(loser).toHaveAttribute('title', LOSER_CUSTOMER_ID);
+    expect(survivor.textContent).not.toBe(SURVIVOR_CUSTOMER_ID);
+    expect(survivor.textContent).not.toBe(loser.textContent);
+  });
+
+  it('prints every instant in the one shared format', async () => {
+    // `V01-UX-021`: this card used `toLocaleString('vi-VN')` with no field
+    // styles, which renders a two-digit year the customer's own page never
+    // shows. §30 makes `dd/MM/yyyy · HH:mm` canonical for both applications.
+    render();
+    await loadedCase();
+
+    expect(screen.getByTestId('merge-case-survivor')).toHaveTextContent('02/05/2026 · 16:00');
   });
 });
 

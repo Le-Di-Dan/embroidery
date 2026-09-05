@@ -5,6 +5,7 @@ import type {
   AdminNotificationIntentResponse,
 } from '@embroidery/api-client';
 
+import { formatInstant } from '../../../shared/presentation/instant';
 import { CUSTOMER_ACCESS_COPY } from '../model/customer-access-copy';
 import { requiresBusinessReissue, type ReplayFailure } from '../model/customer-access-failure';
 import type { ReplayOutcome } from '../hooks/use-notification-replay';
@@ -155,9 +156,7 @@ export function NotificationPanel({
                 <tr key={`${attempt.attemptedAt}-${String(index)}`}>
                   <td>{index + 1}</td>
                   <td>
-                    <time dateTime={attempt.attemptedAt}>
-                      {new Date(attempt.attemptedAt).toLocaleTimeString('vi-VN')}
-                    </time>
+                    <time dateTime={attempt.attemptedAt}>{formatInstant(attempt.attemptedAt)}</time>
                   </td>
                   <td data-outcome={attempt.outcome}>{attempt.outcome}</td>
                   <td>{attempt.errorClass ?? COPY.noErrorClass}</td>

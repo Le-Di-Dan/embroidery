@@ -1,5 +1,6 @@
 'use client';
 
+import { formatDate } from '../../../shared/presentation/instant';
 import { LIFECYCLE_COPY, withValue } from '../model/lifecycle-copy';
 
 interface ArchivedPanelProps {
@@ -24,8 +25,7 @@ interface ArchivedPanelProps {
  */
 export function ArchivedPanel({ name, archivedAt, busy, onRestore }: ArchivedPanelProps) {
   const copy = LIFECYCLE_COPY.archived;
-  const archivedDate =
-    archivedAt === undefined ? null : new Date(archivedAt).toLocaleDateString('vi-VN');
+  const archivedDate = archivedAt === undefined ? null : formatDate(archivedAt);
 
   return (
     <section className="template-lifecycle-archived" aria-labelledby="lifecycle-archived-title">

@@ -36,9 +36,27 @@ interface OrderQueueFilterBarProps {
  * selection leaves the operator no way to re-read what the control means, and
  * these are the only controls on the screen that change what the list contains.
  *
- * The scope line states what the filters *can* do, because `adminOrder_list`
- * publishes only status, origin, limit and cursor: an operator who cannot find
- * a search box should be told there is none rather than left hunting for it.
+ * ## Compact at `APP12-V02` (`V01-UX-009`, §21.1, §20)
+ *
+ * The two fieldsets occupied y=240→565 of a 900px fold — 36% of the first
+ * screen — and the first order row sat at y=687, so the data started below
+ * three quarters of the screen an operator opens all day.
+ *
+ * Two things made them that tall. Each option was a full-width row rather than
+ * a chip, and each carried the **stored contract value** beneath its label:
+ * `AWAITING_SHIPPING_FEE` under "Chờ báo phí", thirteen times. `732:110` draws
+ * that token and the intent was real — an operator reconciling against a
+ * database wanted to know what they asked for — but §20 is explicit that a
+ * SCREAMING_SNAKE enum is not operator copy, and it doubled the height of every
+ * option to say something the Vietnamese label already said.
+ *
+ * So the options are chips now and the tokens are gone. Every backend-supported
+ * filter value is still offered: §21.1 forbids deleting filter semantics, and
+ * what was wrong was the geometry, not the set.
+ *
+ * The scope line that used to sit beneath them is gone too (`V01-UX-004`): it
+ * named three filters that do not exist, which is a sentence whose subject is a
+ * missing capability.
  *
  * The reset control appears only when something is actually filtered, so the
  * operator is never offered a control that would do nothing. The boxes stay
@@ -77,10 +95,6 @@ export function OrderQueueFilterBar({
                   onChange={() => onToggleStatus(option.value)}
                 />
                 <span className="order-filters__option-label">{option.label}</span>
-                {/* The stored token beside the label, as `732:110` draws it: the
-                    operator reconciles this queue against a database and needs
-                    to know which contract value they just asked for. */}
-                <span className="order-filters__option-token">{option.value}</span>
               </label>
             </li>
           ))}
@@ -108,7 +122,6 @@ export function OrderQueueFilterBar({
                   onChange={() => onToggleOrigin(option.value)}
                 />
                 <span className="order-filters__option-label">{option.label}</span>
-                <span className="order-filters__option-token">{option.value}</span>
               </label>
             </li>
           ))}

@@ -11,6 +11,7 @@
 // room the flexible columns get.
 $order-narrow-desktop: 1360px;
 
-// The status multi-select is a grid of checkboxes; below this the eleven options
-// stack into a single column rather than squeezing their labels.
-$order-filter-narrow: 900px;
+// The status filter used to be a three-column grid that stacked below this
+// width. `APP12-V02` §21.1 made the options chips that wrap on their own, so
+// nothing reads this any more — it is removed rather than left as a constant
+// with no consumer.

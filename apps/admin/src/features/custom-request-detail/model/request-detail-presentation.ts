@@ -32,6 +32,8 @@ import {
   presentRequestStatusDetail,
   type RequestStatusPresentation,
 } from '../../../shared/presentation/request-status';
+import { formatDisplayInstant } from '@embroidery/i18n';
+
 import { CUSTOM_REQUEST_DETAIL_COPY as COPY } from './custom-request-detail-copy';
 import type { EvidenceFailure } from './custom-request-detail-failure';
 
@@ -240,5 +242,8 @@ export function presentInstant(iso: string | undefined): string {
   if (iso === undefined) return COPY.subject.unavailableLabel;
   const parsed = new Date(iso);
   if (Number.isNaN(parsed.getTime())) return COPY.subject.unavailableLabel;
-  return parsed.toLocaleString('vi-VN', { dateStyle: 'medium', timeStyle: 'short' });
+  // One instant format across both applications (`V01-UX-021`, `APP12-V02` §30):
+  // the shared `dd/MM/yyyy · HH:mm` in `@embroidery/i18n`, in the workshop's
+  // zone, rather than a per-feature `Intl` call with its own field styles.
+  return formatDisplayInstant(parsed) ?? COPY.subject.unavailableLabel;
 }

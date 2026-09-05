@@ -4,10 +4,21 @@
  * The row component never sees the raw response. `orderId` survives only as the
  * detail address and `customRequestId` only as the link back to the request the
  * order was created from — by the time a component can reach either, it is an
- * `href`. The customer id has no route behind it at all, so it is shortened for
- * display (`732:3` renders `7c19…8b41`) and kept in full only as the cell's
- * `title`: `APP7-B02` publishes no customer name, and a full UUID in a table
- * cell pushes every other column out of the way.
+ * `href`.
+ *
+ * ### The customer id is no longer projected at all
+ *
+ * `732:3` draws a `Khách hàng` column and this model used to shorten the id for
+ * it (`7c19…8b41`), because `APP7-B02` publishes no customer name.
+ * `V01-UX-009` measured the result: a column of truncated UUIDs an operator can
+ * neither read nor act on, on the screen they use most.
+ *
+ * `APP12-V02` §21.4 removes the column rather than filling it, and is explicit
+ * about the alternative it refuses: the recipient name frozen on the order is a
+ * property of the *order*, not the identity of a person, and relabelling one as
+ * the other is a business-semantic fabrication. The order detail shows the
+ * recipient under its own truthful label; the queue shows nothing, which is
+ * what this projection actually knows.
  *
  * ### The total is transported, never recomputed
  *
@@ -28,7 +39,6 @@
  */
 import type { AdminOrderQueueItemResponse, AdminOrderQueueResponse } from '@embroidery/api-client';
 
-import { truncateIdentifier } from '../../../shared/presentation/identifier';
 import {
   presentOrderOrigin,
   type OriginPresentation,
@@ -68,9 +78,6 @@ export interface OrderQueueRow {
    * request, so there is nothing to navigate to.
    */
   readonly requestHref: string | undefined;
-  /** Shortened for the cell; the full value is the cell's `title`. */
-  readonly customerShortId: string;
-  readonly customerId: string;
 }
 
 export function toOrderQueueRow(item: AdminOrderQueueItemResponse): OrderQueueRow {
@@ -89,8 +96,6 @@ export function toOrderQueueRow(item: AdminOrderQueueItemResponse): OrderQueueRo
       item.customRequestId === undefined
         ? undefined
         : `${ADMIN_REQUEST_DETAIL_PREFIX}/${item.customRequestId}`,
-    customerShortId: truncateIdentifier(item.customerId),
-    customerId: item.customerId,
   };
 }
 

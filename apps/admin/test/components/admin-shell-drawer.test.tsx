@@ -8,7 +8,7 @@ import {
   within,
 } from '@embroidery/frontend-testing';
 
-import { AdminShell, AdminHomePlaceholder } from '../../src/features/admin-shell';
+import { AdminShell, AdminHomeLaunchpad } from '../../src/features/admin-shell';
 import { STAFF_SELF_QUERY_KEY } from '../../src/features/admin-shell/model/session-expiry';
 import { ADMIN_STAFF_FIXTURE } from '../support/staff-fixture';
 
@@ -25,7 +25,7 @@ function renderShell() {
   queryClient.setQueryData(STAFF_SELF_QUERY_KEY, ADMIN_STAFF_FIXTURE);
   return renderWithProviders(
     <AdminShell initialStaff={ADMIN_STAFF_FIXTURE}>
-      <AdminHomePlaceholder />
+      <AdminHomeLaunchpad />
     </AdminShell>,
     { queryClient },
   );

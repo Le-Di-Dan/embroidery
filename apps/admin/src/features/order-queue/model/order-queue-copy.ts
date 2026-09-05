@@ -36,7 +36,6 @@ export const ORDER_QUEUE_COPY = {
     currency: queueMessage.text('columns.currency'),
     createdAt: queueMessage.text('columns.createdAt'),
     request: queueMessage.text('columns.request'),
-    customer: queueMessage.text('columns.customer'),
   },
   filters: {
     legend: queueMessage.text('filters.legend'),

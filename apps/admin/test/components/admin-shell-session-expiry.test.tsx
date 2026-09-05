@@ -8,7 +8,7 @@ import {
 } from '@embroidery/frontend-testing';
 import { useRouter } from 'next/navigation';
 
-import { AdminShell, AdminHomePlaceholder } from '../../src/features/admin-shell';
+import { AdminShell, AdminHomeLaunchpad } from '../../src/features/admin-shell';
 import { fetchCurrentStaff } from '../../src/features/admin-shell/services/staff-self.service';
 import { STAFF_SELF_QUERY_KEY } from '../../src/features/admin-shell/model/session-expiry';
 import { ADMIN_STAFF_FIXTURE } from '../support/staff-fixture';
@@ -31,7 +31,7 @@ function renderShell() {
   const removeQueries = jest.spyOn(queryClient, 'removeQueries');
   const result = renderWithProviders(
     <AdminShell initialStaff={ADMIN_STAFF_FIXTURE}>
-      <AdminHomePlaceholder />
+      <AdminHomeLaunchpad />
     </AdminShell>,
     { queryClient },
   );

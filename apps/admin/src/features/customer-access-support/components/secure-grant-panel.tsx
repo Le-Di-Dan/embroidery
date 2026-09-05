@@ -2,6 +2,7 @@
 
 import type { AdminCustomerGrantsResponse, AdminSecureGrantResponse } from '@embroidery/api-client';
 
+import { formatInstant } from '../../../shared/presentation/instant';
 import { CUSTOMER_ACCESS_COPY } from '../model/customer-access-copy';
 import { isRevocable, resolveGrantLiveness, selectPrimaryGrant } from '../model/grant-liveness';
 import type { RevokeFailure } from '../model/customer-access-failure';
@@ -120,9 +121,7 @@ export function SecureGrantPanel({
             <div className="customer-access-card__row">
               <dt>{COPY.expiresAt}</dt>
               <dd data-testid="grant-expires-at">
-                <time dateTime={grant.expiresAt}>
-                  {new Date(grant.expiresAt).toLocaleString('vi-VN')}
-                </time>
+                <time dateTime={grant.expiresAt}>{formatInstant(grant.expiresAt)}</time>
               </dd>
             </div>
           </dl>

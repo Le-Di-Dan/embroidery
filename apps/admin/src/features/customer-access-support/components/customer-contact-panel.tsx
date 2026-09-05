@@ -5,6 +5,7 @@ import type {
   AdminCustomerDetailResponse,
 } from '@embroidery/api-client';
 
+import { formatInstant } from '../../../shared/presentation/instant';
 import { CUSTOMER_ACCESS_COPY } from '../model/customer-access-copy';
 import { CUSTOMER_MAINTENANCE_COPY } from '../model/customer-maintenance-copy';
 import { canDeactivate, canPromote } from '../model/contact-eligibility';
@@ -85,9 +86,7 @@ export function CustomerContactPanel({
             <div className="customer-access-card__row">
               <dt>{COPY.verifiedAt}</dt>
               <dd>
-                <time dateTime={customer.verifiedAt}>
-                  {new Date(customer.verifiedAt).toLocaleString('vi-VN')}
-                </time>
+                <time dateTime={customer.verifiedAt}>{formatInstant(customer.verifiedAt)}</time>
               </dd>
             </div>
           </dl>

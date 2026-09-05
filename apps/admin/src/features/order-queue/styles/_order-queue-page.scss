@@ -62,44 +62,65 @@
   font-weight: styles.$font-weight-semibold;
 }
 
+// Chips, not rows (`V01-UX-009`, `APP12-V02` §21.1).
+//
+// The options were a three-column grid of full-width labels, each carrying its
+// stored contract value beside it — thirteen statuses and two origins filling
+// y=240→565 of a 900px fold, above data that began at y=687. They wrap now, and
+// each option is the width of its own label.
 .order-filters__options {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: styles.spacing(4) styles.spacing(16);
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
   margin: styles.spacing(8) 0 0;
   padding: 0;
   list-style: none;
-
-  @media (max-width: tokens.$order-filter-narrow) {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 .order-filters__label {
-  display: flex;
-  gap: styles.spacing(8);
-  align-items: center;
-  padding: styles.spacing(4);
+  display: inline-flex;
   cursor: pointer;
 }
 
+// The checkbox stays a real, focusable checkbox — clipped rather than removed,
+// so it keeps its role, its checked state and its place in the tab order — and
+// the chip beside it is what the operator sees.
+.order-filters__checkbox {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  clip-path: inset(50%);
+  border: 0;
+}
+
 .order-filters__option-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: styles.$size-touch-target-min;
+  padding: styles.spacing(4) styles.spacing(12);
+  border: 1px solid styles.$color-border-strong;
+  border-radius: 999px;
+  background: styles.$color-surface-primary;
   color: styles.$color-text-primary;
   font-size: styles.$font-size-body-s;
 }
 
-// The stored contract value beside the label. Tertiary and small: it is a
-// reconciliation aid, not the primary reading.
-.order-filters__option-token {
-  margin-left: auto;
-  color: styles.$color-text-tertiary;
-  font-size: styles.$font-size-caption;
+// Selection is carried by the fill *and* by the control underneath, which is
+// genuinely checked — so it is never colour alone, and a screen reader hears
+// the state rather than inferring it from a class.
+.order-filters__checkbox:checked + .order-filters__option-label {
+  border-color: styles.$color-action-fill;
+  background: styles.$color-action-fill;
+  color: styles.$color-surface-primary;
 }
 
-.order-filters__scope {
-  margin: 0;
-  color: styles.$color-text-tertiary;
-  font-size: styles.$font-size-caption;
+.order-filters__checkbox:focus-visible + .order-filters__option-label {
+  outline: 2px solid styles.$color-focus-ring;
+  outline-offset: 2px;
 }
 
 .order-filters__reset {

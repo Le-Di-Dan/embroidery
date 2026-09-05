@@ -32,6 +32,8 @@
  * definition line, on both screens. The direction of an irreversible operation
  * is never left to position, colour or a number.
  */
+import { formatInstant } from '../../../shared/presentation/instant';
+import { truncateIdentifier } from '../../../shared/presentation/identifier';
 import { CUSTOMER_MERGE_COPY } from '../model/customer-merge-copy';
 import type { ParticipantRole } from '../hooks/use-participant-selection';
 
@@ -71,11 +73,35 @@ export function MergeParticipantCard({ role, participant, testId }: MergePartici
       <p className="customer-merge-participant__name" data-testid={`${testId}-display-name`}>
         {participant.displayName ?? COPY.displayNameEmpty}
       </p>
+      {/* `V01-UX-032`, `APP12-V02` §21.4. Both participants rendered "Chưa có"
+          beside two masked addresses, so an operator confirming an irreversible
+          merge was choosing between two blanks. Nothing here invents a name —
+          §21.4 forbids substituting the recipient frozen on an order, which is a
+          property of that order and not the identity of a person. Instead the
+          card says *why* the name is absent and names the existing screen that
+          can set one (`APP10-B01`'s `displayName` patch, already shipped at
+          `/support/customer-access`), and prints the customer reference the
+          decision is actually taken against — because `maskContact` is lossy and
+          two different addresses can produce the same mask, which would leave
+          the two cards indistinguishable. */}
+      {participant.displayName === undefined ? (
+        <p className="customer-merge-participant__name-hint">{COPY.displayNameEmptyHint}</p>
+      ) : null}
+      <p className="customer-merge-participant__reference">
+        {COPY.customerReference}{' '}
+        <span
+          className="customer-merge-participant__reference-value"
+          title={participant.customerId}
+          data-testid={`${testId}-customer-reference`}
+        >
+          {truncateIdentifier(participant.customerId)}
+        </span>
+      </p>
       <p className="customer-merge-participant__verified">
         {COPY.verifiedAt}{' '}
-        <time dateTime={participant.verifiedAt}>
-          {new Date(participant.verifiedAt).toLocaleString('vi-VN')}
-        </time>
+        {/* One instant format across both applications (`V01-UX-021`): the
+            shared `formatInstant`, not a local `toLocaleString`. */}
+        <time dateTime={participant.verifiedAt}>{formatInstant(participant.verifiedAt)}</time>
       </p>
 
       <h4 className="customer-merge-participant__contacts-heading">{COPY.contactsHeading}</h4>

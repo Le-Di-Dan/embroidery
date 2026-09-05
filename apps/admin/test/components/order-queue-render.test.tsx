@@ -137,13 +137,18 @@ describe('rows', () => {
     expect(row.getByText('999.999.999.999')).toBeInTheDocument();
   });
 
-  it('shortens the customer id rather than printing it whole', async () => {
+  it('shows no customer identifier at all, whole or shortened', async () => {
+    // `V01-UX-009`: the column held a truncated UUID an operator could neither
+    // read nor act on, because the list projection publishes no customer name.
+    // §21.4 removes it rather than filling it — and is explicit that the
+    // recipient name frozen on the order may **not** be substituted, because a
+    // recipient is a property of an order and not the identity of a person.
     render();
     const row = within(await screen.findByTestId('order-queue-row'));
 
-    const cell = row.getByTitle(CUSTOMER_ID);
-    expect(cell).toHaveTextContent('0193…00c1');
-    expect(cell.textContent).not.toBe(CUSTOMER_ID);
+    expect(row.queryByTitle(CUSTOMER_ID)).toBeNull();
+    expect(row.queryByText(/0193/u)).toBeNull();
+    expect(screen.queryByRole('columnheader', { name: 'Khách hàng' })).toBeNull();
   });
 
   it('offers entry into the order and back to its request, and no payment action', async () => {

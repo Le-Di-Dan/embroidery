@@ -1,5 +1,6 @@
 'use client';
 
+import { formatDisplayInstant } from '@embroidery/i18n';
 import Link from 'next/link';
 import type { AdminDesignTemplateSummaryResponse } from '@embroidery/api-client';
 
@@ -96,5 +97,8 @@ export function DesignTemplateTable({ items, productNames }: DesignTemplateTable
 export function formatInstant(iso: string): string {
   const at = new Date(iso);
   if (Number.isNaN(at.getTime())) return iso;
-  return new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(at);
+  // One instant format across both applications (`V01-UX-021`, `APP12-V02` §30):
+  // the shared `dd/MM/yyyy · HH:mm` in `@embroidery/i18n`, in the workshop's
+  // zone, rather than a per-feature `Intl` call with its own field styles.
+  return formatDisplayInstant(at) ?? iso;
 }

@@ -28,10 +28,6 @@
       "title": "Phiên đăng nhập đã hết hạn",
       "description": "Phiên làm việc của bạn đã kết thúc vì lý do an toàn. Vui lòng đăng nhập lại để tiếp tục.",
       "action": "Đăng nhập lại"
-    },
-    "placeholder": {
-      "heading": "Quyền truy cập quản trị đã sẵn sàng",
-      "body": "Bạn đã đăng nhập vào bảng điều hành. Các chức năng vận hành — sản phẩm, đơn hàng, thiết kế và yêu cầu đặt thêu — sẽ xuất hiện trong các giai đoạn tiếp theo."
     }
   },
   "login": {
@@ -1024,7 +1020,7 @@
       "title": "Đã ghi điều chỉnh",
       "context": "SKU {skuId}",
       "noteTitle": "Tồn kho đã cập nhật",
-      "noteBody": "Tồn thực tế {onHandBefore} → {onHandAfter}. Khả dụng {availableBefore} → {availableAfter}. Một dòng ADJUSTMENT đã được ghi vào sổ kèm lý do và danh tính người thực hiện.",
+      "noteBody": "Tồn thực tế {onHandBefore} → {onHandAfter}. Khả dụng {availableBefore} → {availableAfter}. Một dòng điều chỉnh đã được ghi vào sổ kèm lý do và danh tính người thực hiện.",
       "ledgerTitle": "Sổ kho là nguồn dựng lại",
       "ledgerBody": "Tổng cột “ảnh hưởng tồn” dựng lại đúng bộ đếm. Sổ chỉ ghi thêm, không sửa và không xoá.",
       "viewLedger": "Xem lịch sử chuyển động"
@@ -1101,5 +1097,17 @@
     "title": "Không thể xác minh phiên đăng nhập",
     "detail": "Hiện chưa thể kết nối tới dịch vụ xác thực. Đây là sự cố tạm thời của máy chủ, không phải do bạn đã đăng xuất. Vui lòng thử lại.",
     "retry": "Thử lại"
+  },
+  "home": {
+    "heading": "Bảng điều hành",
+    "lead": "Chọn khu vực bạn cần xử lý.",
+    "hints": {
+      "orders": "Xác nhận phí giao hàng, đối chiếu thanh toán và giao hàng.",
+      "products": "Tạo, sửa và xuất bản sản phẩm đang bán.",
+      "categories": "Sắp xếp danh mục hiển thị trên trang bán.",
+      "gallery": "Đăng tác phẩm đã hoàn thiện lên bộ sưu tập.",
+      "assets": "Tải và duyệt ảnh dùng cho sản phẩm và bộ sưu tập.",
+      "customerSupport": "Tra cứu liên hệ đã xác minh và xử lý yêu cầu gộp khách hàng."
+    }
   }
 }

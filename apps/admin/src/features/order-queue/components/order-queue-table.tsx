@@ -35,8 +35,27 @@ interface OrderQueueTableProps {
  *
  * No payment control appears here, and none may: a verification is taken on the
  * order detail beside the facts it is judged against.
+ *
+ * ## Two columns went at `APP12-V02` (`V01-UX-009`, §21.3, §21.4)
+ *
+ * V01 measured two of the eight columns carrying nothing on a Wave-1 queue.
+ *
+ * `Khách hàng` showed a truncated UUID — `01a0…3ff0` — because the list
+ * projection publishes no customer name. §21.4 is explicit that the recipient
+ * name must **not** be substituted for it: a recipient is a property of an
+ * order, not the identity of a person, and relabelling one as the other is a
+ * business-semantic fabrication. So the column is removed rather than filled.
+ * The order detail still shows the recipient, under its own truthful label.
+ *
+ * `Yêu cầu` was a full column of em dashes: a Ready-Made order was never
+ * designed and carries no custom request. It is rendered only while some loaded
+ * row actually has one — driven by the data rather than by a release flag the
+ * Admin deliberately does not have, so it returns the moment a custom order
+ * appears without anything here changing.
  */
 export function OrderQueueTable({ rows }: OrderQueueTableProps) {
+  const showRequest = rows.some((row) => row.requestHref !== undefined);
+
   return (
     <table className="order-table" data-testid="order-queue-table">
       <caption className="order-table__caption">{ORDER_QUEUE_COPY.page.tableLabel}</caption>
@@ -47,8 +66,7 @@ export function OrderQueueTable({ rows }: OrderQueueTableProps) {
         <col className="order-table__col--total" />
         <col className="order-table__col--currency" />
         <col className="order-table__col--created" />
-        <col className="order-table__col--request" />
-        <col className="order-table__col--customer" />
+        {showRequest ? <col className="order-table__col--request" /> : null}
       </colgroup>
       <thead>
         <tr>
@@ -60,8 +78,7 @@ export function OrderQueueTable({ rows }: OrderQueueTableProps) {
           </th>
           <th scope="col">{ORDER_QUEUE_COPY.columns.currency}</th>
           <th scope="col">{ORDER_QUEUE_COPY.columns.createdAt}</th>
-          <th scope="col">{ORDER_QUEUE_COPY.columns.request}</th>
-          <th scope="col">{ORDER_QUEUE_COPY.columns.customer}</th>
+          {showRequest ? <th scope="col">{ORDER_QUEUE_COPY.columns.request}</th> : null}
         </tr>
       </thead>
       <tbody>
@@ -104,29 +121,27 @@ export function OrderQueueTable({ rows }: OrderQueueTableProps) {
                   neither is derived from the other by guesswork. */}
               <time dateTime={row.createdAt}>{formatInstant(row.createdAt)}</time>
             </td>
-            {/* A Ready-Made order was never designed and carries no custom
-                request, so there is nothing to open. The cell states the
-                absence rather than offering a dead link — `BR-031` says omit
-                the custom-only fact and say it is omitted. */}
-            <td>
-              {row.requestHref === undefined ? (
-                <span className="order-table__absent">{ORDER_QUEUE_COPY.actions.noRequest}</span>
-              ) : (
-                <Link
-                  className="order-table__request"
-                  href={row.requestHref}
-                  aria-label={`${ORDER_QUEUE_COPY.actions.openRequest}: ${row.code}`}
-                >
-                  {ORDER_QUEUE_COPY.actions.openRequest}
-                </Link>
-              )}
-            </td>
-            {/* Shortened for the column; the full id stays available on hover
-                and to assistive technology through `title`. There is no route
-                behind a customer id, so it is never a link. */}
-            <td className="order-table__customer" title={row.customerId}>
-              {row.customerShortId}
-            </td>
+            {/* Only rendered while some loaded row has a request to open. A
+                Ready-Made order was never designed and carries none, so on a
+                Wave-1 queue this column was a full column of em dashes
+                (`V01-UX-009`, §21.3). It returns the moment a row has one —
+                driven by the data rather than by a release flag the Admin does
+                not have. */}
+            {showRequest ? (
+              <td>
+                {row.requestHref === undefined ? (
+                  <span className="order-table__absent">{ORDER_QUEUE_COPY.actions.noRequest}</span>
+                ) : (
+                  <Link
+                    className="order-table__request"
+                    href={row.requestHref}
+                    aria-label={`${ORDER_QUEUE_COPY.actions.openRequest}: ${row.code}`}
+                  >
+                    {ORDER_QUEUE_COPY.actions.openRequest}
+                  </Link>
+                )}
+              </td>
+            ) : null}
           </tr>
         ))}
       </tbody>

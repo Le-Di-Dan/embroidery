@@ -24,6 +24,8 @@ import type {
   AdminQuotationVersionResponse,
 } from '@embroidery/api-client';
 
+import { formatDisplayInstant } from '@embroidery/i18n';
+
 import { REQUEST_QUOTATION_COPY as COPY } from './request-quotation-copy';
 
 const VERSION_STATUS_LABELS: Readonly<Record<string, string>> = {
@@ -73,7 +75,10 @@ export function presentInstant(instant: string | null | undefined): string {
   if (Number.isNaN(parsed.getTime())) {
     return '—';
   }
-  return parsed.toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
+  // One instant format across both applications (`V01-UX-021`, `APP12-V02` §30):
+  // the shared `dd/MM/yyyy · HH:mm` in `@embroidery/i18n`, in the workshop's
+  // zone, rather than a per-feature `Intl` call with its own field styles.
+  return formatDisplayInstant(parsed) ?? '—';
 }
 
 /** The two subject branches, read from the discriminator and never sniffed. */

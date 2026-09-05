@@ -3,7 +3,7 @@
     "page": {
       "breadcrumb": "Quản trị / Đơn hàng",
       "title": "Đơn hàng",
-      "subtitle": "Đơn hàng đã tạo từ thiết kế được duyệt, mới nhất trước.",
+      "subtitle": "Mới nhất trước.",
       "tableLabel": "Danh sách đơn hàng"
     },
     "columns": {
@@ -13,7 +13,6 @@
       "currency": "Tiền tệ",
       "createdAt": "Ngày tạo",
       "request": "Yêu cầu",
-      "customer": "Khách hàng",
       "code": "Mã đơn hàng"
     },
     "filters": {
@@ -35,7 +34,7 @@
       "loading": "Đang tải danh sách đơn hàng…",
       "appended": "Đã tải thêm đơn hàng.",
       "emptyTitle": "Chưa có đơn hàng nào",
-      "emptyBody": "Đơn hàng xuất hiện ở đây sau khi khách duyệt thiết kế và báo giá được chấp nhận.",
+      "emptyBody": "Đơn hàng sẽ xuất hiện ở đây sau khi khách đặt mua.",
       "filteredEmptyTitle": "Không có đơn hàng nào khớp bộ lọc",
       "filteredEmptyBody": "Thử bỏ bớt trạng thái hoặc nguồn đơn đã chọn.",
       "errorTitle": "Không tải được danh sách đơn hàng",
@@ -57,7 +56,7 @@
       "frozenFactsHelp": "Toàn bộ giá trị dưới đây là ảnh chụp tại thời điểm tạo đơn. Màn hình không đọc lại Catalog, nên Catalog thay đổi về sau không làm đổi đơn hàng này.",
       "items": "Sản phẩm trong đơn",
       "itemsHelp": "Loại dòng hàng quyết định trường nào tồn tại. Không bịa SKU, biến thể hay kích cỡ cho hàng khách tự gửi.",
-      "deposit": "Tiền cọc (DEPOSIT)",
+      "deposit": "Tiền cọc",
       "depositHelp": "Nguồn sự thật duy nhất của bảng này là dữ liệu thanh toán của đơn hàng.",
       "attempts": "Các lần thanh toán",
       "attemptsHelp": "Lần thanh toán đã kết thúc không bao giờ được đặt lại — thử lại sẽ sinh lần thanh toán mới.",
@@ -424,9 +423,9 @@
       "action": "Hoàn tất đơn hàng",
       "deliveredAtLabel": "Đã giao lúc",
       "dialogTitle": "Hoàn tất đơn hàng này?",
-      "dialogBody": "Đơn hàng sẽ chuyển sang COMPLETED. Đây là trạng thái cuối của vòng đời đơn hàng.",
+      "dialogBody": "Đơn hàng sẽ chuyển sang trạng thái Hoàn tất. Đây là trạng thái cuối của vòng đời đơn hàng.",
       "effectLabel": "Trạng thái sau khi xác nhận",
-      "effectValue": "COMPLETED",
+      "effectValue": "Hoàn tất",
       "effectNote": "Sau khi hoàn tất, giao diện quản trị không còn thao tác nào trên đơn này: không mở lại, không giao lại, không hoàn tất lần nữa, không sửa giao hàng.",
       "confirm": "Xác nhận hoàn tất",
       "cancel": "Huỷ",

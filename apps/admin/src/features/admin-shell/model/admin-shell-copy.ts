@@ -18,6 +18,8 @@ import { BRAND_NAME } from '@embroidery/ui';
  * changes wording by editing one JSON file and a reviewer still reads why the
  * key exists at the point of use.
  */
+const homeMessage = messageView(VI_MESSAGES.admin, 'home');
+
 const shellMessage = messageView(VI_MESSAGES.admin, 'shell');
 
 export const ADMIN_SHELL_COPY = {
@@ -57,8 +59,17 @@ export const ADMIN_SHELL_COPY = {
     description: shellMessage.text('sessionExpired.description'),
     action: shellMessage.text('sessionExpired.action'),
   },
-  placeholder: {
-    heading: shellMessage.text('placeholder.heading'),
-    body: shellMessage.text('placeholder.body'),
+  /**
+   * The operator's landing screen (`V01-UX-015`, `APP12-V02` §19).
+   *
+   * It replaced a placeholder whose body told an operator that products,
+   * orders, designs and requests "sẽ xuất hiện trong các giai đoạn tiếp theo" —
+   * true when `APP1-A02` wrote it, and eleven phases out of date by the time
+   * V01 photographed it. The destination hints live in the message repository
+   * under `home.hints` and are read by `admin-home-destinations.ts`.
+   */
+  home: {
+    heading: homeMessage.text('heading'),
+    lead: homeMessage.text('lead'),
   },
 } as const;
