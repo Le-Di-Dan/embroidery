@@ -307,6 +307,32 @@ describe('accessibility', () => {
     expect(screen.getAllByRole('group')).toHaveLength(2);
   });
 
+  /*
+   * `APP12-H08`. The description binding above is necessary and was not
+   * sufficient.
+   *
+   * `aria-describedby` on a group is announced when the group is **entered**,
+   * and this message appears while the customer is already inside one: choosing
+   * a colour is what publishes "chọn kích thước" on the *sibling* fieldset. The
+   * CTA cannot fill the gap either — it is `disabled`, so it is not in the tab
+   * order and a screen-reader customer never lands on it. Without a live region
+   * there was no way to learn why the purchase could not continue.
+   */
+  it('announces the missing-axis message as well as binding it to the group', () => {
+    renderPanel();
+    chooseOption(READY_MADE_PURCHASE_COPY.variantLegend, 'Trắng');
+
+    const message = screen.getByText(READY_MADE_PURCHASE_COPY.sizeRequired);
+    // Polite, not assertive: the customer is mid-choice and has done nothing
+    // wrong.
+    expect(message).toHaveAttribute('role', 'status');
+    // And still the group's description — the live region is in addition to the
+    // `906:186` binding, never instead of it.
+    expect(
+      screen.getByRole('group', { name: READY_MADE_PURCHASE_COPY.sizeLegend }),
+    ).toHaveAccessibleDescription(READY_MADE_PURCHASE_COPY.sizeRequired);
+  });
+
   it('is operable from the keyboard alone', () => {
     renderPanel();
     const variantGroup = screen.getByRole('group', {

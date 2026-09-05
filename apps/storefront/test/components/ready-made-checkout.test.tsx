@@ -102,6 +102,39 @@ async function fillDelivery(user: ReturnType<typeof createUser>) {
   await user.type(screen.getByLabelText(delivery.provinceLabel), 'TP. Hồ Chí Minh');
 }
 
+/*
+ * `APP12-H08` §7. The four delivery fields are contract-required and
+ * `validateDelivery` refuses an empty one, but nothing in the markup said so:
+ * they announced as ordinary text inputs, and a screen-reader customer learned
+ * they were mandatory only by submitting and being refused.
+ *
+ * Asserted through the accessible property rather than the attribute that
+ * produces it, so the suite would still pass if the field ever moved to a native
+ * `required` — which it deliberately has not, because the native bubble would
+ * pre-empt the approved field-bound message.
+ */
+describe('the delivery fields state what they require', () => {
+  it('marks all four required, without a placeholder standing in for a label', () => {
+    renderWithProviders(<CheckoutQueryProvider view={makeCheckoutView()} />);
+
+    for (const label of [
+      delivery.recipientNameLabel,
+      delivery.recipientPhoneLabel,
+      delivery.addressLineLabel,
+      delivery.provinceLabel,
+    ]) {
+      const field = screen.getByLabelText(label);
+      expect(field).toBeRequired();
+      // The label is a real one, so the accessible name survives a browser that
+      // does not expose placeholders.
+      expect(field).toHaveAccessibleName(label);
+      // And the native attribute stays off: the browser must not raise its own
+      // validation bubble over the approved message.
+      expect(field).not.toHaveAttribute('required');
+    }
+  });
+});
+
 describe('the checkout summary', () => {
   it('states the merchandise subtotal, and never a shipping fee or a total', () => {
     renderWithProviders(<CheckoutQueryProvider view={makeCheckoutView({ quantityHint: '2' })} />);

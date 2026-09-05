@@ -71,6 +71,10 @@ export function CheckoutDeliveryCard(props: CheckoutDeliveryCardProps) {
           label={LABEL[field]}
           value={draft[field]}
           maxLength={maxLengthOf(field)}
+          // All four are contract-required and `validateDelivery` refuses an
+          // empty one; `DELIVERY_FIELDS` is exactly the required set, so this is
+          // a constant rather than a per-field flag (`APP12-H08`).
+          required
           disabled={disabled}
           autoComplete={AUTOCOMPLETE[field]}
           {...(field === 'recipientPhone' ? { inputMode: 'tel' as const } : {})}

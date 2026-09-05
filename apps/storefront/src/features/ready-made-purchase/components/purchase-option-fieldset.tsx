@@ -93,8 +93,25 @@ export function PurchaseOptionFieldset({
         ))}
       </div>
 
+      {/*
+        A live region as well as an `aria-describedby` target (`APP12-H08`).
+
+        `906:186` requires the message be *bound to the group rather than
+        announced as a toast*, and it still is — this is the same paragraph, in
+        the same place, referenced by the same fieldset. What was missing is that
+        a description is announced when a group is **entered**, and this message
+        appears while the customer is already inside one: choosing a colour is
+        what publishes "chọn kích thước" on the sibling fieldset, so focus is in
+        the group the customer just left and nothing is spoken. The disabled CTA
+        says nothing either, because a disabled control is not in the tab order
+        at all — so with no live region a screen-reader customer had no way to
+        learn why the purchase could not continue.
+
+        `status` rather than `alert`: polite, because the customer is mid-choice
+        and has done nothing wrong.
+      */}
       {error === undefined ? null : (
-        <p id={errorId} className="ready-made-purchase__error">
+        <p id={errorId} className="ready-made-purchase__error" role="status">
           {error}
         </p>
       )}

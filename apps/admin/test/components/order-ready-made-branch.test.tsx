@@ -25,6 +25,7 @@ import {
   adminOrderDetail,
   adminOrderPaymentRead,
   adminOrderShippingRead,
+  adminOrderShippingSave,
   adminPaymentAttemptVerify,
 } from '@embroidery/api-client';
 
@@ -39,12 +40,17 @@ jest.mock('@embroidery/api-client', () => ({
   adminOrderDetail: jest.fn(),
   adminOrderPaymentRead: jest.fn(),
   adminOrderShippingRead: jest.fn(),
+  adminOrderShippingSave: jest.fn(),
   adminPaymentAttemptVerify: jest.fn(),
 }));
 
 const detailMock = adminOrderDetail as jest.MockedFunction<typeof adminOrderDetail>;
 const paymentsMock = adminOrderPaymentRead as jest.MockedFunction<typeof adminOrderPaymentRead>;
 const shippingMock = adminOrderShippingRead as jest.MockedFunction<typeof adminOrderShippingRead>;
+/** Mocked so the empty-fee refusal case can assert that **no** request was made. */
+const saveShippingMock = adminOrderShippingSave as jest.MockedFunction<
+  typeof adminOrderShippingSave
+>;
 const verifyMock = adminPaymentAttemptVerify as jest.MockedFunction<
   typeof adminPaymentAttemptVerify
 >;
@@ -176,6 +182,38 @@ describe('before the shipping fee', () => {
     renderWithProviders(<OrderDetailScreen orderId={ORDER_ID} />);
 
     expect(await screen.findByTestId('shipping-fee-input')).toHaveValue('');
+  });
+
+  /*
+   * `APP12-H08` §7. The fee field's help line and its refusal share one
+   * element, deliberately — `753:158` wants the error *in place of* the help
+   * text — but a shared element never unmounts, and a screen reader announces an
+   * alert region when it appears rather than when text inside a region it has
+   * already seen changes. The operator presses `Xác nhận` with an empty field,
+   * focus stays on the button, and the refusal was silent.
+   *
+   * The `key` flip is the fix, and this asserts its observable consequence: the
+   * message is inside a live region once it is a refusal, and is not one while
+   * it is ordinary help text.
+   */
+  it('announces the empty-fee refusal instead of only redrawing the help line', async () => {
+    const user = createUser();
+    renderWithProviders(<OrderDetailScreen orderId={ORDER_ID} />);
+
+    const field = await screen.findByTestId('shipping-fee-input');
+    // Before: the field is valid and its description is help, not an alert.
+    expect(field).toHaveAttribute('aria-invalid', 'false');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId('shipping-fee-submit'));
+
+    // After: the same description slot is now an alert, and it is still what the
+    // field points at — announced *and* bound, never one instead of the other.
+    expect(field).toHaveAttribute('aria-invalid', 'true');
+    const alert = await screen.findByRole('alert');
+    expect(field).toHaveAttribute('aria-describedby', alert.id);
+    // And no request was made: the refusal is the client's presence check.
+    expect(saveShippingMock).not.toHaveBeenCalled();
   });
 
   it('renders the reservation deadline it was given, not one it computed', async () => {

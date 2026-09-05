@@ -101,12 +101,28 @@ export function ModalFrame({
       const last = focusable[focusable.length - 1];
       if (first === undefined || last === undefined) return;
       const active = document.activeElement;
-      if (event.shiftKey && (active === first || active === dialog)) {
+      // The heading is where focus *starts*, and it is deliberately not in the
+      // cycle: `tabIndex={-1}` keeps it out of `FOCUSABLE` so Tab never lands
+      // back on it. That made it a hole in the trap — at the one moment every
+      // customer begins from, the active element was neither `first` nor `last`
+      // and both edges were skipped, so the browser handled the key. Forward
+      // that happened to be right; backward it walked out of the dialog and into
+      // the page behind the scrim (`APP12-H08`).
+      //
+      // So anything focused inside the dialog but outside the cycle — the
+      // heading, the dialog box itself — is treated as *both* edges: Tab goes to
+      // the first control, Shift+Tab to the last. Written as "not in the list"
+      // rather than as "is the heading", because the property that matters is
+      // being outside the cycle, and a future non-tabbable element inside the
+      // dialog would otherwise reopen the same hole.
+      const outsideCycle =
+        active === null || !(active instanceof HTMLElement) || !focusable.includes(active);
+      if (event.shiftKey && (active === first || outsideCycle)) {
         event.preventDefault();
         last.focus();
         return;
       }
-      if (!event.shiftKey && active === last) {
+      if (!event.shiftKey && (active === last || outsideCycle)) {
         event.preventDefault();
         first.focus();
       }

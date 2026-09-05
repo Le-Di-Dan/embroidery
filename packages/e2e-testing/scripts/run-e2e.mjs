@@ -109,6 +109,23 @@ const APP12_H01 = ['app12-h01-chromium'];
 // once when the API composes its module graph, so one process cannot serve
 // both.
 const APP12_H01_WAVE2 = ['app12-h01-wave2-chromium'];
+// APP12-H08 — the Wave-1 accessibility and compatibility gate. The A02/H01
+// topology exactly, and for the same reason those two share it: the audit needs
+// the *whole* commercial universe on screen — a real purchasable catalog, a real
+// verified checkout, a real ORDER_ACCESS surface and a real authenticated
+// operator working the same order — because an accessibility finding on a
+// fixture-rendered page is a finding about the fixture.
+//
+// Four projects rather than one, and the split is the checkpoint's own §11
+// matrix rather than a convenience: the customer audit and the operator audit
+// run on different origins, and the two non-Chromium engines run a *smoke*
+// (§11: "Do not test every route in every browser") rather than the full audit.
+const APP12_H08 = [
+  'app12-h08-storefront-chromium',
+  'app12-h08-admin-chromium',
+  'app12-h08-firefox',
+  'app12-h08-webkit',
+];
 
 /**
  * `--app4` (APP4-E01-H01) is not a Playwright mode.
@@ -244,6 +261,8 @@ function parseArgs(argv) {
   const app12A01 = flags.has('--app12-a01');
   // APP12-A02-C1: the Admin Ready-Made order branch. Rides the S03 topology.
   const app12A02 = flags.has('--app12-a02');
+  // APP12-H08: the accessibility and compatibility gate, on the A02 topology.
+  const app12H08 = flags.has('--app12-h08');
   // APP12-H01: the live security acceptance, and its Wave-2-released sibling.
   const app12H01Wave2 = flags.has('--app12-h01-wave2');
   const app12H01 = flags.has('--app12-h01') || app12H01Wave2;
@@ -252,64 +271,68 @@ function parseArgs(argv) {
   const full = flags.has('--full');
   const mode = app4
     ? 'app4'
-    : app12H06
-      ? 'app12-h06'
-      : app12H01Wave2
-        ? 'app12-h01-wave2'
-        : app12H01
-          ? 'app12-h01'
-          : app12A02
-            ? 'app12-a02'
-            : app12A01
-              ? 'app12-a01'
-              : app12S03
-                ? 'app12-s03'
-                : app12S02
-                  ? 'app12-s02'
-                  : app12S01
-                    ? 'app12-s01'
-                    : app7E01
-                      ? 'app7-e01'
-                      : app5E01
-                        ? 'app5-e01'
-                        : app4Browser
-                          ? 'app4-browser'
-                          : app1
-                            ? 'app1'
-                            : full
-                              ? 'full'
-                              : 'smoke';
-  const projects = app12H06
-    ? APP12_H06
-    : app12H01Wave2
-      ? APP12_H01_WAVE2
-      : app12H01
-        ? APP12_H01
-        : app12A02
-          ? APP12_A02
-          : app12A01
-            ? APP12_A01
-            : app12S03
-              ? APP12_S03
-              : app12S02
-                ? APP12_S02
-                : app12S01
-                  ? APP12_S01
-                  : app7E01
-                    ? APP7_E01
-                    : app5E01
-                      ? APP5_E01
-                      : app4R01C1
-                        ? APP4_R01_C1
-                        : app4R01
-                          ? APP4_R01
+    : app12H08
+      ? 'app12-h08'
+      : app12H06
+        ? 'app12-h06'
+        : app12H01Wave2
+          ? 'app12-h01-wave2'
+          : app12H01
+            ? 'app12-h01'
+            : app12A02
+              ? 'app12-a02'
+              : app12A01
+                ? 'app12-a01'
+                : app12S03
+                  ? 'app12-s03'
+                  : app12S02
+                    ? 'app12-s02'
+                    : app12S01
+                      ? 'app12-s01'
+                      : app7E01
+                        ? 'app7-e01'
+                        : app5E01
+                          ? 'app5-e01'
                           : app4Browser
-                            ? APP4
+                            ? 'app4-browser'
                             : app1
-                              ? APP1
+                              ? 'app1'
                               : full
-                                ? FULL
-                                : SMOKE;
+                                ? 'full'
+                                : 'smoke';
+  const projects = app12H08
+    ? APP12_H08
+    : app12H06
+      ? APP12_H06
+      : app12H01Wave2
+        ? APP12_H01_WAVE2
+        : app12H01
+          ? APP12_H01
+          : app12A02
+            ? APP12_A02
+            : app12A01
+              ? APP12_A01
+              : app12S03
+                ? APP12_S03
+                : app12S02
+                  ? APP12_S02
+                  : app12S01
+                    ? APP12_S01
+                    : app7E01
+                      ? APP7_E01
+                      : app5E01
+                        ? APP5_E01
+                        : app4R01C1
+                          ? APP4_R01_C1
+                          : app4R01
+                            ? APP4_R01
+                            : app4Browser
+                              ? APP4
+                              : app1
+                                ? APP1
+                                : full
+                                  ? FULL
+                                  : SMOKE;
   // The E01 suite is always host/Chromium; it cannot run in the container.
   const runner =
     app1 ||
@@ -320,7 +343,8 @@ function parseArgs(argv) {
     app12A02 ||
     app12A01 ||
     app12H01 ||
-    app12H06
+    app12H06 ||
+    app12H08
       ? 'host'
       : runnerArg
         ? runnerArg.split('=')[1]
@@ -349,6 +373,7 @@ function parseArgs(argv) {
     app12H01,
     app12H01Wave2,
     app12H06,
+    app12H08,
   };
 }
 
@@ -386,6 +411,7 @@ async function main() {
     app12H01,
     app12H01Wave2,
     app12H06,
+    app12H08,
   } = parseArgs(process.argv.slice(2));
 
   // APP7-E01-U01 owns its own lean topology and teardown and starts no browser
@@ -434,7 +460,7 @@ async function main() {
   // rather than to insert policy rows behind it. The Admin account it creates
   // is a by-product; nothing in the S02 suite logs in.
   const adminCredentials =
-    app1 || app4Browser || app12S02 || app12S03 || app12A01 || app12A02 || app12H01
+    app1 || app4Browser || app12S02 || app12S03 || app12A01 || app12A02 || app12H01 || app12H08
       ? createAdminCredentials(runId)
       : undefined;
   // The browser tier overrides one non-secret value: the canonical origin the
@@ -463,7 +489,15 @@ async function main() {
   // pepper, so the API would refuse to start and the failure would read as an
   // A01 defect. Per-run, synthetic and in-memory.
   const app4Secrets =
-    app4Browser || app12S01 || app12S02 || app12S03 || app12A02 || app12A01 || app12H01 || app12H06
+    app4Browser ||
+    app12S01 ||
+    app12S02 ||
+    app12S03 ||
+    app12A02 ||
+    app12A01 ||
+    app12H01 ||
+    app12H06 ||
+    app12H08
       ? { ...createApp4SecretConfig(runId), storefrontOrigin: config.baseUrls.storefront }
       : undefined;
   // `APP7-B03`'s merchant bank configuration is a module-scoped fail-fast
@@ -530,7 +564,7 @@ async function main() {
       // other's operations, and neither grant can exist unless the capability
       // that mints it is released. The API reads the same value below, because a
       // released route in front of a withheld operation would prove nothing.
-      ...(app12S01 || app12S02 || app12S03 || app12A02 || app12H01 || app12H06
+      ...(app12S01 || app12S02 || app12S03 || app12A02 || app12H01 || app12H06 || app12H08
         ? {
             withStorefront: {
               INTERNAL_API_BASE_URL: `http://localhost:${config.ports.api}/api`,
@@ -649,7 +683,7 @@ async function main() {
       app12A01Fixture = await seedS01Catalog({ databaseUrl: env.database.url, log });
     }
     let app12S02Fixture;
-    if (app12S02 || app12S03 || app12A02 || app12H01) {
+    if (app12S02 || app12S03 || app12A02 || app12H01 || app12H08) {
       const { seedS02Catalog } = await import('../support/app12/s02-checkout-fixture.mjs');
       app12S02Fixture = await seedS02Catalog({ databaseUrl: env.database.url, log });
     }
@@ -731,7 +765,7 @@ async function main() {
                   E2E_ADMIN_EMAIL: adminCredentials.email,
                   E2E_ADMIN_PASSWORD: adminCredentials.password,
                 }
-              : app12S02 || app12S03 || app12A02 || app12H01
+              : app12S02 || app12S03 || app12A02 || app12H01 || app12H08
                 ? {
                     // The seeded slugs and SKU ids, for the same reason. The SKU ids
                     // matter more here than in S01: the spec composes checkout
@@ -762,7 +796,7 @@ async function main() {
                     //
                     // The password travels the child environment only — never an
                     // argument, never a log line.
-                    ...(app12S03 || app12A02 || app12H01
+                    ...(app12S03 || app12A02 || app12H01 || app12H08
                       ? {
                           E2E_BASE_ADMIN: config.baseUrls.admin,
                           E2E_ADMIN_EMAIL: adminCredentials.email,

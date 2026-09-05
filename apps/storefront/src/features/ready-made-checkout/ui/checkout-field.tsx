@@ -34,6 +34,28 @@ export interface CheckoutFieldProps {
   /** The approved field-bound message, or absent when the field is fine. */
   readonly error?: string;
   readonly maxLength: number;
+  /**
+   * Whether the contract requires a value (`APP12-H08`).
+   *
+   * All four delivered fields are required and `validateDelivery` refuses an
+   * empty one, but nothing in the markup said so: a screen-reader customer met
+   * four fields that announced as ordinary text inputs and learned they were
+   * mandatory only by submitting. `aria-required` states the field's own value
+   * constraint, which is SC 4.1.2's "state … programmatically determined".
+   *
+   * It is **`aria-required` rather than the `required` attribute** on purpose.
+   * `required` would hand validation to the browser: the native bubble would
+   * fire on submit, in the UA's language and styling, and the approved
+   * field-bound message (`909:258` — *bound to the field, never a toast*) would
+   * never be reached. The ARIA attribute announces the same state and changes
+   * no behaviour.
+   *
+   * The *visible* required indication is deliberately not added here. Every
+   * field on the drawn card is required, so a marker on all four is a visual
+   * and copy decision about the approved frame rather than an accessibility
+   * defect — recorded as `FU-APP12-H08-01` for `V01`/`V02`.
+   */
+  readonly required?: boolean;
   readonly disabled?: boolean;
   /** The browser's own autofill vocabulary; never a business value. */
   readonly autoComplete?: string;
@@ -41,8 +63,18 @@ export interface CheckoutFieldProps {
 }
 
 export function CheckoutField(props: CheckoutFieldProps) {
-  const { label, value, onChange, hint, error, maxLength, disabled, autoComplete, inputMode } =
-    props;
+  const {
+    label,
+    value,
+    onChange,
+    hint,
+    error,
+    maxLength,
+    required,
+    disabled,
+    autoComplete,
+    inputMode,
+  } = props;
   const inputId = useId();
   const hintId = `${inputId}-hint`;
   const errorId = `${inputId}-error`;
@@ -68,6 +100,7 @@ export function CheckoutField(props: CheckoutFieldProps) {
         value={value}
         maxLength={maxLength}
         disabled={disabled === true}
+        aria-required={required === true ? true : undefined}
         aria-invalid={error === undefined ? undefined : true}
         aria-describedby={describedBy === '' ? undefined : describedBy}
         {...(autoComplete === undefined ? {} : { autoComplete })}

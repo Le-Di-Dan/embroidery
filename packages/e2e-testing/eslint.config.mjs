@@ -42,4 +42,23 @@ export default [
       },
     },
   },
+  {
+    // The `APP12-H08` accessibility helpers are the second such case, and a
+    // mixed one: each module runs in **Node** (reading the axe bundle, reading
+    // the locked token file, driving the page) and also carries the function
+    // bodies Playwright serializes into the browser, where `document`,
+    // `window` and `HTMLElement` are the correct globals. Both sets are
+    // declared for these two files alone rather than widened across
+    // `support/**`, for the reason above: an orchestration script reaching for
+    // `document` is a real defect and must keep failing everywhere else.
+    files: ['support/app12/h08-axe.mjs', 'support/app12/h08-measure.mjs'],
+    languageOptions: {
+      globals: {
+        ...NODE_GLOBALS,
+        window: 'readonly',
+        document: 'readonly',
+        HTMLElement: 'readonly',
+      },
+    },
+  },
 ];

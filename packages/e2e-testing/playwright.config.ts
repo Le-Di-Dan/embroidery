@@ -294,6 +294,87 @@ export default defineConfig({
         screenshot: 'off',
       },
     },
+    // APP12-H08 — the Wave-1 accessibility and compatibility gate.
+    //
+    // Four projects over one environment. The Chromium pair carries the full
+    // audit (axe, keyboard journeys, contrast, reflow, target size); Firefox and
+    // WebKit carry the §11 smoke, which is a different subject and deliberately
+    // a smaller one — "no browser-specific operation failure", not a second
+    // opinion on every rule.
+    //
+    // **Firefox and WebKit run on the host, not in the container.** Every other
+    // project in this file says the non-Chromium engines cannot: they have no
+    // `--host-resolver-rules`, which is a Chromium flag, so the comment at the
+    // top of this file routed them to the Linux image. That reasoning is stale.
+    // `docs/development/LOCAL_DEVELOPMENT.md` §4 makes the two gateway
+    // hostnames a **required one-time hosts-file entry** for every developer of
+    // this repository, and a hosts file resolves for every process on the
+    // machine regardless of engine — which `APP12-H08` verified by opening
+    // `http://embroidery.local` in both engines before writing this. The
+    // container path stays available for `--full`; it is simply not needed
+    // here, and needing it would have cost this gate the workspace access its
+    // world module depends on (the image copies `specs` and nothing else).
+    //
+    // Artifacts are off for the reason `APP12-S03` and `APP12-H01` record: the
+    // customer journeys open a live `ORDER_ACCESS` surface, and a trace, a video
+    // or a HAR of one writes secret-bearing material to disk that outlives the
+    // disposable database. Off unconditionally, so a *failure* cannot be the
+    // thing that creates the artefact.
+    {
+      name: 'app12-h08-storefront-chromium',
+      testMatch: '**/app12/h08-storefront-*.acceptance.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        ...chromiumLaunch,
+        baseURL: STOREFRONT_URL,
+        viewport: { width: 1440, height: 900 },
+        trace: 'off',
+        video: 'off',
+        screenshot: 'off',
+      },
+    },
+    {
+      name: 'app12-h08-admin-chromium',
+      testMatch: '**/app12/h08-admin-*.acceptance.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        ...chromiumLaunch,
+        baseURL: ADMIN_URL,
+        viewport: { width: 1440, height: 900 },
+        trace: 'off',
+        video: 'off',
+        screenshot: 'off',
+      },
+    },
+    {
+      name: 'app12-h08-firefox',
+      testMatch: '**/app12/h08-compat.acceptance.spec.ts',
+      use: {
+        ...devices['Desktop Firefox'],
+        baseURL: STOREFRONT_URL,
+        viewport: { width: 1440, height: 900 },
+        trace: 'off',
+        video: 'off',
+        screenshot: 'off',
+      },
+    },
+    {
+      name: 'app12-h08-webkit',
+      testMatch: '**/app12/h08-compat.acceptance.spec.ts',
+      // WebKit runs the customer half only (§11: WebKit — customer critical
+      // smoke). The Admin cases are grepped out rather than split into a second
+      // file, so the two engines assert the *same* journey text and a
+      // divergence between them cannot hide in two copies of it.
+      grepInvert: /@admin/,
+      use: {
+        ...devices['Desktop Safari'],
+        baseURL: STOREFRONT_URL,
+        viewport: { width: 1440, height: 900 },
+        trace: 'off',
+        video: 'off',
+        screenshot: 'off',
+      },
+    },
     {
       name: 'app7-e01-chromium',
       testMatch: '**/app7/*.acceptance.spec.ts',

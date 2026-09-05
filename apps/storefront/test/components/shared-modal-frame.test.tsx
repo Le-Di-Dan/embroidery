@@ -110,6 +110,41 @@ describe('the shared modal frame', () => {
     expect(last).toHaveFocus();
   });
 
+  /*
+   * `APP12-H08`. The two cases below are the ones the original suite could not
+   * have caught, because it only ever pressed Tab from a *control*.
+   *
+   * The frame deliberately puts initial focus on the **heading**, which carries
+   * `tabIndex={-1}` and is therefore excluded from the focusable list the trap
+   * cycles. So at the one moment every customer starts from — the dialog has
+   * just opened and nothing has been pressed yet — the active element was
+   * neither `first` nor `last`, both edge branches were skipped, and the
+   * keypress was left to the browser. Forward that is harmless (the next
+   * tabbable really is inside the dialog); backward it is not: the heading is
+   * late in document order, so Shift+Tab walked out of the dialog and into the
+   * page behind the scrim, on a screen standing between the customer and a
+   * payment.
+   */
+  it('moves Tab from the heading to the first control inside the dialog', () => {
+    renderFrame();
+
+    const first = screen.getByRole('button', { name: 'first' });
+    fireEvent.keyDown(document, { key: 'Tab' });
+
+    expect(first).toHaveFocus();
+  });
+
+  it('keeps Shift+Tab from the heading inside the dialog', () => {
+    renderFrame();
+
+    const last = screen.getByRole('button', { name: 'last' });
+    // The heading holds focus on open; this is the first key a customer who
+    // overshot would press.
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+
+    expect(last).toHaveFocus();
+  });
+
   it('returns focus to the control that opened it', () => {
     const opener = document.createElement('button');
     document.body.append(opener);
