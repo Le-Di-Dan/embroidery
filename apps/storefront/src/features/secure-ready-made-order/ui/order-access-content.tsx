@@ -21,7 +21,6 @@ import { MAX_EVIDENCE_PER_ATTEMPT } from '../model/transfer-evidence';
 import { EvidenceSection } from './evidence-section';
 import { NextActionCard } from './next-action-card';
 import { OrderAmountCard } from './order-amount-card';
-import { OrderNote } from './order-note';
 import { OrderQrPanel } from './order-qr-panel';
 import { OrderStatusPill } from './order-status-pill';
 import { OrderStepUpDialog } from './order-step-up-dialog';
@@ -121,6 +120,9 @@ export function OrderAccessContent({ order, session, headingRef }: OrderAccessCo
     evidenceSubmitted: evidence.submittedCount > 0,
   });
   const paymentBlock = showsPaymentBlock(variant);
+  // The QR is mounted only with a live attempt, and the grid's aside column is
+  // declared only when it is — see the note at the grid below.
+  const showsQr = payable && payment.current !== undefined;
 
   const intakeOpen = evidenceIntakeOpen(
     variant,
@@ -159,12 +161,27 @@ export function OrderAccessContent({ order, session, headingRef }: OrderAccessCo
         the same object URL. The stylesheet owns which arrangement applies, so
         there is no JavaScript media query and no second source of truth.
       */}
-      <div className="secure-order__columns">
+      {/*
+        The aside column is declared only while the QR is mounted
+        (`V01-UX-019`, §17.3). It used to be unconditional, so in every state
+        without a QR — `AWAITING_SHIPPING_FEE` among them — the grid reserved
+        420px for nothing and the amount card stopped at ~700 with a void beside
+        it. V01 measured that as one of four different left-to-right rhythms in
+        a single scroll, and the emptiness read as something missing rather than
+        as breathing room.
+      */}
+      <div
+        className={
+          showsQr
+            ? 'secure-order__columns secure-order__columns--with-aside'
+            : 'secure-order__columns'
+        }
+      >
         <div className="secure-order__cell secure-order__cell--amount">
           <OrderAmountCard order={order} full={payment.current} showsTotal={paymentBlock} />
         </div>
 
-        {payable && payment.current !== undefined ? (
+        {showsQr ? (
           <>
             <div className="secure-order__cell secure-order__cell--qr">
               <OrderQrPanel qr={qr} />
@@ -180,14 +197,12 @@ export function OrderAccessContent({ order, session, headingRef }: OrderAccessCo
             <EvidenceSection evidence={evidence} intakeOpen={intakeOpen} />
           </div>
         )}
+
+        {/* Inside the grid, in the content column: the deadlines are facts about
+            this order and belong with the cards rather than in a full-width band
+            below them, which was the fourth of the four rhythms. */}
+        <div className="secure-order__cell secure-order__cell--deadlines">{renderDeadlines()}</div>
       </div>
-
-      {renderDeadline()}
-
-      {/* `910:335` — the access-expiry band, at the foot of the page. */}
-      <OrderNote tone="INFO">
-        {`${COPY.access.expiryPrefix} ${formatInstant(order.accessExpiresAt)}${COPY.access.expirySuffix}`}
-      </OrderNote>
 
       {payment.stepUpOpen ? (
         <OrderStepUpDialog onVerified={payment.stepUpVerified} onCancel={payment.cancelStepUp} />
@@ -195,16 +210,35 @@ export function OrderAccessContent({ order, session, headingRef }: OrderAccessCo
     </section>
   );
 
-  function renderDeadline() {
+  /**
+   * The page's two instants, in one line (`V01-UX-017`, §17.3).
+   *
+   * They were two adjacent bordered callouts in two colours — amber for the
+   * stock hold, blue for the link expiry — two similar dates the customer had
+   * to tell apart at the foot of the page. One labelled group now, so the
+   * comparison is a glance rather than a puzzle.
+   *
+   * The stock hold is still absent once no live reservation stands — the window
+   * lapsed, the stock was released, or it was consumed at dispatch — which is
+   * exactly when a deadline must stop being shown. The link expiry always
+   * stands, because the link always does.
+   */
+  function renderDeadlines() {
     const deadline = order.paymentDeadline;
-    // Absent once no live reservation stands — the window lapsed, the stock was
-    // released, or it was consumed at dispatch — which is exactly when a
-    // deadline must stop being shown. Shown only while something is still owed.
-    if (deadline === undefined || !paymentBlock) return null;
+    const showHold = deadline !== undefined && paymentBlock;
     return (
-      <OrderNote tone="WARNING">
-        {`${COPY.deadline.prefix} ${formatInstant(deadline)}${COPY.deadline.suffix}`}
-      </OrderNote>
+      <dl className="secure-order__deadlines" aria-label={COPY.deadlines.regionLabel}>
+        {showHold ? (
+          <div className="secure-order__deadline">
+            <dt className="secure-order__deadline-label">{COPY.deadlines.holdLabel}</dt>
+            <dd className="secure-order__deadline-value">{formatInstant(deadline)}</dd>
+          </div>
+        ) : null}
+        <div className="secure-order__deadline">
+          <dt className="secure-order__deadline-label">{COPY.deadlines.expiryLabel}</dt>
+          <dd className="secure-order__deadline-value">{formatInstant(order.accessExpiresAt)}</dd>
+        </div>
+      </dl>
     );
   }
 

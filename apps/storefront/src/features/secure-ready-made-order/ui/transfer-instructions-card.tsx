@@ -4,7 +4,6 @@ import type { CustomerFullPaymentResponse } from '@embroidery/api-client';
 
 import { ORDER_ACCESS_COPY as COPY } from '../model/order-access-copy';
 import { CopyValueButton } from './copy-value-button';
-import { OrderNote } from './order-note';
 
 /**
  * `910:306`…`910:324` — the manual bank transfer, stated in full.
@@ -94,8 +93,15 @@ export function TransferInstructionsCard({ full }: TransferInstructionsCardProps
         </div>
       </dl>
 
-      {/* `910:324` — the one supporting line `917:595` allows this surface. */}
-      <OrderNote tone="INFO">{COPY.transfer.referenceNote}</OrderNote>
+      {/*
+        `910:324` — the one supporting line `917:595` allows this surface.
+
+        Plain helper text rather than a bordered callout since `APP12-V02`
+        (`V01-UX-017`, §17.3). It is a hint about the field directly above it,
+        not a page-level warning, and V01 counted six bordered boxes around one
+        bank transfer: when everything claims urgency, nothing has any.
+      */}
+      <p className="secure-order__field-help">{COPY.transfer.referenceNote}</p>
     </section>
   );
 }

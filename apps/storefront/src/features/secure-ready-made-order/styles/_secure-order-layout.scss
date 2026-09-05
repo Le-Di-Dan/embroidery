@@ -101,7 +101,14 @@
     align-items: start;
     width: 100%;
     grid-template-columns: minmax(0, 1fr);
+  }
 
+  // The aside column exists only while the QR panel is mounted (`V01-UX-019`,
+  // §17.3). It used to be declared unconditionally, so every state without a QR
+  // reserved 420px for nothing: the amount card stopped at ~700 with a void
+  // beside it, which V01 counted as one of four different left-to-right rhythms
+  // in a single scroll. A single-column state is now genuinely one column wide.
+  &__columns--with-aside {
     @media (min-width: tokens.$bp-shell-wide) {
       grid-template-columns: minmax(0, 1fr) tokens.$aside-width;
     }

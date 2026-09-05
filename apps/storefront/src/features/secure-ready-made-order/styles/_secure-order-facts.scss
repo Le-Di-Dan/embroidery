@@ -228,3 +228,54 @@
     flex: none;
   }
 }
+
+// A hint about the field directly above it (`V01-UX-017`, §17.3).
+//
+// Was a bordered `OrderNote`. V01 counted six bordered callouts around one bank
+// transfer, and this one is not a warning about the page — it is helper text for
+// the reference row, and it now reads as one.
+.secure-order__field-help {
+  margin: 0;
+  font-size: styles.$type-secondary;
+  line-height: 1.5;
+  color: styles.$color-text-secondary;
+}
+
+// The page's two instants, in one labelled group (`V01-UX-017`, §17.3).
+//
+// They were two adjacent bordered callouts in two different colours, at the foot
+// of a page whose real job is one account number and one reference string — two
+// similar dates the customer had to disambiguate. One surface now, two labelled
+// rows: the facts stay two facts and each keeps its own label, but the
+// comparison is a glance instead of a puzzle.
+.secure-order__deadlines {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8) styles.spacing(32);
+  margin: 0;
+  padding: styles.spacing(12) styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+}
+
+.secure-order__deadline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  align-items: baseline;
+  min-width: 0;
+}
+
+.secure-order__deadline-label {
+  margin: 0;
+  font-size: styles.$type-secondary;
+  color: styles.$color-text-secondary;
+}
+
+.secure-order__deadline-value {
+  margin: 0;
+  font-size: styles.$type-secondary;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+}

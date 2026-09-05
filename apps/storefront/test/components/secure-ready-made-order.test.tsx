@@ -28,7 +28,13 @@ import {
   publicReadyMadeOrderCurrent,
   publicSecureLinkResolve,
 } from '@embroidery/api-client';
-import { fireEvent, renderWithProviders, screen, waitFor } from '@embroidery/frontend-testing';
+import {
+  fireEvent,
+  renderWithProviders,
+  screen,
+  waitFor,
+  within,
+} from '@embroidery/frontend-testing';
 
 import { SECURE_LINK_COPY } from '../../src/features/secure-link-access/model/secure-link-copy';
 import { ORDER_ACCESS_COPY as COPY } from '../../src/features/secure-ready-made-order/model/order-access-copy';
@@ -382,7 +388,10 @@ describe('READY_FOR_DELIVERY, DELIVERED, COMPLETED (§28, §30, §53)', () => {
       envelopeOf(makeFulfilment(ReadyMadeOrderAccessResponseStatus.READY_FOR_DELIVERY)),
     );
     await renderAuthorized();
-    expect(screen.queryByText(new RegExp(COPY.deadline.prefix))).not.toBeInTheDocument();
+    expect(screen.queryByText(COPY.deadlines.holdLabel)).not.toBeInTheDocument();
+    // The link expiry is not the stock hold and still stands, because the link
+    // still does — the two rows of the one deadline group are independent.
+    expect(screen.getByText(COPY.deadlines.expiryLabel)).toBeInTheDocument();
   });
 });
 
@@ -510,12 +519,23 @@ describe('transfer evidence — truth separation (§21, §22, §23)', () => {
 });
 
 describe('deadline and access expiry are different facts (§25)', () => {
-  it('labels each with its own sentence, and neither as the other', async () => {
+  it('labels each with its own value, and neither as the other', async () => {
+    // One group since `APP12-V02` (`V01-UX-017`, §17.3) — they were two
+    // adjacent bordered callouts in two colours, which is what made two similar
+    // dates a puzzle. Merging the *presentation* is not merging the meaning:
+    // each row keeps its own label and its own instant, which is what §25
+    // requires and what this test still asserts.
     await renderAuthorized();
 
-    expect(screen.getByText(new RegExp(COPY.deadline.prefix))).toBeInTheDocument();
-    expect(screen.getByText(new RegExp(COPY.access.expiryPrefix))).toBeInTheDocument();
-    expect(COPY.deadline.prefix).not.toBe(COPY.access.expiryPrefix);
+    const group = within(screen.getByLabelText(COPY.deadlines.regionLabel));
+    expect(group.getByText(COPY.deadlines.holdLabel)).toBeInTheDocument();
+    expect(group.getByText(COPY.deadlines.expiryLabel)).toBeInTheDocument();
+    expect(COPY.deadlines.holdLabel).not.toBe(COPY.deadlines.expiryLabel);
+
+    // Two labels, two distinct values — never one instant shown twice.
+    const values = group.getAllByRole('definition').map((node) => node.textContent ?? '');
+    expect(values).toHaveLength(2);
+    expect(values[0]).not.toBe(values[1]);
   });
 
   it('shows no countdown — nothing on this route re-renders because time passed', async () => {

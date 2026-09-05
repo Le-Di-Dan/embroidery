@@ -140,14 +140,6 @@
       "TRANSIENT": "Chưa gửi được ảnh. Bạn thử lại giúp xưởng nhé.",
       "retry": "Gửi lại ảnh"
     },
-    "access": {
-      "expiryPrefix": "Liên kết này hết hạn lúc",
-      "expirySuffix": "."
-    },
-    "deadline": {
-      "prefix": "Xưởng giữ hàng cho bạn tới",
-      "suffix": "."
-    },
     "attempt": {
       "start": "Hiện thông tin chuyển khoản",
       "starting": "Đang mở…",
@@ -199,6 +191,11 @@
       "CANCELLED": "Đơn hàng đã huỷ",
       "EXPIRED": "Đơn hàng đã hết hạn giữ",
       "OTHER_STATE": "Đơn hàng của bạn"
+    },
+    "deadlines": {
+      "holdLabel": "Xưởng giữ hàng đến",
+      "expiryLabel": "Liên kết hết hạn",
+      "regionLabel": "Các mốc thời gian của đơn hàng"
     }
   }
 }

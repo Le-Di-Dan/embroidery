@@ -258,30 +258,32 @@ export const ORDER_ACCESS_COPY = {
    */
   ...ORDER_ACCESS_EVIDENCE_COPY,
 
-  /** `910:336` / `911:421` — the access-expiry note. */
-  access: {
-    /**
-     * Split so the instant is interpolated. This is the **secure link's**
-     * expiry and is deliberately worded as such: §25 forbids conflating it with
-     * the payment deadline, which is the reserved stock's own release time and
-     * is a different fact with a different sentence below.
-     */
-    expiryPrefix: orderAccessMessage.text('access.expiryPrefix'),
-    expirySuffix: orderAccessMessage.text('access.expirySuffix'),
-  },
-
   /**
-   * The payment deadline — the reserved stock's own release instant.
+   * The two instants this page carries, as **one labelled group**
+   * (`910:336` / `911:421`; `V01-UX-017`, `APP12-V02` §17.3).
    *
-   * A different fact from the access expiry above and never labelled as it. The
-   * value is read from `paymentDeadline`, which the contract states is taken
-   * from the reservation itself and never recomputed; it disappears once no
-   * live reservation stands, which is exactly when a deadline must stop being
-   * shown. Nothing on this route counts down (`APP9-S01` §9's rule, kept).
+   * They used to be two adjacent bordered callouts in two different colours —
+   * an amber stock-hold sentence and a blue link-expiry one — at the foot of a
+   * page whose real job is one account number and one reference string. V01
+   * measured the result: two similar dates the customer has to disambiguate,
+   * inside two of the six boxes that made none of them urgent.
+   *
+   * Two labels and two values in one line now. The **facts stay two facts** —
+   * §25 forbids conflating them, and merging the presentation is not merging
+   * the meaning: each keeps its own label and its own instant.
+   *
+   * - **Stock hold** is the reservation's own release instant, read from
+   *   `paymentDeadline` and never recomputed. It disappears once no live
+   *   reservation stands, which is exactly when a deadline must stop being
+   *   shown, and nothing on this route counts down (`APP9-S01` §9's rule, kept).
+   * - **Link expiry** is the secure grant's, and belongs to the link rather
+   *   than to the order.
    */
-  deadline: {
-    prefix: orderAccessMessage.text('deadline.prefix'),
-    suffix: orderAccessMessage.text('deadline.suffix'),
+  deadlines: {
+    holdLabel: orderAccessMessage.text('deadlines.holdLabel'),
+    expiryLabel: orderAccessMessage.text('deadlines.expiryLabel'),
+    /** Names the group for assistive technology, since it carries no heading. */
+    regionLabel: orderAccessMessage.text('deadlines.regionLabel'),
   },
 
   /** The FULL-payment initiation control and its refusals. */
