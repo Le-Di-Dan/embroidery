@@ -16,57 +16,71 @@
  * duplicate and delete are not in this checkpoint's capability row, and history
  * and autosave belong to `APP3-S08` and `APP3-S10`. A label is a promise.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/studio.json`, under `layers`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const layersMessage = messageView(VI_MESSAGES.studio, 'layers');
+
 export const STUDIO_LAYER_COPY = {
-  panelLabel: 'Lớp thiết kế',
-  title: 'Lớp thiết kế',
+  /** `610:353` marks the top row in words rather than by position alone. */
+  topmostBadge: layersMessage.text('topmostBadge'),
+  panelLabel: layersMessage.text('panelLabel'),
+  title: layersMessage.text('title'),
   /** Says which end of the list is the front, rather than leaving it to be inferred. */
-  orderNote: 'Lớp trên cùng nằm trước, che các lớp bên dưới.',
+  orderNote: layersMessage.text('orderNote'),
 
-  empty: 'Chưa có lớp nào trong thiết kế.',
-  emptyHint: 'Thêm chữ hoặc ảnh để bắt đầu.',
+  empty: layersMessage.text('empty'),
+  emptyHint: layersMessage.text('emptyHint'),
 
-  select: (label: string) => `Chọn lớp ${label}`,
+  select: (label: string) => layersMessage.text('select', { label }),
 
-  moveUp: 'Đưa lên trên',
-  moveDown: 'Đưa xuống dưới',
-  moveUpFor: (label: string) => `Đưa lớp ${label} lên trên`,
-  moveDownFor: (label: string) => `Đưa lớp ${label} xuống dưới`,
+  moveUp: layersMessage.text('moveUp'),
+  moveDown: layersMessage.text('moveDown'),
+  moveUpFor: (label: string) => layersMessage.text('moveUpFor', { label }),
+  moveDownFor: (label: string) => layersMessage.text('moveDownFor', { label }),
 
-  hide: 'Ẩn lớp',
-  show: 'Hiện lớp',
-  hideFor: (label: string) => `Ẩn lớp ${label}`,
-  showFor: (label: string) => `Hiện lớp ${label}`,
+  hide: layersMessage.text('hide'),
+  show: layersMessage.text('show'),
+  hideFor: (label: string) => layersMessage.text('hideFor', { label }),
+  showFor: (label: string) => layersMessage.text('showFor', { label }),
 
-  lock: 'Khoá lớp',
-  unlock: 'Mở khoá lớp',
-  lockFor: (label: string) => `Khoá lớp ${label}`,
-  unlockFor: (label: string) => `Mở khoá lớp ${label}`,
+  lock: layersMessage.text('lock'),
+  unlock: layersMessage.text('unlock'),
+  lockFor: (label: string) => layersMessage.text('lockFor', { label }),
+  unlockFor: (label: string) => layersMessage.text('unlockFor', { label }),
 
   /** State carried as text, so it is never colour-only. */
-  hiddenFlag: 'Đang ẩn',
-  lockedFlag: 'Đang khoá',
+  hiddenFlag: layersMessage.text('hiddenFlag'),
+  lockedFlag: layersMessage.text('lockedFlag'),
 
   /** Why a row cannot be restacked. Truthful, and about this row. */
-  nestedReason: 'Lớp nằm trong một nhóm nên chưa thể đổi thứ tự.',
-  topReason: 'Lớp đã ở trên cùng.',
-  bottomReason: 'Lớp đã ở dưới cùng.',
+  nestedReason: layersMessage.text('nestedReason'),
+  topReason: layersMessage.text('topReason'),
+  bottomReason: layersMessage.text('bottomReason'),
 
   // Announced through a polite live region, because a restack is a change a
   // customer who cannot see the stage would otherwise have no evidence of.
-  movedUp: (label: string) => `Đã đưa lớp ${label} lên trên.`,
-  movedDown: (label: string) => `Đã đưa lớp ${label} xuống dưới.`,
-  moved: (label: string) => `Đã đổi thứ tự lớp ${label}.`,
-  hidden: (label: string) => `Đã ẩn lớp ${label}.`,
-  shown: (label: string) => `Đã hiện lớp ${label}.`,
-  locked: (label: string) => `Đã khoá lớp ${label}.`,
-  unlocked: (label: string) => `Đã mở khoá lớp ${label}.`,
-  refused: 'Chưa thể thay đổi lớp này.',
+  movedUp: (label: string) => layersMessage.text('movedUp', { label }),
+  movedDown: (label: string) => layersMessage.text('movedDown', { label }),
+  moved: (label: string) => layersMessage.text('moved', { label }),
+  hidden: (label: string) => layersMessage.text('hidden', { label }),
+  shown: (label: string) => layersMessage.text('shown', { label }),
+  locked: (label: string) => layersMessage.text('locked', { label }),
+  unlocked: (label: string) => layersMessage.text('unlocked', { label }),
+  refused: layersMessage.text('refused'),
 
-  typeText: 'Chữ thêu',
-  typeImage: 'Hình ảnh',
-  typeShape: 'Hình khối',
-  typeFreehand: 'Nét vẽ tay',
-  typeGroup: 'Nhóm',
+  typeText: layersMessage.text('typeText'),
+  typeImage: layersMessage.text('typeImage'),
+  typeShape: layersMessage.text('typeShape'),
+  typeFreehand: layersMessage.text('typeFreehand'),
+  typeGroup: layersMessage.text('typeGroup'),
 
   /*
    * There is no "this screen is too small" sentence any more.

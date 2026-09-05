@@ -34,17 +34,33 @@
  * second copy of a security state is a second authority for the same behaviour.
  */
 
+import { VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
+import { BRAND_NAME } from '@embroidery/ui';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/custom.json`, under `quotation`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const quotationMessage = messageView(
+  hydrateMessages(VI_MESSAGES.custom, { brand: BRAND_NAME }),
+  'quotation',
+);
+
 export const SECURE_QUOTATION_COPY = {
   /** The document title. Reused as the accessible page name. */
-  pageTitle: 'Báo giá của bạn — Nét Thêu',
+  pageTitle: quotationMessage.text('pageTitle'),
 
   /** `700:12` … `702:138` — the card headline, one per drawn state. */
   titles: {
-    live: 'Báo giá cho yêu cầu thêu của bạn',
-    accepted: 'Bạn đã chấp nhận báo giá này',
-    rejected: 'Bạn đã từ chối báo giá này',
-    stale: 'Cửa hàng đã gửi một báo giá mới hơn',
-    expired: 'Báo giá này đã hết hiệu lực',
+    live: quotationMessage.text('titles.live'),
+    accepted: quotationMessage.text('titles.accepted'),
+    rejected: quotationMessage.text('titles.rejected'),
+    stale: quotationMessage.text('titles.stale'),
+    expired: quotationMessage.text('titles.expired'),
   },
 
   /**
@@ -57,24 +73,24 @@ export const SECURE_QUOTATION_COPY = {
    */
   subtitles: {
     live: (code: string, version: number, quantity: number) =>
-      `Mã báo giá ${code} · Phiên bản ${version} · ${quantity} sản phẩm`,
-    accepted: (code: string) => `Mã báo giá ${code} · Cửa hàng sẽ bắt đầu số hoá mẫu thêu.`,
-    rejected: (code: string) => `Mã báo giá ${code} · Cửa hàng đã nhận được phản hồi của bạn.`,
+      quotationMessage.text('subtitles.live', { code, version, quantity }),
+    accepted: (code: string) => quotationMessage.text('subtitles.accepted', { code }),
+    rejected: (code: string) => quotationMessage.text('subtitles.rejected', { code }),
     stale: (code: string, version: number) =>
-      `Mã báo giá ${code} · Bản dưới đây là phiên bản ${version}, phiên bản mới nhất hiện nay.`,
-    expired: (code: string) =>
-      `Mã báo giá ${code} · Báo giá chỉ có hiệu lực trong thời hạn cửa hàng đã ghi.`,
+      quotationMessage.text('subtitles.stale', { code, version }),
+    expired: (code: string) => quotationMessage.text('subtitles.expired', { code }),
   },
 
   /** `700:11` … `702:137` — the status pill. Never colour alone. */
   badges: {
-    live: (until: string) => `Còn hiệu lực đến ${until}`,
-    liveWithDays: (until: string, days: number) => `Còn hiệu lực đến ${until} · còn ${days} ngày`,
-    liveUnknown: 'Còn hiệu lực',
-    expired: (until: string) => `Hết hiệu lực từ ${until}`,
-    expiredUnknown: 'Đã hết hiệu lực',
-    accepted: (at: string) => `Đã chấp nhận ${at}`,
-    rejected: (at: string) => `Đã từ chối ${at}`,
+    live: (until: string) => quotationMessage.text('badges.live', { until }),
+    liveWithDays: (until: string, days: number) =>
+      quotationMessage.text('badges.liveWithDays', { until, days }),
+    liveUnknown: quotationMessage.text('badges.liveUnknown'),
+    expired: (until: string) => quotationMessage.text('badges.expired', { until }),
+    expiredUnknown: quotationMessage.text('badges.expiredUnknown'),
+    accepted: (at: string) => quotationMessage.text('badges.accepted', { at }),
+    rejected: (at: string) => quotationMessage.text('badges.rejected', { at }),
     /**
      * When no instant is available.
      *
@@ -82,21 +98,22 @@ export const SECURE_QUOTATION_COPY = {
      * — so a quotation found already decided (accepted in another tab, or
      * before this mount) states the fact without inventing a moment for it.
      */
-    acceptedUndated: 'Đã chấp nhận',
-    rejectedUndated: 'Đã từ chối',
-    stale: 'Bản bạn đang xem không còn mới nhất',
+    acceptedUndated: quotationMessage.text('badges.acceptedUndated'),
+    rejectedUndated: quotationMessage.text('badges.rejectedUndated'),
+    stale: quotationMessage.text('badges.stale'),
   },
 
   /** `700:14` … `700:18` — the line-item table. */
   lines: {
-    heading: 'Chi tiết báo giá',
-    description: 'Nội dung',
-    quantity: 'SL',
-    unitPrice: 'Đơn giá',
-    lineTotal: 'Thành tiền',
+    heading: quotationMessage.text('lines.heading'),
+    description: quotationMessage.text('lines.description'),
+    quantity: quotationMessage.text('lines.quantity'),
+    unitPrice: quotationMessage.text('lines.unitPrice'),
+    lineTotal: quotationMessage.text('lines.lineTotal'),
     /** The mobile stack (`704:15`) prints quantity and unit price as one line. */
-    quantityAndUnit: (quantity: number, unitPrice: string) => `${quantity} × ${unitPrice}`,
-    empty: 'Báo giá này chưa có dòng nào.',
+    quantityAndUnit: (quantity: number, unitPrice: string) =>
+      quotationMessage.text('lines.quantityAndUnit', { quantity, unitPrice }),
+    empty: quotationMessage.text('lines.empty'),
   },
 
   /**
@@ -106,18 +123,18 @@ export const SECURE_QUOTATION_COPY = {
    * server adds later shows its raw value instead of silently disappearing.
    */
   lineKinds: {
-    PRODUCT: 'Sản phẩm',
-    EMBROIDERY: 'Thêu',
-    DIGITIZING_FEE: 'Phí số hoá',
-    SHIPPING: 'Vận chuyển',
-    ADJUSTMENT: 'Điều chỉnh',
-    OTHER: 'Khác',
+    PRODUCT: quotationMessage.text('lineKinds.PRODUCT'),
+    EMBROIDERY: quotationMessage.text('lineKinds.EMBROIDERY'),
+    DIGITIZING_FEE: quotationMessage.text('lineKinds.DIGITIZING_FEE'),
+    SHIPPING: quotationMessage.text('lineKinds.SHIPPING'),
+    ADJUSTMENT: quotationMessage.text('lineKinds.ADJUSTMENT'),
+    OTHER: quotationMessage.text('lineKinds.OTHER'),
   },
 
   /** `700:39` totals and `700:48` deposit split. Every figure is the server's. */
   totals: {
-    heading: 'Tổng tiền',
-    subtotal: 'Tạm tính',
+    heading: quotationMessage.text('totals.heading'),
+    subtotal: quotationMessage.text('totals.subtotal'),
     /**
      * Deliberately neutral.
      *
@@ -125,11 +142,11 @@ export const SECURE_QUOTATION_COPY = {
      * one field `APP6-B04` withholds. The amount is the truth this screen owes
      * the customer; the reason is internal.
      */
-    manualAdjustment: 'Điều chỉnh',
-    shippingFee: 'Phí giao hàng',
-    total: 'Tổng cộng',
+    manualAdjustment: quotationMessage.text('totals.manualAdjustment'),
+    shippingFee: quotationMessage.text('totals.shippingFee'),
+    total: quotationMessage.text('totals.total'),
     /** Interpolates the share **this version was priced at**, not today's policy. */
-    deposit: (percent: string) => `Đặt cọc ${percent}`,
+    deposit: (percent: string) => quotationMessage.text('totals.deposit', { percent }),
     /**
      * No complementary share.
      *
@@ -138,94 +155,89 @@ export const SECURE_QUOTATION_COPY = {
      * figure and is shown; the percentage is not, because deriving it would be
      * exactly the client-side arithmetic on money §16 forbids.
      */
-    remaining: 'Phần còn lại',
-    note: 'Chấp nhận báo giá không thu tiền và không tạo đơn hàng.',
+    remaining: quotationMessage.text('totals.remaining'),
+    note: quotationMessage.text('totals.note'),
   },
 
   /** `700:54` … `702:180` — the small print under the figures. */
   notes: {
-    live: 'Chấp nhận báo giá là bước thương mại. Điều khoản thanh toán và đổi trả sẽ được hiển thị đầy đủ và cần bạn đồng ý ở bước duyệt bản thiết kế.',
-    accepted:
-      'Báo giá đã chấp nhận là bất biến và được lưu lại làm bằng chứng. Nếu sau này có thay đổi làm phát sinh báo giá mới, bạn sẽ được yêu cầu chấp nhận lại.',
-    rejected:
-      'Phiên bản báo giá đã từ chối là trạng thái cuối và được giữ lại làm lịch sử. Một báo giá mới sẽ là phiên bản mới, cần bạn quyết định lại.',
-    stale: 'Các con số phía trên thuộc phiên bản mới nhất. Quyết định trước đó chưa được ghi nhận.',
-    expired: 'Các con số phía trên chỉ còn giá trị tham khảo lịch sử.',
+    live: quotationMessage.text('notes.live'),
+    accepted: quotationMessage.text('notes.accepted'),
+    rejected: quotationMessage.text('notes.rejected'),
+    stale: quotationMessage.text('notes.stale'),
+    expired: quotationMessage.text('notes.expired'),
   },
 
   /** `700:55`, `700:57`, `701:140`, `702:127`. */
   actions: {
-    heading: 'Quyết định của bạn',
-    accept: 'Chấp nhận báo giá',
-    reject: 'Từ chối báo giá',
-    accepting: 'Đang gửi chấp nhận…',
-    rejecting: 'Đang gửi từ chối…',
-    reconciling: 'Đang tải lại báo giá mới nhất…',
-    viewLatest: 'Xem báo giá mới nhất',
+    heading: quotationMessage.text('actions.heading'),
+    accept: quotationMessage.text('actions.accept'),
+    reject: quotationMessage.text('actions.reject'),
+    accepting: quotationMessage.text('actions.accepting'),
+    rejecting: quotationMessage.text('actions.rejecting'),
+    reconciling: quotationMessage.text('actions.reconciling'),
+    viewLatest: quotationMessage.text('actions.viewLatest'),
   },
 
   /** `701:63` — the confirmation, an explicit second action before anything commits. */
   acceptConfirm: {
-    title: 'Xác nhận chấp nhận báo giá',
-    body: (total: string) =>
-      `Bạn chấp nhận tổng cộng ${total} của phiên bản đang hiển thị. Sau khi xác nhận, cửa hàng sẽ bắt đầu số hoá mẫu thêu.`,
-    note: 'Bước này chưa thu tiền và chưa tạo đơn hàng.',
-    confirm: 'Xác nhận và chấp nhận',
-    cancel: 'Huỷ',
+    title: quotationMessage.text('acceptConfirm.title'),
+    body: (total: string) => quotationMessage.text('acceptConfirm.body', { total }),
+    note: quotationMessage.text('acceptConfirm.note'),
+    confirm: quotationMessage.text('acceptConfirm.confirm'),
+    cancel: quotationMessage.text('acceptConfirm.cancel'),
   },
 
   rejectConfirm: {
-    title: 'Xác nhận từ chối báo giá',
-    body: 'Bạn từ chối phiên bản báo giá đang hiển thị. Yêu cầu thêu của bạn không bị huỷ, và cửa hàng có thể gửi báo giá khác.',
-    confirm: 'Xác nhận và từ chối',
-    cancel: 'Huỷ',
+    title: quotationMessage.text('rejectConfirm.title'),
+    body: quotationMessage.text('rejectConfirm.body'),
+    confirm: quotationMessage.text('rejectConfirm.confirm'),
+    cancel: quotationMessage.text('rejectConfirm.cancel'),
   },
 
   /** `701:63` … `701:87` — step-up re-verification, run inside this page. */
   stepUp: {
-    title: 'Xác thực lại để chấp nhận báo giá',
-    body: 'Chấp nhận báo giá là thao tác quan trọng, nên cần bạn xác thực lại liên hệ đã đăng ký một lần nữa.',
+    title: quotationMessage.text('stepUp.title'),
+    body: quotationMessage.text('stepUp.body'),
     /** `701:83`, kept verbatim: it is the anti-phishing line. */
-    safety:
-      'Nét Thêu không bao giờ hỏi mã này qua Zalo hay Messenger. Chỉ thao tác trên liên kết an toàn này mới có giá trị.',
-    stay: 'Bạn vẫn đang ở trong phiên truy cập an toàn này. Không cần mở lại liên kết.',
-    cancel: 'Huỷ',
-    live: 'Cần xác thực lại liên hệ trước khi chấp nhận báo giá.',
+    safety: quotationMessage.text('stepUp.safety'),
+    stay: quotationMessage.text('stepUp.stay'),
+    cancel: quotationMessage.text('stepUp.cancel'),
+    live: quotationMessage.text('stepUp.live'),
     /** Shown after a code is verified, while the quotation is re-read. */
-    verified: 'Đã xác thực. Đang kiểm tra lại báo giá…',
+    verified: quotationMessage.text('stepUp.verified'),
   },
 
   /** `701:206` — the committed acceptance. */
   accepted: {
-    title: 'Đã ghi nhận — không thu tiền ở bước này',
-    body: 'Cửa hàng sẽ liên hệ khi bản thiết kế sẵn sàng để bạn duyệt. Đơn hàng và thanh toán chỉ phát sinh sau khi bạn duyệt thiết kế.',
-    acceptedTotal: 'Số tiền đã chấp nhận',
-    replayed:
-      'Bạn đã chấp nhận báo giá này trước đó. Đây là kết quả đã ghi nhận, không phải một lần chấp nhận mới.',
-    live: 'Đã ghi nhận việc bạn chấp nhận báo giá.',
+    title: quotationMessage.text('accepted.title'),
+    body: quotationMessage.text('accepted.body'),
+    acceptedTotal: quotationMessage.text('accepted.acceptedTotal'),
+    replayed: quotationMessage.text('accepted.replayed'),
+    live: quotationMessage.text('accepted.live'),
   },
 
   /** `702:62` — the committed rejection. */
   rejected: {
-    title: 'Đã ghi nhận — bạn không phải trả khoản nào',
-    body: 'Nếu bạn muốn tiếp tục, hãy trả lời tin nhắn gần nhất của Nét Thêu; cửa hàng có thể lập một báo giá mới cho cùng yêu cầu này.',
+    title: quotationMessage.text('rejected.title'),
+    body: quotationMessage.text('rejected.body'),
     /** The declined version's own number — its terminal state *is* the record. */
-    version: (version: number) => `Phiên bản đã từ chối: ${version}`,
-    live: 'Đã ghi nhận việc bạn từ chối báo giá.',
+    version: (version: number) => quotationMessage.text('rejected.version', { version }),
+    live: quotationMessage.text('rejected.live'),
   },
 
   /** `702:124` — the version the decision named is no longer the one that stands. */
   stale: {
-    title: 'Không thể chấp nhận phiên bản đã bị thay thế',
-    body: 'Số tiền có thể đã thay đổi. Hãy xem lại bản mới nhất trước khi quyết định — quyết định phải là một lựa chọn mới, có ý thức, trên đúng bản hiện hành. Chưa có quyết định nào được ghi nhận.',
-    live: 'Báo giá đã thay đổi. Chưa có quyết định nào được ghi nhận.',
+    title: quotationMessage.text('stale.title'),
+    body: quotationMessage.text('stale.body'),
+    live: quotationMessage.text('stale.live'),
   },
 
   /** `702:188` — the offer has lapsed. No acceptance control exists here. */
   expired: {
-    title: 'Không còn chấp nhận được',
-    body: 'Hãy trả lời tin nhắn gần nhất của Nét Thêu để cửa hàng lập báo giá mới. Giá vật tư và lịch sản xuất có thể đã thay đổi.',
-    live: 'Báo giá đã hết hiệu lực.',
+    title: quotationMessage.text('expired.title'),
+    body: quotationMessage.text('expired.body'),
+    live: quotationMessage.text('expired.live'),
   },
 
   /**
@@ -236,32 +248,32 @@ export const SECURE_QUOTATION_COPY = {
    */
   notices: {
     TRANSIENT: {
-      title: 'Chưa gửi được quyết định',
-      body: 'Kết nối tới máy chủ bị gián đoạn nên quyết định của bạn chưa được ghi nhận. Hãy thử lại.',
+      title: quotationMessage.text('notices.TRANSIENT.title'),
+      body: quotationMessage.text('notices.TRANSIENT.body'),
     },
     INVALID_TRANSITION: {
-      title: 'Không thực hiện được quyết định này',
-      body: 'Trạng thái của báo giá đã thay đổi. Thông tin bên dưới vừa được tải lại — hãy xem và quyết định theo tình trạng hiện tại.',
+      title: quotationMessage.text('notices.INVALID_TRANSITION.title'),
+      body: quotationMessage.text('notices.INVALID_TRANSITION.body'),
     },
     DUPLICATE_OPERATION: {
-      title: 'Quyết định đang được xử lý',
-      body: 'Một quyết định cho báo giá này đang được xử lý. Hãy chờ một lát rồi thử lại.',
+      title: quotationMessage.text('notices.DUPLICATE_OPERATION.title'),
+      body: quotationMessage.text('notices.DUPLICATE_OPERATION.body'),
     },
     IDEMPOTENCY_CONFLICT: {
-      title: 'Báo giá này đã được quyết định',
-      body: 'Phiên bản này đã có một quyết định khác được ghi nhận. Thông tin bên dưới vừa được tải lại.',
+      title: quotationMessage.text('notices.IDEMPOTENCY_CONFLICT.title'),
+      body: quotationMessage.text('notices.IDEMPOTENCY_CONFLICT.body'),
     },
     POLICY_UNAVAILABLE: {
-      title: 'Tạm thời chưa nhận được quyết định',
-      body: 'Chức năng quyết định báo giá đang tạm ngừng. Hãy thử lại sau ít phút.',
+      title: quotationMessage.text('notices.POLICY_UNAVAILABLE.title'),
+      body: quotationMessage.text('notices.POLICY_UNAVAILABLE.body'),
     },
   },
 
   /** Announced while a decision is in flight; these frames draw no alert. */
   live: {
-    authorized: 'Đã mở báo giá của bạn.',
-    accepting: 'Đang gửi xác nhận chấp nhận báo giá.',
-    rejecting: 'Đang gửi xác nhận từ chối báo giá.',
-    reconciling: 'Đang tải lại báo giá mới nhất.',
+    authorized: quotationMessage.text('live.authorized'),
+    accepting: quotationMessage.text('live.accepting'),
+    rejecting: quotationMessage.text('live.rejecting'),
+    reconciling: quotationMessage.text('live.reconciling'),
   },
 } as const;

@@ -62,7 +62,13 @@ describe('APP5-S02 — the five APP5 states', () => {
 
     expect(screen.getByText(COPY.states.new.description)).toBeInTheDocument();
     expect(screen.getAllByText(COPY.states.new.badge).length).toBeGreaterThan(0);
-    expect(screen.getByText(COPY.states.new.nextSteps[0])).toBeInTheDocument();
+    // Every step, not only the first. The list is read from the message
+    // repository (`APP12-V02` §5A), so its length is data rather than a literal
+    // the test can index into — and asserting all of them is the stronger claim
+    // the indexed version was approximating.
+    for (const step of COPY.states.new.nextSteps) {
+      expect(screen.getByText(step)).toBeInTheDocument();
+    }
     // No reason card: nothing has been decided, so nothing has been written.
     expect(screen.queryByText(COPY.reason.note)).toBeNull();
   });

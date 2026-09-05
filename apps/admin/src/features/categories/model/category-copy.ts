@@ -25,36 +25,46 @@
  * it is exactly what `APP12-C01-C1` removed from this app.
  */
 
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin.json`, under `categories`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const categoriesMessage = messageView(VI_MESSAGES.admin, 'categories');
+
 export const CATEGORY_COPY = {
   page: {
     /** `915:370` — also the sidebar entry. */
-    title: 'Danh mục',
+    title: categoriesMessage.text('page.title'),
     /** `915:371` */
-    subtitle:
-      'Danh mục điều khiển bộ lọc Khám phá, breadcrumb và sitemap. Cấu trúc phẳng — không có danh mục cha.',
+    subtitle: categoriesMessage.text('page.subtitle'),
     /** `915:372` */
-    create: 'Tạo danh mục',
+    create: categoriesMessage.text('page.create'),
     /** `915:426` */
-    footnote:
-      'Nhãn danh mục lấy từ tên đã lưu — không có bảng ánh xạ tiếng Việt biên dịch sẵn trong Storefront hay Admin (BR-034).',
+    footnote: categoriesMessage.text('page.footnote'),
   },
   table: {
     /** AUTHORED — the accessible name of the table, never shown visually. */
-    caption: 'Danh sách danh mục',
+    caption: categoriesMessage.text('table.caption'),
     /** `915:376` */
-    name: 'Tên danh mục',
+    name: categoriesMessage.text('table.name'),
     /** `915:377` */
     slug: 'Slug',
     /** `915:378` */
-    status: 'Trạng thái',
+    status: categoriesMessage.text('table.status'),
     /** `915:379` */
-    publishedProducts: 'Sản phẩm đang bán',
+    publishedProducts: categoriesMessage.text('table.publishedProducts'),
     /** `915:380` */
-    indexable: 'Lập chỉ mục',
+    indexable: categoriesMessage.text('table.indexable'),
     /** `915:389` */
-    indexableYes: 'Có',
+    indexableYes: categoriesMessage.text('table.indexableYes'),
     /** `915:407` */
-    indexableNo: 'Không',
+    indexableNo: categoriesMessage.text('table.indexableNo'),
     /**
      * `915:416` / `915:425` — the draft and archived rows.
      *
@@ -62,58 +72,57 @@ export const CATEGORY_COPY = {
      * other two states the frame shows a dash rather than a value that would
      * read as a promise the sitemap is not keeping.
      */
-    indexableNotApplicable: '—',
+    indexableNotApplicable: categoriesMessage.text('table.indexableNotApplicable'),
   },
   list: {
     /** AUTHORED */
-    loading: 'Đang tải danh mục…',
+    loading: categoriesMessage.text('list.loading'),
     /** AUTHORED — the taxonomy is genuinely empty, not merely unread. */
-    empty: 'Chưa có danh mục nào. Tạo danh mục đầu tiên để bắt đầu.',
+    empty: categoriesMessage.text('list.empty'),
     /** AUTHORED */
-    failed: 'Không tải được danh sách danh mục.',
+    failed: categoriesMessage.text('list.failed'),
     /** AUTHORED */
-    retry: 'Thử lại',
+    retry: categoriesMessage.text('list.retry'),
   },
   form: {
     /** `916:345` — create mode only; edit mode shows `category.name` (`916:392`). */
-    createTitle: 'Tạo danh mục',
+    createTitle: categoriesMessage.text('form.createTitle'),
     /** `916:350` */
-    nameLabel: 'Tên danh mục',
+    nameLabel: categoriesMessage.text('form.nameLabel'),
     /** `916:355` */
-    slugLabel: 'Slug',
+    slugLabel: categoriesMessage.text('form.slugLabel'),
     /** `916:358` */
-    slugHelp: 'Chỉ chữ thường, số và dấu gạch ngang. Slug sẽ bị khoá sau lần xuất bản đầu tiên.',
+    slugHelp: categoriesMessage.text('form.slugHelp'),
     /** `916:379` — rendered beside the label, not inside the control. */
-    slugLockedChip: '🔒 khoá sau khi xuất bản',
+    slugLockedChip: categoriesMessage.text('form.slugLockedChip'),
     /** `916:382` */
-    slugLockedHelp: 'Đã xuất bản nên không thể đổi. Đổi tên không làm đổi slug.',
+    slugLockedHelp: categoriesMessage.text('form.slugLockedHelp'),
     /** `916:361` */
-    indexableLabel: 'Cho phép lập chỉ mục (sitemap, canonical)',
+    indexableLabel: categoriesMessage.text('form.indexableLabel'),
     /**
      * AUTHORED — the contract requires `displayOrder` on create and allows it
      * on update, and the frames draw no control for it. Written in the drawn
      * field language so it reads as one form, not as an appended extra.
      */
-    displayOrderLabel: 'Thứ tự hiển thị',
+    displayOrderLabel: categoriesMessage.text('form.displayOrderLabel'),
     /** AUTHORED */
-    displayOrderHelp:
-      'Số nhỏ hiện trước. Không tự đánh số: đổi một danh mục không đánh lại các danh mục khác.',
+    displayOrderHelp: categoriesMessage.text('form.displayOrderHelp'),
     /** `916:363` */
-    saveDraft: 'Lưu nháp',
+    saveDraft: categoriesMessage.text('form.saveDraft'),
     /** `916:384` */
-    save: 'Lưu',
+    save: categoriesMessage.text('form.save'),
     /** `916:365` */
-    publish: 'Xuất bản',
+    publish: categoriesMessage.text('form.publish'),
     /** `916:386` */
-    archive: 'Lưu trữ',
+    archive: categoriesMessage.text('form.archive'),
     /** AUTHORED */
-    cancel: 'Đóng',
+    cancel: categoriesMessage.text('form.cancel'),
     /** AUTHORED — announced while a write is in flight. */
-    saving: 'Đang lưu…',
+    saving: categoriesMessage.text('form.saving'),
     /** AUTHORED */
-    publishing: 'Đang xuất bản…',
+    publishing: categoriesMessage.text('form.publishing'),
     /** AUTHORED */
-    archiving: 'Đang lưu trữ…',
+    archiving: categoriesMessage.text('form.archiving'),
     /**
      * AUTHORED — the archived form.
      *
@@ -121,61 +130,55 @@ export const CATEGORY_COPY = {
      * contract has no relist and no restore and the operator should not go
      * looking for one.
      */
-    archivedNotice:
-      'Danh mục đã lưu trữ nên chỉ xem được. Không thể sửa, không thể xuất bản lại và không thể xoá.',
+    archivedNotice: categoriesMessage.text('form.archivedNotice'),
     /** AUTHORED — announced after a successful write. */
-    savedNotice: 'Đã lưu danh mục.',
+    savedNotice: categoriesMessage.text('form.savedNotice'),
     /** AUTHORED */
-    publishedNotice: 'Đã xuất bản danh mục. Slug từ nay bị khoá.',
+    publishedNotice: categoriesMessage.text('form.publishedNotice'),
     /** AUTHORED */
-    archivedDoneNotice: 'Đã lưu trữ danh mục. Danh mục không còn hiển thị công khai.',
+    archivedDoneNotice: categoriesMessage.text('form.archivedDoneNotice'),
   },
   validation: {
     /** AUTHORED */
-    nameRequired: 'Nhập tên danh mục.',
+    nameRequired: categoriesMessage.text('validation.nameRequired'),
     /** AUTHORED */
-    nameTooLong: 'Tên danh mục tối đa 120 ký tự.',
+    nameTooLong: categoriesMessage.text('validation.nameTooLong'),
     /** AUTHORED */
-    slugRequired: 'Nhập slug.',
+    slugRequired: categoriesMessage.text('validation.slugRequired'),
     /** AUTHORED */
-    slugMalformed: 'Slug chỉ gồm chữ thường, số và dấu gạch ngang, ví dụ: qua-tang-doanh-nghiep.',
+    slugMalformed: categoriesMessage.text('validation.slugMalformed'),
     /** AUTHORED */
-    slugTooLong: 'Slug tối đa 80 ký tự.',
+    slugTooLong: categoriesMessage.text('validation.slugTooLong'),
     /** AUTHORED */
-    displayOrderInvalid: 'Thứ tự hiển thị phải là một số nguyên không âm.',
+    displayOrderInvalid: categoriesMessage.text('validation.displayOrderInvalid'),
     /** AUTHORED */
-    displayOrderRange: 'Thứ tự hiển thị nằm trong khoảng 0 đến 100000.',
+    displayOrderRange: categoriesMessage.text('validation.displayOrderRange'),
   },
   archiveRefusal: {
     /** `916:394` — the symbol is rendered separately and `aria-hidden`. */
-    title: 'Không thể lưu trữ danh mục',
+    title: categoriesMessage.text('archiveRefusal.title'),
     /** `916:394` */
-    symbol: '✕',
+    symbol: categoriesMessage.text('archiveRefusal.symbol'),
     /** `916:395` — the count is the server's, re-read after the refusal. */
-    body: (count: number): string =>
-      'Còn ' +
-      String(count) +
-      ' sản phẩm đang bán thuộc danh mục này. Hãy chuyển chúng sang danh mục khác hoặc gỡ khỏi trang bán trước.',
+    body: (count: number): string => categoriesMessage.text('archiveRefusal.body', { count }),
     /** `916:396` — the safe next action: the product list, filtered to exactly those rows. */
-    action: (count: number): string => 'Xem ' + String(count) + ' sản phẩm',
+    action: (count: number): string => categoriesMessage.text('archiveRefusal.action', { count }),
   },
   failure: {
     /** AUTHORED — one message per `APP12-C02` domain code (§12). */
-    notFound: 'Danh mục này không còn tồn tại. Tải lại danh sách để xem trạng thái mới nhất.',
-    slugConflict: 'Slug này đã thuộc về một danh mục khác. Chọn slug khác.',
-    slugImmutable: 'Slug đã bị khoá sau khi xuất bản nên không thể đổi.',
-    invalidTransition:
-      'Không thực hiện được thay đổi trạng thái này. Tải lại danh sách để xem trạng thái mới nhất.',
-    inventoryTooLarge:
-      'Danh sách danh mục quá lớn để hiển thị. Liên hệ đội kỹ thuật trước khi tạo thêm danh mục.',
-    generic: 'Không thực hiện được thao tác. Thử lại sau ít phút.',
+    notFound: categoriesMessage.text('failure.notFound'),
+    slugConflict: categoriesMessage.text('failure.slugConflict'),
+    slugImmutable: categoriesMessage.text('failure.slugImmutable'),
+    invalidTransition: categoriesMessage.text('failure.invalidTransition'),
+    inventoryTooLarge: categoriesMessage.text('failure.inventoryTooLarge'),
+    generic: categoriesMessage.text('failure.generic'),
   },
   conflict: {
     /** AUTHORED — the Admin conflict pattern, reused verbatim in structure. */
-    title: 'Danh mục đã được người khác thay đổi',
-    body: 'Có người vừa lưu danh mục này. Tải lại để lấy bản mới nhất — thay đổi chưa lưu của bạn sẽ mất.',
-    reload: 'Tải lại bản mới nhất',
-    close: 'Để nguyên',
+    title: categoriesMessage.text('conflict.title'),
+    body: categoriesMessage.text('conflict.body'),
+    reload: categoriesMessage.text('conflict.reload'),
+    close: categoriesMessage.text('conflict.close'),
   },
 } as const;
 

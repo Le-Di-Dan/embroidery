@@ -7,11 +7,22 @@
  * returned by the API. The shell never renders API-supplied roles or
  * permissions (there is exactly one Admin actor — REQ-IDN-001).
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
 import { BRAND_NAME } from '@embroidery/ui';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin.json`, under `shell`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const shellMessage = messageView(VI_MESSAGES.admin, 'shell');
 
 export const ADMIN_SHELL_COPY = {
   brand: {
-    eyebrow: 'BẢNG QUẢN TRỊ',
+    eyebrow: shellMessage.text('brand.eyebrow'),
     /**
      * The brand name, imported rather than written. It was `Xưởng Thêu` — the
      * placeholder wordmark `BRD0-F02` locked `Nét Thêu` to replace — and the
@@ -20,38 +31,34 @@ export const ADMIN_SHELL_COPY = {
     title: BRAND_NAME,
   },
   /** Static label for the single Admin actor; never an API-supplied role. */
-  actor: 'Quản trị viên',
-  skipToContent: 'Bỏ qua tới nội dung chính',
+  actor: shellMessage.text('actor'),
+  skipToContent: shellMessage.text('skipToContent'),
   nav: {
-    sidebarLabel: 'Điều hướng chính',
-    drawerLabel: 'Điều hướng',
-    future: 'Các khu vực nghiệp vụ sẽ xuất hiện trong các giai đoạn sau.',
-    openMenu: 'Mở menu điều hướng',
-    closeMenu: 'Đóng menu điều hướng',
+    sidebarLabel: shellMessage.text('nav.sidebarLabel'),
+    drawerLabel: shellMessage.text('nav.drawerLabel'),
+    future: shellMessage.text('nav.future'),
+    openMenu: shellMessage.text('nav.openMenu'),
+    closeMenu: shellMessage.text('nav.closeMenu'),
   },
   logout: {
-    action: 'Đăng xuất',
-    pending: 'Đang đăng xuất…',
-    error: 'Hiện chưa thể đăng xuất. Vui lòng thử lại.',
-    retry: 'Thử lại',
+    action: shellMessage.text('logout.action'),
+    pending: shellMessage.text('logout.pending'),
+    error: shellMessage.text('logout.error'),
+    retry: shellMessage.text('logout.retry'),
   },
   loading: {
-    status: 'Đang tải thông tin quản trị viên…',
+    status: shellMessage.text('loading.status'),
   },
   reconnect: {
-    status: 'Mất kết nối tạm thời. Đang thử kết nối lại…',
+    status: shellMessage.text('reconnect.status'),
   },
   sessionExpired: {
-    title: 'Phiên đăng nhập đã hết hạn',
-    description:
-      'Phiên làm việc của bạn đã kết thúc vì lý do an toàn. ' +
-      'Vui lòng đăng nhập lại để tiếp tục.',
-    action: 'Đăng nhập lại',
+    title: shellMessage.text('sessionExpired.title'),
+    description: shellMessage.text('sessionExpired.description'),
+    action: shellMessage.text('sessionExpired.action'),
   },
   placeholder: {
-    heading: 'Quyền truy cập quản trị đã sẵn sàng',
-    body:
-      'Bạn đã đăng nhập vào bảng điều hành. Các chức năng vận hành — sản phẩm, ' +
-      'đơn hàng, thiết kế và yêu cầu đặt thêu — sẽ xuất hiện trong các giai đoạn tiếp theo.',
+    heading: shellMessage.text('placeholder.heading'),
+    body: shellMessage.text('placeholder.body'),
   },
 } as const;

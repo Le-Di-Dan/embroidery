@@ -33,8 +33,55 @@
  * an unrecognised value degrades to the neutral fallback rather than putting a
  * raw English enum member on an otherwise Vietnamese page.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
 import { STATUS_SYMBOLS, type StatusPresentation } from '../../../shared/presentation/order-status';
 import type { AdminStatusTone } from '../../../shared/status/admin-status-badge';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin-orders.json`), not in this file
+ * (`APP12-V02` §5A).
+ */
+const paymentVocabularyMessage = messageView(VI_MESSAGES.adminOrders, 'paymentVocabulary');
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin-orders.json`, under `paymentVocabulary.evidence`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const paymentVocabularyEvidenceMessage = messageView(
+  VI_MESSAGES.adminOrders,
+  'paymentVocabulary.evidence',
+);
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin-orders.json`, under `paymentVocabulary.attempt`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const paymentVocabularyAttemptMessage = messageView(
+  VI_MESSAGES.adminOrders,
+  'paymentVocabulary.attempt',
+);
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin-orders.json`, under `paymentVocabulary.obligation`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const paymentVocabularyObligationMessage = messageView(
+  VI_MESSAGES.adminOrders,
+  'paymentVocabulary.obligation',
+);
 
 interface StatusStyle {
   readonly label: string;
@@ -42,7 +89,7 @@ interface StatusStyle {
   readonly symbol: string;
 }
 
-const UNKNOWN_LABEL = 'Không xác định';
+const UNKNOWN_LABEL = paymentVocabularyMessage.text('unknownLabel');
 
 const UNKNOWN_PRESENTATION: StatusPresentation = {
   token: 'UNKNOWN',
@@ -64,10 +111,26 @@ function present(
 
 /** The DEPOSIT obligation's own state (`751:3` "Nghĩa vụ cọc"). */
 const DEPOSIT_STATUS_STYLES: Readonly<Record<string, StatusStyle>> = {
-  PENDING: { label: 'Chưa thu', tone: 'warning', symbol: STATUS_SYMBOLS.waiting },
-  SATISFIED: { label: 'Đã thu đủ', tone: 'success', symbol: STATUS_SYMBOLS.succeeded },
-  CANCELLED: { label: 'Đã huỷ', tone: 'neutral', symbol: STATUS_SYMBOLS.idle },
-  SUPERSEDED: { label: 'Đã thay thế', tone: 'neutral', symbol: STATUS_SYMBOLS.idle },
+  PENDING: {
+    label: paymentVocabularyObligationMessage.text('PENDING.label'),
+    tone: 'warning',
+    symbol: STATUS_SYMBOLS.waiting,
+  },
+  SATISFIED: {
+    label: paymentVocabularyObligationMessage.text('SATISFIED.label'),
+    tone: 'success',
+    symbol: STATUS_SYMBOLS.succeeded,
+  },
+  CANCELLED: {
+    label: paymentVocabularyObligationMessage.text('CANCELLED.label'),
+    tone: 'neutral',
+    symbol: STATUS_SYMBOLS.idle,
+  },
+  SUPERSEDED: {
+    label: paymentVocabularyObligationMessage.text('SUPERSEDED.label'),
+    tone: 'neutral',
+    symbol: STATUS_SYMBOLS.idle,
+  },
 };
 
 export function presentDepositStatus(status: unknown): StatusPresentation {
@@ -76,15 +139,43 @@ export function presentDepositStatus(status: unknown): StatusPresentation {
 
 /** One payment attempt's LC-16 state (`751:3` "Lần thanh toán"). */
 const ATTEMPT_STATUS_STYLES: Readonly<Record<string, StatusStyle>> = {
-  PENDING: { label: 'chờ đối chiếu', tone: 'warning', symbol: STATUS_SYMBOLS.waiting },
-  REQUIRES_REVIEW: { label: 'cần đối chiếu', tone: 'warning', symbol: STATUS_SYMBOLS.working },
-  SUCCEEDED: { label: 'thành công', tone: 'success', symbol: STATUS_SYMBOLS.succeeded },
-  FAILED: { label: 'thất bại', tone: 'error', symbol: STATUS_SYMBOLS.ended },
-  EXPIRED: { label: 'hết hạn', tone: 'error', symbol: STATUS_SYMBOLS.ended },
-  PROCESSING: { label: 'đang xử lý', tone: 'neutral', symbol: STATUS_SYMBOLS.working },
-  REFUNDED: { label: 'đã hoàn tiền', tone: 'neutral', symbol: STATUS_SYMBOLS.ended },
+  PENDING: {
+    label: paymentVocabularyAttemptMessage.text('PENDING.label'),
+    tone: 'warning',
+    symbol: STATUS_SYMBOLS.waiting,
+  },
+  REQUIRES_REVIEW: {
+    label: paymentVocabularyAttemptMessage.text('REQUIRES_REVIEW.label'),
+    tone: 'warning',
+    symbol: STATUS_SYMBOLS.working,
+  },
+  SUCCEEDED: {
+    label: paymentVocabularyAttemptMessage.text('SUCCEEDED.label'),
+    tone: 'success',
+    symbol: STATUS_SYMBOLS.succeeded,
+  },
+  FAILED: {
+    label: paymentVocabularyAttemptMessage.text('FAILED.label'),
+    tone: 'error',
+    symbol: STATUS_SYMBOLS.ended,
+  },
+  EXPIRED: {
+    label: paymentVocabularyAttemptMessage.text('EXPIRED.label'),
+    tone: 'error',
+    symbol: STATUS_SYMBOLS.ended,
+  },
+  PROCESSING: {
+    label: paymentVocabularyAttemptMessage.text('PROCESSING.label'),
+    tone: 'neutral',
+    symbol: STATUS_SYMBOLS.working,
+  },
+  REFUNDED: {
+    label: paymentVocabularyAttemptMessage.text('REFUNDED.label'),
+    tone: 'neutral',
+    symbol: STATUS_SYMBOLS.ended,
+  },
   PARTIALLY_REFUNDED: {
-    label: 'đã hoàn một phần',
+    label: paymentVocabularyAttemptMessage.text('PARTIALLY_REFUNDED.label'),
     tone: 'neutral',
     symbol: STATUS_SYMBOLS.ended,
   },
@@ -116,10 +207,26 @@ export function attemptStatusCaption(status: unknown): string {
  * a distinction the product does not need.
  */
 const EVIDENCE_STATUS_STYLES: Readonly<Record<string, StatusStyle>> = {
-  UPLOADED: { label: 'Đang kiểm tra', tone: 'warning', symbol: STATUS_SYMBOLS.working },
-  INSPECTING: { label: 'Đang kiểm tra', tone: 'warning', symbol: STATUS_SYMBOLS.working },
-  ACCEPTED: { label: 'Đã tiếp nhận', tone: 'success', symbol: STATUS_SYMBOLS.succeeded },
-  REJECTED: { label: 'Không hợp lệ', tone: 'error', symbol: STATUS_SYMBOLS.ended },
+  UPLOADED: {
+    label: paymentVocabularyEvidenceMessage.text('UPLOADED.label'),
+    tone: 'warning',
+    symbol: STATUS_SYMBOLS.working,
+  },
+  INSPECTING: {
+    label: paymentVocabularyEvidenceMessage.text('INSPECTING.label'),
+    tone: 'warning',
+    symbol: STATUS_SYMBOLS.working,
+  },
+  ACCEPTED: {
+    label: paymentVocabularyEvidenceMessage.text('ACCEPTED.label'),
+    tone: 'success',
+    symbol: STATUS_SYMBOLS.succeeded,
+  },
+  REJECTED: {
+    label: paymentVocabularyEvidenceMessage.text('REJECTED.label'),
+    tone: 'error',
+    symbol: STATUS_SYMBOLS.ended,
+  },
 };
 
 export function presentEvidenceStatus(status: unknown): StatusPresentation {

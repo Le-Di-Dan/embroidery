@@ -20,69 +20,81 @@
  * real link, and the sentence explaining its absence is gone rather than left
  * behind to contradict it.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin-wave2.json`, under `designTemplates`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const designTemplatesMessage = messageView(VI_MESSAGES.adminWave2, 'designTemplates');
+
 export const DESIGN_TEMPLATE_COPY = {
   page: {
-    title: 'Mẫu thêu',
-    subtitleWide: 'Quản lý mẫu thiết kế dùng cho vùng thêu của sản phẩm.',
-    subtitleNarrow: 'Quản lý mẫu thiết kế.',
+    title: designTemplatesMessage.text('page.title'),
+    subtitleWide: designTemplatesMessage.text('page.subtitleWide'),
+    subtitleNarrow: designTemplatesMessage.text('page.subtitleNarrow'),
   },
 
   actions: {
-    create: 'Tạo mẫu thêu',
-    retry: 'Thử lại',
-    loadMore: 'Trang sau',
-    loadingMore: 'Đang tải…',
+    create: designTemplatesMessage.text('actions.create'),
+    retry: designTemplatesMessage.text('actions.retry'),
+    loadMore: designTemplatesMessage.text('actions.loadMore'),
+    loadingMore: designTemplatesMessage.text('actions.loadingMore'),
   },
 
   filters: {
-    label: 'Bộ lọc',
-    statusLabel: 'Trạng thái',
-    statusAll: 'Tất cả trạng thái',
-    productLabel: 'Sản phẩm',
-    productAll: 'Tất cả sản phẩm',
+    label: designTemplatesMessage.text('filters.label'),
+    statusLabel: designTemplatesMessage.text('filters.statusLabel'),
+    statusAll: designTemplatesMessage.text('filters.statusAll'),
+    productLabel: designTemplatesMessage.text('filters.productLabel'),
+    productAll: designTemplatesMessage.text('filters.productAll'),
     /**
      * Stated on the toolbar because its absence is a contract fact, not an
      * oversight: `APP3-B03` publishes no text search, no sort and no total.
      */
-    constraint:
-      'Danh sách sắp xếp theo thời gian tạo, mới nhất trước. Không có tìm kiếm hay sắp xếp tuỳ chọn.',
-    productUnavailable: 'Không tải được danh sách sản phẩm để lọc.',
+    constraint: designTemplatesMessage.text('filters.constraint'),
+    productUnavailable: designTemplatesMessage.text('filters.productUnavailable'),
   },
 
   status: {
-    draft: 'Bản nháp',
-    published: 'Đã xuất bản',
-    archived: 'Đã lưu trữ',
-    unknown: 'Không xác định',
+    draft: designTemplatesMessage.text('status.draft'),
+    published: designTemplatesMessage.text('status.published'),
+    archived: designTemplatesMessage.text('status.archived'),
+    unknown: designTemplatesMessage.text('status.unknown'),
   },
 
   columns: {
-    name: 'Tên mẫu',
-    status: 'Trạng thái',
-    scope: 'Phạm vi',
-    version: 'Phiên bản',
-    updated: 'Cập nhật',
-    actions: 'Thao tác',
+    name: designTemplatesMessage.text('columns.name'),
+    status: designTemplatesMessage.text('columns.status'),
+    scope: designTemplatesMessage.text('columns.scope'),
+    version: designTemplatesMessage.text('columns.version'),
+    updated: designTemplatesMessage.text('columns.updated'),
+    actions: designTemplatesMessage.text('columns.actions'),
   },
 
   row: {
     /** Truthful for a header `APP3-B03` created and `APP3-B03A` has not saved. */
-    noVersion: 'Chưa có phiên bản',
+    noVersion: designTemplatesMessage.text('row.noVersion'),
     /**
      * The list projection passes no version at all, so the cell must not claim
      * one is absent — that would mislabel every published template. It says
      * where the number lives instead.
      */
-    versionNotInList: 'Xem trong chi tiết mẫu',
-    noScope: 'Chưa gán phạm vi',
+    versionNotInList: designTemplatesMessage.text('row.versionNotInList'),
+    noScope: designTemplatesMessage.text('row.noScope'),
     /**
      * A scope exists but its Product is not among the loaded filter options, so
      * only the fact can be stated — resolving the name would cost a request per
      * row, which is the N+1 the list exists to avoid.
      */
-    scopeAssigned: 'Đã gán phạm vi',
-    scopeOnProduct: (product: string) => `Sản phẩm: ${product}`,
-    archivedAt: (at: string) => `Lưu trữ ${at}`,
+    scopeAssigned: designTemplatesMessage.text('row.scopeAssigned'),
+    scopeOnProduct: (product: string) =>
+      designTemplatesMessage.text('row.scopeOnProduct', { product }),
+    archivedAt: (at: string) => designTemplatesMessage.text('row.archivedAt', { at }),
   },
 
   editAffordance: {
@@ -91,44 +103,44 @@ export const DESIGN_TEMPLATE_COPY = {
      * button carrying its own reason until then — the same rule in both states:
      * a control either works or says why it does not, and never leads nowhere.
      */
-    label: 'Mở trình chỉnh sửa',
+    label: designTemplatesMessage.text('editAffordance.label'),
   },
 
   states: {
-    loading: 'Đang tải danh sách mẫu thêu…',
-    emptyTitle: 'Chưa có mẫu thêu nào',
-    emptyBody: 'Tạo mẫu thêu đầu tiên để bắt đầu.',
-    emptyFilteredTitle: 'Không có mẫu thêu phù hợp',
-    emptyFilteredBody: 'Thử đổi bộ lọc hoặc tạo mẫu thêu mới.',
-    errorTitle: 'Không tải được danh sách mẫu thêu',
-    errorBody: 'Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại.',
+    loading: designTemplatesMessage.text('states.loading'),
+    emptyTitle: designTemplatesMessage.text('states.emptyTitle'),
+    emptyBody: designTemplatesMessage.text('states.emptyBody'),
+    emptyFilteredTitle: designTemplatesMessage.text('states.emptyFilteredTitle'),
+    emptyFilteredBody: designTemplatesMessage.text('states.emptyFilteredBody'),
+    errorTitle: designTemplatesMessage.text('states.errorTitle'),
+    errorBody: designTemplatesMessage.text('states.errorBody'),
     /** A malformed cursor is a bounded, non-restarting failure. */
-    cursorErrorTitle: 'Không tải được trang tiếp theo',
-    cursorErrorBody: 'Liên kết trang không hợp lệ. Vui lòng tải lại danh sách.',
-    loadMoreFailed: 'Không tải thêm được. Vui lòng thử lại.',
+    cursorErrorTitle: designTemplatesMessage.text('states.cursorErrorTitle'),
+    cursorErrorBody: designTemplatesMessage.text('states.cursorErrorBody'),
+    loadMoreFailed: designTemplatesMessage.text('states.loadMoreFailed'),
   },
 
   create: {
-    title: 'Tạo mẫu thêu',
-    help: 'Mẫu mới được tạo ở trạng thái bản nháp và chưa có phiên bản nào.',
-    nameLabel: 'Tên mẫu',
-    nameHelp: 'Tên hiển thị cho nhân viên. Tối đa 120 ký tự.',
-    descriptionLabel: 'Mô tả',
-    descriptionHelp: 'Không bắt buộc. Tối đa 2.000 ký tự.',
+    title: designTemplatesMessage.text('create.title'),
+    help: designTemplatesMessage.text('create.help'),
+    nameLabel: designTemplatesMessage.text('create.nameLabel'),
+    nameHelp: designTemplatesMessage.text('create.nameHelp'),
+    descriptionLabel: designTemplatesMessage.text('create.descriptionLabel'),
+    descriptionHelp: designTemplatesMessage.text('create.descriptionHelp'),
     /**
      * The slug is server-derived, so it is shown as a consequence and never
      * offered as an input.
      */
-    slugNote: 'Đường dẫn công khai được máy chủ tạo từ tên mẫu.',
-    submit: 'Tạo mẫu',
-    submitting: 'Đang tạo…',
-    cancel: 'Huỷ',
-    created: (name: string) => `Đã tạo mẫu “${name}” ở trạng thái bản nháp, chưa có phiên bản.`,
-    nameRequired: 'Vui lòng nhập tên mẫu.',
-    nameTooLong: 'Tên mẫu quá dài.',
-    descriptionTooLong: 'Mô tả quá dài.',
-    failedTitle: 'Không tạo được mẫu thêu',
-    failedBody: 'Đã xảy ra lỗi khi tạo. Nội dung bạn nhập vẫn được giữ nguyên.',
+    slugNote: designTemplatesMessage.text('create.slugNote'),
+    submit: designTemplatesMessage.text('create.submit'),
+    submitting: designTemplatesMessage.text('create.submitting'),
+    cancel: designTemplatesMessage.text('create.cancel'),
+    created: (name: string) => designTemplatesMessage.text('create.created', { name }),
+    nameRequired: designTemplatesMessage.text('create.nameRequired'),
+    nameTooLong: designTemplatesMessage.text('create.nameTooLong'),
+    descriptionTooLong: designTemplatesMessage.text('create.descriptionTooLong'),
+    failedTitle: designTemplatesMessage.text('create.failedTitle'),
+    failedBody: designTemplatesMessage.text('create.failedBody'),
     /**
      * The create `409` is *"no template address could be reserved"*, not "that
      * name is taken" — the server appends the new Template's own id when a
@@ -136,7 +148,7 @@ export const DESIGN_TEMPLATE_COPY = {
      * different name would name the wrong cause and suggest a fix that does not
      * apply; a retry gets a new id and therefore a new address.
      */
-    addressUnreservedTitle: 'Chưa cấp được đường dẫn cho mẫu',
-    addressUnreservedBody: 'Máy chủ chưa cấp được đường dẫn công khai. Vui lòng thử lại.',
+    addressUnreservedTitle: designTemplatesMessage.text('create.addressUnreservedTitle'),
+    addressUnreservedBody: designTemplatesMessage.text('create.addressUnreservedBody'),
   },
 } as const;

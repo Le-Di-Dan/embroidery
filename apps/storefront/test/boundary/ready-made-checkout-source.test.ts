@@ -12,6 +12,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { READY_MADE_CHECKOUT_COPY } from '../../src/features/ready-made-checkout/model/ready-made-checkout-copy';
 import { isWithheldWave2Route } from '../../src/features/release-isolation';
 import { PUBLIC_STATIC_ROUTES } from '../../src/features/storefront-seo/model/public-static-routes';
 import { ROBOTS_DISALLOW } from '../../src/features/storefront-seo/model/robots-policy';
@@ -136,16 +137,28 @@ describe('the ORDER_ACCESS token is never reachable from here', () => {
 });
 
 describe('customer-facing copy', () => {
-  it('lives in one module and nowhere else', () => {
-    const copyModules = sources.filter((source) =>
-      /['"`][^'"`]*[àáâãèéêìíòóôõùúýăđĩũơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/i.test(
-        codeOnly(source.text),
-      ),
-    );
-    expect(copyModules.map((source) => source.path.split(/[\\/]/).pop())).toEqual([
-      'checkout-failure.ts',
-      'ready-made-checkout-copy.ts',
-    ]);
+  it('lives in the canonical message repository and nowhere else', () => {
+    // This used to name the two modules allowed to hold a Vietnamese literal.
+    // `APP12-V02` §5A removed the exception rather than moving it: every
+    // sentence on this route now lives in
+    // `packages/i18n/messages/vi/checkout.json`, and the assertion is
+    // correspondingly stronger — **no** file in the feature holds prose.
+    const withLiterals = sources
+      .filter((source) =>
+        /['"`][^'"`]*[àáâãèéêìíòóôõùúýăđĩũơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/i.test(
+          codeOnly(source.text),
+        ),
+      )
+      .map((source) => source.path.split(/[\\/]/).pop());
+    expect(withLiterals).toEqual([]);
+  });
+
+  it('reads that repository through the checkout catalog', () => {
+    // The counterpart of the assertion above: proving the literals are gone is
+    // only half of it, because deleting them would satisfy that too. The copy
+    // has to still arrive, and it arrives by key.
+    expect(READY_MADE_CHECKOUT_COPY.pageTitle.length).toBeGreaterThan(0);
+    expect(allCode).toContain("messageView(VI_MESSAGES.checkout, 'readyMade')");
   });
 
   it('never renders an internal state token or an internal identifier', () => {

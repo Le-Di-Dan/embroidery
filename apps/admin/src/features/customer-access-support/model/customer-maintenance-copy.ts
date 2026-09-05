@@ -19,94 +19,86 @@
  *    contact representation on this screen is the server's mask, and
  *    `contactId` addresses operations — it is never rendered as copy.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin-support.json`, under `customerMaintenance`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const customerMaintenanceMessage = messageView(VI_MESSAGES.adminSupport, 'customerMaintenance');
+
 export const CUSTOMER_MAINTENANCE_COPY = {
   profile: {
-    heading: 'Hồ sơ khách hàng',
-    edit: 'Chỉnh sửa hồ sơ',
-    displayNameLabel: 'Tên hiển thị',
-    displayNameHint: 'Tên khách hàng tự xưng. Để trống để xoá.',
-    notesLabel: 'Ghi chú nội bộ',
-    notesHint:
-      'Chỉ nhân viên nhìn thấy. Không bao giờ hiển thị cho khách hàng và không được gửi kèm thông báo.',
-    notesEmpty: 'Chưa có ghi chú.',
-    save: 'Lưu thay đổi',
-    saving: 'Đang lưu…',
-    cancel: 'Huỷ',
-    saved: 'Đã lưu hồ sơ khách hàng.',
-    scopeNote:
-      'Chỉ sửa được tên hiển thị và ghi chú nội bộ. Không sửa được liên hệ, trạng thái xác minh hay dữ liệu gộp.',
-    unchanged: 'Chưa có thay đổi nào để lưu.',
-    displayNameTooLong: 'Tên hiển thị quá dài.',
-    notesTooLong: 'Ghi chú quá dài.',
-    validation: 'Dữ liệu không hợp lệ. Kiểm tra lại tên hiển thị và ghi chú.',
-    merged:
-      'Khách hàng này đã được gộp vào một khách hàng khác nên không thể chỉnh sửa. Mở khách hàng được giữ lại để tiếp tục.',
-    stale: 'Không còn tìm thấy khách hàng này. Tra cứu lại để lấy trạng thái hiện hành.',
-    unauthenticated: 'Phiên đăng nhập đã hết hạn. Đăng nhập lại để tiếp tục.',
-    forbidden: 'Yêu cầu bị từ chối. Tải lại trang rồi thử lại.',
-    generic: 'Không lưu được hồ sơ. Thử lại sau.',
+    heading: customerMaintenanceMessage.text('profile.heading'),
+    edit: customerMaintenanceMessage.text('profile.edit'),
+    displayNameLabel: customerMaintenanceMessage.text('profile.displayNameLabel'),
+    displayNameHint: customerMaintenanceMessage.text('profile.displayNameHint'),
+    notesLabel: customerMaintenanceMessage.text('profile.notesLabel'),
+    notesHint: customerMaintenanceMessage.text('profile.notesHint'),
+    notesEmpty: customerMaintenanceMessage.text('profile.notesEmpty'),
+    save: customerMaintenanceMessage.text('profile.save'),
+    saving: customerMaintenanceMessage.text('profile.saving'),
+    cancel: customerMaintenanceMessage.text('profile.cancel'),
+    saved: customerMaintenanceMessage.text('profile.saved'),
+    scopeNote: customerMaintenanceMessage.text('profile.scopeNote'),
+    unchanged: customerMaintenanceMessage.text('profile.unchanged'),
+    displayNameTooLong: customerMaintenanceMessage.text('profile.displayNameTooLong'),
+    notesTooLong: customerMaintenanceMessage.text('profile.notesTooLong'),
+    validation: customerMaintenanceMessage.text('profile.validation'),
+    merged: customerMaintenanceMessage.text('profile.merged'),
+    stale: customerMaintenanceMessage.text('profile.stale'),
+    unauthenticated: customerMaintenanceMessage.text('profile.unauthenticated'),
+    forbidden: customerMaintenanceMessage.text('profile.forbidden'),
+    generic: customerMaintenanceMessage.text('profile.generic'),
   },
 
   contacts: {
-    promote: 'Đặt làm liên hệ chính',
-    deactivate: 'Ngừng sử dụng',
+    promote: customerMaintenanceMessage.text('contacts.promote'),
+    deactivate: customerMaintenanceMessage.text('contacts.deactivate'),
     // The matrix in `FIG-APP10-A01-CONTACT-ELIGIBILITY` stated as one sentence:
     // why the primary row carries neither action, and why an unverified one
     // cannot be promoted from here.
-    eligibilityNote:
-      'Liên hệ chính không có thao tác: hãy đặt một liên hệ đã xác minh khác làm liên hệ chính trước. ' +
-      'Liên hệ chưa xác minh chỉ được xác minh qua luồng xác minh của khách hàng.',
-    deactivatedNote:
-      'Liên hệ đã ngừng sử dụng sẽ không còn trong danh sách này. Màn hình hỗ trợ không khôi phục lại được.',
+    eligibilityNote: customerMaintenanceMessage.text('contacts.eligibilityNote'),
+    deactivatedNote: customerMaintenanceMessage.text('contacts.deactivatedNote'),
   },
 
   promote: {
-    title: 'Đặt làm liên hệ chính?',
-    body:
-      'Liên hệ này sẽ trở thành nơi nhận thông báo mặc định của khách hàng. Liên hệ chính hiện tại ' +
-      'sẽ thôi giữ vai trò đó. Không có liên hệ nào bị xoá và không có trạng thái xác minh nào thay đổi.',
-    confirm: 'Đặt làm liên hệ chính',
-    working: 'Đang cập nhật…',
-    cancel: 'Huỷ',
-    close: 'Đóng',
-    successTitle: 'Đã đổi liên hệ chính',
-    successBody: 'Danh sách liên hệ bên dưới đã được tải lại từ máy chủ.',
+    title: customerMaintenanceMessage.text('promote.title'),
+    body: customerMaintenanceMessage.text('promote.body'),
+    confirm: customerMaintenanceMessage.text('promote.confirm'),
+    working: customerMaintenanceMessage.text('promote.working'),
+    cancel: customerMaintenanceMessage.text('promote.cancel'),
+    close: customerMaintenanceMessage.text('promote.close'),
+    successTitle: customerMaintenanceMessage.text('promote.successTitle'),
+    successBody: customerMaintenanceMessage.text('promote.successBody'),
   },
 
   deactivate: {
-    title: 'Ngừng sử dụng liên hệ này?',
+    title: customerMaintenanceMessage.text('deactivate.title'),
     // States in the dialog itself that this is not a delete, and that there is
     // no way back through this screen — `APP10-B01` publishes no reactivate
     // operation, so an undo affordance would be a button with nothing behind it.
-    body:
-      'Liên hệ sẽ ngừng được dùng để gửi thông báo và biến mất khỏi danh sách hiện hành. Đây không ' +
-      'phải là xoá: bản ghi và trạng thái xác minh được giữ nguyên. Màn hình này không có thao tác ' +
-      'hoàn tác hay kích hoạt lại.',
-    confirm: 'Ngừng sử dụng',
-    working: 'Đang cập nhật…',
-    cancel: 'Huỷ',
-    close: 'Đóng',
-    successTitle: 'Đã ngừng sử dụng liên hệ',
-    successBody:
-      'Liên hệ này không còn trong danh sách hiện hành. Danh sách đã được tải lại từ máy chủ.',
+    body: customerMaintenanceMessage.text('deactivate.body'),
+    confirm: customerMaintenanceMessage.text('deactivate.confirm'),
+    working: customerMaintenanceMessage.text('deactivate.working'),
+    cancel: customerMaintenanceMessage.text('deactivate.cancel'),
+    close: customerMaintenanceMessage.text('deactivate.close'),
+    successTitle: customerMaintenanceMessage.text('deactivate.successTitle'),
+    successBody: customerMaintenanceMessage.text('deactivate.successBody'),
   },
 
   contactFailure: {
-    primary:
-      'Đây đang là liên hệ chính nên không thể ngừng sử dụng. Hãy đặt một liên hệ đã xác minh khác ' +
-      'làm liên hệ chính trước, rồi thử lại.',
-    lastVerified:
-      'Đây là liên hệ đã xác minh duy nhất của khách hàng nên không thể ngừng sử dụng. Khách hàng ' +
-      'cần xác minh thêm một liên hệ khác trước.',
-    unverified:
-      'Liên hệ này chưa được xác minh nên không thể trở thành liên hệ chính. Chỉ luồng xác minh của ' +
-      'khách hàng mới xác minh được một liên hệ.',
-    stale: 'Không còn tìm thấy liên hệ này của khách hàng. Trạng thái hiện hành đã được tải lại.',
-    conflict:
-      'Trạng thái đã thay đổi hoặc khách hàng đã được gộp nên thao tác bị từ chối. Trạng thái hiện ' +
-      'hành đã được tải lại.',
-    unauthenticated: 'Phiên đăng nhập đã hết hạn. Đăng nhập lại để tiếp tục.',
-    forbidden: 'Yêu cầu bị từ chối. Tải lại trang rồi thử lại.',
-    generic: 'Không thực hiện được thao tác. Thử lại sau.',
+    primary: customerMaintenanceMessage.text('contactFailure.primary'),
+    lastVerified: customerMaintenanceMessage.text('contactFailure.lastVerified'),
+    unverified: customerMaintenanceMessage.text('contactFailure.unverified'),
+    stale: customerMaintenanceMessage.text('contactFailure.stale'),
+    conflict: customerMaintenanceMessage.text('contactFailure.conflict'),
+    unauthenticated: customerMaintenanceMessage.text('contactFailure.unauthenticated'),
+    forbidden: customerMaintenanceMessage.text('contactFailure.forbidden'),
+    generic: customerMaintenanceMessage.text('contactFailure.generic'),
   },
 } as const;

@@ -9,74 +9,86 @@
  * endpoint, and a server `message`, `code`, SQL fragment or stack would be a
  * disclosure with no operator value. The classification alone picks the string.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin-wave2.json`, under `requestQueue`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const requestQueueMessage = messageView(VI_MESSAGES.adminWave2, 'requestQueue');
+
 export const CUSTOM_REQUEST_QUEUE_COPY = {
   page: {
-    title: 'Yêu cầu thêu riêng',
-    subtitle: 'Hàng đợi xử lý các yêu cầu khách đã gửi.',
-    tableLabel: 'Danh sách yêu cầu thêu riêng',
+    title: requestQueueMessage.text('page.title'),
+    subtitle: requestQueueMessage.text('page.subtitle'),
+    tableLabel: requestQueueMessage.text('page.tableLabel'),
   },
   scope: {
     /** Never "tất cả yêu cầu": the server states which statuses it applied. */
-    applied: (statuses: string) => `Đang hiển thị trạng thái: ${statuses}.`,
-    note: 'Hàng đợi chỉ hiển thị các trạng thái nêu trên, không phải toàn bộ yêu cầu.',
+    applied: (statuses: string) => requestQueueMessage.text('scope.applied', { statuses }),
+    note: requestQueueMessage.text('scope.note'),
   },
   columns: {
-    code: 'Mã yêu cầu',
-    status: 'Trạng thái',
-    subject: 'Đối tượng thêu',
-    customer: 'Khách hàng',
-    submitted: 'Thời điểm gửi',
-    quantity: 'Số lượng',
-    actions: 'Chi tiết',
+    code: requestQueueMessage.text('columns.code'),
+    status: requestQueueMessage.text('columns.status'),
+    subject: requestQueueMessage.text('columns.subject'),
+    customer: requestQueueMessage.text('columns.customer'),
+    submitted: requestQueueMessage.text('columns.submitted'),
+    quantity: requestQueueMessage.text('columns.quantity'),
+    actions: requestQueueMessage.text('columns.actions'),
   },
   filters: {
-    statusLabel: 'Trạng thái',
-    statusTriage: 'Cần xử lý (mặc định)',
-    subjectLabel: 'Đối tượng thêu',
-    subjectAll: 'Tất cả',
-    reset: 'Xoá bộ lọc',
+    statusLabel: requestQueueMessage.text('filters.statusLabel'),
+    statusTriage: requestQueueMessage.text('filters.statusTriage'),
+    subjectLabel: requestQueueMessage.text('filters.subjectLabel'),
+    subjectAll: requestQueueMessage.text('filters.subjectAll'),
+    reset: requestQueueMessage.text('filters.reset'),
   },
   status: {
-    new: 'Mới',
-    underReview: 'Đang xem xét',
-    needsClarification: 'Cần làm rõ',
-    quoted: 'Đã báo giá',
-    quoteAccepted: 'Đã nhận báo giá',
-    digitizing: 'Đang số hoá',
-    designReview: 'Duyệt thiết kế',
-    approved: 'Đã duyệt',
-    rejected: 'Đã từ chối',
-    cancelled: 'Đã huỷ',
-    unknown: 'Không xác định',
+    new: requestQueueMessage.text('status.new'),
+    underReview: requestQueueMessage.text('status.underReview'),
+    needsClarification: requestQueueMessage.text('status.needsClarification'),
+    quoted: requestQueueMessage.text('status.quoted'),
+    quoteAccepted: requestQueueMessage.text('status.quoteAccepted'),
+    digitizing: requestQueueMessage.text('status.digitizing'),
+    designReview: requestQueueMessage.text('status.designReview'),
+    approved: requestQueueMessage.text('status.approved'),
+    rejected: requestQueueMessage.text('status.rejected'),
+    cancelled: requestQueueMessage.text('status.cancelled'),
+    unknown: requestQueueMessage.text('status.unknown'),
   },
   subject: {
-    catalog: 'Sản phẩm cửa hàng',
-    customerOwned: 'Đồ khách tự có',
-    unknown: 'Không xác định',
+    catalog: requestQueueMessage.text('subject.catalog'),
+    customerOwned: requestQueueMessage.text('subject.customerOwned'),
+    unknown: requestQueueMessage.text('subject.unknown'),
     /** The server reports a missing subject name rather than inventing one. */
-    missingSummary: 'Không còn thông tin sản phẩm',
+    missingSummary: requestQueueMessage.text('subject.missingSummary'),
   },
   customer: {
     /** `customerDisplayName` is absent when the customer gave no name. */
-    unnamed: 'Khách chưa đặt tên hiển thị',
+    unnamed: requestQueueMessage.text('customer.unnamed'),
   },
   states: {
-    loading: 'Đang tải hàng đợi yêu cầu…',
-    emptyTitle: 'Chưa có yêu cầu nào cần xử lý',
-    emptyBody: 'Khi khách gửi một yêu cầu thêu riêng, yêu cầu đó sẽ xuất hiện ở đây.',
-    filteredEmptyTitle: 'Không có yêu cầu nào khớp bộ lọc',
-    filteredEmptyBody: 'Hãy nới bộ lọc hoặc xoá bộ lọc để quay lại hàng đợi mặc định.',
-    errorTitle: 'Không tải được hàng đợi yêu cầu',
-    errorBody: 'Chưa rõ hàng đợi đang có gì. Hãy thử tải lại.',
-    cursorErrorTitle: 'Trang tiếp theo không còn hợp lệ',
-    cursorErrorBody: 'Hãy tải lại hàng đợi từ trang đầu.',
-    loadMoreFailed: 'Không tải được trang tiếp theo.',
-    appended: 'Đã tải thêm một trang yêu cầu.',
+    loading: requestQueueMessage.text('states.loading'),
+    emptyTitle: requestQueueMessage.text('states.emptyTitle'),
+    emptyBody: requestQueueMessage.text('states.emptyBody'),
+    filteredEmptyTitle: requestQueueMessage.text('states.filteredEmptyTitle'),
+    filteredEmptyBody: requestQueueMessage.text('states.filteredEmptyBody'),
+    errorTitle: requestQueueMessage.text('states.errorTitle'),
+    errorBody: requestQueueMessage.text('states.errorBody'),
+    cursorErrorTitle: requestQueueMessage.text('states.cursorErrorTitle'),
+    cursorErrorBody: requestQueueMessage.text('states.cursorErrorBody'),
+    loadMoreFailed: requestQueueMessage.text('states.loadMoreFailed'),
+    appended: requestQueueMessage.text('states.appended'),
   },
   actions: {
-    open: 'Xem chi tiết',
-    retry: 'Thử lại',
-    loadMore: 'Trang sau',
-    loadingMore: 'Đang tải…',
+    open: requestQueueMessage.text('actions.open'),
+    retry: requestQueueMessage.text('actions.retry'),
+    loadMore: requestQueueMessage.text('actions.loadMore'),
+    loadingMore: requestQueueMessage.text('actions.loadingMore'),
   },
 } as const;

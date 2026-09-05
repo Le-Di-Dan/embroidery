@@ -1,0 +1,7 @@
+{
+  "extends": "@embroidery/typescript-config/library.json",
+  "compilerOptions": {
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*", "messages/**/*.json", "eslint.config.mjs"]
+}

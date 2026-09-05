@@ -11,8 +11,20 @@
  * The section headings inside it stay in their own capabilities' copy, so each
  * checkpoint still owns the words for the thing it built.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/studio.json`, under `inspector`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const inspectorMessage = messageView(VI_MESSAGES.studio, 'inspector');
+
 export const STUDIO_INSPECTOR_COPY = {
-  panelLabel: 'Bảng thuộc tính thiết kế',
-  drawerOpen: 'Mở bảng thuộc tính thiết kế',
-  drawerClose: 'Đóng bảng thuộc tính thiết kế',
+  panelLabel: inspectorMessage.text('panelLabel'),
+  drawerOpen: inspectorMessage.text('drawerOpen'),
+  drawerClose: inspectorMessage.text('drawerClose'),
 } as const;

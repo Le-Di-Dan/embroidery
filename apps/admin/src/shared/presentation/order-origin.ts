@@ -30,7 +30,21 @@
  * more importantly, rather than silently rendering as `Thêu riêng` and telling
  * an operator an order is something it is not.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
 import type { AdminStatusTone } from '../status/admin-status-badge';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin-orders.json`, under `originLabels`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const originLabelsMessage = messageView(VI_MESSAGES.adminOrders, 'originLabels');
+
+/** The label both applications use for a value the server did not classify. */
+const commonMessage = messageView(VI_MESSAGES.common);
 
 export interface OriginPresentation {
   /** The stored value when this build has a label for it, else `UNKNOWN`. */
@@ -49,12 +63,12 @@ interface OriginStyle {
 
 /** The two origins, labelled and tinted exactly as `912:337` draws them. */
 const ORDER_ORIGIN_STYLES: Readonly<Record<string, OriginStyle>> = {
-  READY_MADE: { label: 'Bán sẵn', tone: 'info', symbol: '◆' },
-  CUSTOM: { label: 'Thêu riêng', tone: 'neutral', symbol: '✎' },
+  READY_MADE: { label: originLabelsMessage.text('READY_MADE.label'), tone: 'info', symbol: '◆' },
+  CUSTOM: { label: originLabelsMessage.text('CUSTOM.label'), tone: 'neutral', symbol: '✎' },
 };
 
 /** The neutral fallback, for an origin this build has no approved label for. */
-export const UNKNOWN_ORDER_ORIGIN_LABEL = 'Không xác định';
+export const UNKNOWN_ORDER_ORIGIN_LABEL = commonMessage.text('value.unknown');
 
 export function presentOrderOrigin(origin: unknown): OriginPresentation {
   const style = typeof origin === 'string' ? ORDER_ORIGIN_STYLES[origin] : undefined;

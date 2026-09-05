@@ -1,4 +1,6 @@
+import { HTML_LANG, VI_MESSAGES, messageView } from '@embroidery/i18n';
 import type { Metadata } from 'next';
+import { NextIntlClientProvider } from 'next-intl';
 import type { ReactNode } from 'react';
 
 import { AppProviders } from '../providers/app-providers';
@@ -22,17 +24,25 @@ import '../styles/main.scss';
  */
 export const dynamic = 'force-dynamic';
 
+/**
+ * The browser title and description, from the canonical Vietnamese message
+ * repository (`packages/i18n/messages/vi/seo.json`, under `admin`).
+ */
+const seoMessage = messageView(VI_MESSAGES.seo, 'admin');
+
 export const metadata: Metadata = {
-  title: 'Embroidery Commerce — Admin',
-  description: 'Bảng điều khiển quản trị cửa hàng thêu.',
+  title: seoMessage.text('app.title'),
+  description: seoMessage.text('app.description'),
   robots: { index: false, follow: false },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="vi">
+    <html lang={HTML_LANG}>
       <body>
-        <AppProviders>{children}</AppProviders>
+        <NextIntlClientProvider>
+          <AppProviders>{children}</AppProviders>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

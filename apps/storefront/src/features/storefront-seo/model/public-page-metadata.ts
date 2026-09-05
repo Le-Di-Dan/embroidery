@@ -1,3 +1,6 @@
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+import { BRAND_NAME } from '@embroidery/ui';
+
 import type { Metadata } from 'next';
 
 import { toAbsolutePublicUrl } from '../../../config/public-origin';
@@ -60,6 +63,12 @@ import { toAbsolutePublicUrl } from '../../../config/public-origin';
  * an operator who authors a description still has it published verbatim.
  */
 
+/**
+ * The static browser/metadata copy, from the canonical Vietnamese message
+ * repository (`packages/i18n/messages/vi/seo.json`, `APP12-V02` §5A.3).
+ */
+const seoMessage = messageView(VI_MESSAGES.seo);
+
 /** `vi`, matching `<html lang="vi">`. Open Graph wants the underscored form. */
 export const PUBLIC_OG_LOCALE = 'vi_VN';
 
@@ -69,8 +78,13 @@ export const PUBLIC_OG_LOCALE = 'vi_VN';
  * Written once. The three feed and landing routes each carried their own
  * `— Xưởng Thêu` literal, which is how one store came to publish two names: a
  * brand repeated in three template strings is three places for a rename to miss.
+ *
+ * `APP12-V02` §5A finished the job: it is no longer a literal here either, but
+ * the identity constant `@embroidery/ui` owns for the approved symbol and
+ * lockup. The store's name is not translatable copy, so it does not live in the
+ * message repository; the *sentence pattern* around it does.
  */
-export const PUBLIC_BRAND_NAME = 'Nét Thêu';
+export const PUBLIC_BRAND_NAME = BRAND_NAME;
 
 /**
  * A public page's title: its own subject, then the brand.
@@ -83,7 +97,21 @@ export const PUBLIC_BRAND_NAME = 'Nét Thêu';
  * field for exactly that.
  */
 export function publicPageTitle(subject: string): string {
-  return `${subject} — ${PUBLIC_BRAND_NAME}`;
+  return brandedPageTitle(subject);
+}
+
+/**
+ * The same composition, for the routes that are deliberately **not** public.
+ *
+ * `/truy-cap/*`, `/xac-minh-lien-he` and `/mua-hang/[slug]` are `noindex` and
+ * publish no canonical and no Open Graph — but they still put a title in a
+ * browser tab, and that title had the brand appended by a literal in each of
+ * the nine route files. One sentence pattern, one place: the private routes
+ * call this and the public ones call `publicPageTitle`, and both read the same
+ * message (`APP12-V02` §5A).
+ */
+export function brandedPageTitle(subject: string): string {
+  return seoMessage.text('storefront.brandedTitle', { title: subject, brand: PUBLIC_BRAND_NAME });
 }
 
 /** Every public surface here is a page rather than an article or a product. */

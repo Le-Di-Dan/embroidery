@@ -19,7 +19,18 @@
  * copying, because none of those can be prevented and a claim that they are
  * would be a lie told to a customer.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
 import { BRAND_NAME } from '@embroidery/ui';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/studio.json`, under `watermark`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const watermarkMessage = messageView(VI_MESSAGES.studio, 'watermark');
 
 export const STUDIO_WATERMARK_COPY = {
   /**
@@ -30,7 +41,7 @@ export const STUDIO_WATERMARK_COPY = {
    */
   wordmark: BRAND_NAME,
   /** What the marked surface is. */
-  preview: 'BẢN XEM TRƯỚC',
+  preview: watermarkMessage.text('preview'),
 
   /**
    * The policy note.
@@ -39,6 +50,6 @@ export const STUDIO_WATERMARK_COPY = {
    * watermark is not part of what gets stitched. Deliberately absent: any
    * sentence about screenshots, screen recording, copying or printing.
    */
-  policy: 'Bản xem trước có đóng dấu. Dấu này không nằm trong mẫu thêu của bạn.',
-  policyNoDownload: 'Studio không cung cấp tải xuống bản thiết kế.',
+  policy: watermarkMessage.text('policy'),
+  policyNoDownload: watermarkMessage.text('policyNoDownload'),
 } as const;

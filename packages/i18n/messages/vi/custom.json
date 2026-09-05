@@ -1,0 +1,918 @@
+{
+  "request": {
+    "pageTitle": "Gửi yêu cầu thêu riêng",
+    "pageIntro": "Chọn loại yêu cầu, nhập thông tin, xác minh liên hệ rồi gửi. Bạn không cần tài khoản.",
+    "steps": {
+      "subject": "Bước 1 — Nội dung yêu cầu",
+      "verify": "Bước 2 — Xác minh liên hệ",
+      "attach": "Bước 3 — Hình ảnh và gửi yêu cầu",
+      "lockedHint": "Hoàn tất bước trước để mở bước này.",
+      "continueToVerify": "Tiếp tục để xác minh liên hệ"
+    },
+    "chooser": {
+      "legend": "Bạn muốn thêu lên sản phẩm nào?",
+      "catalog": "Sản phẩm của cửa hàng",
+      "catalogHint": "Bạn đã chọn mẫu và thiết kế trong Xưởng thiết kế.",
+      "customerOwned": "Sản phẩm bạn đã có sẵn",
+      "customerOwnedHint": "Bạn gửi ảnh món đồ của mình và mô tả vị trí muốn thêu.",
+      "switchWarning": "Đổi loại yêu cầu sẽ xoá thông tin bạn đã nhập ở loại còn lại."
+    },
+    "catalog": {
+      "heading": "Sản phẩm và phiên bản",
+      "contextNote": "Sản phẩm và bản thiết kế lấy từ Xưởng thiết kế. Bạn không cần nhập mã nào ở đây.",
+      "variantLegend": "Chọn phiên bản bạn muốn đặt",
+      "variantHint": "Bắt buộc chọn một phiên bản. Cửa hàng không chọn thay bạn.",
+      "variantLoading": "Đang tải các phiên bản có thể chọn…",
+      "variantUnnamed": "Phiên bản không có nhãn",
+      "variantEmpty": "Sản phẩm này hiện chưa có phiên bản nào để đặt yêu cầu.",
+      "variantEmptyHint": "Bạn có thể quay lại chọn sản phẩm khác hoặc gửi yêu cầu cho đồ có sẵn.",
+      "variantGone": "Phiên bản bạn chọn vừa ngừng nhận đặt. Vui lòng chọn lại một phiên bản.",
+      "productUnavailable": "Không tìm thấy sản phẩm này.",
+      "productUnavailableHint": "Sản phẩm có thể đã ngừng hiển thị. Bạn có thể chọn sản phẩm khác.",
+      "loadFailed": "Không tải được danh sách phiên bản.",
+      "retry": "Thử lại",
+      "sessionExpired": "Bản thiết kế của bạn không còn dùng được để gửi yêu cầu.",
+      "sessionExpiredHint": "Phiên thiết kế đã hết hạn hoặc đã đóng. Hãy mở lại Xưởng thiết kế và thiết kế lại trước khi gửi.",
+      "sessionMissing": "Chúng tôi không tìm thấy bản thiết kế nào cho sản phẩm này trên trình duyệt."
+    },
+    "customerOwned": {
+      "heading": "Món đồ của bạn",
+      "nameLabel": "Tên món đồ",
+      "namePlaceholder": "Ví dụ: Áo khoác jean",
+      "nameRequired": "Vui lòng cho biết tên món đồ.",
+      "nameTooLong": "Tên món đồ tối đa 200 ký tự.",
+      "descriptionLabel": "Mô tả và vị trí muốn thêu (không bắt buộc)",
+      "descriptionTooLong": "Mô tả tối đa 2000 ký tự.",
+      "widthLabel": "Chiều rộng vùng thêu (mm, không bắt buộc)",
+      "heightLabel": "Chiều cao vùng thêu (mm, không bắt buộc)",
+      "dimensionInvalid": "Nhập số mm, tối đa 2 chữ số thập phân."
+    },
+    "quantity": {
+      "heading": "Số lượng",
+      "catalogHint": "Số lượng dưới đây thuộc về phiên bản bạn vừa chọn.",
+      "catalogHintNoVariant": "Chọn phiên bản trước khi nhập số lượng.",
+      "customerOwnedHint": "Ghi kích cỡ nếu bạn muốn tách theo size.",
+      "sizeLabel": "Kích cỡ",
+      "sizePlaceholder": "Ví dụ: M",
+      "quantityLabel": "Số lượng",
+      "addLine": "Thêm dòng",
+      "removeLine": "Xoá dòng",
+      "total": "Tổng số lượng",
+      "required": "Cần ít nhất một dòng số lượng hợp lệ.",
+      "invalid": "Số lượng phải là số nguyên lớn hơn 0 và tối đa 100000.",
+      "sizeTooLong": "Kích cỡ tối đa 50 ký tự.",
+      "tooManyLines": "Tối đa 50 dòng số lượng."
+    },
+    "verification": {
+      "heading": "Xác minh liên hệ",
+      "intro": "Chúng tôi gửi mã 6 chữ số để xác nhận bạn là chủ của liên hệ này.",
+      "verified": "Đã xác minh liên hệ. Bạn có thể tiếp tục bước 3.",
+      "required": "Hoàn tất xác minh liên hệ trước khi tải ảnh và gửi yêu cầu."
+    },
+    "upload": {
+      "copHeading": "Ảnh món đồ của bạn",
+      "copHint": "Bắt buộc ít nhất 1 ảnh. Tối đa 10 ảnh.",
+      "referenceHeading": "Ảnh tham khảo (không bắt buộc)",
+      "referenceHint": "Hình mẫu bạn muốn thêu. Tối đa 10 ảnh.",
+      "chooseCopImage": "Chọn ảnh món đồ",
+      "chooseReference": "Chọn ảnh tham khảo",
+      "formats": "JPEG, PNG hoặc WebP, tối đa 10 MB mỗi ảnh.",
+      "empty": "Chưa có ảnh nào.",
+      "uploading": "Đang tải lên…",
+      "inspecting": "Đang kiểm tra ảnh…",
+      "accepted": "Đã duyệt",
+      "rejected": "Ảnh không dùng được",
+      "remove": "Bỏ ảnh",
+      "retry": "Tải lại ảnh",
+      "capReached": "Bạn đã đạt giới hạn 10 ảnh cho mục này.",
+      "quotaReached": "Bạn đã đạt giới hạn ảnh cho lần gửi yêu cầu này.",
+      "copRequired": "Cần ít nhất một ảnh món đồ đã được duyệt.",
+      "pending": "Vui lòng đợi các ảnh kiểm tra xong trước khi gửi.",
+      "counter": "{used}/{max} ảnh"
+    },
+    "uploadFailure": {
+      "TOO_LARGE": "Ảnh vượt quá 10 MB.",
+      "UNSUPPORTED": "Định dạng ảnh không được hỗ trợ.",
+      "PROCESSING_FAILED": "Ảnh không qua được bước kiểm tra.",
+      "QUOTA": "Bạn đã đạt giới hạn ảnh cho lần gửi yêu cầu này.",
+      "VERIFICATION_UNAVAILABLE": "Phiên xác minh không còn dùng được. Hãy xác minh lại.",
+      "GENERIC": "Không tải được ảnh. Vui lòng thử lại."
+    },
+    "review": {
+      "heading": "Kiểm tra lại yêu cầu",
+      "subjectCatalog": "Sản phẩm cửa hàng",
+      "subjectCustomerOwned": "Sản phẩm bạn đã có",
+      "product": "Sản phẩm",
+      "variant": "Phiên bản",
+      "design": "Bản thiết kế",
+      "designAttached": "Đã đính kèm từ Xưởng thiết kế",
+      "item": "Món đồ",
+      "description": "Mô tả",
+      "dimensions": "Kích thước vùng thêu",
+      "quantities": "Số lượng",
+      "itemPhotos": "Ảnh món đồ",
+      "references": "Ảnh tham khảo",
+      "contact": "Liên hệ đã xác minh",
+      "note": "Ghi chú cho xưởng (không bắt buộc)",
+      "noteTooLong": "Ghi chú tối đa 2000 ký tự.",
+      "disclaimer": "Gửi yêu cầu không phải là báo giá, duyệt thiết kế, thanh toán hay đơn hàng. Xưởng sẽ liên hệ lại với bạn."
+    },
+    "submit": {
+      "action": "Gửi yêu cầu",
+      "submitting": "Đang gửi yêu cầu…",
+      "blocked": "Hoàn tất các mục còn thiếu để gửi yêu cầu.",
+      "failed": "Chưa gửi được yêu cầu. Chưa có yêu cầu nào được tạo.",
+      "uncertain": "Kết nối bị gián đoạn nên chúng tôi chưa rõ kết quả. Bấm gửi lại — hệ thống sẽ không tạo yêu cầu trùng.",
+      "retry": "Gửi lại",
+      "conflict": "Lần xác minh này đã được dùng cho một yêu cầu khác. Vui lòng xác minh lại liên hệ để gửi yêu cầu mới.",
+      "conflictAction": "Xác minh lại",
+      "inProgress": "Yêu cầu của bạn đang được xử lý. Vui lòng đợi một lát rồi thử lại.",
+      "subjectInvalid": "Yêu cầu phải thuộc đúng một loại: sản phẩm cửa hàng hoặc đồ có sẵn.",
+      "notVerified": "Xác minh liên hệ không còn dùng được. Hãy xác minh lại.",
+      "assetNotBindable": "Một trong các ảnh đính kèm không dùng được. Hãy tải lại ảnh đó."
+    },
+    "live": {
+      "submitting": "Đang gửi yêu cầu",
+      "inspecting": "Đang kiểm tra ảnh vừa tải lên"
+    }
+  },
+  "requestConfirmation": {
+    "title": "Đã nhận yêu cầu của bạn",
+    "successMark": "✓",
+    "statusBadge": "Trạng thái: Mới",
+    "secureLink": {
+      "title": "Chúng tôi đã gửi liên kết theo dõi tới liên hệ bạn đã xác minh",
+      "body": {
+        "wide": "Mở liên kết đó để xem trạng thái yêu cầu bất cứ lúc nào. Liên kết có hiệu lực 7 ngày và chỉ dành riêng cho bạn — đừng chia sẻ lại.",
+        "narrow": "Mở liên kết đó để xem trạng thái. Hiệu lực 7 ngày, chỉ dành riêng cho bạn — đừng chia sẻ lại."
+      },
+      "fallback": {
+        "wide": "Chưa thấy email sau vài phút? Kiểm tra thư rác, hoặc liên hệ xưởng kèm mã yêu cầu ở trên.",
+        "narrow": "Chưa thấy email? Kiểm tra thư rác, hoặc liên hệ xưởng kèm mã yêu cầu."
+      }
+    },
+    "missingCode": {
+      "label": "Mã yêu cầu",
+      "note": "Không hiển thị được mã yêu cầu ở trang này. Mã đầy đủ nằm trong tin nhắn chứa liên kết theo dõi của bạn."
+    },
+    "nextSteps": {
+      "title": "Xưởng sẽ làm gì tiếp theo",
+      "steps": [
+        "Xưởng mở yêu cầu và xem lại thông tin, ảnh của bạn.",
+        "Nếu thiếu gì, xưởng sẽ hỏi thêm — bạn thấy nội dung đó ở trang trạng thái.",
+        "Sau khi xem xong, xưởng sẽ trao đổi bước tiếp theo với bạn."
+      ],
+      "note": "Yêu cầu chưa được duyệt, chưa được báo giá và chưa thành đơn hàng."
+    },
+    "notIncluded": {
+      "title": "Chưa có ở bước này",
+      "points": [
+        "Báo giá hoặc giá tiền",
+        "Duyệt bản thiết kế",
+        "Đặt cọc hoặc thanh toán",
+        "Tạo đơn hàng"
+      ]
+    },
+    "code": {
+      "label": "Mã yêu cầu",
+      "note": {
+        "wide": "Mã này chỉ để bạn và xưởng nói chuyện về yêu cầu. Nó không mở được yêu cầu — chỉ liên kết trong email mới mở được.",
+        "narrow": "Mã này không mở được yêu cầu — chỉ liên kết trong email mới mở được."
+      }
+    }
+  },
+  "requestStatus": {
+    "accessBar": {
+      "title": "Truy cập an toàn",
+      "expiry": {
+        "wide": "Liên kết này chỉ dành cho bạn và hết hiệu lực ngày {date}. Đừng chia sẻ lại.",
+        "narrow": "Hết hiệu lực {date} · đừng chia sẻ lại"
+      }
+    },
+    "headlineBadge": "Trạng thái: {label}",
+    "submittedAt": "Gửi lúc {timestamp}",
+    "progress": {
+      "title": "Tiến trình",
+      "steps": {
+        "submitted": "Đã gửi",
+        "underReview": "Xưởng đang xem",
+        "answered": "Xưởng đã phản hồi"
+      },
+      "note": "Các bước báo giá, duyệt thiết kế và thanh toán chưa có trong giai đoạn này."
+    },
+    "subject": {
+      "title": "Nội dung bạn đã gửi",
+      "frozen": "Nội dung này đã cố định từ lúc gửi và không thay đổi.",
+      "rows": {
+        "kind": "Loại",
+        "catalog": "Sản phẩm của cửa hàng",
+        "customerOwned": "Sản phẩm của bạn",
+        "productName": "Sản phẩm",
+        "variantColorName": "Màu",
+        "variantSizeLabel": "Kích cỡ",
+        "itemName": "Vật phẩm",
+        "itemDescription": "Mô tả",
+        "dimensions": "Kích thước",
+        "quantity": "Số lượng"
+      },
+      "missingValue": "Không hiển thị được",
+      "assetsTitle": "Ảnh bạn đã gửi",
+      "assetRoles": {
+        "copImage": "Ảnh vật phẩm",
+        "reference": "Tham khảo"
+      },
+      "assetsNote": "Chỉ bạn (qua liên kết này) và xưởng xem được các ảnh này. Chúng không hiển thị công khai ở bất kỳ đâu."
+    },
+    "reason": {
+      "titles": {
+        "needsClarification": "Xưởng cần bạn làm rõ",
+        "rejected": "Lý do từ chối",
+        "cancelled": "Lý do huỷ"
+      },
+      "note": "Đây là nội dung xưởng viết riêng để gửi cho bạn. Ghi chú nội bộ của xưởng không hiển thị ở đây.",
+      "absent": "Xưởng chưa gửi kèm nội dung nào cho bạn ở bước này."
+    },
+    "currentStatus": {
+      "title": "Trạng thái hiện tại"
+    },
+    "nextSteps": {
+      "title": "Bạn cần làm gì"
+    },
+    "readOnly": {
+      "title": "Trang này chỉ để xem",
+      "points": [
+        "Không có nút huỷ yêu cầu ở giai đoạn này.",
+        "Không sửa được ảnh hoặc thông tin đã gửi.",
+        "Không có báo giá, duyệt thiết kế hay thanh toán."
+      ]
+    },
+    "states": {
+      "new": {
+        "badge": "Mới",
+        "description": "Yêu cầu của bạn đã vào hàng đợi của xưởng và đang chờ được mở.",
+        "nextSteps": ["Không cần làm gì lúc này.", "Giữ lại liên kết này để xem trạng thái."]
+      },
+      "underReview": {
+        "badge": "Đang xem xét",
+        "description": "Xưởng đang xem thông tin và ảnh bạn gửi.",
+        "nextSteps": ["Không cần làm gì lúc này.", "Nếu thiếu thông tin, xưởng sẽ liên hệ bạn."]
+      },
+      "needsClarification": {
+        "badge": "Cần bổ sung thông tin",
+        "description": "Xưởng cần thêm thông tin trước khi tiếp tục xem xét.",
+        "nextSteps": [
+          "Xưởng sẽ liên hệ bạn qua liên hệ đã xác minh.",
+          "Trang này không có ô trả lời — hãy trả lời theo cách xưởng liên hệ."
+        ]
+      },
+      "rejected": {
+        "badge": "Đã từ chối",
+        "description": "Xưởng không thể nhận yêu cầu này.",
+        "nextSteps": [
+          "Bạn có thể gửi một yêu cầu mới nếu muốn.",
+          "Yêu cầu mới sẽ cần xác minh liên hệ lại."
+        ]
+      },
+      "cancelled": {
+        "badge": "Đã huỷ",
+        "description": "Yêu cầu này đã được huỷ.",
+        "nextSteps": [
+          "Bạn có thể gửi một yêu cầu mới nếu muốn.",
+          "Yêu cầu mới sẽ cần xác minh liên hệ lại."
+        ]
+      },
+      "beyondIntake": {
+        "badge": "Đang xử lý",
+        "description": "Yêu cầu của bạn đã qua bước xem xét ban đầu và đang được xưởng xử lý tiếp.",
+        "nextSteps": ["Không cần làm gì lúc này.", "Xưởng sẽ liên hệ bạn qua liên hệ đã xác minh."]
+      }
+    },
+    "liveAuthorized": "Đã mở yêu cầu của bạn. Nội dung yêu cầu đang hiển thị.",
+    "heading": {
+      "wide": "Yêu cầu {code}"
+    }
+  },
+  "quotation": {
+    "pageTitle": "Báo giá của bạn — {brand}",
+    "titles": {
+      "live": "Báo giá cho yêu cầu thêu của bạn",
+      "accepted": "Bạn đã chấp nhận báo giá này",
+      "rejected": "Bạn đã từ chối báo giá này",
+      "stale": "Cửa hàng đã gửi một báo giá mới hơn",
+      "expired": "Báo giá này đã hết hiệu lực"
+    },
+    "subtitles": {
+      "live": "Mã báo giá {code} · Phiên bản {version} · {quantity} sản phẩm",
+      "accepted": "Mã báo giá {code} · Cửa hàng sẽ bắt đầu số hoá mẫu thêu.",
+      "rejected": "Mã báo giá {code} · Cửa hàng đã nhận được phản hồi của bạn.",
+      "stale": "Mã báo giá {code} · Bản dưới đây là phiên bản {version}, phiên bản mới nhất hiện nay.",
+      "expired": "Mã báo giá {code} · Báo giá chỉ có hiệu lực trong thời hạn cửa hàng đã ghi."
+    },
+    "badges": {
+      "live": "Còn hiệu lực đến {until}",
+      "liveWithDays": "Còn hiệu lực đến {until} · còn {days} ngày",
+      "liveUnknown": "Còn hiệu lực",
+      "expired": "Hết hiệu lực từ {until}",
+      "expiredUnknown": "Đã hết hiệu lực",
+      "accepted": "Đã chấp nhận {at}",
+      "rejected": "Đã từ chối {at}",
+      "acceptedUndated": "Đã chấp nhận",
+      "rejectedUndated": "Đã từ chối",
+      "stale": "Bản bạn đang xem không còn mới nhất"
+    },
+    "lines": {
+      "heading": "Chi tiết báo giá",
+      "description": "Nội dung",
+      "quantity": "SL",
+      "unitPrice": "Đơn giá",
+      "lineTotal": "Thành tiền",
+      "quantityAndUnit": "{quantity} × {unitPrice}",
+      "empty": "Báo giá này chưa có dòng nào."
+    },
+    "lineKinds": {
+      "PRODUCT": "Sản phẩm",
+      "EMBROIDERY": "Thêu",
+      "DIGITIZING_FEE": "Phí số hoá",
+      "SHIPPING": "Vận chuyển",
+      "ADJUSTMENT": "Điều chỉnh",
+      "OTHER": "Khác"
+    },
+    "totals": {
+      "heading": "Tổng tiền",
+      "subtotal": "Tạm tính",
+      "manualAdjustment": "Điều chỉnh",
+      "shippingFee": "Phí giao hàng",
+      "total": "Tổng cộng",
+      "deposit": "Đặt cọc {percent}",
+      "remaining": "Phần còn lại",
+      "note": "Chấp nhận báo giá không thu tiền và không tạo đơn hàng."
+    },
+    "notes": {
+      "live": "Chấp nhận báo giá là bước thương mại. Điều khoản thanh toán và đổi trả sẽ được hiển thị đầy đủ và cần bạn đồng ý ở bước duyệt bản thiết kế.",
+      "accepted": "Báo giá đã chấp nhận là bất biến và được lưu lại làm bằng chứng. Nếu sau này có thay đổi làm phát sinh báo giá mới, bạn sẽ được yêu cầu chấp nhận lại.",
+      "rejected": "Phiên bản báo giá đã từ chối là trạng thái cuối và được giữ lại làm lịch sử. Một báo giá mới sẽ là phiên bản mới, cần bạn quyết định lại.",
+      "stale": "Các con số phía trên thuộc phiên bản mới nhất. Quyết định trước đó chưa được ghi nhận.",
+      "expired": "Các con số phía trên chỉ còn giá trị tham khảo lịch sử."
+    },
+    "actions": {
+      "heading": "Quyết định của bạn",
+      "reject": "Từ chối báo giá",
+      "accepting": "Đang gửi chấp nhận…",
+      "rejecting": "Đang gửi từ chối…",
+      "reconciling": "Đang tải lại báo giá mới nhất…",
+      "viewLatest": "Xem báo giá mới nhất",
+      "accept": "Chấp nhận báo giá"
+    },
+    "acceptConfirm": {
+      "title": "Xác nhận chấp nhận báo giá",
+      "body": "Bạn chấp nhận tổng cộng {total} của phiên bản đang hiển thị. Sau khi xác nhận, cửa hàng sẽ bắt đầu số hoá mẫu thêu.",
+      "note": "Bước này chưa thu tiền và chưa tạo đơn hàng.",
+      "confirm": "Xác nhận và chấp nhận",
+      "cancel": "Huỷ"
+    },
+    "rejectConfirm": {
+      "title": "Xác nhận từ chối báo giá",
+      "body": "Bạn từ chối phiên bản báo giá đang hiển thị. Yêu cầu thêu của bạn không bị huỷ, và cửa hàng có thể gửi báo giá khác.",
+      "confirm": "Xác nhận và từ chối",
+      "cancel": "Huỷ"
+    },
+    "stepUp": {
+      "title": "Xác thực lại để chấp nhận báo giá",
+      "body": "Chấp nhận báo giá là thao tác quan trọng, nên cần bạn xác thực lại liên hệ đã đăng ký một lần nữa.",
+      "safety": "{brand} không bao giờ hỏi mã này qua Zalo hay Messenger. Chỉ thao tác trên liên kết an toàn này mới có giá trị.",
+      "stay": "Bạn vẫn đang ở trong phiên truy cập an toàn này. Không cần mở lại liên kết.",
+      "cancel": "Huỷ",
+      "live": "Cần xác thực lại liên hệ trước khi chấp nhận báo giá.",
+      "verified": "Đã xác thực. Đang kiểm tra lại báo giá…"
+    },
+    "accepted": {
+      "title": "Đã ghi nhận — không thu tiền ở bước này",
+      "body": "Cửa hàng sẽ liên hệ khi bản thiết kế sẵn sàng để bạn duyệt. Đơn hàng và thanh toán chỉ phát sinh sau khi bạn duyệt thiết kế.",
+      "acceptedTotal": "Số tiền đã chấp nhận",
+      "replayed": "Bạn đã chấp nhận báo giá này trước đó. Đây là kết quả đã ghi nhận, không phải một lần chấp nhận mới.",
+      "live": "Đã ghi nhận việc bạn chấp nhận báo giá."
+    },
+    "rejected": {
+      "title": "Đã ghi nhận — bạn không phải trả khoản nào",
+      "body": "Nếu bạn muốn tiếp tục, hãy trả lời tin nhắn gần nhất của {brand}; cửa hàng có thể lập một báo giá mới cho cùng yêu cầu này.",
+      "version": "Phiên bản đã từ chối: {version}",
+      "live": "Đã ghi nhận việc bạn từ chối báo giá."
+    },
+    "stale": {
+      "title": "Không thể chấp nhận phiên bản đã bị thay thế",
+      "body": "Số tiền có thể đã thay đổi. Hãy xem lại bản mới nhất trước khi quyết định — quyết định phải là một lựa chọn mới, có ý thức, trên đúng bản hiện hành. Chưa có quyết định nào được ghi nhận.",
+      "live": "Báo giá đã thay đổi. Chưa có quyết định nào được ghi nhận."
+    },
+    "expired": {
+      "title": "Không còn chấp nhận được",
+      "body": "Hãy trả lời tin nhắn gần nhất của {brand} để cửa hàng lập báo giá mới. Giá vật tư và lịch sản xuất có thể đã thay đổi.",
+      "live": "Báo giá đã hết hiệu lực."
+    },
+    "notices": {
+      "TRANSIENT": {
+        "title": "Chưa gửi được quyết định",
+        "body": "Kết nối tới máy chủ bị gián đoạn nên quyết định của bạn chưa được ghi nhận. Hãy thử lại."
+      },
+      "INVALID_TRANSITION": {
+        "title": "Không thực hiện được quyết định này",
+        "body": "Trạng thái của báo giá đã thay đổi. Thông tin bên dưới vừa được tải lại — hãy xem và quyết định theo tình trạng hiện tại."
+      },
+      "DUPLICATE_OPERATION": {
+        "title": "Quyết định đang được xử lý",
+        "body": "Một quyết định cho báo giá này đang được xử lý. Hãy chờ một lát rồi thử lại."
+      },
+      "IDEMPOTENCY_CONFLICT": {
+        "title": "Báo giá này đã được quyết định",
+        "body": "Phiên bản này đã có một quyết định khác được ghi nhận. Thông tin bên dưới vừa được tải lại."
+      },
+      "POLICY_UNAVAILABLE": {
+        "title": "Tạm thời chưa nhận được quyết định",
+        "body": "Chức năng quyết định báo giá đang tạm ngừng. Hãy thử lại sau ít phút."
+      }
+    },
+    "live": {
+      "authorized": "Đã mở báo giá của bạn.",
+      "accepting": "Đang gửi xác nhận chấp nhận báo giá.",
+      "rejecting": "Đang gửi xác nhận từ chối báo giá.",
+      "reconciling": "Đang tải lại báo giá mới nhất."
+    }
+  },
+  "designReview": {
+    "pageTitle": "Duyệt mẫu thiết kế — {brand}",
+    "titles": {
+      "review": "Mẫu thêu của bạn đã sẵn sàng để duyệt",
+      "approved": "Bạn đã duyệt mẫu thiết kế này",
+      "revisionRequested": "Cửa hàng đã nhận yêu cầu chỉnh sửa của bạn",
+      "versionMismatch": "Cửa hàng đã gửi một phiên bản mới hơn"
+    },
+    "subtitles": {
+      "review": "Phiên bản {version} · Cửa hàng gửi ngày {sentAt}",
+      "approved": "Phiên bản {version} · Bản duyệt này đã được lưu lại và không thay đổi được nữa.",
+      "revisionRequested": "Phiên bản {version} · Cửa hàng sẽ xem phản hồi của bạn và chuẩn bị bản chỉnh sửa.",
+      "versionMismatch": "Phiên bản {version} là bản mới nhất hiện nay. Vui lòng xem lại trước khi quyết định."
+    },
+    "badges": {
+      "review": "Chờ bạn duyệt",
+      "approving": "Đang gửi quyết định",
+      "approved": "Đã duyệt",
+      "revisionRequested": "Đã yêu cầu chỉnh sửa",
+      "versionMismatch": "Có phiên bản mới"
+    },
+    "exactVersion": {
+      "legend": "Bản thiết kế bạn đang xem",
+      "version": "Phiên bản {version}",
+      "schema": "Định dạng tài liệu v{schemaVersion}",
+      "hashLabel": "Mã kiểm tra bản vẽ",
+      "note": "Quyết định của bạn gắn với đúng phiên bản và đúng bản vẽ hiển thị ở đây."
+    },
+    "preview": {
+      "label": "Xem trước mẫu thêu",
+      "watermarkWordmark": "NÉT THÊU",
+      "watermarkTag": "XEM TRƯỚC",
+      "watermarkPolicy": "Bản xem trước được đánh dấu chìm và chỉ hiển thị trong trình duyệt. Trang này không có chức năng tải về.",
+      "imagePlaceholder": "Ảnh của bạn",
+      "failure": "Không hiển thị được bản vẽ này trên trình duyệt của bạn.",
+      "failureNote": "Vui lòng liên hệ cửa hàng để được gửi lại. Đừng duyệt mẫu mà bạn chưa nhìn thấy đầy đủ."
+    },
+    "agreements": {
+      "legend": "Điều khoản bạn cần đồng ý trước khi duyệt",
+      "intro": "Đây là nội dung đang có hiệu lực. Quyết định duyệt của bạn được lưu cùng đúng các bản điều khoản này.",
+      "versionLabel": "Bản {version}",
+      "outstanding": "Còn {remaining} mục điều khoản bạn chưa đánh dấu đồng ý.",
+      "changed": "Nội dung điều khoản đã được cập nhật. Vui lòng đọc lại và đánh dấu đồng ý một lần nữa.",
+      "accept": "Tôi đã đọc và đồng ý với nội dung trên"
+    },
+    "actions": {
+      "approve": "Duyệt mẫu này",
+      "approving": "Đang gửi…",
+      "requestRevision": "Yêu cầu chỉnh sửa",
+      "reviewLatest": "Xem phiên bản mới nhất"
+    },
+    "approving": {
+      "title": "Đang gửi quyết định duyệt của bạn",
+      "body": "Vui lòng không đóng trang này."
+    },
+    "approveConfirm": {
+      "title": "Xác nhận duyệt mẫu thiết kế",
+      "body": "Sau khi duyệt, bản thiết kế này được lưu cố định và không chỉnh sửa được nữa. Mọi thay đổi sau đó sẽ là một phiên bản mới.",
+      "binds": "Bạn đang duyệt phiên bản {version}.",
+      "terms": "Bạn đồng ý với các điều khoản đã đánh dấu ở trên.",
+      "noPayment": "Duyệt mẫu không thu tiền, không tạo đơn hàng và chưa bắt đầu sản xuất.",
+      "confirm": "Xác nhận duyệt",
+      "cancel": "Quay lại"
+    },
+    "stepUp": {
+      "title": "Xác minh lại trước khi duyệt",
+      "body": "Để bảo vệ bạn, cửa hàng cần xác minh lại liên hệ của bạn trước khi ghi nhận quyết định duyệt.",
+      "stay": "Bạn vẫn đang ở trang này. Đừng đóng trang cho đến khi hoàn tất.",
+      "safety": "Cửa hàng không bao giờ hỏi mã xác minh qua điện thoại hay tin nhắn.",
+      "verified": "Đã xác minh. Đang tải lại bản thiết kế mới nhất…",
+      "cancel": "Huỷ",
+      "live": "Cần xác minh lại trước khi duyệt."
+    },
+    "revision": {
+      "title": "Yêu cầu chỉnh sửa mẫu thiết kế",
+      "body": "Hãy mô tả cụ thể điều bạn muốn thay đổi. Cửa hàng sẽ dựa vào nội dung này để chuẩn bị bản tiếp theo.",
+      "label": "Điều bạn muốn thay đổi",
+      "placeholder": "Ví dụ: chữ ở ngực trái cần lớn hơn một chút và đổi sang màu trắng.",
+      "required": "Vui lòng mô tả điều bạn muốn thay đổi.",
+      "tooLong": "Nội dung tối đa {max} ký tự.",
+      "counter": "{used}/{max} ký tự",
+      "noStepUp": "Yêu cầu chỉnh sửa không cần xác minh lại vì không cam kết điều gì.",
+      "submit": "Gửi yêu cầu chỉnh sửa",
+      "submitting": "Đang gửi…",
+      "cancel": "Quay lại"
+    },
+    "approved": {
+      "heading": "Quyết định đã được ghi nhận",
+      "approvedAt": "Thời điểm duyệt: {at}",
+      "versionLabel": "Phiên bản đã duyệt: {version}",
+      "hashLabel": "Mã kiểm tra bản vẽ đã duyệt",
+      "snapshotLabel": "Mã bản lưu duyệt",
+      "acceptedTerms": "Các điều khoản bạn đã đồng ý",
+      "scope": "Bản thiết kế đã được lưu cố định. Việc thu tiền, tạo đơn hàng, giữ hàng và sản xuất không nằm trong bước này.",
+      "replayed": "Quyết định này đã được ghi nhận trước đó. Đây là cùng một bản lưu, không phải bản mới.",
+      "live": "Bạn đã duyệt mẫu thiết kế này."
+    },
+    "revisionRequested": {
+      "heading": "Yêu cầu chỉnh sửa đã được ghi nhận",
+      "decidedAt": "Thời điểm gửi: {at}",
+      "versionLabel": "Phiên bản đã gửi phản hồi: {version}",
+      "scope": "Cửa hàng đã nhận phản hồi của bạn. Bản chỉnh sửa chưa được tạo và yêu cầu của bạn vẫn đang ở bước duyệt mẫu.",
+      "live": "Đã gửi yêu cầu chỉnh sửa."
+    },
+    "mismatch": {
+      "title": "Bản thiết kế đã thay đổi",
+      "body": "Quyết định vừa rồi chưa được ghi nhận. Cửa hàng đã gửi một phiên bản khác, nên bạn cần xem lại và quyết định lần nữa.",
+      "live": "Có phiên bản mới. Vui lòng xem lại."
+    },
+    "termsChanged": {
+      "title": "Điều khoản đã được cập nhật",
+      "body": "Quyết định vừa rồi chưa được ghi nhận. Nội dung điều khoản đã thay đổi, nên bạn cần đọc lại và đánh dấu đồng ý một lần nữa.",
+      "live": "Điều khoản đã thay đổi. Vui lòng đọc lại."
+    },
+    "notices": {
+      "TRANSIENT": {
+        "title": "Chưa gửi được quyết định",
+        "body": "Kết nối bị gián đoạn nên chưa có gì được ghi nhận. Vui lòng thử lại."
+      },
+      "INVALID_TRANSITION": {
+        "title": "Phiên bản này đã có quyết định",
+        "body": "Bản thiết kế này đã được quyết định trước đó. Nội dung bên dưới là tình trạng mới nhất."
+      },
+      "DUPLICATE_OPERATION": {
+        "title": "Quyết định đang được xử lý",
+        "body": "Một quyết định cho phiên bản này đang được ghi nhận. Vui lòng đợi một chút rồi kiểm tra lại."
+      },
+      "IDEMPOTENCY_CONFLICT": {
+        "title": "Chưa gửi được quyết định",
+        "body": "Cửa hàng chưa ghi nhận quyết định này. Nội dung bên dưới là tình trạng mới nhất; vui lòng quyết định lại."
+      },
+      "POLICY_UNAVAILABLE": {
+        "title": "Tạm thời chưa duyệt được",
+        "body": "Hệ thống chưa lấy được nội dung điều khoản đang có hiệu lực. Đây là sự cố phía cửa hàng, không phải do bạn. Vui lòng thử lại sau."
+      }
+    },
+    "live": {
+      "authorized": "Đã mở bản thiết kế chờ duyệt.",
+      "approving": "Đang gửi quyết định duyệt.",
+      "revisionSubmitting": "Đang gửi yêu cầu chỉnh sửa.",
+      "reconciling": "Đang tải lại bản thiết kế mới nhất."
+    }
+  },
+  "deposit": {
+    "live": {
+      "authorized": "Đã mở thông tin đặt cọc cho đơn hàng của bạn.",
+      "initiating": "Đang lấy thông tin chuyển khoản.",
+      "stepUp": "Cần xác minh lại danh tính trước khi lấy thông tin chuyển khoản.",
+      "qrLoading": "Đang tải mã QR chuyển khoản.",
+      "qrReady": "Đã tải xong mã QR chuyển khoản.",
+      "uploading": "Đang tải ảnh giao dịch lên.",
+      "uploaded": "Đã gửi ảnh giao dịch. Ảnh đang được kiểm tra.",
+      "confirmed": "Cửa hàng đã xác nhận tiền cọc."
+    },
+    "preAttempt": {
+      "title": "Đặt cọc đơn hàng",
+      "badge": "Chưa bắt đầu chuyển khoản",
+      "lead": "Thiết kế của bạn đã được duyệt và đơn hàng đã được tạo. Bước tiếp theo là đặt cọc để cửa hàng bắt đầu xử lý.",
+      "summaryTitle": "Tóm tắt đơn hàng",
+      "orderCodeLabel": "Mã đơn hàng",
+      "depositLabel": "Số tiền đặt cọc",
+      "currencyLabel": "Tiền tệ",
+      "remainderNote": "Phần còn lại của đơn hàng sẽ được thu ở một bước khác về sau. Trang này chỉ thu tiền cọc.",
+      "startTitle": "Sẵn sàng chuyển khoản?",
+      "startBody": "Bấm nút bên dưới để lấy thông tin tài khoản, số tiền chính xác, nội dung chuyển khoản và mã QR. Vì đây là thao tác liên quan đến tiền, bạn sẽ được yêu cầu xác minh lại danh tính một lần.",
+      "startAction": "Lấy thông tin chuyển khoản",
+      "starting": "Đang lấy thông tin…"
+    },
+    "instructions": {
+      "title": "Đặt cọc đơn hàng",
+      "badge": "Chờ xác nhận tiền cọc",
+      "orderLine": "Cửa hàng sẽ kiểm tra và xác nhận sau khi nhận được tiền.",
+      "orderPrefix": "Đơn hàng",
+      "panelTitle": "Thông tin chuyển khoản",
+      "amountLabel": "SỐ TIỀN CẦN CHUYỂN",
+      "referenceLabel": "NỘI DUNG CHUYỂN KHOẢN — VUI LÒNG GHI ĐÚNG",
+      "referenceNote": "Ghi đúng nội dung này giúp cửa hàng đối chiếu nhanh hơn. Bạn không thể sửa số tiền hay nội dung — cả hai do hệ thống sinh ra.",
+      "bankLabel": "Ngân hàng",
+      "accountNumberLabel": "Số tài khoản",
+      "accountNameLabel": "Chủ tài khoản",
+      "expiryPrefix": "Liên kết truy cập này còn hiệu lực đến",
+      "expirySuffix": "Hết hạn thì mở lại bằng liên kết mới cửa hàng gửi cho bạn.",
+      "waitingTitle": "Bạn đã chuyển khoản rồi?",
+      "waitingBody": "Nếu bạn đã hoàn tất chuyển khoản, vui lòng chờ cửa hàng xác nhận. Cửa hàng kiểm tra tài khoản ngân hàng và xác nhận thủ công, thường trong giờ làm việc.",
+      "waitingNoButton": "Trang này không có nút “Tôi đã chuyển khoản”, vì hệ thống không có cách nào tự kiểm chứng điều đó. Trạng thái sẽ tự đổi khi cửa hàng xác nhận."
+    },
+    "qr": {
+      "title": "Quét mã để chuyển nhanh",
+      "alt": "Mã QR chuyển khoản đặt cọc, chứa số tài khoản, số tiền và nội dung chuyển khoản của đơn hàng này.",
+      "download": "Tải mã QR",
+      "loading": "Đang tải mã QR…",
+      "fallback": "Không quét được mã? Bạn vẫn chuyển khoản bình thường bằng số tài khoản và nội dung ở bên trái — mã QR chỉ là lối tắt.",
+      "failed": "Chưa tải được mã QR. Bạn vẫn chuyển khoản được bằng thông tin bên trái.",
+      "retry": "Thử tải lại mã QR"
+    },
+    "copy": {
+      "amount": "Sao chép số tiền",
+      "reference": "Sao chép nội dung chuyển khoản",
+      "accountNumber": "Sao chép số tài khoản",
+      "short": "Sao chép",
+      "doneAmount": "Đã sao chép số tiền.",
+      "doneReference": "Đã sao chép nội dung chuyển khoản.",
+      "doneAccountNumber": "Đã sao chép số tài khoản.",
+      "failed": "Không sao chép được. Bạn có thể bôi đen và sao chép thủ công."
+    },
+    "reminder": {
+      "headline": "Sau khi chuyển khoản, hãy chụp màn hình giao dịch thành công",
+      "body": "Bạn có thể tải ảnh lên để cửa hàng đối chiếu nhanh hơn.",
+      "optional": "Không bắt buộc. Ảnh giao dịch không tự động xác nhận thanh toán — cửa hàng vẫn phải kiểm tra tiền về tài khoản rồi mới xác nhận."
+    },
+    "evidence": {
+      "title": "Ảnh giao dịch",
+      "optionalBadge": "không bắt buộc",
+      "dropzoneTitle": "Kéo thả ảnh vào đây hoặc chọn từ máy",
+      "constraints": "JPG, PNG hoặc WebP · tối đa 10 MB mỗi ảnh · tối đa 5 ảnh cho mỗi lần thanh toán",
+      "choose": "Chọn ảnh",
+      "more": "Tải thêm ảnh",
+      "another": "Gửi ảnh khác",
+      "skipTitle": "Tiếp tục mà không gửi ảnh",
+      "skipBody": "Hoàn toàn hợp lệ — cửa hàng vẫn xác nhận được tiền cọc.",
+      "optionalNote": "Ảnh giao dịch chỉ giúp cửa hàng đối chiếu nhanh hơn. Ảnh không tự động xác nhận thanh toán.",
+      "uploadingBadge": "Đang tải lên",
+      "uploadingDisabled": "Đang tải ảnh, vui lòng đợi…",
+      "uploadingNote": "Việc tải ảnh lên KHÔNG làm thay đổi trạng thái thanh toán và cửa hàng cũng không chờ ảnh này để xác nhận. Bạn có thể rời trang, ảnh đã gửi vẫn được lưu.",
+      "notPaymentNote": "Đây là trạng thái của ẢNH, không phải của thanh toán. Tiền cọc của bạn vẫn đang chờ cửa hàng xác nhận, bất kể ảnh đang ở bước nào.",
+      "quotaFull": "Đã đạt tối đa 5 ảnh",
+      "quotaNote": "Bạn đã gửi đủ 5 ảnh cho lần thanh toán này nên không gửi thêm được nữa. Trạng thái các ảnh vẫn hiển thị, và tiền cọc vẫn được cửa hàng xác nhận bình thường.",
+      "appendOnlyNote": "Ảnh đã gửi không thể xoá, thay thế hay sắp xếp lại — danh sách chỉ ghi thêm. Khách cũng không tải lại được ảnh của mình từ trang này.",
+      "listLabel": "Ảnh giao dịch đã gửi",
+      "empty": "Chưa có ảnh nào được gửi cho lần thanh toán này.",
+      "loading": "Đang tải danh sách ảnh…"
+    },
+    "evidenceStatus": {
+      "UPLOADED": {
+        "label": "Đang kiểm tra ảnh",
+        "note": "Hệ thống đang kiểm tra tệp. Bước này tự động và thường chỉ mất ít phút."
+      },
+      "INSPECTING": {
+        "label": "Đang kiểm tra ảnh",
+        "note": "Hệ thống đang kiểm tra tệp. Bước này tự động và thường chỉ mất ít phút."
+      },
+      "ACCEPTED": {
+        "label": "Ảnh đã được tiếp nhận",
+        "note": "Cửa hàng đã có thể xem ảnh này khi đối chiếu."
+      },
+      "REJECTED": {
+        "label": "Ảnh không hợp lệ",
+        "note": "Ảnh này không dùng được để đối chiếu. Bạn có thể gửi một ảnh khác rõ hơn."
+      }
+    },
+    "uploadFailure": {
+      "MEDIA_UNSUPPORTED": "Chỉ nhận ảnh JPG, PNG hoặc WebP.",
+      "TOO_LARGE": "Ảnh vượt quá 10 MB. Bạn hãy chọn ảnh nhỏ hơn.",
+      "QUOTA_REACHED": "Lần thanh toán này đã đủ 5 ảnh nên không nhận thêm được nữa.",
+      "ATTEMPT_CLOSED": "Lần thanh toán này đã kết thúc nên không nhận thêm ảnh.",
+      "REVERIFICATION_REQUIRED": "Cần xác minh lại danh tính trước khi gửi ảnh.",
+      "IN_PROGRESS": "Ảnh này đang được gửi. Bạn hãy đợi một chút.",
+      "TRANSIENT": "Chưa gửi được ảnh. Bạn có thể thử lại.",
+      "retry": "Thử gửi lại"
+    },
+    "review": {
+      "badge": "Đang đối chiếu",
+      "title": "Giao dịch đang được cửa hàng đối chiếu",
+      "body": "Cửa hàng đang kiểm tra lại giao dịch của bạn. Việc này thường xảy ra khi số tiền hoặc nội dung chuyển khoản chưa khớp hoàn toàn với đơn hàng. Cửa hàng sẽ liên hệ nếu cần bạn hỗ trợ thêm.",
+      "note": "Bạn không cần chuyển thêm tiền vào lúc này. Vui lòng chờ cửa hàng liên hệ hoặc cập nhật trạng thái."
+    },
+    "terminal": {
+      "badge": "Lần thanh toán đã kết thúc",
+      "title": "Lần thanh toán này không thể tiếp tục",
+      "expiredTitle": "Lần thanh toán này đã hết hiệu lực",
+      "body": "Hướng dẫn chuyển khoản của lần thanh toán trước đã hết hiệu lực. Bạn hãy bắt đầu một lần thanh toán mới để nhận thông tin và mã QR mới.",
+      "warning": "Nếu bạn đã chuyển tiền theo hướng dẫn cũ, đừng chuyển lại. Hãy liên hệ cửa hàng để được đối chiếu.",
+      "note": "Bắt đầu lại sẽ tạo một lần thanh toán MỚI kèm một lần xác minh mới. Lần thanh toán đã kết thúc không bao giờ được đưa về trạng thái chờ.",
+      "action": "Bắt đầu lại việc đặt cọc"
+    },
+    "undrawn": {
+      "title": "Lần thanh toán đang ở một trạng thái khác",
+      "body": "Cửa hàng sẽ liên hệ nếu cần bạn hỗ trợ thêm. Bạn không cần chuyển thêm tiền vào lúc này.",
+      "codeLabel": "Mã trạng thái"
+    },
+    "confirmed": {
+      "title": "Đã xác nhận tiền cọc",
+      "lead": "Cửa hàng đã nhận được tiền cọc của bạn và xác nhận thành công.",
+      "orderBadge": "Đơn hàng: Đã xác nhận cọc",
+      "depositBadge": "Tiền cọc: Đã thu đủ",
+      "identityTitle": "Đơn hàng của bạn",
+      "orderCodeLabel": "Mã đơn hàng",
+      "depositLabel": "Tiền cọc đã xác nhận",
+      "referenceLabel": "Nội dung chuyển khoản",
+      "nextTitle": "Tiếp theo là gì?",
+      "nextBody": "Cửa hàng sẽ tiếp tục xử lý đơn hàng ở bước tiếp theo và thông báo cho bạn khi có cập nhật.",
+      "evidenceNote": "Danh sách ảnh vẫn giữ nguyên để bạn đối chiếu về sau. Sau khi tiền cọc đã được xác nhận, trang này không còn đề nghị bạn gửi thêm ảnh nữa."
+    },
+    "stepUp": {
+      "title": "Xác minh lại danh tính",
+      "body": "Vì đây là thao tác liên quan đến tiền, cửa hàng cần xác minh lại rằng chính bạn đang thực hiện. Nhập số điện thoại hoặc email bạn đã dùng cho yêu cầu này để nhận mã.",
+      "stay": "Bạn vẫn đang ở trong phiên truy cập an toàn. Đừng đóng trang này.",
+      "safety": "Cửa hàng không bao giờ hỏi mật khẩu hay mã OTP qua điện thoại. Mã chỉ dùng cho lần xác minh này.",
+      "verified": "Đã xác minh. Đang lấy thông tin chuyển khoản…",
+      "cancel": "Huỷ"
+    },
+    "initiateFailure": {
+      "DEPOSIT_NOT_PAYABLE": "Khoản đặt cọc này không còn ở trạng thái chờ thanh toán.",
+      "DUPLICATE_OPERATION": "Lần thanh toán này đang được mở. Bạn hãy đợi một chút rồi thử lại.",
+      "IDEMPOTENCY_CONFLICT": "Yêu cầu trước đó chưa hoàn tất. Bạn hãy thử lại.",
+      "DEPOSIT_INSTRUCTIONS_UNAVAILABLE": "Thông tin chuyển khoản tạm thời chưa sẵn sàng. Bạn hãy thử lại sau ít phút.",
+      "TRANSIENT": "Chưa lấy được thông tin chuyển khoản. Bạn có thể thử lại."
+    }
+  },
+  "finalPayment": {
+    "live": {
+      "authorized": "Đã mở thông tin thanh toán phần còn lại cho đơn hàng của bạn.",
+      "initiating": "Đang lấy thông tin chuyển khoản.",
+      "stepUp": "Cần xác minh lại danh tính trước khi lấy thông tin chuyển khoản.",
+      "qrLoading": "Đang tải mã QR chuyển khoản.",
+      "qrReady": "Đã tải xong mã QR chuyển khoản.",
+      "uploading": "Đang tải ảnh giao dịch lên.",
+      "settled": "Cửa hàng đã nhận đủ thanh toán cho đơn hàng của bạn."
+    },
+    "order": {
+      "prefix": "Đơn hàng",
+      "suffix": "{brand}",
+      "codeLabel": "Mã đơn hàng",
+      "paidRemainingLabel": "Đã thanh toán phần còn lại",
+      "factsTitle": "Đơn hàng của bạn"
+    },
+    "notPayable": {
+      "title": "Đơn hàng của bạn",
+      "cardTitle": "Đơn hàng đang được sản xuất",
+      "body": "Chúng tôi sẽ báo bạn khi cần thanh toán phần còn lại. Bạn chưa cần chuyển khoản gì ở bước này.",
+      "note": "Trang này chưa hiển thị số tiền cần chuyển, số tài khoản hay mã QR, vì khoản thanh toán còn lại chưa được mở."
+    },
+    "preAttempt": {
+      "title": "Thanh toán phần còn lại",
+      "badge": "Chờ thanh toán",
+      "summaryTitle": "Tóm tắt đơn hàng",
+      "highlightLabel": "CÒN PHẢI TRẢ",
+      "startTitle": "Sẵn sàng chuyển khoản?",
+      "startBody": "Bấm để nhận số tài khoản, nội dung chuyển khoản và mã QR cho đúng số tiền còn lại. Vì đây là thao tác liên quan đến tiền, bạn sẽ được yêu cầu xác minh lại danh tính một lần.",
+      "startAction": "Lấy hướng dẫn chuyển khoản",
+      "starting": "Đang lấy thông tin…"
+    },
+    "instructions": {
+      "title": "Thanh toán phần còn lại",
+      "badge": "Chờ thanh toán",
+      "amountTitle": "Số tiền còn phải trả",
+      "amountNote": "Vui lòng chuyển đúng số tiền này. Đây là số tiền cửa hàng đã ghi nhận cho phần còn lại của đơn hàng.",
+      "panelTitle": "Thông tin chuyển khoản",
+      "panelLead": "Chuyển khoản thủ công qua ngân hàng. {brand} đối chiếu tài khoản và xác nhận thủ công — không có cổng thanh toán tự động ở bước này.",
+      "bankLabel": "Ngân hàng",
+      "accountNumberLabel": "Số tài khoản",
+      "accountNameLabel": "Chủ tài khoản",
+      "referenceLabel": "Nội dung chuyển khoản (bắt buộc giữ nguyên)",
+      "referenceNote": "Giữ nguyên nội dung chuyển khoản để chúng tôi đối chiếu đúng đơn hàng của bạn. Bạn không thể sửa số tiền hay nội dung — cả hai do hệ thống sinh ra.",
+      "waitingTitle": "Chúng tôi đang chờ xác nhận khoản chuyển của bạn",
+      "waitingBody": "Sau khi bạn chuyển khoản, {brand} sẽ đối chiếu với tài khoản ngân hàng rồi xác nhận thủ công, thường trong giờ làm việc. Trang này không có nút “Tôi đã chuyển khoản”, vì hệ thống không có cách nào tự kiểm chứng điều đó.",
+      "expiryPrefix": "Liên kết bảo mật này hết hạn lúc",
+      "expirySuffix": "Hết hạn thì mở lại bằng liên kết mới cửa hàng gửi cho bạn."
+    },
+    "qr": {
+      "title": "Quét mã để chuyển nhanh",
+      "alt": "Mã QR chuyển khoản phần còn lại, chứa số tài khoản, số tiền và nội dung chuyển khoản của đơn hàng này.",
+      "hint": "Mã đã chứa sẵn số tài khoản, số tiền và nội dung chuyển khoản. Mở ứng dụng ngân hàng và quét để điền tự động.",
+      "truth": "Quét mã hoặc chuyển tiền KHÔNG có nghĩa là đã thanh toán xong. {brand} vẫn phải đối chiếu tiền về tài khoản rồi mới xác nhận.",
+      "download": "Tải mã QR",
+      "loading": "Đang tải mã QR…",
+      "fallback": "Không quét được mã? Bạn vẫn chuyển khoản bình thường bằng số tài khoản và nội dung ở bên trái — mã QR chỉ là lối tắt.",
+      "failed": "Chưa tải được mã QR. Bạn vẫn chuyển khoản được bằng thông tin bên trái.",
+      "retry": "Thử tải lại mã QR"
+    },
+    "copy": {
+      "amount": "Sao chép số tiền",
+      "reference": "Sao chép nội dung chuyển khoản",
+      "accountNumber": "Sao chép số tài khoản",
+      "short": "Sao chép",
+      "doneAmount": "Đã sao chép số tiền.",
+      "doneReference": "Đã sao chép nội dung chuyển khoản.",
+      "doneAccountNumber": "Đã sao chép số tài khoản.",
+      "failed": "Không sao chép được. Bạn có thể bôi đen và sao chép thủ công."
+    },
+    "evidence": {
+      "title": "Ảnh xác nhận chuyển khoản",
+      "optionalBadge": "Không bắt buộc",
+      "lead": "Nếu tiện, bạn có thể gửi ảnh chụp màn hình giao dịch để cửa hàng đối chiếu nhanh hơn.",
+      "dropzoneTitle": "Tải ảnh giao dịch (không bắt buộc)",
+      "dropzoneHint": "Kéo thả ảnh vào đây, hoặc bấm để chọn từ máy.",
+      "constraints": "Chấp nhận PNG, JPEG hoặc WEBP · tối đa 10 MB mỗi ảnh · tối đa 5 ảnh",
+      "choose": "Chọn ảnh",
+      "more": "Tải thêm ảnh",
+      "uploadingBadge": "Đang tải lên",
+      "uploadingDisabled": "Đang tải ảnh, vui lòng đợi…",
+      "uploadingNote": "Việc tải ảnh lên KHÔNG làm thay đổi trạng thái thanh toán. Bạn có thể rời trang, ảnh đã gửi vẫn được lưu.",
+      "notProof": "Ảnh chỉ là tài liệu hỗ trợ đối chiếu. Gửi ảnh KHÔNG có nghĩa là khoản thanh toán đã được xác nhận — cửa hàng vẫn phải kiểm tra tiền về tài khoản.",
+      "quotaFull": "Đã đạt tối đa 5 ảnh",
+      "quotaNote": "Bạn đã gửi đủ 5 ảnh cho lần thanh toán này nên không gửi thêm được nữa. Trạng thái các ảnh vẫn hiển thị, và khoản thanh toán vẫn được cửa hàng xác nhận bình thường.",
+      "appendOnlyNote": "Ảnh đã gửi không thể xoá, thay thế hay sắp xếp lại — danh sách chỉ ghi thêm. Khách cũng không tải lại được ảnh của mình từ trang này.",
+      "listLabel": "Ảnh xác nhận đã gửi",
+      "empty": "Chưa có ảnh nào được gửi cho lần thanh toán này.",
+      "loading": "Đang tải danh sách ảnh…"
+    },
+    "evidenceStatus": {
+      "UPLOADED": {
+        "label": "Đang kiểm tra ảnh",
+        "note": "Hệ thống đang kiểm tra tệp. Bước này tự động và thường chỉ mất ít phút."
+      },
+      "INSPECTING": {
+        "label": "Đang kiểm tra ảnh",
+        "note": "Hệ thống đang kiểm tra tệp. Bước này tự động và thường chỉ mất ít phút."
+      },
+      "ACCEPTED": {
+        "label": "Ảnh đã được tiếp nhận",
+        "note": "Cửa hàng đã có thể xem ảnh này khi đối chiếu."
+      },
+      "REJECTED": {
+        "label": "Ảnh không hợp lệ",
+        "note": "Ảnh này không dùng được để đối chiếu. Bạn có thể gửi một ảnh khác rõ hơn."
+      }
+    },
+    "uploadFailure": {
+      "MEDIA_UNSUPPORTED": "Chỉ nhận ảnh PNG, JPEG hoặc WEBP.",
+      "TOO_LARGE": "Ảnh vượt quá 10 MB. Bạn hãy chọn ảnh nhỏ hơn.",
+      "QUOTA_REACHED": "Lần thanh toán này đã đủ 5 ảnh nên không nhận thêm được nữa.",
+      "ATTEMPT_CLOSED": "Lần thanh toán này đã kết thúc nên không nhận thêm ảnh.",
+      "REVERIFICATION_REQUIRED": "Cần xác minh lại danh tính trước khi gửi ảnh.",
+      "IN_PROGRESS": "Ảnh này đang được gửi. Bạn hãy đợi một chút.",
+      "TRANSIENT": "Chưa gửi được ảnh. Bạn có thể thử lại.",
+      "retry": "Thử gửi lại"
+    },
+    "settled": {
+      "title": "Đơn hàng của bạn",
+      "progressLabel": "Tiến độ đơn hàng",
+      "paid": {
+        "cardTitle": "Chúng tôi đã nhận đủ thanh toán",
+        "body": "Cảm ơn bạn. Đơn hàng đang được chuẩn bị để giao cho bạn."
+      },
+      "delivered": {
+        "cardTitle": "Đơn hàng đã được giao",
+        "body": "{brand} đã ghi nhận đơn hàng của bạn được giao thành công."
+      },
+      "completed": {
+        "cardTitle": "Đơn hàng đã hoàn tất",
+        "body": "Cảm ơn bạn đã đặt may tại {brand}. Đơn hàng đã kết thúc."
+      }
+    },
+    "otherState": {
+      "title": "Đơn hàng của bạn",
+      "cardTitle": "Khoản thanh toán này đang ở một trạng thái khác",
+      "body": "Bạn không cần chuyển thêm tiền vào lúc này. Cửa hàng sẽ liên hệ nếu cần bạn hỗ trợ thêm."
+    },
+    "stepUp": {
+      "title": "Xác minh lại danh tính",
+      "body": "Vì đây là thao tác liên quan đến tiền, cửa hàng cần xác minh lại rằng chính bạn đang thực hiện. Nhập số điện thoại hoặc email bạn đã dùng cho yêu cầu này để nhận mã.",
+      "stay": "Bạn vẫn đang ở trong phiên truy cập an toàn. Đừng đóng trang này.",
+      "safety": "Cửa hàng không bao giờ hỏi mật khẩu hay mã OTP qua điện thoại. Mã chỉ dùng cho lần xác minh này.",
+      "verified": "Đã xác minh. Đang lấy thông tin chuyển khoản…",
+      "cancel": "Huỷ"
+    },
+    "initiateFailure": {
+      "FINAL_PAYMENT_NOT_PAYABLE": "Khoản thanh toán này không còn ở trạng thái chờ thanh toán.",
+      "DUPLICATE_OPERATION": "Lần thanh toán này đang được mở. Bạn hãy đợi một chút rồi thử lại.",
+      "IDEMPOTENCY_CONFLICT": "Yêu cầu trước đó chưa hoàn tất. Bạn hãy thử lại.",
+      "FINAL_PAYMENT_INSTRUCTIONS_UNAVAILABLE": "Thông tin chuyển khoản tạm thời chưa sẵn sàng. Bạn hãy thử lại sau ít phút.",
+      "TRANSIENT": "Chưa lấy được thông tin chuyển khoản. Bạn có thể thử lại."
+    }
+  },
+  "orderProgress": {
+    "stateLabels": {
+      "AWAITING_DEPOSIT": "Đang sản xuất",
+      "DEPOSIT_PAID": "Đang sản xuất",
+      "IN_PRODUCTION": "Đang sản xuất",
+      "PRODUCTION_COMPLETED": "Đang sản xuất",
+      "AWAITING_FINAL_PAYMENT": "Chờ thanh toán",
+      "READY_FOR_DELIVERY": "Đang chuẩn bị giao",
+      "DELIVERED": "Đã giao",
+      "COMPLETED": "Hoàn tất"
+    },
+    "steps": ["Đã thanh toán", "Đang chuẩn bị giao", "Đã giao", "Hoàn tất"]
+  }
+}

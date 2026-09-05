@@ -49,97 +49,106 @@
  * and a second copy of them would be a second authority for the one behaviour
  * that must never vary.
  */
+import { VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
+import { BRAND_NAME } from '@embroidery/ui';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/custom.json`, under `finalPayment`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const finalPaymentMessage = messageView(
+  hydrateMessages(VI_MESSAGES.custom, { brand: BRAND_NAME }),
+  'finalPayment',
+);
+
 export const SECURE_FINAL_PAYMENT_COPY = {
   /** Announcements for the shell's polite live region. */
   live: {
-    authorized: 'Đã mở thông tin thanh toán phần còn lại cho đơn hàng của bạn.',
-    initiating: 'Đang lấy thông tin chuyển khoản.',
-    stepUp: 'Cần xác minh lại danh tính trước khi lấy thông tin chuyển khoản.',
-    qrLoading: 'Đang tải mã QR chuyển khoản.',
-    qrReady: 'Đã tải xong mã QR chuyển khoản.',
-    uploading: 'Đang tải ảnh giao dịch lên.',
-    settled: 'Cửa hàng đã nhận đủ thanh toán cho đơn hàng của bạn.',
+    authorized: finalPaymentMessage.text('live.authorized'),
+    initiating: finalPaymentMessage.text('live.initiating'),
+    stepUp: finalPaymentMessage.text('live.stepUp'),
+    qrLoading: finalPaymentMessage.text('live.qrLoading'),
+    qrReady: finalPaymentMessage.text('live.qrReady'),
+    uploading: finalPaymentMessage.text('live.uploading'),
+    settled: finalPaymentMessage.text('live.settled'),
   },
 
   /** The order line every panel prints under its heading (`816:15`). */
   order: {
-    prefix: 'Đơn hàng',
-    suffix: 'Nét Thêu',
-    codeLabel: 'Mã đơn hàng',
+    prefix: finalPaymentMessage.text('order.prefix'),
+    suffix: finalPaymentMessage.text('order.suffix'),
+    codeLabel: finalPaymentMessage.text('order.codeLabel'),
     /** `818:34` — the one money row the delivered contract can fill. */
-    paidRemainingLabel: 'Đã thanh toán phần còn lại',
-    factsTitle: 'Đơn hàng của bạn',
+    paidRemainingLabel: finalPaymentMessage.text('order.paidRemainingLabel'),
+    factsTitle: finalPaymentMessage.text('order.factsTitle'),
   },
 
   /** `818:4` — production is not finished, or the balance is not yet open. */
   notPayable: {
-    title: 'Đơn hàng của bạn',
-    cardTitle: 'Đơn hàng đang được sản xuất',
-    body: 'Chúng tôi sẽ báo bạn khi cần thanh toán phần còn lại. Bạn chưa cần chuyển khoản gì ở bước này.',
-    note: 'Trang này chưa hiển thị số tiền cần chuyển, số tài khoản hay mã QR, vì khoản thanh toán còn lại chưa được mở.',
+    title: finalPaymentMessage.text('notPayable.title'),
+    cardTitle: finalPaymentMessage.text('notPayable.cardTitle'),
+    body: finalPaymentMessage.text('notPayable.body'),
+    note: finalPaymentMessage.text('notPayable.note'),
   },
 
   /** `816:231` — the balance is payable and no attempt is open yet. */
   preAttempt: {
-    title: 'Thanh toán phần còn lại',
-    badge: 'Chờ thanh toán',
-    summaryTitle: 'Tóm tắt đơn hàng',
-    highlightLabel: 'CÒN PHẢI TRẢ',
-    startTitle: 'Sẵn sàng chuyển khoản?',
-    startBody:
-      'Bấm để nhận số tài khoản, nội dung chuyển khoản và mã QR cho đúng số tiền còn lại. Vì đây là thao tác liên quan đến tiền, bạn sẽ được yêu cầu xác minh lại danh tính một lần.',
-    startAction: 'Lấy hướng dẫn chuyển khoản',
-    starting: 'Đang lấy thông tin…',
+    title: finalPaymentMessage.text('preAttempt.title'),
+    badge: finalPaymentMessage.text('preAttempt.badge'),
+    summaryTitle: finalPaymentMessage.text('preAttempt.summaryTitle'),
+    highlightLabel: finalPaymentMessage.text('preAttempt.highlightLabel'),
+    startTitle: finalPaymentMessage.text('preAttempt.startTitle'),
+    startBody: finalPaymentMessage.text('preAttempt.startBody'),
+    startAction: finalPaymentMessage.text('preAttempt.startAction'),
+    starting: finalPaymentMessage.text('preAttempt.starting'),
   },
 
   /** `816:4` / `819:4` — instructions, QR and the waiting truth. */
   instructions: {
-    title: 'Thanh toán phần còn lại',
-    badge: 'Chờ thanh toán',
-    amountTitle: 'Số tiền còn phải trả',
-    amountNote:
-      'Vui lòng chuyển đúng số tiền này. Đây là số tiền cửa hàng đã ghi nhận cho phần còn lại của đơn hàng.',
-    panelTitle: 'Thông tin chuyển khoản',
-    panelLead:
-      'Chuyển khoản thủ công qua ngân hàng. Nét Thêu đối chiếu tài khoản và xác nhận thủ công — không có cổng thanh toán tự động ở bước này.',
-    bankLabel: 'Ngân hàng',
-    accountNumberLabel: 'Số tài khoản',
-    accountNameLabel: 'Chủ tài khoản',
-    referenceLabel: 'Nội dung chuyển khoản (bắt buộc giữ nguyên)',
-    referenceNote:
-      'Giữ nguyên nội dung chuyển khoản để chúng tôi đối chiếu đúng đơn hàng của bạn. Bạn không thể sửa số tiền hay nội dung — cả hai do hệ thống sinh ra.',
-    waitingTitle: 'Chúng tôi đang chờ xác nhận khoản chuyển của bạn',
-    waitingBody:
-      'Sau khi bạn chuyển khoản, Nét Thêu sẽ đối chiếu với tài khoản ngân hàng rồi xác nhận thủ công, thường trong giờ làm việc. Trang này không có nút “Tôi đã chuyển khoản”, vì hệ thống không có cách nào tự kiểm chứng điều đó.',
-    expiryPrefix: 'Liên kết bảo mật này hết hạn lúc',
-    expirySuffix: 'Hết hạn thì mở lại bằng liên kết mới cửa hàng gửi cho bạn.',
+    title: finalPaymentMessage.text('instructions.title'),
+    badge: finalPaymentMessage.text('instructions.badge'),
+    amountTitle: finalPaymentMessage.text('instructions.amountTitle'),
+    amountNote: finalPaymentMessage.text('instructions.amountNote'),
+    panelTitle: finalPaymentMessage.text('instructions.panelTitle'),
+    panelLead: finalPaymentMessage.text('instructions.panelLead'),
+    bankLabel: finalPaymentMessage.text('instructions.bankLabel'),
+    accountNumberLabel: finalPaymentMessage.text('instructions.accountNumberLabel'),
+    accountNameLabel: finalPaymentMessage.text('instructions.accountNameLabel'),
+    referenceLabel: finalPaymentMessage.text('instructions.referenceLabel'),
+    referenceNote: finalPaymentMessage.text('instructions.referenceNote'),
+    waitingTitle: finalPaymentMessage.text('instructions.waitingTitle'),
+    waitingBody: finalPaymentMessage.text('instructions.waitingBody'),
+    expiryPrefix: finalPaymentMessage.text('instructions.expiryPrefix'),
+    expirySuffix: finalPaymentMessage.text('instructions.expirySuffix'),
   },
 
   /** `816:63` / `816:221` — the QR panel and the sentence that bounds it. */
   qr: {
-    title: 'Quét mã để chuyển nhanh',
-    alt: 'Mã QR chuyển khoản phần còn lại, chứa số tài khoản, số tiền và nội dung chuyển khoản của đơn hàng này.',
-    hint: 'Mã đã chứa sẵn số tài khoản, số tiền và nội dung chuyển khoản. Mở ứng dụng ngân hàng và quét để điền tự động.',
-    truth:
-      'Quét mã hoặc chuyển tiền KHÔNG có nghĩa là đã thanh toán xong. Nét Thêu vẫn phải đối chiếu tiền về tài khoản rồi mới xác nhận.',
-    download: 'Tải mã QR',
-    loading: 'Đang tải mã QR…',
-    fallback:
-      'Không quét được mã? Bạn vẫn chuyển khoản bình thường bằng số tài khoản và nội dung ở bên trái — mã QR chỉ là lối tắt.',
-    failed: 'Chưa tải được mã QR. Bạn vẫn chuyển khoản được bằng thông tin bên trái.',
-    retry: 'Thử tải lại mã QR',
+    title: finalPaymentMessage.text('qr.title'),
+    alt: finalPaymentMessage.text('qr.alt'),
+    hint: finalPaymentMessage.text('qr.hint'),
+    truth: finalPaymentMessage.text('qr.truth'),
+    download: finalPaymentMessage.text('qr.download'),
+    loading: finalPaymentMessage.text('qr.loading'),
+    fallback: finalPaymentMessage.text('qr.fallback'),
+    failed: finalPaymentMessage.text('qr.failed'),
+    retry: finalPaymentMessage.text('qr.retry'),
   },
 
   /** `816:41` — every copy control names what it copies. */
   copy: {
-    amount: 'Sao chép số tiền',
-    reference: 'Sao chép nội dung chuyển khoản',
-    accountNumber: 'Sao chép số tài khoản',
-    short: 'Sao chép',
-    doneAmount: 'Đã sao chép số tiền.',
-    doneReference: 'Đã sao chép nội dung chuyển khoản.',
-    doneAccountNumber: 'Đã sao chép số tài khoản.',
-    failed: 'Không sao chép được. Bạn có thể bôi đen và sao chép thủ công.',
+    amount: finalPaymentMessage.text('copy.amount'),
+    reference: finalPaymentMessage.text('copy.reference'),
+    accountNumber: finalPaymentMessage.text('copy.accountNumber'),
+    short: finalPaymentMessage.text('copy.short'),
+    doneAmount: finalPaymentMessage.text('copy.doneAmount'),
+    doneReference: finalPaymentMessage.text('copy.doneReference'),
+    doneAccountNumber: finalPaymentMessage.text('copy.doneAccountNumber'),
+    failed: finalPaymentMessage.text('copy.failed'),
   },
 
   /**
@@ -149,77 +158,73 @@ export const SECURE_FINAL_PAYMENT_COPY = {
    * deposit-named and must stay so (`FU-APP9-B02-01`); the screen is not.
    */
   evidence: {
-    title: 'Ảnh xác nhận chuyển khoản',
-    optionalBadge: 'Không bắt buộc',
-    lead: 'Nếu tiện, bạn có thể gửi ảnh chụp màn hình giao dịch để cửa hàng đối chiếu nhanh hơn.',
-    dropzoneTitle: 'Tải ảnh giao dịch (không bắt buộc)',
-    dropzoneHint: 'Kéo thả ảnh vào đây, hoặc bấm để chọn từ máy.',
-    constraints: 'Chấp nhận PNG, JPEG hoặc WEBP · tối đa 10 MB mỗi ảnh · tối đa 5 ảnh',
-    choose: 'Chọn ảnh',
-    more: 'Tải thêm ảnh',
-    uploadingBadge: 'Đang tải lên',
-    uploadingDisabled: 'Đang tải ảnh, vui lòng đợi…',
-    uploadingNote:
-      'Việc tải ảnh lên KHÔNG làm thay đổi trạng thái thanh toán. Bạn có thể rời trang, ảnh đã gửi vẫn được lưu.',
-    notProof:
-      'Ảnh chỉ là tài liệu hỗ trợ đối chiếu. Gửi ảnh KHÔNG có nghĩa là khoản thanh toán đã được xác nhận — cửa hàng vẫn phải kiểm tra tiền về tài khoản.',
-    quotaFull: 'Đã đạt tối đa 5 ảnh',
-    quotaNote:
-      'Bạn đã gửi đủ 5 ảnh cho lần thanh toán này nên không gửi thêm được nữa. Trạng thái các ảnh vẫn hiển thị, và khoản thanh toán vẫn được cửa hàng xác nhận bình thường.',
-    appendOnlyNote:
-      'Ảnh đã gửi không thể xoá, thay thế hay sắp xếp lại — danh sách chỉ ghi thêm. Khách cũng không tải lại được ảnh của mình từ trang này.',
-    listLabel: 'Ảnh xác nhận đã gửi',
-    empty: 'Chưa có ảnh nào được gửi cho lần thanh toán này.',
-    loading: 'Đang tải danh sách ảnh…',
+    title: finalPaymentMessage.text('evidence.title'),
+    optionalBadge: finalPaymentMessage.text('evidence.optionalBadge'),
+    lead: finalPaymentMessage.text('evidence.lead'),
+    dropzoneTitle: finalPaymentMessage.text('evidence.dropzoneTitle'),
+    dropzoneHint: finalPaymentMessage.text('evidence.dropzoneHint'),
+    constraints: finalPaymentMessage.text('evidence.constraints'),
+    choose: finalPaymentMessage.text('evidence.choose'),
+    more: finalPaymentMessage.text('evidence.more'),
+    uploadingBadge: finalPaymentMessage.text('evidence.uploadingBadge'),
+    uploadingDisabled: finalPaymentMessage.text('evidence.uploadingDisabled'),
+    uploadingNote: finalPaymentMessage.text('evidence.uploadingNote'),
+    notProof: finalPaymentMessage.text('evidence.notProof'),
+    quotaFull: finalPaymentMessage.text('evidence.quotaFull'),
+    quotaNote: finalPaymentMessage.text('evidence.quotaNote'),
+    appendOnlyNote: finalPaymentMessage.text('evidence.appendOnlyNote'),
+    listLabel: finalPaymentMessage.text('evidence.listLabel'),
+    empty: finalPaymentMessage.text('evidence.empty'),
+    loading: finalPaymentMessage.text('evidence.loading'),
   },
 
   /** The four contract values, as the customer reads them. */
   evidenceStatus: {
     UPLOADED: {
-      label: 'Đang kiểm tra ảnh',
-      note: 'Hệ thống đang kiểm tra tệp. Bước này tự động và thường chỉ mất ít phút.',
+      label: finalPaymentMessage.text('evidenceStatus.UPLOADED.label'),
+      note: finalPaymentMessage.text('evidenceStatus.UPLOADED.note'),
     },
     INSPECTING: {
-      label: 'Đang kiểm tra ảnh',
-      note: 'Hệ thống đang kiểm tra tệp. Bước này tự động và thường chỉ mất ít phút.',
+      label: finalPaymentMessage.text('evidenceStatus.INSPECTING.label'),
+      note: finalPaymentMessage.text('evidenceStatus.INSPECTING.note'),
     },
     ACCEPTED: {
-      label: 'Ảnh đã được tiếp nhận',
-      note: 'Cửa hàng đã có thể xem ảnh này khi đối chiếu.',
+      label: finalPaymentMessage.text('evidenceStatus.ACCEPTED.label'),
+      note: finalPaymentMessage.text('evidenceStatus.ACCEPTED.note'),
     },
     REJECTED: {
-      label: 'Ảnh không hợp lệ',
-      note: 'Ảnh này không dùng được để đối chiếu. Bạn có thể gửi một ảnh khác rõ hơn.',
+      label: finalPaymentMessage.text('evidenceStatus.REJECTED.label'),
+      note: finalPaymentMessage.text('evidenceStatus.REJECTED.note'),
     },
   },
 
   /** What a refused upload says, bounded to the codes B05 and B01 publish. */
   uploadFailure: {
-    MEDIA_UNSUPPORTED: 'Chỉ nhận ảnh PNG, JPEG hoặc WEBP.',
-    TOO_LARGE: 'Ảnh vượt quá 10 MB. Bạn hãy chọn ảnh nhỏ hơn.',
-    QUOTA_REACHED: 'Lần thanh toán này đã đủ 5 ảnh nên không nhận thêm được nữa.',
-    ATTEMPT_CLOSED: 'Lần thanh toán này đã kết thúc nên không nhận thêm ảnh.',
-    REVERIFICATION_REQUIRED: 'Cần xác minh lại danh tính trước khi gửi ảnh.',
-    IN_PROGRESS: 'Ảnh này đang được gửi. Bạn hãy đợi một chút.',
-    TRANSIENT: 'Chưa gửi được ảnh. Bạn có thể thử lại.',
-    retry: 'Thử gửi lại',
+    MEDIA_UNSUPPORTED: finalPaymentMessage.text('uploadFailure.MEDIA_UNSUPPORTED'),
+    TOO_LARGE: finalPaymentMessage.text('uploadFailure.TOO_LARGE'),
+    QUOTA_REACHED: finalPaymentMessage.text('uploadFailure.QUOTA_REACHED'),
+    ATTEMPT_CLOSED: finalPaymentMessage.text('uploadFailure.ATTEMPT_CLOSED'),
+    REVERIFICATION_REQUIRED: finalPaymentMessage.text('uploadFailure.REVERIFICATION_REQUIRED'),
+    IN_PROGRESS: finalPaymentMessage.text('uploadFailure.IN_PROGRESS'),
+    TRANSIENT: finalPaymentMessage.text('uploadFailure.TRANSIENT'),
+    retry: finalPaymentMessage.text('uploadFailure.retry'),
   },
 
   /** `818:37` / `818:87` / `818:137` — the settled lane, in three readings. */
   settled: {
-    title: 'Đơn hàng của bạn',
-    progressLabel: 'Tiến độ đơn hàng',
+    title: finalPaymentMessage.text('settled.title'),
+    progressLabel: finalPaymentMessage.text('settled.progressLabel'),
     paid: {
-      cardTitle: 'Chúng tôi đã nhận đủ thanh toán',
-      body: 'Cảm ơn bạn. Đơn hàng đang được chuẩn bị để giao cho bạn.',
+      cardTitle: finalPaymentMessage.text('settled.paid.cardTitle'),
+      body: finalPaymentMessage.text('settled.paid.body'),
     },
     delivered: {
-      cardTitle: 'Đơn hàng đã được giao',
-      body: 'Nét Thêu đã ghi nhận đơn hàng của bạn được giao thành công.',
+      cardTitle: finalPaymentMessage.text('settled.delivered.cardTitle'),
+      body: finalPaymentMessage.text('settled.delivered.body'),
     },
     completed: {
-      cardTitle: 'Đơn hàng đã hoàn tất',
-      body: 'Cảm ơn bạn đã đặt may tại Nét Thêu. Đơn hàng đã kết thúc.',
+      cardTitle: finalPaymentMessage.text('settled.completed.cardTitle'),
+      body: finalPaymentMessage.text('settled.completed.body'),
     },
   },
 
@@ -231,29 +236,31 @@ export const SECURE_FINAL_PAYMENT_COPY = {
    * action is offered here, because none exists (`PO-APP9-001`).
    */
   otherState: {
-    title: 'Đơn hàng của bạn',
-    cardTitle: 'Khoản thanh toán này đang ở một trạng thái khác',
-    body: 'Bạn không cần chuyển thêm tiền vào lúc này. Cửa hàng sẽ liên hệ nếu cần bạn hỗ trợ thêm.',
+    title: finalPaymentMessage.text('otherState.title'),
+    cardTitle: finalPaymentMessage.text('otherState.cardTitle'),
+    body: finalPaymentMessage.text('otherState.body'),
   },
 
   /** Step-up runs over this page, never as a navigation. */
   stepUp: {
-    title: 'Xác minh lại danh tính',
-    body: 'Vì đây là thao tác liên quan đến tiền, cửa hàng cần xác minh lại rằng chính bạn đang thực hiện. Nhập số điện thoại hoặc email bạn đã dùng cho yêu cầu này để nhận mã.',
-    stay: 'Bạn vẫn đang ở trong phiên truy cập an toàn. Đừng đóng trang này.',
-    safety:
-      'Cửa hàng không bao giờ hỏi mật khẩu hay mã OTP qua điện thoại. Mã chỉ dùng cho lần xác minh này.',
-    verified: 'Đã xác minh. Đang lấy thông tin chuyển khoản…',
-    cancel: 'Huỷ',
+    title: finalPaymentMessage.text('stepUp.title'),
+    body: finalPaymentMessage.text('stepUp.body'),
+    stay: finalPaymentMessage.text('stepUp.stay'),
+    safety: finalPaymentMessage.text('stepUp.safety'),
+    verified: finalPaymentMessage.text('stepUp.verified'),
+    cancel: finalPaymentMessage.text('stepUp.cancel'),
   },
 
   /** Refusals of the initiation itself, by the codes `APP9-B02` publishes. */
   initiateFailure: {
-    FINAL_PAYMENT_NOT_PAYABLE: 'Khoản thanh toán này không còn ở trạng thái chờ thanh toán.',
-    DUPLICATE_OPERATION: 'Lần thanh toán này đang được mở. Bạn hãy đợi một chút rồi thử lại.',
-    IDEMPOTENCY_CONFLICT: 'Yêu cầu trước đó chưa hoàn tất. Bạn hãy thử lại.',
-    FINAL_PAYMENT_INSTRUCTIONS_UNAVAILABLE:
-      'Thông tin chuyển khoản tạm thời chưa sẵn sàng. Bạn hãy thử lại sau ít phút.',
-    TRANSIENT: 'Chưa lấy được thông tin chuyển khoản. Bạn có thể thử lại.',
+    FINAL_PAYMENT_NOT_PAYABLE: finalPaymentMessage.text(
+      'initiateFailure.FINAL_PAYMENT_NOT_PAYABLE',
+    ),
+    DUPLICATE_OPERATION: finalPaymentMessage.text('initiateFailure.DUPLICATE_OPERATION'),
+    IDEMPOTENCY_CONFLICT: finalPaymentMessage.text('initiateFailure.IDEMPOTENCY_CONFLICT'),
+    FINAL_PAYMENT_INSTRUCTIONS_UNAVAILABLE: finalPaymentMessage.text(
+      'initiateFailure.FINAL_PAYMENT_INSTRUCTIONS_UNAVAILABLE',
+    ),
+    TRANSIENT: finalPaymentMessage.text('initiateFailure.TRANSIENT'),
   },
 } as const;

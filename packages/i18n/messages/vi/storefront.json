@@ -1,0 +1,277 @@
+{
+  "shell": {
+    "brand": {
+      "homeLabel": "{brand} — về trang chủ"
+    },
+    "skipToContent": "Bỏ qua tới nội dung chính",
+    "nav": {
+      "primaryLabel": "Điều hướng chính",
+      "drawerLabel": "Điều hướng",
+      "openMenu": "Mở menu điều hướng",
+      "closeMenu": "Đóng menu điều hướng",
+      "unavailableTag": "Sắp ra mắt",
+      "unavailableAria": "chưa khả dụng",
+      "future": "Các khu vực còn lại sẽ sớm ra mắt."
+    },
+    "search": {
+      "label": "Tìm kiếm",
+      "hint": "Tìm kiếm tác phẩm thêu…",
+      "unavailable": "Tìm kiếm sẽ sớm ra mắt."
+    },
+    "contactHandoff": {
+      "title": "Kết nối",
+      "externalCaption": "Mở ứng dụng bên ngoài",
+      "channels": {
+        "zalo": "Zalo",
+        "messenger": "Messenger"
+      },
+      "marks": {
+        "zalo": "Z",
+        "messenger": "M"
+      }
+    },
+    "footer": {
+      "tagline": "Studio thêu thủ công theo yêu cầu.",
+      "rights": "© {brand} · Studio thêu theo yêu cầu."
+    },
+    "navItems": {
+      "storefrontPrimaryNav": {
+        "label": "Khám phá",
+        "label2": "Bộ sưu tập",
+        "label3": "Đặt thêu",
+        "label4": "Nhật ký"
+      }
+    }
+  },
+  "notFound": {
+    "heading": "Không tìm thấy trang",
+    "explanation": "Trang bạn tìm có thể đã được di chuyển, đổi đường dẫn hoặc không tồn tại. Hãy quay về trang chủ để tiếp tục khám phá.",
+    "primaryLabel": "Về trang chủ",
+    "secondaryLabel": "Khám phá tác phẩm"
+  },
+  "homepage": {
+    "hero": {
+      "heading": "Xưởng thêu thủ công theo yêu cầu",
+      "lead": "Mỗi tác phẩm được thêu tay theo câu chuyện riêng của bạn — từ ý tưởng đầu tiên đến bản thêu hoàn chỉnh.",
+      "exploreAction": "Khám phá tác phẩm",
+      "commissionAction": "Đặt thêu theo yêu cầu"
+    },
+    "featured": {
+      "heading": "Tác phẩm nổi bật",
+      "intro": "Một vài tác phẩm đã hoàn thiện tại xưởng.",
+      "action": "Xem tất cả tác phẩm"
+    },
+    "discover": {
+      "heading": "Khám phá",
+      "intro": "Chất liệu, kỹ thuật và câu chuyện phía sau từng đường thêu.",
+      "action": "Vào trang khám phá"
+    },
+    "collections": {
+      "heading": "Bộ sưu tập",
+      "intro": "Các tác phẩm được nhóm theo chủ đề và kỹ thuật, để bạn thấy được chiều sâu và phạm vi của xưởng.",
+      "action": "Xem bộ sưu tập"
+    },
+    "story": {
+      "heading": "Câu chuyện của xưởng",
+      "paragraphs": [
+        "{brand} làm việc trực tiếp với từng khách hàng, trên từng tác phẩm một.",
+        "Chúng tôi bắt đầu từ ý tưởng của bạn, dựng bản thiết kế, rồi cùng bạn chỉnh sửa cho đến khi bản thiết kế đúng với điều bạn hình dung.",
+        "Chỉ khi đó khung thêu mới bắt đầu chạy. Không có sản phẩm hàng loạt — mỗi đơn hàng là một lần hợp tác."
+      ]
+    },
+    "commission": {
+      "heading": "Đặt thêu theo yêu cầu",
+      "lead": "Bạn duyệt bản thiết kế trước, rồi mới thanh toán.",
+      "stepsLabel": "Các bước đặt thêu",
+      "steps": [
+        {
+          "title": "Gửi yêu cầu",
+          "body": "Mô tả ý tưởng, kích thước và số lượng bạn cần."
+        },
+        {
+          "title": "Duyệt thiết kế",
+          "body": "Xưởng gửi báo giá và bản thiết kế để bạn xem và yêu cầu chỉnh sửa."
+        },
+        {
+          "title": "Đặt cọc và sản xuất",
+          "body": "Sau khi bạn duyệt thiết kế, đơn hàng được đặt cọc 40% và bắt đầu thêu."
+        }
+      ],
+      "action": "Bắt đầu yêu cầu"
+    },
+    "works": {
+      "loading": "Đang tải tác phẩm…",
+      "empty": "Các tác phẩm sẽ xuất hiện tại đây sau khi được xưởng hoàn thiện.",
+      "error": "Chưa thể tải các tác phẩm. Bạn vẫn có thể khám phá hoặc gửi yêu cầu thêu.",
+      "imageMissing": "Chưa có ảnh cho tác phẩm này."
+    }
+  },
+  "galleryFeed": {
+    "heading": "Bộ sưu tập",
+    "intro": "Những nhóm tác phẩm được xưởng tuyển chọn theo chủ đề và kỹ thuật, mỗi mục là một câu chuyện riêng.",
+    "feedLabel": "Các mục bộ sưu tập",
+    "skeletonLabel": "Đang tải bộ sưu tập",
+    "initialLoading": "Đang tải bộ sưu tập…",
+    "empty": "Chưa có mục bộ sưu tập.",
+    "initialError": {
+      "heading": "Không thể tải bộ sưu tập",
+      "action": "Thử lại"
+    },
+    "continuation": {
+      "loadMore": "Tải thêm mục",
+      "loading": "Đang tải thêm…",
+      "error": "Không thể tải thêm mục.",
+      "retry": "Thử lại"
+    },
+    "card": {
+      "imageUnavailable": "Chưa hiển thị được ảnh của mục này.",
+      "detailAction": "Xem chi tiết"
+    },
+    "galleryDetailActionLabel": "Xem chi tiết mục {entryTitle}"
+  },
+  "galleryEntry": {
+    "breadcrumbLabel": "Đường dẫn",
+    "gallery": "Bộ sưu tập",
+    "backToGallery": "← Quay lại Bộ sưu tập",
+    "mediaLabel": "Bộ ảnh của mục này",
+    "mediaError": "Không tải được ảnh này. Bạn vẫn có thể xem các ảnh khác và đọc nội dung.",
+    "thumbnailUnavailable": "Ảnh không khả dụng",
+    "zoomHint": "Nhấn vào ảnh để mở chế độ xem lớn",
+    "narrativeHeading": "Về mục này",
+    "relatedProductHeading": "Tác phẩm liên quan",
+    "relatedProductAction": "Xem tác phẩm",
+    "continueHeading": "Tiếp tục khám phá",
+    "continueAll": "Xem tất cả bộ sưu tập",
+    "commissionHeading": "Muốn một tác phẩm của riêng bạn?",
+    "commissionBody": "Gửi yêu cầu để xưởng cùng bạn phác thảo ý tưởng.",
+    "commissionAction": "Đặt thêu",
+    "lightboxClose": "Đóng",
+    "lightboxPrevious": "Ảnh trước",
+    "lightboxNext": "Ảnh sau",
+    "loading": "Đang tải mục bộ sưu tập…",
+    "errorHeading": "Chưa thể tải mục này",
+    "errorBody": "Vui lòng thử lại sau.",
+    "errorRetry": "Thử lại",
+    "galleryMediaAlt": "{title} — ảnh {position} trên {total}",
+    "galleryThumbnailLabel": "Xem ảnh {position} trên {total}",
+    "galleryOpenLightboxLabel": "Mở ảnh {position} trong chế độ xem lớn",
+    "galleryPositionLabel": "Ảnh {position} trên {total}"
+  },
+  "discover": {
+    "heading": "Khám phá",
+    "intro": "Những tác phẩm, chất liệu và câu chuyện để bạn tìm thấy ý tưởng của riêng mình.",
+    "categoryNavLabel": "Lọc theo danh mục",
+    "categoryAllLabel": "Tất cả",
+    "categoryUnavailable": "Chưa thể tải danh mục.",
+    "feedLabel": "Tác phẩm đã xuất bản",
+    "initialLoading": "Đang tải tác phẩm…",
+    "emptyUnfiltered": {
+      "heading": "Chưa có tác phẩm được xuất bản",
+      "body": "Các tác phẩm mới sẽ xuất hiện tại đây sau khi được xưởng hoàn thiện."
+    },
+    "emptyFiltered": {
+      "heading": "Chưa có tác phẩm trong danh mục này",
+      "body": "Hãy thử một danh mục khác để tiếp tục khám phá.",
+      "action": "Xem tất cả"
+    },
+    "initialError": {
+      "heading": "Chưa thể tải các tác phẩm",
+      "body": "Vui lòng thử lại sau.",
+      "action": "Thử lại"
+    },
+    "continuation": {
+      "loading": "Đang tải thêm tác phẩm…",
+      "error": "Không thể tải thêm tác phẩm.",
+      "retry": "Thử lại",
+      "end": "Bạn đã xem hết các tác phẩm hiện có.",
+      "loadMore": "Tải thêm tác phẩm"
+    },
+    "card": {
+      "imageMissing": "Chưa có ảnh cho tác phẩm này."
+    }
+  },
+  "productDetail": {
+    "breadcrumbLabel": "Đường dẫn",
+    "discover": "Khám phá",
+    "backToDiscover": "← Quay lại Khám phá",
+    "galleryLabel": "Ảnh tác phẩm",
+    "mediaEmpty": "Chưa có ảnh cho tác phẩm này",
+    "mediaError": "Không tải được ảnh này. Bạn vẫn có thể xem các ảnh khác và đọc câu chuyện.",
+    "thumbnailUnavailable": "Ảnh không khả dụng",
+    "zoomHint": "Nhấn vào ảnh để mở chế độ xem lớn",
+    "storyHeading": "Câu chuyện về tác phẩm",
+    "continueHeading": "Tiếp tục khám phá",
+    "continueAll": "Khám phá tất cả",
+    "share": "Chia sẻ",
+    "shareCopied": "Đã sao chép liên kết.",
+    "shareCompleted": "Đã chia sẻ tác phẩm.",
+    "shareFailed": "Không thể chia sẻ liên kết. Vui lòng thử lại.",
+    "lightboxClose": "Đóng",
+    "lightboxPrevious": "Ảnh trước",
+    "lightboxNext": "Ảnh sau",
+    "loading": "Đang tải tác phẩm…",
+    "errorHeading": "Chưa thể tải tác phẩm",
+    "errorBody": "Vui lòng thử lại sau.",
+    "errorRetry": "Thử lại",
+    "mainMediaAlt": "{name} — ảnh {position} trên {total}",
+    "thumbnailLabel": "Xem ảnh {position} trên {total}",
+    "openLightboxLabel": "Mở ảnh {position} trong chế độ xem lớn",
+    "positionLabel": "Ảnh {position} trên {total}",
+    "continueInCategoryLabel": "Khám phá {categoryName}"
+  },
+  "purchase": {
+    "panelLabel": "Mua sản phẩm có sẵn",
+    "priceCaption": "Chưa gồm phí giao hàng.",
+    "priceCaptionOutOfStock": "Hiện chưa có phân loại nào còn hàng.",
+    "variantLegend": "Phân loại",
+    "sizeLegend": "Kích thước",
+    "optionSoldOut": "· hết",
+    "variantRequired": "Vui lòng chọn phân loại.",
+    "sizeRequired": "Vui lòng chọn kích thước.",
+    "quantityLabel": "Số lượng",
+    "quantityDecrease": "Giảm số lượng",
+    "quantityIncrease": "Tăng số lượng",
+    "continue": "Mua ngay",
+    "continueOutOfStock": "Tạm hết hàng",
+    "unavailableHeading": "Chưa thể tải thông tin mua hàng",
+    "unavailableBody": "Vui lòng thử lại sau.",
+    "availabilityLabel": "Còn {String} sản phẩm"
+  },
+  "storePresentation": {
+    "regionLabel": "Thông tin cửa hàng",
+    "identity": {
+      "heading": "{brand}",
+      "descriptor": "Xưởng thêu cá nhân hóa",
+      "fallback": "Thông tin địa chỉ và giờ mở cửa sẽ được cập nhật.",
+      "action": "Ghé xưởng"
+    },
+    "contact": {
+      "heading": "Liên hệ",
+      "fallback": "Gửi yêu cầu trực tuyến để xưởng báo giá, hoặc nhắn cho xưởng qua các kênh ở góc màn hình.",
+      "action": "Gửi yêu cầu thêu"
+    },
+    "service": {
+      "heading": "Dịch vụ & hỗ trợ",
+      "links": [
+        {
+          "label": "Dịch vụ thêu"
+        },
+        {
+          "label": "Câu hỏi thường gặp"
+        },
+        {
+          "label": "Bộ sưu tập"
+        }
+      ]
+    },
+    "policies": {
+      "heading": "Chính sách",
+      "labels": {
+        "shipping": "Chính sách giao hàng",
+        "payment": "Chính sách thanh toán",
+        "returns": "Chính sách đổi trả",
+        "privacy": "Chính sách bảo mật"
+      }
+    }
+  }
+}

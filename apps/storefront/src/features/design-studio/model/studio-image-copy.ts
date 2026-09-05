@@ -14,16 +14,27 @@
  * derivative, the session, a storage address or anything about how processing is
  * implemented.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
 import { MAX_IMAGE_BYTES, UPLOADABLE_IMAGE_LABELS } from './studio-image-file';
 
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/studio.json`, under `image`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const imageMessage = messageView(VI_MESSAGES.studio, 'image');
+
 export const STUDIO_IMAGE_COPY = {
-  panelLabel: 'Ảnh thiết kế',
+  panelLabel: imageMessage.text('panelLabel'),
 
   // The 1024 drawer, named exactly as the text drawer is: the trigger names the
   // panel it opens, and the panel carries the same name, so the two are one
   // thing to a screen reader.
-  drawerOpen: 'Mở bảng ảnh thiết kế',
-  drawerClose: 'Đóng bảng ảnh thiết kế',
+  drawerOpen: imageMessage.text('drawerOpen'),
+  drawerClose: imageMessage.text('drawerClose'),
 
   /*
    * There is no "this screen is too small" sentence any more.
@@ -34,11 +45,12 @@ export const STUDIO_IMAGE_COPY = {
    * unreferenced.
    */
 
-  chooseLabel: 'Chọn ảnh từ máy',
-  replaceLabel: 'Thay ảnh khác',
-  chooseHint: `Nhận ${UPLOADABLE_IMAGE_LABELS.join(', ')}, tối đa ${String(
-    Math.floor(MAX_IMAGE_BYTES / (1024 * 1024)),
-  )} MB.`,
+  chooseLabel: imageMessage.text('chooseLabel'),
+  replaceLabel: imageMessage.text('replaceLabel'),
+  chooseHint: imageMessage.text('chooseHint', {
+    formats: UPLOADABLE_IMAGE_LABELS.join(', '),
+    maxMegabytes: Math.floor(MAX_IMAGE_BYTES / (1024 * 1024)),
+  }),
 
   /**
    * Uploading, without a number.
@@ -48,36 +60,37 @@ export const STUDIO_IMAGE_COPY = {
    * fabricated percentage is a claim about how far the file has got, and an
    * invented one is wrong in exactly the moments a customer is watching it.
    */
-  uploading: 'Đang tải ảnh lên…',
-  uploadingPercent: (percent: number) => `Đang tải ảnh lên… ${String(percent)}%`,
+  uploading: imageMessage.text('uploading'),
+  uploadingPercent: (percent: number) => imageMessage.text('uploadingPercent', { percent }),
 
   /**
    * Server-side processing. One sentence for inspection and normalization alike,
    * because the server reports one state for both and inventing a distinction in
    * the UI would be describing a pipeline the customer cannot act on.
    */
-  processing: 'Đang xử lý ảnh…',
-  processingHint: 'Ảnh sẽ hiện trên khung thiết kế ngay khi xử lý xong.',
+  processing: imageMessage.text('processing'),
+  processingHint: imageMessage.text('processingHint'),
 
-  placed: 'Đã thêm ảnh vào bản thiết kế.',
+  placed: imageMessage.text('placed'),
 
   // Refusals. Each is a different fact, so each is a different sentence.
-  rejectedType: `Định dạng ảnh này chưa được nhận. Chỉ nhận ${UPLOADABLE_IMAGE_LABELS.join(', ')}.`,
-  rejectedSize: `Ảnh vượt quá ${String(Math.floor(MAX_IMAGE_BYTES / (1024 * 1024)))} MB.`,
+  rejectedType: imageMessage.text('rejectedType', { formats: UPLOADABLE_IMAGE_LABELS.join(', ') }),
+  rejectedSize: imageMessage.text('rejectedSize', {
+    maxMegabytes: Math.floor(MAX_IMAGE_BYTES / (1024 * 1024)),
+  }),
   /**
    * Inspection refused the file. Deliberately generic: the server publishes no
    * safe reason code for a Session upload, so naming one would be inventing it.
    */
-  rejectedInspection: 'Ảnh này không dùng được nên chưa được thêm vào bản thiết kế.',
-  uploadFailed: 'Chưa tải được ảnh lên. Vui lòng thử lại.',
-  statusFailed: 'Chưa kiểm tra được trạng thái ảnh. Vui lòng thử lại.',
-  previewFailed: 'Chưa tải được ảnh để hiển thị trên khung thiết kế.',
-  sessionUnavailable: 'Phiên thiết kế này không còn dùng được nên chưa thể thêm ảnh.',
+  rejectedInspection: imageMessage.text('rejectedInspection'),
+  uploadFailed: imageMessage.text('uploadFailed'),
+  statusFailed: imageMessage.text('statusFailed'),
+  previewFailed: imageMessage.text('previewFailed'),
+  sessionUnavailable: imageMessage.text('sessionUnavailable'),
 
   /** `APP3-P02` refused the placement. The design is left exactly as it was. */
-  placementRefused: 'Ảnh này không đặt vừa vùng thêu cho phép nên chưa được thêm vào bản thiết kế.',
-  replacementRefused:
-    'Ảnh mới không giữ được vị trí và kích thước hiện tại nên bản thiết kế giữ nguyên ảnh cũ.',
+  placementRefused: imageMessage.text('placementRefused'),
+  replacementRefused: imageMessage.text('replacementRefused'),
 
-  retry: 'Thử lại',
+  retry: imageMessage.text('retry'),
 } as const;

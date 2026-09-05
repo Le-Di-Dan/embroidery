@@ -1,3 +1,4 @@
+import { brandedPageTitle } from '../../../features/storefront-seo';
 import type { Metadata } from 'next';
 
 import { CUSTOM_REQUEST_COPY, CustomRequestQueryProvider } from '../../../features/custom-request';
@@ -16,7 +17,7 @@ import { CUSTOM_REQUEST_COPY, CustomRequestQueryProvider } from '../../../featur
  * visitors with no design and no verification.
  */
 export const metadata: Metadata = {
-  title: `${CUSTOM_REQUEST_COPY.pageTitle} — Nét Thêu`,
+  title: brandedPageTitle(CUSTOM_REQUEST_COPY.pageTitle),
   description: CUSTOM_REQUEST_COPY.pageIntro,
   robots: { index: false, follow: false },
 };

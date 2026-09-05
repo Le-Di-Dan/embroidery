@@ -19,31 +19,43 @@
  */
 
 /** The masked destination is the only contact form this screen ever renders. */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/checkout.json`, under `verification`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const verificationMessage = messageView(VI_MESSAGES.checkout, 'verification');
+
 export const VERIFICATION_COPY = {
   /** `623:9` / `623:10` / `623:23` — contact entry, and the mobile card `628:8`. */
   contactEntry: {
-    title: 'Xác minh liên hệ của bạn',
-    body: 'Nhập email hoặc số điện thoại. Chúng tôi gửi một mã gồm 6 chữ số để xác nhận đó là bạn.',
+    title: verificationMessage.text('contactEntry.title'),
+    body: verificationMessage.text('contactEntry.body'),
     /** `623:23`. Says what this screen is not, which is also the S01 scope. */
-    caption: 'Bạn không cần tạo tài khoản.',
-    submit: 'Gửi mã xác minh',
+    caption: verificationMessage.text('contactEntry.caption'),
+    submit: verificationMessage.text('contactEntry.submit'),
     /** `623:70` — the same control while the request is in flight. */
-    submitting: 'Đang gửi mã…',
+    submitting: verificationMessage.text('contactEntry.submitting'),
   },
 
   /** `623:12` / `623:14` — one control, both contact kinds. */
   contactKind: {
-    legend: 'Bạn muốn nhận mã qua đâu?',
-    EMAIL: 'Email',
-    PHONE: 'Số điện thoại',
+    legend: verificationMessage.text('contactKind.legend'),
+    EMAIL: verificationMessage.text('contactKind.EMAIL'),
+    PHONE: verificationMessage.text('contactKind.PHONE'),
   },
 
   /** `623:17` … `623:20`, and the error state `623:44`. */
   emailField: {
-    label: 'Email',
-    placeholder: 'ban@vidu.com',
-    help: 'Chỉ dùng để gửi mã xác minh và cập nhật về yêu cầu của bạn.',
-    invalid: 'Email chưa đúng định dạng. Ví dụ: ban@vidu.com',
+    label: verificationMessage.text('emailField.label'),
+    placeholder: verificationMessage.text('emailField.placeholder'),
+    help: verificationMessage.text('emailField.help'),
+    invalid: verificationMessage.text('emailField.invalid'),
   },
 
   /**
@@ -55,31 +67,31 @@ export const VERIFICATION_COPY = {
    * has no reason to know E.164 exists.
    */
   phoneField: {
-    label: 'Số điện thoại',
-    placeholder: '0912 345 678',
-    help: 'Nhập số trong nước, hoặc số quốc tế bắt đầu bằng dấu +.',
-    invalid: 'Số điện thoại chưa đúng định dạng. Ví dụ: 0912 345 678',
+    label: verificationMessage.text('phoneField.label'),
+    placeholder: verificationMessage.text('phoneField.placeholder'),
+    help: verificationMessage.text('phoneField.help'),
+    invalid: verificationMessage.text('phoneField.invalid'),
   },
 
   /** `623:81` … `623:104`. */
   codeEntry: {
-    title: 'Nhập mã xác minh',
+    title: verificationMessage.text('codeEntry.title'),
     /** `623:82`. Ends in a colon: the masked destination is its object. */
-    body: 'Chúng tôi đã gửi một mã gồm 6 chữ số tới:',
-    fieldLabel: 'Mã xác minh (6 chữ số)',
+    body: verificationMessage.text('codeEntry.body'),
+    fieldLabel: verificationMessage.text('codeEntry.fieldLabel'),
     /** `623:100`. Display prose, never a timer source. */
-    help: 'Mã có hiệu lực trong 10 phút.',
-    submit: 'Xác minh',
+    help: verificationMessage.text('codeEntry.help'),
+    submit: verificationMessage.text('codeEntry.submit'),
     /** `623:135`. */
-    submitting: 'Đang xác minh…',
+    submitting: verificationMessage.text('codeEntry.submitting'),
   },
 
   /** `623:104` / `625:65` / `625:66`. */
   resend: {
-    action: 'Gửi lại mã',
+    action: verificationMessage.text('resend.action'),
     /** `625:66` renders `có thể gửi lại sau 00:47`; the clock is the server's. */
-    cooldown: (remaining: string) => `có thể gửi lại sau ${remaining}`,
-    sending: 'Đang gửi lại…',
+    cooldown: (remaining: string) => verificationMessage.text('resend.cooldown', { remaining }),
+    sending: verificationMessage.text('resend.sending'),
   },
 
   /**
@@ -95,36 +107,36 @@ export const VERIFICATION_COPY = {
    */
   alerts: {
     /** `625:28`, minus the unavailable count. */
-    mismatch: 'Mã không đúng. Hãy kiểm tra lại mã trong tin nhắn mới nhất.',
+    mismatch: verificationMessage.text('alerts.mismatch'),
     /** `625:78` / `625:79`. */
     resent: {
-      title: 'Đã gửi mã mới',
-      body: 'Mã cũ không còn dùng được. Hãy nhập mã trong tin nhắn mới nhất.',
+      title: verificationMessage.text('alerts.resent.title'),
+      body: verificationMessage.text('alerts.resent.body'),
     },
     /** `625:114` / `625:115`. */
     expired: {
-      title: 'Mã không còn hiệu lực',
-      body: 'Mã xác minh chỉ dùng được trong 10 phút. Hãy yêu cầu một mã mới để tiếp tục.',
+      title: verificationMessage.text('alerts.expired.title'),
+      body: verificationMessage.text('alerts.expired.body'),
     },
     /** `625:148` / `625:149`. */
     locked: {
-      title: 'Bạn đã nhập sai quá số lần cho phép',
-      body: 'Vì an toàn, mã này đã bị khoá. Hãy yêu cầu một mã mới để thử lại.',
+      title: verificationMessage.text('alerts.locked.title'),
+      body: verificationMessage.text('alerts.locked.body'),
     },
     /** `625:181` / `625:182`. Identical for a known and an unknown contact. */
     rateLimited: {
-      title: 'Bạn đã yêu cầu mã quá nhiều lần',
-      body: 'Để bảo vệ tài khoản, chúng tôi tạm dừng gửi mã cho liên hệ này. Hãy thử lại sau khoảng 15 phút.',
+      title: verificationMessage.text('alerts.rateLimited.title'),
+      body: verificationMessage.text('alerts.rateLimited.body'),
     },
     /** `625:201` / `625:202`. */
     success: {
-      title: 'Xác minh thành công',
-      body: 'Liên hệ của bạn đã được xác nhận. Bạn có thể tiếp tục yêu cầu thêu của mình.',
+      title: verificationMessage.text('alerts.success.title'),
+      body: verificationMessage.text('alerts.success.body'),
     },
     /** `625:219` / `625:220`. An infrastructure failure, not a verdict. */
     recoverableError: {
-      title: 'Mất kết nối tới máy chủ',
-      body: 'Yêu cầu chưa được gửi đi. Kiểm tra kết nối mạng rồi thử lại — bạn không bị mất lượt nào.',
+      title: verificationMessage.text('alerts.recoverableError.title'),
+      body: verificationMessage.text('alerts.recoverableError.body'),
     },
   },
 
@@ -134,38 +146,38 @@ export const VERIFICATION_COPY = {
    */
   outcome: {
     EXPIRED: {
-      title: 'Mã đã hết hạn',
+      title: verificationMessage.text('outcome.EXPIRED.title'),
       /** `625:116` — the destination follows, so this ends in a colon. */
-      destinationLead: 'Mã sẽ được gửi lại tới:',
-      action: 'Gửi mã mới',
+      destinationLead: verificationMessage.text('outcome.EXPIRED.destinationLead'),
+      action: verificationMessage.text('outcome.EXPIRED.action'),
     },
     LOCKED: {
-      title: 'Đã hết lượt thử cho mã này',
+      title: verificationMessage.text('outcome.LOCKED.title'),
       /** `625:150`. */
-      destinationLead: 'Mã mới sẽ được gửi tới:',
-      action: 'Gửi mã mới',
+      destinationLead: verificationMessage.text('outcome.LOCKED.destinationLead'),
+      action: verificationMessage.text('outcome.LOCKED.action'),
     },
     SUCCESS: {
-      title: 'Đã xác minh liên hệ',
+      title: verificationMessage.text('outcome.SUCCESS.title'),
       destinationLead: undefined,
       /** `625:206` — the forward action. APP5 owns where it leads. */
-      action: 'Tiếp tục',
+      action: verificationMessage.text('outcome.SUCCESS.action'),
     },
     RECOVERABLE_ERROR: {
-      title: 'Không gửi được yêu cầu',
+      title: verificationMessage.text('outcome.RECOVERABLE_ERROR.title'),
       destinationLead: undefined,
       /** `625:226`. */
-      action: 'Thử lại',
+      action: verificationMessage.text('outcome.RECOVERABLE_ERROR.action'),
     },
   },
   /** `625:207` — the success card's closing caption. */
-  successCaption: 'Chúng tôi chỉ dùng liên hệ này để gửi cập nhật về yêu cầu của bạn.',
+  successCaption: verificationMessage.text('successCaption'),
   /** The one page `h1`; the card titles are `h2` beneath it. */
-  pageTitle: 'Xác minh liên hệ',
+  pageTitle: verificationMessage.text('pageTitle'),
   /** Announced politely while a request is in flight (`634:145`). */
   live: {
-    requesting: 'Đang gửi mã xác minh.',
-    verifying: 'Đang xác minh mã.',
+    requesting: verificationMessage.text('live.requesting'),
+    verifying: verificationMessage.text('live.verifying'),
   },
 } as const;
 

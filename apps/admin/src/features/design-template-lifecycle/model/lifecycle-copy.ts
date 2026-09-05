@@ -11,138 +11,152 @@
  * footer says the server changes nothing when it refuses. Those sentences are
  * the contract the operator is owed.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin-wave2.json`, under `designTemplateLifecycle`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const designTemplateLifecycleMessage = messageView(
+  VI_MESSAGES.adminWave2,
+  'designTemplateLifecycle',
+);
+
 export const LIFECYCLE_COPY = {
   page: {
-    back: '← Mẫu thêu',
-    versionSuffix: 'phiên bản bất biến',
-    noVersion: 'chưa có phiên bản',
-    loading: 'Đang tải mẫu thêu…',
-    loadFailed: 'Không tải được mẫu thêu này.',
-    notFound: 'Mẫu thêu này không tồn tại.',
-    retry: 'Thử lại',
+    back: designTemplateLifecycleMessage.text('page.back'),
+    versionSuffix: designTemplateLifecycleMessage.text('page.versionSuffix'),
+    noVersion: designTemplateLifecycleMessage.text('page.noVersion'),
+    loading: designTemplateLifecycleMessage.text('page.loading'),
+    loadFailed: designTemplateLifecycleMessage.text('page.loadFailed'),
+    notFound: designTemplateLifecycleMessage.text('page.notFound'),
+    retry: designTemplateLifecycleMessage.text('page.retry'),
   },
 
   readiness: {
-    title: 'Điều kiện xuất bản · GRD-T01',
-    footer:
-      'Toàn bộ 7 điều kiện phải đạt. Máy chủ không tự sửa mẫu — nếu không đạt, mẫu giữ nguyên.',
+    title: designTemplateLifecycleMessage.text('readiness.title'),
+    footer: designTemplateLifecycleMessage.text('readiness.footer'),
     /** The advisory legend. The third state is the one that must never read as a pass. */
-    legendChecked: 'Máy chủ kiểm tra khi xuất bản',
+    legendChecked: designTemplateLifecycleMessage.text('readiness.legendChecked'),
     labels: {
-      IMMUTABLE_VERSION: 'Có phiên bản bất biến',
-      SCOPE_COMPLETE: 'Phạm vi đầy đủ',
-      DOCUMENT_VALID: 'Tài liệu hợp lệ (APP3-P01)',
-      SCOPE_ACTIVE: 'Chuỗi Sản phẩm → Mặt → Vùng còn hiệu lực',
-      PLACEMENT_MATCHES: 'Khớp vị trí (APP3-P02)',
-      WITHIN_AREA: 'Nằm trong vùng thêu',
-      MEDIA_ELIGIBLE: 'Ảnh đủ điều kiện',
+      IMMUTABLE_VERSION: designTemplateLifecycleMessage.text('readiness.labels.IMMUTABLE_VERSION'),
+      SCOPE_COMPLETE: designTemplateLifecycleMessage.text('readiness.labels.SCOPE_COMPLETE'),
+      DOCUMENT_VALID: designTemplateLifecycleMessage.text('readiness.labels.DOCUMENT_VALID'),
+      SCOPE_ACTIVE: designTemplateLifecycleMessage.text('readiness.labels.SCOPE_ACTIVE'),
+      PLACEMENT_MATCHES: designTemplateLifecycleMessage.text('readiness.labels.PLACEMENT_MATCHES'),
+      WITHIN_AREA: designTemplateLifecycleMessage.text('readiness.labels.WITHIN_AREA'),
+      MEDIA_ELIGIBLE: designTemplateLifecycleMessage.text('readiness.labels.MEDIA_ELIGIBLE'),
     },
     details: {
-      versionSaved: 'Đã lưu {value}',
-      versionMissing: 'Chưa có phiên bản nào được lưu',
-      scopePresent: '{value}',
-      scopeMissing: 'Chưa gán Sản phẩm · Mặt · Vùng thêu',
-      documentValid: 'Sơ đồ hợp lệ, độ phức tạp trong hạn',
-      documentInvalid: 'Tài liệu không hợp lệ theo APP3-P01',
-      scopeActive: 'Không có mặt/vùng bị thu hồi',
-      scopeRetired: 'Mặt hoặc vùng thêu đã bị thu hồi',
-      scopeNotRead: 'Chưa đọc được phạm vi',
-      placementMatches: 'Placement khớp Mặt và Vùng đã chọn',
-      placementMismatch: 'Placement không khớp Mặt hoặc Vùng đã chọn',
-      withinArea: 'Mọi phần tử nằm trong ranh giới',
-      outOfBounds: 'Có phần tử nằm ngoài ranh giới vùng thêu',
-      geometryNotEvaluable: 'Không kiểm tra được — máy chủ sẽ kiểm tra khi xuất bản',
-      noVersionYet: 'Không kiểm tra được — chưa có phiên bản',
-      mediaNoneReferenced: 'Tài liệu không dùng ảnh nào',
-      mediaCheckedOnPublish: 'Máy chủ kiểm tra khi xuất bản',
+      versionSaved: designTemplateLifecycleMessage.text('readiness.details.versionSaved'),
+      versionMissing: designTemplateLifecycleMessage.text('readiness.details.versionMissing'),
+      scopePresent: designTemplateLifecycleMessage.text('readiness.details.scopePresent'),
+      scopeMissing: designTemplateLifecycleMessage.text('readiness.details.scopeMissing'),
+      documentValid: designTemplateLifecycleMessage.text('readiness.details.documentValid'),
+      documentInvalid: designTemplateLifecycleMessage.text('readiness.details.documentInvalid'),
+      scopeActive: designTemplateLifecycleMessage.text('readiness.details.scopeActive'),
+      scopeRetired: designTemplateLifecycleMessage.text('readiness.details.scopeRetired'),
+      scopeNotRead: designTemplateLifecycleMessage.text('readiness.details.scopeNotRead'),
+      placementMatches: designTemplateLifecycleMessage.text('readiness.details.placementMatches'),
+      placementMismatch: designTemplateLifecycleMessage.text('readiness.details.placementMismatch'),
+      withinArea: designTemplateLifecycleMessage.text('readiness.details.withinArea'),
+      outOfBounds: designTemplateLifecycleMessage.text('readiness.details.outOfBounds'),
+      geometryNotEvaluable: designTemplateLifecycleMessage.text(
+        'readiness.details.geometryNotEvaluable',
+      ),
+      noVersionYet: designTemplateLifecycleMessage.text('readiness.details.noVersionYet'),
+      mediaNoneReferenced: designTemplateLifecycleMessage.text(
+        'readiness.details.mediaNoneReferenced',
+      ),
+      mediaCheckedOnPublish: designTemplateLifecycleMessage.text(
+        'readiness.details.mediaCheckedOnPublish',
+      ),
     },
   },
 
   actions: {
-    title: 'Hành động vòng đời',
-    readyHeading: 'Sẵn sàng xuất bản',
-    readyBody:
-      'Mẫu này đạt cả 7 điều kiện GRD-T01. Xuất bản sẽ đưa mẫu ra Studio khách hàng cho đúng vùng thêu đã gán.',
-    advisoryHeading: 'Có thể xuất bản',
-    advisoryBody:
-      'Những điều kiện kiểm tra được ở đây đều đạt. Máy chủ vẫn chạy đủ 7 điều kiện GRD-T01 khi bạn xuất bản.',
-    blockedBadge: 'Không thể xuất bản',
-    blockedBody:
-      'Máy chủ từ chối xuất bản và không thay đổi gì. Sửa từng mục bên trái rồi thử lại.',
-    blockedCount: '{count} điều kiện chưa đạt',
-    publish: 'Xuất bản mẫu thêu',
-    publishNote: 'Xuất bản không tạo phiên bản mới — {value} hiện tại chính là bản được công bố.',
-    unpublish: 'Gỡ xuất bản',
-    unpublishNote:
-      'Gỡ xuất bản đưa mẫu về DRAFT để sửa tiếp. Mọi phiên bản đã công bố vẫn được giữ nguyên.',
-    publishedHeading: 'Đang xuất bản',
-    publishedBody:
-      'Khách hàng có thể thấy mẫu này trong Studio khi Sản phẩm · Mặt · Vùng thêu vẫn còn hiệu lực.',
-    dangerZone: 'Vùng nguy hiểm',
-    archive: 'Lưu trữ mẫu thêu',
-    archiveNote: 'Lưu trữ là thu hồi lâu dài, không phải xoá. Phiên bản và liên kết vẫn được giữ.',
-    fixListTitle: 'Cần xử lý',
-    fixListFooter: 'Không có đường tắt bỏ qua điều kiện. GRD-T01 không thể rút gọn.',
+    title: designTemplateLifecycleMessage.text('actions.title'),
+    readyHeading: designTemplateLifecycleMessage.text('actions.readyHeading'),
+    readyBody: designTemplateLifecycleMessage.text('actions.readyBody'),
+    advisoryHeading: designTemplateLifecycleMessage.text('actions.advisoryHeading'),
+    advisoryBody: designTemplateLifecycleMessage.text('actions.advisoryBody'),
+    blockedBadge: designTemplateLifecycleMessage.text('actions.blockedBadge'),
+    blockedBody: designTemplateLifecycleMessage.text('actions.blockedBody'),
+    blockedCount: designTemplateLifecycleMessage.text('actions.blockedCount'),
+    publish: designTemplateLifecycleMessage.text('actions.publish'),
+    publishNote: designTemplateLifecycleMessage.text('actions.publishNote'),
+    unpublish: designTemplateLifecycleMessage.text('actions.unpublish'),
+    unpublishNote: designTemplateLifecycleMessage.text('actions.unpublishNote'),
+    publishedHeading: designTemplateLifecycleMessage.text('actions.publishedHeading'),
+    publishedBody: designTemplateLifecycleMessage.text('actions.publishedBody'),
+    dangerZone: designTemplateLifecycleMessage.text('actions.dangerZone'),
+    archive: designTemplateLifecycleMessage.text('actions.archive'),
+    archiveNote: designTemplateLifecycleMessage.text('actions.archiveNote'),
+    fixListTitle: designTemplateLifecycleMessage.text('actions.fixListTitle'),
+    fixListFooter: designTemplateLifecycleMessage.text('actions.fixListFooter'),
   },
 
   archived: {
-    title: 'Mẫu đã lưu trữ',
-    heading: '{value} · ARCHIVED',
-    body: 'Lưu trữ ngày {value} · Mọi phiên bản và lịch sử công bố vẫn còn nguyên.',
-    bodyNoDate: 'Mọi phiên bản và lịch sử công bố vẫn còn nguyên.',
-    reasonNote: 'Lý do lưu trữ được ghi trong nhật ký kiểm toán, không hiển thị ở đây.',
-    restore: 'Khôi phục về DRAFT',
-    restoreNote:
-      'Khôi phục đưa mẫu về DRAFT — không xuất bản lại. Phạm vi giữ nguyên, không được sửa tự động.',
+    title: designTemplateLifecycleMessage.text('archived.title'),
+    heading: designTemplateLifecycleMessage.text('archived.heading'),
+    body: designTemplateLifecycleMessage.text('archived.body'),
+    bodyNoDate: designTemplateLifecycleMessage.text('archived.bodyNoDate'),
+    reasonNote: designTemplateLifecycleMessage.text('archived.reasonNote'),
+    restore: designTemplateLifecycleMessage.text('archived.restore'),
+    restoreNote: designTemplateLifecycleMessage.text('archived.restoreNote'),
   },
 
   publishDialog: {
-    title: 'Xuất bản “{value}”?',
-    body: 'Khách hàng sẽ thấy mẫu này trong Studio cho {value}. Bạn có thể gỡ xuất bản bất cứ lúc nào.',
-    bodyNoScope: 'Khách hàng sẽ thấy mẫu này trong Studio cho vùng thêu đã gán.',
-    version: 'Phiên bản công bố: {value}',
-    confirm: 'Xuất bản',
-    cancel: 'Huỷ',
+    title: designTemplateLifecycleMessage.text('publishDialog.title'),
+    body: designTemplateLifecycleMessage.text('publishDialog.body'),
+    bodyNoScope: designTemplateLifecycleMessage.text('publishDialog.bodyNoScope'),
+    version: designTemplateLifecycleMessage.text('publishDialog.version'),
+    confirm: designTemplateLifecycleMessage.text('publishDialog.confirm'),
+    cancel: designTemplateLifecycleMessage.text('publishDialog.cancel'),
   },
 
   unpublishDialog: {
-    title: 'Gỡ xuất bản “{value}”?',
-    body: 'Mẫu sẽ không còn hiển thị với khách hàng và trở lại DRAFT để sửa tiếp. Không có phiên bản nào bị xoá.',
-    confirm: 'Gỡ xuất bản',
-    cancel: 'Huỷ',
+    title: designTemplateLifecycleMessage.text('unpublishDialog.title'),
+    body: designTemplateLifecycleMessage.text('unpublishDialog.body'),
+    confirm: designTemplateLifecycleMessage.text('unpublishDialog.confirm'),
+    cancel: designTemplateLifecycleMessage.text('unpublishDialog.cancel'),
   },
 
   archiveDialog: {
-    badge: 'Hành động thu hồi',
-    title: 'Lưu trữ “{value}”?',
-    body: 'Mẫu sẽ biến mất khỏi Studio khách hàng ngay lập tức. Không có phiên bản nào bị xoá và có thể khôi phục sau.',
-    reasonLabel: 'Lý do lưu trữ *',
-    reasonHint: 'Bắt buộc, tối đa 500 ký tự. Lý do được ghi vào nhật ký kiểm toán.',
-    confirm: 'Lưu trữ mẫu thêu',
-    cancel: 'Huỷ',
+    badge: designTemplateLifecycleMessage.text('archiveDialog.badge'),
+    title: designTemplateLifecycleMessage.text('archiveDialog.title'),
+    body: designTemplateLifecycleMessage.text('archiveDialog.body'),
+    reasonLabel: designTemplateLifecycleMessage.text('archiveDialog.reasonLabel'),
+    reasonHint: designTemplateLifecycleMessage.text('archiveDialog.reasonHint'),
+    confirm: designTemplateLifecycleMessage.text('archiveDialog.confirm'),
+    cancel: designTemplateLifecycleMessage.text('archiveDialog.cancel'),
   },
 
   restoreDialog: {
-    badge: 'Khôi phục',
-    title: 'Khôi phục “{value}” về DRAFT?',
-    body: 'Mẫu trở lại DRAFT và có thể sửa tiếp — không được xuất bản lại. Phiên bản và mốc công bố cũ vẫn giữ nguyên, phạm vi không được sửa tự động. Điều kiện xuất bản chỉ được kiểm tra khi bạn xuất bản lần sau.',
-    reasonLabel: 'Lý do khôi phục *',
-    reasonHint: 'Bắt buộc, tối đa 500 ký tự. Lý do được ghi vào nhật ký kiểm toán.',
-    confirm: 'Khôi phục về DRAFT',
-    cancel: 'Huỷ',
+    badge: designTemplateLifecycleMessage.text('restoreDialog.badge'),
+    title: designTemplateLifecycleMessage.text('restoreDialog.title'),
+    body: designTemplateLifecycleMessage.text('restoreDialog.body'),
+    reasonLabel: designTemplateLifecycleMessage.text('restoreDialog.reasonLabel'),
+    reasonHint: designTemplateLifecycleMessage.text('restoreDialog.reasonHint'),
+    confirm: designTemplateLifecycleMessage.text('restoreDialog.confirm'),
+    cancel: designTemplateLifecycleMessage.text('restoreDialog.cancel'),
   },
 
   reason: {
-    blank: 'Vui lòng nhập lý do.',
-    tooLong: 'Lý do tối đa 500 ký tự.',
+    blank: designTemplateLifecycleMessage.text('reason.blank'),
+    tooLong: designTemplateLifecycleMessage.text('reason.tooLong'),
   },
 
   outcome: {
-    published: 'Đã xuất bản mẫu thêu. Trạng thái hiện tại: PUBLISHED.',
-    unpublished: 'Đã gỡ xuất bản. Trạng thái hiện tại: DRAFT.',
-    archived: 'Đã lưu trữ mẫu thêu. Trạng thái hiện tại: ARCHIVED.',
-    restored: 'Đã khôi phục mẫu thêu. Trạng thái hiện tại: DRAFT.',
-    working: 'Đang gửi yêu cầu…',
+    published: designTemplateLifecycleMessage.text('outcome.published'),
+    unpublished: designTemplateLifecycleMessage.text('outcome.unpublished'),
+    archived: designTemplateLifecycleMessage.text('outcome.archived'),
+    restored: designTemplateLifecycleMessage.text('outcome.restored'),
+    working: designTemplateLifecycleMessage.text('outcome.working'),
   },
 
   failure: {
@@ -151,16 +165,13 @@ export const LIFECYCLE_COPY = {
      * no per-guard discriminator, and inventing one would tell the operator to
      * fix something the server may not have objected to.
      */
-    notReady:
-      'Máy chủ chưa cho xuất bản mẫu này. Mẫu thêu chưa được xuất bản và máy chủ không thay đổi gì. Xem lại các điều kiện bên trái rồi thử lại.',
-    staleReloaded:
-      'Mẫu thêu đã thay đổi từ lúc mở trang, nên yêu cầu không được thực hiện lại. Trạng thái mới nhất đã được tải; kiểm tra rồi chọn lại hành động.',
-    staleReasonCleared:
-      'Mẫu thêu đã thay đổi nên xác nhận cũ không còn hiệu lực. Nhập lại lý do nếu bạn vẫn muốn tiếp tục.',
-    rejected: 'Yêu cầu không hợp lệ. Kiểm tra lại lý do rồi thử lại.',
-    unauthenticated: 'Phiên đăng nhập đã hết hạn. Đăng nhập lại rồi thử lại.',
-    missing: 'Mẫu thêu này không còn tồn tại.',
-    generic: 'Không thực hiện được yêu cầu. Thử lại sau.',
+    notReady: designTemplateLifecycleMessage.text('failure.notReady'),
+    staleReloaded: designTemplateLifecycleMessage.text('failure.staleReloaded'),
+    staleReasonCleared: designTemplateLifecycleMessage.text('failure.staleReasonCleared'),
+    rejected: designTemplateLifecycleMessage.text('failure.rejected'),
+    unauthenticated: designTemplateLifecycleMessage.text('failure.unauthenticated'),
+    missing: designTemplateLifecycleMessage.text('failure.missing'),
+    generic: designTemplateLifecycleMessage.text('failure.generic'),
   },
 } as const;
 

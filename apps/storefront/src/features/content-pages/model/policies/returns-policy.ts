@@ -1,3 +1,5 @@
+import { VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
+import { BRAND_NAME } from '@embroidery/ui';
 import {
   STOREFRONT_FAQ_ROUTE,
   STOREFRONT_SERVICE_ROUTE,
@@ -6,6 +8,19 @@ import {
 } from '../../../storefront-shell/model/storefront-navigation';
 import type { ContentPage } from '../content-page';
 import { POLICY_SLUG } from './policy-slugs';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/content.json`, under `policies.returns`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const policiesReturnsMessage = messageView(
+  hydrateMessages(VI_MESSAGES.content, { brand: BRAND_NAME }),
+  'policies.returns',
+);
 
 /**
  * `/chinh-sach/doi-tra` — the returns policy (`APP11-S05`).
@@ -44,72 +59,68 @@ import { POLICY_SLUG } from './policy-slugs';
 export const RETURNS_POLICY: ContentPage = {
   id: 'policy-returns',
   path: buildStorefrontPolicyPath(POLICY_SLUG.returns),
-  eyebrow: 'Chính sách',
-  heading: 'Chính sách đổi trả',
-  lead: 'Sản phẩm thêu theo yêu cầu được làm riêng cho bạn. Trang này giải thích cách Nét Thêu xử lý khi thành phẩm có vấn đề.',
-  metaTitle: 'Chính sách đổi trả — Nét Thêu',
-  metaDescription:
-    'Cách Nét Thêu xử lý khiếu nại về thành phẩm thêu theo yêu cầu: liên hệ sớm, xưởng đối chiếu với bản thiết kế bạn đã duyệt và xử lý theo từng trường hợp.',
-  trail: { parentLabel: 'Chính sách' },
+  eyebrow: policiesReturnsMessage.text('eyebrow'),
+  heading: policiesReturnsMessage.text('heading'),
+  lead: policiesReturnsMessage.text('lead'),
+  metaTitle: policiesReturnsMessage.text('metaTitle'),
+  metaDescription: policiesReturnsMessage.text('metaDescription'),
+  trail: { parentLabel: policiesReturnsMessage.text('trail.parentLabel') },
   sections: [
     {
       kind: 'prose',
       id: 'nature',
-      heading: 'Vì sao sản phẩm thêu theo yêu cầu khác hàng có sẵn',
-      paragraphs: [
-        'Mỗi bản thêu tại Nét Thêu được dựng theo nội dung, kích thước và sản phẩm của riêng một khách hàng. Thành phẩm mang dấu riêng của bạn và không thể bán lại cho người khác.',
-        'Vì vậy xưởng không nhận đổi trả vì lý do đổi ý sau khi thành phẩm đã thêu xong. Đổi lại, xưởng đặt bước duyệt thiết kế trước khi sản xuất, để bạn thấy chính xác bản thêu sẽ ra sao trước khi xưởng bắt đầu.',
-      ],
+      heading: policiesReturnsMessage.text('sections.0.heading'),
+      paragraphs: policiesReturnsMessage.list('sections.0.paragraphs'),
     },
     {
       kind: 'prose',
       id: 'before-production',
-      heading: 'Trước khi vào sản xuất',
-      paragraphs: [
-        'Ở giai đoạn trao đổi và duyệt thiết kế, bạn có thể yêu cầu chỉnh sửa nhiều lần, hoặc dừng lại nếu bản thêu chưa đúng ý. Đây là thời điểm dễ điều chỉnh nhất và không tốn thêm chi phí thêu lại.',
-        'Xưởng chỉ vào sản xuất sau khi bạn duyệt. Bản thiết kế bạn duyệt là bản mà xưởng thêu và cũng là bản mà hai bên đối chiếu về sau.',
-      ],
+      heading: policiesReturnsMessage.text('sections.1.heading'),
+      paragraphs: policiesReturnsMessage.list('sections.1.paragraphs'),
     },
     {
       kind: 'prose',
       id: 'if-something-is-wrong',
-      heading: 'Nếu thành phẩm có vấn đề',
-      paragraphs: [
-        'Hãy liên hệ Nét Thêu sớm nhất có thể sau khi nhận hàng, kèm hình ảnh thành phẩm và thông tin đơn hàng của bạn.',
-        'Xưởng xem xét từng trường hợp, đối chiếu thành phẩm với bản thiết kế bạn đã duyệt và với đơn hàng đã thống nhất.',
-      ],
-      bullets: [
-        'Nếu thành phẩm khác với bản thiết kế bạn đã duyệt, hoặc có lỗi do quá trình thêu, xưởng chịu trách nhiệm khắc phục.',
-        'Cách khắc phục — sửa lại, thêu lại, hay phương án khác — được xưởng trao đổi và thống nhất với bạn theo từng trường hợp cụ thể.',
-        'Nếu vấn đề nằm ở nội dung mà bạn đã duyệt, xưởng vẫn sẵn sàng cùng bạn tìm phương án, và sẽ báo trước nếu phát sinh chi phí.',
-      ],
+      heading: policiesReturnsMessage.text('sections.2.heading'),
+      paragraphs: policiesReturnsMessage.list('sections.2.paragraphs'),
+      bullets: policiesReturnsMessage.list('sections.2.bullets'),
     },
     {
       kind: 'prose',
       id: 'statutory',
-      heading: 'Quyền của bạn theo quy định pháp luật',
-      paragraphs: [
-        'Chính sách này mô tả cách Nét Thêu làm việc trên thực tế. Nó không thay thế và không hạn chế các quyền mà pháp luật bảo vệ người tiêu dùng dành cho bạn.',
-      ],
+      heading: policiesReturnsMessage.text('sections.3.heading'),
+      paragraphs: policiesReturnsMessage.list('sections.3.paragraphs'),
     },
     {
       kind: 'links',
       id: 'returns-related',
-      heading: 'Liên quan',
+      heading: policiesReturnsMessage.text('sections.4.heading'),
       links: [
-        { id: 'service', label: 'Dịch vụ và quy trình', href: STOREFRONT_SERVICE_ROUTE },
+        {
+          id: 'service',
+          label: policiesReturnsMessage.text('sections.4.links.0.label'),
+          href: STOREFRONT_SERVICE_ROUTE,
+        },
         {
           id: 'policy-shipping',
-          label: 'Chính sách giao hàng',
+          label: policiesReturnsMessage.text('sections.4.links.1.label'),
           href: buildStorefrontPolicyPath(POLICY_SLUG.shipping),
         },
         {
           id: 'policy-payment',
-          label: 'Chính sách thanh toán',
+          label: policiesReturnsMessage.text('sections.4.links.2.label'),
           href: buildStorefrontPolicyPath(POLICY_SLUG.payment),
         },
-        { id: 'faq', label: 'Câu hỏi thường gặp', href: STOREFRONT_FAQ_ROUTE },
-        { id: 'store', label: 'Ghé xưởng', href: STOREFRONT_STORE_ROUTE },
+        {
+          id: 'faq',
+          label: policiesReturnsMessage.text('sections.4.links.3.label'),
+          href: STOREFRONT_FAQ_ROUTE,
+        },
+        {
+          id: 'store',
+          label: policiesReturnsMessage.text('sections.4.links.4.label'),
+          href: STOREFRONT_STORE_ROUTE,
+        },
       ],
     },
   ],

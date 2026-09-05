@@ -6,7 +6,21 @@
  * here; footer content is limited to approved generic brand copy until canonical
  * company values exist (see the report's follow-ups).
  */
+import { VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
 import { BRAND_NAME } from '@embroidery/ui';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/storefront.json`, under `shell`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const shellMessage = messageView(
+  hydrateMessages(VI_MESSAGES.storefront, { brand: BRAND_NAME }),
+  'shell',
+);
 
 export const STOREFRONT_SHELL_COPY = {
   brand: {
@@ -23,26 +37,26 @@ export const STOREFRONT_SHELL_COPY = {
      */
     wordmark: BRAND_NAME,
     /** Accessible name for the brand home link. */
-    homeLabel: `${BRAND_NAME} — về trang chủ`,
+    homeLabel: shellMessage.text('brand.homeLabel'),
   },
-  skipToContent: 'Bỏ qua tới nội dung chính',
+  skipToContent: shellMessage.text('skipToContent'),
   nav: {
-    primaryLabel: 'Điều hướng chính',
-    drawerLabel: 'Điều hướng',
-    openMenu: 'Mở menu điều hướng',
-    closeMenu: 'Đóng menu điều hướng',
+    primaryLabel: shellMessage.text('nav.primaryLabel'),
+    drawerLabel: shellMessage.text('nav.drawerLabel'),
+    openMenu: shellMessage.text('nav.openMenu'),
+    closeMenu: shellMessage.text('nav.closeMenu'),
     /** Small visible tag on nav items whose routes are not built yet. */
-    unavailableTag: 'Sắp ra mắt',
+    unavailableTag: shellMessage.text('nav.unavailableTag'),
     /** Screen-reader suffix marking a nav item as not yet available. */
-    unavailableAria: 'chưa khả dụng',
+    unavailableAria: shellMessage.text('nav.unavailableAria'),
     /** Truthful once Discover shipped: it names the areas still to come. */
-    future: 'Các khu vực còn lại sẽ sớm ra mắt.',
+    future: shellMessage.text('nav.future'),
   },
   search: {
-    label: 'Tìm kiếm',
-    hint: 'Tìm kiếm tác phẩm thêu…',
+    label: shellMessage.text('search.label'),
+    hint: shellMessage.text('search.hint'),
     /** Announced state: the affordance is presentational, not functional yet. */
-    unavailable: 'Tìm kiếm sẽ sớm ra mắt.',
+    unavailable: shellMessage.text('search.unavailable'),
   },
   /**
    * APP10-I01 external contact handoff, relocated from the footer to a floating
@@ -58,7 +72,7 @@ export const STOREFRONT_SHELL_COPY = {
      * Names the dock landmark. Visually hidden: a floating pair of circles has
      * no room for a heading, and a landmark still needs a name to be findable.
      */
-    title: 'Kết nối',
+    title: shellMessage.text('contactHandoff.title'),
     /**
      * Carried inside every CTA, so the accessible name reads
      * "Zalo — Mở ứng dụng bên ngoài". On the circular dock it lives in the
@@ -66,11 +80,11 @@ export const STOREFRONT_SHELL_COPY = {
      * still states both the channel and the handoff, and no `aria-label`
      * overrides visible text, because a circle has none to override.
      */
-    externalCaption: 'Mở ứng dụng bên ngoài',
+    externalCaption: shellMessage.text('contactHandoff.externalCaption'),
     /** Provider names as plain type: the design system holds no licensed provider artwork. */
     channels: {
-      zalo: 'Zalo',
-      messenger: 'Messenger',
+      zalo: shellMessage.text('contactHandoff.channels.zalo'),
+      messenger: shellMessage.text('contactHandoff.channels.messenger'),
     },
     /**
      * The visible mark inside each circle, and the reason it is a letter rather
@@ -80,13 +94,13 @@ export const STOREFRONT_SHELL_COPY = {
      * ever announced as a single character.
      */
     marks: {
-      zalo: 'Z',
-      messenger: 'M',
+      zalo: shellMessage.text('contactHandoff.marks.zalo'),
+      messenger: shellMessage.text('contactHandoff.marks.messenger'),
     },
   },
   footer: {
-    tagline: 'Studio thêu thủ công theo yêu cầu.',
+    tagline: shellMessage.text('footer.tagline'),
     /** Rights line without a hard-coded year (no stale/invented business value). */
-    rights: `© ${BRAND_NAME} · Studio thêu theo yêu cầu.`,
+    rights: shellMessage.text('footer.rights'),
   },
 } as const;

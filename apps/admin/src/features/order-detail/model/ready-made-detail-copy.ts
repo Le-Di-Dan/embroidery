@@ -12,101 +12,105 @@
  * The refusal sentences are chosen by failure *classification* alone. A server
  * `message`, `code` or `requestId` is never rendered.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin-orders.json`, under `readyMadeDetail`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const readyMadeDetailMessage = messageView(VI_MESSAGES.adminOrders, 'readyMadeDetail');
+
 export const READY_MADE_DETAIL_COPY = {
   frozen: {
-    heading: 'Thông tin đã chốt',
-    help: 'Ảnh chụp tại thời điểm tạo đơn. Sửa Catalog sau đó không làm thay đổi đơn này.',
-    origin: 'Nguồn đơn',
-    code: 'Mã đơn',
-    customer: 'Khách hàng',
-    contact: 'Liên hệ',
-    address: 'Địa chỉ nhận hàng',
-    createdAt: 'Tạo lúc',
+    heading: readyMadeDetailMessage.text('frozen.heading'),
+    help: readyMadeDetailMessage.text('frozen.help'),
+    origin: readyMadeDetailMessage.text('frozen.origin'),
+    code: readyMadeDetailMessage.text('frozen.code'),
+    customer: readyMadeDetailMessage.text('frozen.customer'),
+    contact: readyMadeDetailMessage.text('frozen.contact'),
+    address: readyMadeDetailMessage.text('frozen.address'),
+    createdAt: readyMadeDetailMessage.text('frozen.createdAt'),
     /** The reservation's own committed `expires_at`, never a computed window. */
-    paymentDeadline: 'Giữ hàng đến',
+    paymentDeadline: readyMadeDetailMessage.text('frozen.paymentDeadline'),
     /** Shown where the hold has lapsed, been released or been consumed. */
-    paymentDeadlineAbsent: 'Không còn giữ hàng',
+    paymentDeadlineAbsent: readyMadeDetailMessage.text('frozen.paymentDeadlineAbsent'),
     /** `BR-031` — the omission is stated, not left as an empty card. */
-    omitted:
-      'Không hiển thị: yêu cầu thêu riêng · báo giá đã chấp nhận · bản thiết kế đã duyệt · lệnh sản xuất.',
+    omitted: readyMadeDetailMessage.text('frozen.omitted'),
     /** Before the fee is confirmed there is no payable total to name. */
-    totalUnknown: 'Tổng đơn hàng chưa xác định',
+    totalUnknown: readyMadeDetailMessage.text('frozen.totalUnknown'),
   },
   items: {
-    heading: 'Sản phẩm',
-    product: 'Sản phẩm',
-    sku: 'SKU',
-    quantity: 'SL',
-    unitPrice: 'Đơn giá',
-    help: 'Ảnh chụp tại thời điểm tạo đơn. Sửa Catalog sau đó không làm thay đổi đơn này (BR-021).',
+    heading: readyMadeDetailMessage.text('items.heading'),
+    product: readyMadeDetailMessage.text('items.product'),
+    sku: readyMadeDetailMessage.text('items.sku'),
+    quantity: readyMadeDetailMessage.text('items.quantity'),
+    unitPrice: readyMadeDetailMessage.text('items.unitPrice'),
+    help: readyMadeDetailMessage.text('items.help'),
   },
   shipping: {
-    heading: 'Phí giao hàng',
-    help: 'Xưởng tự nhập. Không có tính tự động, không có báo giá hãng vận chuyển.',
-    feeLabel: 'Phí giao hàng (VND)',
-    feePlaceholder: '35000',
-    requiredLabel: 'Bắt buộc',
+    heading: readyMadeDetailMessage.text('shipping.heading'),
+    help: readyMadeDetailMessage.text('shipping.help'),
+    feeLabel: readyMadeDetailMessage.text('shipping.feeLabel'),
+    feePlaceholder: readyMadeDetailMessage.text('shipping.feePlaceholder'),
+    requiredLabel: readyMadeDetailMessage.text('shipping.requiredLabel'),
     /** `NULL` is unpriced and `0` is free delivery — two different facts. */
-    feeHelp:
-      'Nhập số tiền đúng như sẽ thu. Để trống nghĩa là chưa báo phí; nhập 0 nghĩa là miễn phí giao hàng.',
-    merchandise: 'Tiền hàng (đã chốt)',
-    payable: 'Tổng khách phải trả',
+    feeHelp: readyMadeDetailMessage.text('shipping.feeHelp'),
+    merchandise: readyMadeDetailMessage.text('shipping.merchandise'),
+    payable: readyMadeDetailMessage.text('shipping.payable'),
     /** Nothing is payable until the operator confirms a fee (`BR-029`). */
-    payableUnknown: 'Chưa xác định',
-    confirm: 'Xác nhận phí và mở thanh toán',
-    confirmNote:
-      'Xác nhận sẽ đóng băng tiền hàng, phí và tổng phải trả, tạo nghĩa vụ thanh toán FULL, đặt lại hạn giữ hàng thành 24 giờ và gửi khách liên kết thanh toán.',
-    correct: 'Cập nhật phí',
+    payableUnknown: readyMadeDetailMessage.text('shipping.payableUnknown'),
+    confirm: readyMadeDetailMessage.text('shipping.confirm'),
+    confirmNote: readyMadeDetailMessage.text('shipping.confirmNote'),
+    correct: readyMadeDetailMessage.text('shipping.correct'),
     /**
      * The successor warning (`914:361`). It says the predecessor is replaced and
      * deliberately does **not** say the payment window is extended — the server
      * reschedules the stock hold, which is a different fact, and claiming a
      * longer time to pay would be this screen inventing a deadline.
      */
-    correctWarning:
-      'Cập nhật phí sẽ thay thế nghĩa vụ thanh toán hiện tại bằng một nghĩa vụ mới. Liên kết thanh toán cũ không còn dùng được và khách cần dùng liên kết mới.',
-    saving: 'Đang lưu…',
-    frozenHeading: 'Phí đã chốt',
+    correctWarning: readyMadeDetailMessage.text('shipping.correctWarning'),
+    saving: readyMadeDetailMessage.text('shipping.saving'),
+    frozenHeading: readyMadeDetailMessage.text('shipping.frozenHeading'),
     /** `BR-028` — the rule and the legitimate path, never a silent disable. */
-    refusedTitle: 'Không thể sửa phí',
-    refusedBody:
-      'Nghĩa vụ FULL đã được thanh toán. Mọi điều chỉnh thương mại phải đi qua quy trình huỷ/hoàn tiền.',
-    pendingNote:
-      'Khi FULL còn PENDING, sửa phí sẽ thay thế nghĩa vụ hiện tại bằng nghĩa vụ kế nhiệm và đơn vẫn ở AWAITING_PAYMENT.',
+    refusedTitle: readyMadeDetailMessage.text('shipping.refusedTitle'),
+    refusedBody: readyMadeDetailMessage.text('shipping.refusedBody'),
+    pendingNote: readyMadeDetailMessage.text('shipping.pendingNote'),
   },
   payment: {
-    heading: 'Thanh toán',
+    heading: readyMadeDetailMessage.text('payment.heading'),
     /** The one obligation a Ready-Made order carries (`BR-029`). */
-    note: 'Ready-Made dùng đúng một nghĩa vụ FULL. Không có DEPOSIT/REMAINING và không có tỷ lệ 40/60 (BR-029).',
-    emptyBody:
-      'Chưa có nghĩa vụ thanh toán. Nghĩa vụ FULL được tạo khi bạn xác nhận phí giao hàng.',
-    amount: 'Số tiền phải trả',
-    status: 'Trạng thái nghĩa vụ',
-    reference: 'Nội dung chuyển khoản',
-    attemptHeading: 'Lần thanh toán hiện tại',
-    attemptStatus: 'Trạng thái',
-    attemptAmount: 'Số tiền',
-    evidence: 'Ảnh khách gửi',
-    evidenceCount: (count: number) => `${String(count)} ảnh`,
-    noAttempt: 'Khách chưa bắt đầu chuyển khoản.',
+    note: readyMadeDetailMessage.text('payment.note'),
+    emptyBody: readyMadeDetailMessage.text('payment.emptyBody'),
+    amount: readyMadeDetailMessage.text('payment.amount'),
+    status: readyMadeDetailMessage.text('payment.status'),
+    reference: readyMadeDetailMessage.text('payment.reference'),
+    attemptHeading: readyMadeDetailMessage.text('payment.attemptHeading'),
+    attemptStatus: readyMadeDetailMessage.text('payment.attemptStatus'),
+    attemptAmount: readyMadeDetailMessage.text('payment.attemptAmount'),
+    evidence: readyMadeDetailMessage.text('payment.evidence'),
+    evidenceCount: (count: number) =>
+      readyMadeDetailMessage.text('payment.evidenceCount', { count }),
+    noAttempt: readyMadeDetailMessage.text('payment.noAttempt'),
     /** Evidence is supporting material and never a payment fact. */
-    evidenceNote:
-      'Ảnh chuyển khoản là tài liệu hỗ trợ. Ảnh được duyệt không có nghĩa là tiền đã về.',
-    verify: 'Đối chiếu và xác nhận',
-    settled: 'Đã xác nhận thanh toán',
+    evidenceNote: readyMadeDetailMessage.text('payment.evidenceNote'),
+    verify: readyMadeDetailMessage.text('payment.verify'),
+    settled: readyMadeDetailMessage.text('payment.settled'),
   },
   fulfillment: {
-    heading: 'Giao hàng',
+    heading: readyMadeDetailMessage.text('fulfillment.heading'),
     /** `913:337` — the precondition, stated rather than left as an empty column. */
-    lockedHelp:
-      'Mở sau khi thanh toán FULL được xác nhận. Đơn bán sẵn không tạo lệnh sản xuất (BR-030).',
+    lockedHelp: readyMadeDetailMessage.text('fulfillment.lockedHelp'),
   },
   failure: {
-    loading: 'Đang tải thông tin thanh toán…',
-    unavailableTitle: 'Không tải được thông tin thanh toán',
-    unavailableBody: 'Kết nối tới máy chủ đang gặp sự cố. Thử lại sau ít phút.',
-    retry: 'Thử lại',
-    saveFailed: 'Không lưu được. Kiểm tra lại và thử một lần nữa.',
-    stale: 'Đơn hàng đã thay đổi. Màn hình đã được tải lại theo trạng thái mới nhất.',
+    loading: readyMadeDetailMessage.text('failure.loading'),
+    unavailableTitle: readyMadeDetailMessage.text('failure.unavailableTitle'),
+    unavailableBody: readyMadeDetailMessage.text('failure.unavailableBody'),
+    retry: readyMadeDetailMessage.text('failure.retry'),
+    saveFailed: readyMadeDetailMessage.text('failure.saveFailed'),
+    stale: readyMadeDetailMessage.text('failure.stale'),
   },
 } as const;

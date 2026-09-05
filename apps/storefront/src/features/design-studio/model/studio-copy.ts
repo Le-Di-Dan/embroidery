@@ -10,61 +10,72 @@
  * unpublished, archived, withdrawn, retired — so the screen must not invent a
  * more specific explanation than the server was willing to give.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/studio.json`, under `shell`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const shellMessage = messageView(VI_MESSAGES.studio, 'shell');
+
 export const STUDIO_COPY = {
-  heading: 'Thiết kế mẫu thêu',
-  introPrefix: 'Bạn đang thiết kế trên sản phẩm',
+  heading: shellMessage.text('heading'),
+  introPrefix: shellMessage.text('introPrefix'),
 
-  loadingPlacement: 'Đang tải vùng thêu…',
-  placementError: 'Chưa thể tải vùng thêu của sản phẩm này.',
-  retry: 'Thử lại',
+  loadingPlacement: shellMessage.text('loadingPlacement'),
+  placementError: shellMessage.text('placementError'),
+  retry: shellMessage.text('retry'),
 
-  ineligibleHeading: 'Sản phẩm này chưa mở phần thiết kế',
-  ineligibleBody:
-    'Sản phẩm đã được đăng, nhưng vùng thêu chưa sẵn sàng để mở phiên thiết kế. Bạn có thể quay lại sau.',
+  ineligibleHeading: shellMessage.text('ineligibleHeading'),
+  ineligibleBody: shellMessage.text('ineligibleBody'),
 
-  sideLabel: 'Mặt sản phẩm',
-  areaLabel: 'Vùng thêu',
-  singleSideNote: 'Sản phẩm này chỉ có một mặt thêu.',
-  singleAreaNote: 'Mặt này chỉ có một vùng thêu.',
+  sideLabel: shellMessage.text('sideLabel'),
+  areaLabel: shellMessage.text('areaLabel'),
+  singleSideNote: shellMessage.text('singleSideNote'),
+  singleAreaNote: shellMessage.text('singleAreaNote'),
   // A selected Side with no Area. The sentence is about that Side only — the
   // Product stays open, because another Side may well be usable.
-  areaNone: 'Không có vùng thêu.',
-  sideWithoutArea: 'Mặt thêu này chưa có vùng thêu khả dụng.',
-  sideWithoutAreaHint: 'Hãy chọn mặt khác để tiếp tục.',
+  areaNone: shellMessage.text('areaNone'),
+  sideWithoutArea: shellMessage.text('sideWithoutArea'),
+  sideWithoutAreaHint: shellMessage.text('sideWithoutAreaHint'),
 
-  templateHeading: 'Chọn mẫu có sẵn',
-  templateLoading: 'Đang tải mẫu thiết kế…',
-  templateError: 'Chưa thể tải danh sách mẫu.',
-  templateEmpty: 'Chưa có mẫu nào cho vùng thêu này.',
-  templateEmptyHint: 'Bạn vẫn có thể bắt đầu với một thiết kế trống.',
-  templateMore: 'Xem thêm mẫu',
-  templateMoreLoading: 'Đang tải thêm…',
-  templateMoreError: 'Chưa thể tải thêm mẫu.',
-  templateVersionPrefix: 'Phiên bản',
+  templateHeading: shellMessage.text('templateHeading'),
+  templateLoading: shellMessage.text('templateLoading'),
+  templateError: shellMessage.text('templateError'),
+  templateEmpty: shellMessage.text('templateEmpty'),
+  templateEmptyHint: shellMessage.text('templateEmptyHint'),
+  templateMore: shellMessage.text('templateMore'),
+  templateMoreLoading: shellMessage.text('templateMoreLoading'),
+  templateMoreError: shellMessage.text('templateMoreError'),
+  templateVersionPrefix: shellMessage.text('templateVersionPrefix'),
 
-  previewHeading: 'Xem trước mẫu',
-  previewLoading: 'Đang tải hình xem trước…',
-  previewTextOnly: 'Mẫu này chỉ gồm chữ thêu, không có hình ảnh xem trước.',
-  previewUnavailable: 'Mẫu này không còn khả dụng. Vui lòng chọn mẫu khác.',
-  previewRetryable: 'Chưa thể tải hình xem trước.',
-  previewAlt: 'Hình xem trước của mẫu',
+  previewHeading: shellMessage.text('previewHeading'),
+  previewLoading: shellMessage.text('previewLoading'),
+  previewTextOnly: shellMessage.text('previewTextOnly'),
+  previewUnavailable: shellMessage.text('previewUnavailable'),
+  previewRetryable: shellMessage.text('previewRetryable'),
+  previewAlt: shellMessage.text('previewAlt'),
 
-  detailUnavailable: 'Mẫu bạn chọn không còn khả dụng. Vui lòng chọn mẫu khác.',
+  detailUnavailable: shellMessage.text('detailUnavailable'),
 
-  startHeading: 'Bắt đầu thiết kế',
-  startBlank: 'Bắt đầu với thiết kế trống',
-  startClone: 'Dùng mẫu đã chọn',
-  starting: 'Đang mở phiên thiết kế…',
-  startBlankError: 'Chưa thể mở phiên thiết kế trống.',
-  startCloneError: 'Chưa thể mở phiên thiết kế từ mẫu này.',
+  startHeading: shellMessage.text('startHeading'),
+  startBlank: shellMessage.text('startBlank'),
+  startClone: shellMessage.text('startClone'),
+  starting: shellMessage.text('starting'),
+  startBlankError: shellMessage.text('startBlankError'),
+  startCloneError: shellMessage.text('startCloneError'),
 
-  readyHeading: 'Phiên thiết kế đã sẵn sàng',
-  readyBody: 'Khung vẽ sẽ có ở bước tiếp theo. Phiên của bạn đã được lưu trên máy chủ.',
-  readyExpiresPrefix: 'Phiên hết hạn lúc',
-  readyFromTemplatePrefix: 'Tạo từ mẫu',
+  readyHeading: shellMessage.text('readyHeading'),
+  readyBody: shellMessage.text('readyBody'),
+  readyExpiresPrefix: shellMessage.text('readyExpiresPrefix'),
+  readyFromTemplatePrefix: shellMessage.text('readyFromTemplatePrefix'),
 
-  resume: 'Kiểm tra phiên hiện tại',
-  resuming: 'Đang kiểm tra phiên…',
+  resume: shellMessage.text('resume'),
+  resuming: shellMessage.text('resuming'),
   /**
    * `APP3-S10` owns the expiry surface, and its heading and body are `610:201`'s
    * own words in `STUDIO_SAVE_COPY`. The two sentences that used to live here
@@ -72,7 +83,7 @@ export const STUDIO_COPY = {
    * is over" is how the screen and its tests end up asserting different things.
    * The action label stays, because it is the same action.
    */
-  expiredRestart: 'Bắt đầu phiên mới',
+  expiredRestart: shellMessage.text('expiredRestart'),
 
-  statusBusy: 'Đang xử lý',
+  statusBusy: shellMessage.text('statusBusy'),
 } as const;

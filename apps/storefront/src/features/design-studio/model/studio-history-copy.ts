@@ -24,18 +24,29 @@
  * so the baseline row references it rather than inventing a second sentence that
  * could later disagree with the button the customer pressed to get here.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
 import { STUDIO_COPY } from './studio-copy';
 
-export const STUDIO_HISTORY_COPY = {
-  panelLabel: 'Lịch sử thao tác',
-  /** Exactly the heading `609:147` and `609:209` draw. */
-  title: 'LỊCH SỬ THAO TÁC',
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/studio.json`, under `history`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const historyMessage = messageView(VI_MESSAGES.studio, 'history');
 
-  undo: 'Hoàn tác',
-  redo: 'Làm lại',
+export const STUDIO_HISTORY_COPY = {
+  panelLabel: historyMessage.text('panelLabel'),
+  /** Exactly the heading `609:147` and `609:209` draw. */
+  title: historyMessage.text('title'),
+
+  undo: historyMessage.text('undo'),
+  redo: historyMessage.text('redo'),
   /** Why the control is off, so a disabled button is never silent. */
-  undoUnavailable: 'Chưa có thay đổi nào để hoàn tác.',
-  redoUnavailable: 'Không có thay đổi nào để làm lại.',
+  undoUnavailable: historyMessage.text('undoUnavailable'),
+  redoUnavailable: historyMessage.text('redoUnavailable'),
 
   /**
    * The keyboard hints, exactly as the approved frames write them.
@@ -45,10 +56,10 @@ export const STUDIO_HISTORY_COPY = {
    * glyphs, so it can be announced instead of only seen. Limited to the two
    * combinations this checkpoint actually binds.
    */
-  shortcutHeading: 'Phím tắt (máy tính)',
-  shortcutUndo: 'Ctrl/⌘ + Z hoàn tác',
-  shortcutRedo: 'Ctrl/⌘ + Shift + Z làm lại',
-  shortcutSeparator: '·',
+  shortcutHeading: historyMessage.text('shortcutHeading'),
+  shortcutUndo: historyMessage.text('shortcutUndo'),
+  shortcutRedo: historyMessage.text('shortcutRedo'),
+  shortcutSeparator: historyMessage.text('shortcutSeparator'),
   /**
    * Where undo lives on a phone.
    *
@@ -56,11 +67,11 @@ export const STUDIO_HISTORY_COPY = {
    * these words. It is a desktop string: 390 renders no history surface at all,
    * so this sentence is never the thing a phone is shown instead of one.
    */
-  mobileDelegation: 'Trên di động: nút ↶ ↷ trong thanh công cụ dưới (S11).',
+  mobileDelegation: historyMessage.text('mobileDelegation'),
 
-  listLabel: 'Các thay đổi gần đây',
+  listLabel: historyMessage.text('listLabel'),
   /** The marker exactly one projected row carries. */
-  currentBadge: 'hiện tại',
+  currentBadge: historyMessage.text('currentBadge'),
 
   /**
    * Where the design started, as `609:209` presents it.
@@ -70,7 +81,7 @@ export const STUDIO_HISTORY_COPY = {
    * blank sentence is `APP3-S01`'s already-accepted blank-start label rather
    * than a second way of saying the same thing.
    */
-  baselineClone: (name: string) => `Mở từ mẫu “${name}”`,
+  baselineClone: (name: string) => historyMessage.text('baselineClone', { name }),
   baselineBlank: STUDIO_COPY.startBlank,
   /**
    * `BASELINE_GENERIC_COPY = PRESENTATION_FALLBACK_FOR_RUNTIME_WITHOUT_DISPLAY_NAME`.
@@ -80,7 +91,7 @@ export const STUDIO_HISTORY_COPY = {
    * says only that the design was opened from a Template, which is true and
    * exposes no technical identity — no slug, no version, no id.
    */
-  baselineGeneric: 'Mở từ mẫu có sẵn',
+  baselineGeneric: historyMessage.text('baselineGeneric'),
 
   /**
    * The bound, stated honestly, in the frame's own words.
@@ -90,29 +101,29 @@ export const STUDIO_HISTORY_COPY = {
    * from `MAX_HISTORY_ENTRIES` rather than written out, so the sentence cannot
    * drift from the limit it describes.
    */
-  boundNote: (limit: number) => `Lịch sử giới hạn ${String(limit)} bước gần nhất trong phiên này.`,
+  boundNote: (limit: number) => historyMessage.text('boundNote', { limit }),
 
   // One sentence per action kind. A layer's own name is quoted where the action
   // was about one layer, and left out where it was not.
-  actionMove: (label: string) => `Di chuyển ${label}`,
-  actionResize: (label: string) => `Đổi kích thước ${label}`,
-  actionRotate: (label: string) => `Xoay ${label}`,
-  actionReorder: (label: string) => `Đổi thứ tự ${label}`,
-  actionLock: (label: string) => `Khoá ${label}`,
-  actionUnlock: (label: string) => `Mở khoá ${label}`,
-  actionHide: (label: string) => `Ẩn ${label}`,
-  actionShow: (label: string) => `Hiện ${label}`,
-  actionTextEdit: (label: string) => `Sửa nội dung ${label}`,
-  actionTextFormat: (label: string) => `Đổi định dạng ${label}`,
-  actionImagePlace: 'Thêm hình ảnh',
-  actionImageReplace: (label: string) => `Thay hình ảnh ${label}`,
+  actionMove: (label: string) => historyMessage.text('actionMove', { label }),
+  actionResize: (label: string) => historyMessage.text('actionResize', { label }),
+  actionRotate: (label: string) => historyMessage.text('actionRotate', { label }),
+  actionReorder: (label: string) => historyMessage.text('actionReorder', { label }),
+  actionLock: (label: string) => historyMessage.text('actionLock', { label }),
+  actionUnlock: (label: string) => historyMessage.text('actionUnlock', { label }),
+  actionHide: (label: string) => historyMessage.text('actionHide', { label }),
+  actionShow: (label: string) => historyMessage.text('actionShow', { label }),
+  actionTextEdit: (label: string) => historyMessage.text('actionTextEdit', { label }),
+  actionTextFormat: (label: string) => historyMessage.text('actionTextFormat', { label }),
+  actionImagePlace: historyMessage.text('actionImagePlace'),
+  actionImageReplace: (label: string) => historyMessage.text('actionImageReplace', { label }),
   /** The fallback when the action was not about one named layer. */
-  actionFallback: 'Thay đổi thiết kế',
+  actionFallback: historyMessage.text('actionFallback'),
 
   // Announced through a polite live region, because an undo changes the stage
   // and a customer who cannot see it would otherwise have no evidence of it.
-  undone: (label: string) => `Đã hoàn tác: ${label}.`,
-  redone: (label: string) => `Đã làm lại: ${label}.`,
+  undone: (label: string) => historyMessage.text('undone', { label }),
+  redone: (label: string) => historyMessage.text('redone', { label }),
 
   /*
    * There is no "this screen is too small" sentence any more.

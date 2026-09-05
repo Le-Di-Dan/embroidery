@@ -15,33 +15,45 @@
  * published (`904:78`) and says nothing about how long it will last.
  */
 
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/storefront.json`, under `purchase`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const purchaseMessage = messageView(VI_MESSAGES.storefront, 'purchase');
+
 export const READY_MADE_PURCHASE_COPY = {
   /** The panel's accessible name. It is a region inside the Product article. */
-  panelLabel: 'Mua sản phẩm có sẵn',
+  panelLabel: purchaseMessage.text('panelLabel'),
 
   /** Price block (`904:41`). */
-  priceCaption: 'Chưa gồm phí giao hàng.',
+  priceCaption: purchaseMessage.text('priceCaption'),
   /** Replaces the caption when nothing on this Product can be bought (`906:146`). */
-  priceCaptionOutOfStock: 'Hiện chưa có phân loại nào còn hàng.',
+  priceCaptionOutOfStock: purchaseMessage.text('priceCaptionOutOfStock'),
 
   /** The two option axes (`904:45`, `904:54`). */
-  variantLegend: 'Phân loại',
-  sizeLegend: 'Kích thước',
+  variantLegend: purchaseMessage.text('variantLegend'),
+  sizeLegend: purchaseMessage.text('sizeLegend'),
   /** The suffix on an option whose SKU is published with zero availability (`904:64`). */
-  optionSoldOut: '· hết',
+  optionSoldOut: purchaseMessage.text('optionSoldOut'),
 
   /** Bound to the fieldset that is still unresolved (`906:229`). */
-  variantRequired: 'Vui lòng chọn phân loại.',
-  sizeRequired: 'Vui lòng chọn kích thước.',
+  variantRequired: purchaseMessage.text('variantRequired'),
+  sizeRequired: purchaseMessage.text('sizeRequired'),
 
   /** Quantity (`904:67`, `904:69`–`904:73`). */
-  quantityLabel: 'Số lượng',
-  quantityDecrease: 'Giảm số lượng',
-  quantityIncrease: 'Tăng số lượng',
+  quantityLabel: purchaseMessage.text('quantityLabel'),
+  quantityDecrease: purchaseMessage.text('quantityDecrease'),
+  quantityIncrease: purchaseMessage.text('quantityIncrease'),
 
   /** The continue call to action (`904:79`, `906:143` disabled variant). */
-  continue: 'Mua ngay',
-  continueOutOfStock: 'Tạm hết hàng',
+  continue: purchaseMessage.text('continue'),
+  continueOutOfStock: purchaseMessage.text('continueOutOfStock'),
 
   /**
    * The degraded state.
@@ -54,8 +66,8 @@ export const READY_MADE_PURCHASE_COPY = {
    * (`PRODUCT_DETAIL_COPY.errorBody`, `537:38`), which is the reuse `APP12-S01`
    * §4 asks for. Recorded as `FU-APP12-S01-01` for `APP12-D01` to draw.
    */
-  unavailableHeading: 'Chưa thể tải thông tin mua hàng',
-  unavailableBody: 'Vui lòng thử lại sau.',
+  unavailableHeading: purchaseMessage.text('unavailableHeading'),
+  unavailableBody: purchaseMessage.text('unavailableBody'),
 } as const;
 
 /**
@@ -66,5 +78,5 @@ export const READY_MADE_PURCHASE_COPY = {
  * quantity, not an urgency.
  */
 export function availabilityLabel(availableQuantity: number): string {
-  return `Còn ${String(availableQuantity)} sản phẩm`;
+  return purchaseMessage.text('availabilityLabel', { String: String(availableQuantity) });
 }

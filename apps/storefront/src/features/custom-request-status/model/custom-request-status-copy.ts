@@ -23,12 +23,23 @@
  * copy says so rather than leaving the customer to discover it by looking for a
  * button that is not there.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
 import type { ResponsiveCopy } from '../../../components/responsive-text';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/custom.json`, under `requestStatus`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const requestStatusMessage = messageView(VI_MESSAGES.custom, 'requestStatus');
 
 export const CUSTOM_REQUEST_STATUS_COPY = {
   /** `661:6` … `661:8` desktop, `661:355` … `661:357` mobile. */
   accessBar: {
-    title: 'Truy cập an toàn',
+    title: requestStatusMessage.text('accessBar.title'),
     /**
      * `661:8` / `661:357`. The approved frames also print the masked contact
      * beside the title; `APP5-B03` publishes no contact of any kind, and
@@ -38,49 +49,49 @@ export const CUSTOM_REQUEST_STATUS_COPY = {
      * tells the customer something actionable.
      */
     expiry: {
-      wide: 'Liên kết này chỉ dành cho bạn và hết hiệu lực ngày {date}. Đừng chia sẻ lại.',
-      narrow: 'Hết hiệu lực {date} · đừng chia sẻ lại',
+      wide: requestStatusMessage.text('accessBar.expiry.wide'),
+      narrow: requestStatusMessage.text('accessBar.expiry.narrow'),
     } satisfies ResponsiveCopy,
   },
 
   /** `661:9` desktop, `661:358` mobile — the page heading. */
   heading: {
-    wide: 'Yêu cầu {code}',
+    wide: requestStatusMessage.text('heading.wide'),
     narrow: '{code}',
   } satisfies ResponsiveCopy,
 
   /** `661:10` / `661:11` — the headline badge prefixes the state, the aside card does not. */
-  headlineBadge: 'Trạng thái: {label}',
+  headlineBadge: requestStatusMessage.text('headlineBadge'),
 
   /** `661:12` — beside the headline badge. */
-  submittedAt: 'Gửi lúc {timestamp}',
+  submittedAt: requestStatusMessage.text('submittedAt'),
 
   /** `661:13` … `661:26` — the three-step progress card. */
   progress: {
-    title: 'Tiến trình',
+    title: requestStatusMessage.text('progress.title'),
     steps: {
-      submitted: 'Đã gửi',
-      underReview: 'Xưởng đang xem',
-      answered: 'Xưởng đã phản hồi',
+      submitted: requestStatusMessage.text('progress.steps.submitted'),
+      underReview: requestStatusMessage.text('progress.steps.underReview'),
+      answered: requestStatusMessage.text('progress.steps.answered'),
     },
-    note: 'Các bước báo giá, duyệt thiết kế và thanh toán chưa có trong giai đoạn này.',
+    note: requestStatusMessage.text('progress.note'),
   },
 
   /** `661:27` … `661:49` — the frozen submission. */
   subject: {
-    title: 'Nội dung bạn đã gửi',
-    frozen: 'Nội dung này đã cố định từ lúc gửi và không thay đổi.',
+    title: requestStatusMessage.text('subject.title'),
+    frozen: requestStatusMessage.text('subject.frozen'),
     rows: {
-      kind: 'Loại',
-      catalog: 'Sản phẩm của cửa hàng',
-      customerOwned: 'Sản phẩm của bạn',
-      productName: 'Sản phẩm',
-      variantColorName: 'Màu',
-      variantSizeLabel: 'Kích cỡ',
-      itemName: 'Vật phẩm',
-      itemDescription: 'Mô tả',
-      dimensions: 'Kích thước',
-      quantity: 'Số lượng',
+      kind: requestStatusMessage.text('subject.rows.kind'),
+      catalog: requestStatusMessage.text('subject.rows.catalog'),
+      customerOwned: requestStatusMessage.text('subject.rows.customerOwned'),
+      productName: requestStatusMessage.text('subject.rows.productName'),
+      variantColorName: requestStatusMessage.text('subject.rows.variantColorName'),
+      variantSizeLabel: requestStatusMessage.text('subject.rows.variantSizeLabel'),
+      itemName: requestStatusMessage.text('subject.rows.itemName'),
+      itemDescription: requestStatusMessage.text('subject.rows.itemDescription'),
+      dimensions: requestStatusMessage.text('subject.rows.dimensions'),
+      quantity: requestStatusMessage.text('subject.rows.quantity'),
     },
     /**
      * Printed wherever `APP5-B03` reports a field as absent rather than filling
@@ -88,52 +99,47 @@ export const CUSTOM_REQUEST_STATUS_COPY = {
      * contract). Naming the wrong product would be worse than naming none, and
      * a later unpublication must not make the request itself unreadable.
      */
-    missingValue: 'Không hiển thị được',
+    missingValue: requestStatusMessage.text('subject.missingValue'),
     /** `661:38` and the tile labels beneath it (`661:40`, `661:46`). */
-    assetsTitle: 'Ảnh bạn đã gửi',
+    assetsTitle: requestStatusMessage.text('subject.assetsTitle'),
     assetRoles: {
-      copImage: 'Ảnh vật phẩm',
-      reference: 'Tham khảo',
+      copImage: requestStatusMessage.text('subject.assetRoles.copImage'),
+      reference: requestStatusMessage.text('subject.assetRoles.reference'),
     },
-    assetsNote:
-      'Chỉ bạn (qua liên kết này) và xưởng xem được các ảnh này. Chúng không hiển thị công khai ở bất kỳ đâu.',
+    assetsNote: requestStatusMessage.text('subject.assetsNote'),
   },
 
   /** `661:178` / `661:246` / `661:314` — the workshop's message to this customer. */
   reason: {
     titles: {
-      needsClarification: 'Xưởng cần bạn làm rõ',
-      rejected: 'Lý do từ chối',
-      cancelled: 'Lý do huỷ',
+      needsClarification: requestStatusMessage.text('reason.titles.needsClarification'),
+      rejected: requestStatusMessage.text('reason.titles.rejected'),
+      cancelled: requestStatusMessage.text('reason.titles.cancelled'),
     },
-    note: 'Đây là nội dung xưởng viết riêng để gửi cho bạn. Ghi chú nội bộ của xưởng không hiển thị ở đây.',
+    note: requestStatusMessage.text('reason.note'),
     /**
      * `B05` allows a transition to be recorded without a customer-facing
      * message. The card still renders — the state is what the customer came to
      * read — and says plainly that no message was written, rather than showing
      * an empty box that reads as a failure to load.
      */
-    absent: 'Xưởng chưa gửi kèm nội dung nào cho bạn ở bước này.',
+    absent: requestStatusMessage.text('reason.absent'),
   },
 
   /** `661:50` … `661:54` — the aside status card. */
   currentStatus: {
-    title: 'Trạng thái hiện tại',
+    title: requestStatusMessage.text('currentStatus.title'),
   },
 
   /** `661:55` … `661:58` — what the customer should do, per state. */
   nextSteps: {
-    title: 'Bạn cần làm gì',
+    title: requestStatusMessage.text('nextSteps.title'),
   },
 
   /** `661:59` … `661:63` — identical in every approved state. */
   readOnly: {
-    title: 'Trang này chỉ để xem',
-    points: [
-      'Không có nút huỷ yêu cầu ở giai đoạn này.',
-      'Không sửa được ảnh hoặc thông tin đã gửi.',
-      'Không có báo giá, duyệt thiết kế hay thanh toán.',
-    ],
+    title: requestStatusMessage.text('readOnly.title'),
+    points: requestStatusMessage.list('readOnly.points'),
   },
 
   /**
@@ -151,53 +157,44 @@ export const CUSTOM_REQUEST_STATUS_COPY = {
   states: {
     /** `661:11` / `661:53` / `661:54`. */
     new: {
-      badge: 'Mới',
-      description: 'Yêu cầu của bạn đã vào hàng đợi của xưởng và đang chờ được mở.',
-      nextSteps: ['Không cần làm gì lúc này.', 'Giữ lại liên kết này để xem trạng thái.'],
+      badge: requestStatusMessage.text('states.new.badge'),
+      description: requestStatusMessage.text('states.new.description'),
+      nextSteps: requestStatusMessage.list('states.new.nextSteps'),
     },
     /** `661:75` / `661:117` / `661:118` / `661:121` / `661:122`. */
     underReview: {
-      badge: 'Đang xem xét',
-      description: 'Xưởng đang xem thông tin và ảnh bạn gửi.',
-      nextSteps: ['Không cần làm gì lúc này.', 'Nếu thiếu thông tin, xưởng sẽ liên hệ bạn.'],
+      badge: requestStatusMessage.text('states.underReview.badge'),
+      description: requestStatusMessage.text('states.underReview.description'),
+      nextSteps: requestStatusMessage.list('states.underReview.nextSteps'),
     },
     /** `661:139` / `661:185` / `661:186` / `661:189` / `661:190`. */
     needsClarification: {
-      badge: 'Cần bổ sung thông tin',
-      description: 'Xưởng cần thêm thông tin trước khi tiếp tục xem xét.',
-      nextSteps: [
-        'Xưởng sẽ liên hệ bạn qua liên hệ đã xác minh.',
-        'Trang này không có ô trả lời — hãy trả lời theo cách xưởng liên hệ.',
-      ],
+      badge: requestStatusMessage.text('states.needsClarification.badge'),
+      description: requestStatusMessage.text('states.needsClarification.description'),
+      nextSteps: requestStatusMessage.list('states.needsClarification.nextSteps'),
     },
     /** `661:207` / `661:253` / `661:254` / `661:257` / `661:258`. */
     rejected: {
-      badge: 'Đã từ chối',
-      description: 'Xưởng không thể nhận yêu cầu này.',
-      nextSteps: [
-        'Bạn có thể gửi một yêu cầu mới nếu muốn.',
-        'Yêu cầu mới sẽ cần xác minh liên hệ lại.',
-      ],
+      badge: requestStatusMessage.text('states.rejected.badge'),
+      description: requestStatusMessage.text('states.rejected.description'),
+      nextSteps: requestStatusMessage.list('states.rejected.nextSteps'),
     },
     /** `661:275` / `661:321` / `661:322` / `661:325` / `661:326`. */
     cancelled: {
-      badge: 'Đã huỷ',
-      description: 'Yêu cầu này đã được huỷ.',
-      nextSteps: [
-        'Bạn có thể gửi một yêu cầu mới nếu muốn.',
-        'Yêu cầu mới sẽ cần xác minh liên hệ lại.',
-      ],
+      badge: requestStatusMessage.text('states.cancelled.badge'),
+      description: requestStatusMessage.text('states.cancelled.description'),
+      nextSteps: requestStatusMessage.list('states.cancelled.nextSteps'),
     },
     /** No frame — see the note above. Says what is true and offers nothing. */
     beyondIntake: {
-      badge: 'Đang xử lý',
-      description: 'Yêu cầu của bạn đã qua bước xem xét ban đầu và đang được xưởng xử lý tiếp.',
-      nextSteps: ['Không cần làm gì lúc này.', 'Xưởng sẽ liên hệ bạn qua liên hệ đã xác minh.'],
+      badge: requestStatusMessage.text('states.beyondIntake.badge'),
+      description: requestStatusMessage.text('states.beyondIntake.description'),
+      nextSteps: requestStatusMessage.list('states.beyondIntake.nextSteps'),
     },
   },
 
   /** Announced politely once the link opens and the request is on screen. */
-  liveAuthorized: 'Đã mở yêu cầu của bạn. Nội dung yêu cầu đang hiển thị.',
+  liveAuthorized: requestStatusMessage.text('liveAuthorized'),
 } as const;
 
 /**

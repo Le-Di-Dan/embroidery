@@ -1,0 +1,187 @@
+{
+  "readyMade": {
+    "pageTitle": "Xác nhận đơn hàng",
+    "contact": {
+      "heading": "Liên hệ",
+      "hint": "Xưởng dùng thông tin này để gửi liên kết theo dõi đơn hàng.",
+      "verifiedMark": "✓",
+      "verified": "Đã xác minh",
+      "change": "Đổi liên hệ",
+      "changeNotice": "Đổi liên hệ sẽ cần xác minh lại trước khi đặt hàng."
+    },
+    "delivery": {
+      "heading": "Giao hàng",
+      "recipientNameLabel": "Người nhận",
+      "recipientPhoneLabel": "Số điện thoại người nhận",
+      "addressLineLabel": "Địa chỉ nhận hàng",
+      "provinceLabel": "Tỉnh/Thành"
+    },
+    "validation": {
+      "recipientNameRequired": "Vui lòng nhập tên người nhận.",
+      "recipientPhoneRequired": "Vui lòng nhập số điện thoại người nhận.",
+      "addressLineRequired": "Vui lòng nhập địa chỉ nhận hàng.",
+      "provinceRequired": "Vui lòng nhập tỉnh/thành.",
+      "contactUnverified": "Vui lòng xác minh liên hệ trước khi đặt hàng."
+    },
+    "item": {
+      "heading": "Sản phẩm",
+      "quantityPrefix": "SL",
+      "separator": "·"
+    },
+    "summary": {
+      "heading": "Tạm tính",
+      "merchandiseLabel": "Tiền hàng",
+      "shippingLabel": "Phí giao hàng",
+      "shippingPending": "Xưởng xác nhận sau",
+      "totalLabel": "Tổng thanh toán",
+      "totalPending": "Có sau khi xác nhận phí",
+      "notice": "Xưởng xác nhận phí giao hàng rồi gửi bạn liên kết thanh toán. Không có tổng tiền nào được hiển thị trước bước đó.",
+      "submit": "Đặt hàng",
+      "submitPending": "Đang gửi…",
+      "submitPendingNotice": "Vui lòng không đóng trang."
+    },
+    "refusal": {
+      "mark": "✕",
+      "back": "Quay lại sản phẩm"
+    },
+    "invalidSelection": {
+      "title": "Chưa xác định được sản phẩm cần mua",
+      "body": "Lựa chọn của bạn không còn hợp lệ. Vui lòng chọn lại trên trang sản phẩm."
+    },
+    "success": {
+      "mark": "✓",
+      "title": "Đã tạo đơn hàng của bạn",
+      "orderCodeLabel": "Mã đơn hàng",
+      "orderCodeNote": "Mã này chỉ để bạn và xưởng nói chuyện về đơn hàng. Nó không mở được đơn hàng — chỉ liên kết trong tin nhắn mới mở được.",
+      "secureLinkTitle": "Chúng tôi đã gửi liên kết theo dõi tới liên hệ bạn đã xác minh",
+      "secureLinkBody": "Mở liên kết đó để xem đơn hàng và thanh toán khi xưởng đã xác nhận phí giao hàng.",
+      "secureLinkFallback": "Chưa thấy tin nhắn sau vài phút? Kiểm tra thư rác, hoặc liên hệ xưởng kèm mã đơn hàng ở trên.",
+      "shippingPendingNotice": "Xưởng sẽ xác nhận phí giao hàng và gửi liên kết thanh toán. Chưa cần thanh toán lúc này.",
+      "merchandiseLabel": "Tiền hàng đã chốt",
+      "reservationLabel": "Xưởng giữ hàng đến",
+      "continue": "Tiếp tục xem sản phẩm"
+    }
+  },
+  "verification": {
+    "contactEntry": {
+      "title": "Xác minh liên hệ của bạn",
+      "body": "Nhập email hoặc số điện thoại. Chúng tôi gửi một mã gồm 6 chữ số để xác nhận đó là bạn.",
+      "caption": "Bạn không cần tạo tài khoản.",
+      "submit": "Gửi mã xác minh",
+      "submitting": "Đang gửi mã…"
+    },
+    "contactKind": {
+      "legend": "Bạn muốn nhận mã qua đâu?",
+      "EMAIL": "Email",
+      "PHONE": "Số điện thoại"
+    },
+    "emailField": {
+      "label": "Email",
+      "placeholder": "ban@vidu.com",
+      "help": "Chỉ dùng để gửi mã xác minh và cập nhật về yêu cầu của bạn.",
+      "invalid": "Email chưa đúng định dạng. Ví dụ: ban@vidu.com"
+    },
+    "phoneField": {
+      "label": "Số điện thoại",
+      "placeholder": "0912 345 678",
+      "help": "Nhập số trong nước, hoặc số quốc tế bắt đầu bằng dấu +.",
+      "invalid": "Số điện thoại chưa đúng định dạng. Ví dụ: 0912 345 678"
+    },
+    "codeEntry": {
+      "title": "Nhập mã xác minh",
+      "body": "Chúng tôi đã gửi một mã gồm 6 chữ số tới:",
+      "fieldLabel": "Mã xác minh (6 chữ số)",
+      "help": "Mã có hiệu lực trong 10 phút.",
+      "submit": "Xác minh",
+      "submitting": "Đang xác minh…"
+    },
+    "resend": {
+      "action": "Gửi lại mã",
+      "cooldown": "có thể gửi lại sau {remaining}",
+      "sending": "Đang gửi lại…"
+    },
+    "alerts": {
+      "mismatch": "Mã không đúng. Hãy kiểm tra lại mã trong tin nhắn mới nhất.",
+      "resent": {
+        "title": "Đã gửi mã mới",
+        "body": "Mã cũ không còn dùng được. Hãy nhập mã trong tin nhắn mới nhất."
+      },
+      "expired": {
+        "title": "Mã không còn hiệu lực",
+        "body": "Mã xác minh chỉ dùng được trong 10 phút. Hãy yêu cầu một mã mới để tiếp tục."
+      },
+      "locked": {
+        "title": "Bạn đã nhập sai quá số lần cho phép",
+        "body": "Vì an toàn, mã này đã bị khoá. Hãy yêu cầu một mã mới để thử lại."
+      },
+      "rateLimited": {
+        "title": "Bạn đã yêu cầu mã quá nhiều lần",
+        "body": "Để bảo vệ tài khoản, chúng tôi tạm dừng gửi mã cho liên hệ này. Hãy thử lại sau khoảng 15 phút."
+      },
+      "success": {
+        "title": "Xác minh thành công",
+        "body": "Liên hệ của bạn đã được xác nhận. Bạn có thể tiếp tục yêu cầu thêu của mình."
+      },
+      "recoverableError": {
+        "title": "Mất kết nối tới máy chủ",
+        "body": "Yêu cầu chưa được gửi đi. Kiểm tra kết nối mạng rồi thử lại — bạn không bị mất lượt nào."
+      }
+    },
+    "outcome": {
+      "EXPIRED": {
+        "title": "Mã đã hết hạn",
+        "destinationLead": "Mã sẽ được gửi lại tới:",
+        "action": "Gửi mã mới"
+      },
+      "LOCKED": {
+        "title": "Đã hết lượt thử cho mã này",
+        "destinationLead": "Mã mới sẽ được gửi tới:",
+        "action": "Gửi mã mới"
+      },
+      "SUCCESS": {
+        "title": "Đã xác minh liên hệ",
+        "action": "Tiếp tục"
+      },
+      "RECOVERABLE_ERROR": {
+        "title": "Không gửi được yêu cầu",
+        "action": "Thử lại"
+      }
+    },
+    "successCaption": "Chúng tôi chỉ dùng liên hệ này để gửi cập nhật về yêu cầu của bạn.",
+    "pageTitle": "Xác minh liên hệ",
+    "live": {
+      "requesting": "Đang gửi mã xác minh.",
+      "verifying": "Đang xác minh mã."
+    }
+  },
+  "failure": {
+    "INSUFFICIENT_STOCK": {
+      "title": "Sản phẩm vừa hết hàng",
+      "body": "Rất tiếc, kích thước bạn chọn vừa được đặt hết. Bạn có thể chọn kích thước khác."
+    },
+    "SKU_UNAVAILABLE": {
+      "title": "Sản phẩm này hiện không bán được",
+      "body": "Lựa chọn của bạn không còn được bán. Vui lòng chọn lại trên trang sản phẩm."
+    },
+    "VERIFICATION_REQUIRED": {
+      "title": "Cần xác minh lại liên hệ",
+      "body": "Xác minh của bạn không còn hiệu lực. Vui lòng xác minh lại rồi đặt hàng."
+    },
+    "ALREADY_ORDERED": {
+      "title": "Liên hệ này đã đặt một đơn khác",
+      "body": "Vui lòng xác minh lại liên hệ để đặt đơn hàng mới."
+    },
+    "IN_FLIGHT": {
+      "title": "Đơn hàng đang được tạo",
+      "body": "Vui lòng đợi một lát rồi thử lại. Đừng đặt lại để tránh tạo hai đơn."
+    },
+    "INVALID_DELIVERY": {
+      "title": "Thông tin giao hàng chưa hợp lệ",
+      "body": "Vui lòng kiểm tra lại thông tin người nhận và địa chỉ rồi thử lại."
+    },
+    "UNEXPECTED": {
+      "title": "Không tạo được đơn",
+      "body": "Đã có lỗi khi gửi đơn hàng. Vui lòng thử lại sau ít phút."
+    }
+  }
+}

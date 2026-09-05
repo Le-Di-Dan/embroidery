@@ -1,0 +1,50 @@
+{
+  "storefront": {
+    "brandedTitle": "{title} — {brand}",
+    "app": {
+      "title": "Embroidery Commerce — Storefront",
+      "description": "Cửa hàng thêu — sản phẩm nền và dịch vụ thêu theo yêu cầu."
+    },
+    "secureLanding": {
+      "title": "Truy cập an toàn",
+      "description": "Mở liên kết truy cập an toàn cho yêu cầu thêu của bạn."
+    },
+    "secureOrder": {
+      "title": "Đơn hàng của bạn",
+      "description": "Xem trạng thái đơn hàng, số tiền cần thanh toán và thông tin chuyển khoản qua liên kết truy cập an toàn."
+    },
+    "secureQuotation": {
+      "title": "Báo giá của bạn",
+      "description": "Mở báo giá cho yêu cầu thêu của bạn qua liên kết truy cập an toàn."
+    },
+    "secureDesignReview": {
+      "title": "Duyệt mẫu thiết kế",
+      "description": "Xem và duyệt mẫu thêu của bạn qua liên kết truy cập an toàn."
+    },
+    "secureDeposit": {
+      "title": "Đặt cọc đơn hàng",
+      "description": "Xem thông tin chuyển khoản đặt cọc cho đơn hàng của bạn qua liên kết truy cập an toàn."
+    },
+    "secureFinalPayment": {
+      "title": "Thanh toán phần còn lại",
+      "description": "Xem số tiền còn lại, thông tin chuyển khoản và trạng thái đơn hàng của bạn qua liên kết truy cập an toàn."
+    },
+    "contactVerification": {
+      "title": "Xác minh liên hệ",
+      "description": "Nhập email hoặc số điện thoại để nhận mã xác minh gồm 6 chữ số."
+    },
+    "requestSent": {
+      "title": "Đã gửi yêu cầu"
+    }
+  },
+  "admin": {
+    "app": {
+      "title": "Embroidery Commerce — Admin",
+      "description": "Bảng điều khiển quản trị cửa hàng thêu."
+    },
+    "login": {
+      "title": "Đăng nhập · Bảng quản trị",
+      "description": "Đăng nhập dành cho quản trị viên {brand}."
+    }
+  }
+}

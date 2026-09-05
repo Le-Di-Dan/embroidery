@@ -19,45 +19,57 @@
  * `/collections` draft.
  */
 
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/storefront.json`, under `galleryEntry`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const galleryEntryMessage = messageView(VI_MESSAGES.storefront, 'galleryEntry');
+
 export const GALLERY_DETAIL_COPY = {
   /** Breadcrumb. */
-  breadcrumbLabel: 'Đường dẫn',
+  breadcrumbLabel: galleryEntryMessage.text('breadcrumbLabel'),
   /** The feed crumb, quoted from the approved H1 of `/bo-suu-tap`. */
-  gallery: 'Bộ sưu tập',
-  backToGallery: '← Quay lại Bộ sưu tập',
+  gallery: galleryEntryMessage.text('gallery'),
+  backToGallery: galleryEntryMessage.text('backToGallery'),
 
   /** Media. */
-  mediaLabel: 'Bộ ảnh của mục này',
-  mediaError: 'Không tải được ảnh này. Bạn vẫn có thể xem các ảnh khác và đọc nội dung.',
-  thumbnailUnavailable: 'Ảnh không khả dụng',
-  zoomHint: 'Nhấn vào ảnh để mở chế độ xem lớn',
+  mediaLabel: galleryEntryMessage.text('mediaLabel'),
+  mediaError: galleryEntryMessage.text('mediaError'),
+  thumbnailUnavailable: galleryEntryMessage.text('thumbnailUnavailable'),
+  zoomHint: galleryEntryMessage.text('zoomHint'),
 
   /** Narrative. */
-  narrativeHeading: 'Về mục này',
+  narrativeHeading: galleryEntryMessage.text('narrativeHeading'),
 
   /** Related product. */
-  relatedProductHeading: 'Tác phẩm liên quan',
-  relatedProductAction: 'Xem tác phẩm',
+  relatedProductHeading: galleryEntryMessage.text('relatedProductHeading'),
+  relatedProductAction: galleryEntryMessage.text('relatedProductAction'),
 
   /** Continue discovering. */
-  continueHeading: 'Tiếp tục khám phá',
-  continueAll: 'Xem tất cả bộ sưu tập',
+  continueHeading: galleryEntryMessage.text('continueHeading'),
+  continueAll: galleryEntryMessage.text('continueAll'),
 
   /** Soft commission call to action. */
-  commissionHeading: 'Muốn một tác phẩm của riêng bạn?',
-  commissionBody: 'Gửi yêu cầu để xưởng cùng bạn phác thảo ý tưởng.',
-  commissionAction: 'Đặt thêu',
+  commissionHeading: galleryEntryMessage.text('commissionHeading'),
+  commissionBody: galleryEntryMessage.text('commissionBody'),
+  commissionAction: galleryEntryMessage.text('commissionAction'),
 
   /** Lightbox. */
-  lightboxClose: 'Đóng',
-  lightboxPrevious: 'Ảnh trước',
-  lightboxNext: 'Ảnh sau',
+  lightboxClose: galleryEntryMessage.text('lightboxClose'),
+  lightboxPrevious: galleryEntryMessage.text('lightboxPrevious'),
+  lightboxNext: galleryEntryMessage.text('lightboxNext'),
 
   /** Route-local loading and failure. */
-  loading: 'Đang tải mục bộ sưu tập…',
-  errorHeading: 'Chưa thể tải mục này',
-  errorBody: 'Vui lòng thử lại sau.',
-  errorRetry: 'Thử lại',
+  loading: galleryEntryMessage.text('loading'),
+  errorHeading: galleryEntryMessage.text('errorHeading'),
+  errorBody: galleryEntryMessage.text('errorBody'),
+  errorRetry: galleryEntryMessage.text('errorRetry'),
 } as const;
 
 /**
@@ -77,22 +89,24 @@ export const GALLERY_DETAIL_COPY = {
  * 1" is noise a screen reader has to listen to for no information.
  */
 export function galleryMediaAlt(title: string, index: number, total: number): string {
-  return total <= 1 ? title : `${title} — ảnh ${index + 1} trên ${total}`;
+  return total <= 1
+    ? title
+    : galleryEntryMessage.text('galleryMediaAlt', { title, position: index + 1, total });
 }
 
 /** The accessible name of a thumbnail control. Index-based, for the same reason. */
 export function galleryThumbnailLabel(index: number, total: number): string {
-  return `Xem ảnh ${index + 1} trên ${total}`;
+  return galleryEntryMessage.text('galleryThumbnailLabel', { position: index + 1, total });
 }
 
 /** The accessible name of the control that opens the large view. */
 export function galleryOpenLightboxLabel(index: number): string {
-  return `Mở ảnh ${index + 1} trong chế độ xem lớn`;
+  return galleryEntryMessage.text('galleryOpenLightboxLabel', { position: index + 1 });
 }
 
 /** The lightbox's textual position, so "which image" is never colour-only. */
 export function galleryPositionLabel(index: number, total: number): string {
-  return `Ảnh ${index + 1} trên ${total}`;
+  return galleryEntryMessage.text('galleryPositionLabel', { position: index + 1, total });
 }
 
 /** The lightbox dialog's accessible title. */

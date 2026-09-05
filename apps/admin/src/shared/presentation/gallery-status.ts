@@ -28,10 +28,24 @@
  * package, because the storefront never sees a gallery entry's lifecycle state
  * at all. This closes `FU-APP11-A01-06`.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
 import type { AdminGalleryEntryListStatus } from '@embroidery/api-client';
 
 import type { AdminStatusTone } from '../status/admin-status-badge';
 import { STATUS_SYMBOLS } from './order-status';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin.json`, under `galleryStatusLabels`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const galleryStatusLabelsMessage = messageView(VI_MESSAGES.admin, 'galleryStatusLabels');
+
+/** The label both applications use for a value the server did not classify. */
+const commonMessage = messageView(VI_MESSAGES.common);
 
 export type GalleryStatusValue =
   (typeof AdminGalleryEntryListStatus)[keyof typeof AdminGalleryEntryListStatus];
@@ -59,13 +73,25 @@ interface StatusStyle {
  * differently for no reason.
  */
 const GALLERY_STATUS_STYLES: Readonly<Record<string, StatusStyle>> = {
-  DRAFT: { label: 'Bản nháp', tone: 'neutral', symbol: STATUS_SYMBOLS.idle },
-  PUBLISHED: { label: 'Đã xuất bản', tone: 'success', symbol: STATUS_SYMBOLS.succeeded },
-  ARCHIVED: { label: 'Đã lưu trữ', tone: 'warning', symbol: STATUS_SYMBOLS.ended },
+  DRAFT: {
+    label: galleryStatusLabelsMessage.text('DRAFT.label'),
+    tone: 'neutral',
+    symbol: STATUS_SYMBOLS.idle,
+  },
+  PUBLISHED: {
+    label: galleryStatusLabelsMessage.text('PUBLISHED.label'),
+    tone: 'success',
+    symbol: STATUS_SYMBOLS.succeeded,
+  },
+  ARCHIVED: {
+    label: galleryStatusLabelsMessage.text('ARCHIVED.label'),
+    tone: 'warning',
+    symbol: STATUS_SYMBOLS.ended,
+  },
 };
 
 /** The neutral fallback, for a state this build has no approved label for. */
-export const UNKNOWN_GALLERY_STATUS_LABEL = 'Không xác định';
+export const UNKNOWN_GALLERY_STATUS_LABEL = commonMessage.text('value.unknown');
 
 /**
  * Total by construction: accepts `unknown` and always returns a presentation.

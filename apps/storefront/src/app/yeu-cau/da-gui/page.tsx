@@ -1,3 +1,6 @@
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+import { brandedPageTitle } from '../../../features/storefront-seo';
 import type { Metadata } from 'next';
 
 import {
@@ -17,8 +20,14 @@ import {
  * standalone audience and its URL carries a request code that has no business
  * in a search index.
  */
+/**
+ * The browser title and description, from the canonical Vietnamese message
+ * repository (`packages/i18n/messages/vi/seo.json`, under `storefront.requestSent`).
+ */
+const seoMessage = messageView(VI_MESSAGES.seo, 'storefront.requestSent');
+
 export const metadata: Metadata = {
-  title: 'Đã gửi yêu cầu — Nét Thêu',
+  title: brandedPageTitle(seoMessage.text('title')),
   robots: { index: false, follow: false },
 };
 

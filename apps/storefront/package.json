@@ -19,11 +19,13 @@
     "@embroidery/contracts": "workspace:*",
     "@embroidery/design-document": "workspace:*",
     "@embroidery/design-engine": "workspace:*",
+    "@embroidery/i18n": "workspace:*",
     "@embroidery/styles": "workspace:*",
     "@embroidery/ui": "workspace:*",
     "@tanstack/react-query": "^5.101.2",
     "axios": "^1.18.1",
     "next": "^16.2.10",
+    "next-intl": "^4.14.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "zustand": "^5.0.14"

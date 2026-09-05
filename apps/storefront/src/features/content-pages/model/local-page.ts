@@ -1,3 +1,5 @@
+import { VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
+import { BRAND_NAME } from '@embroidery/ui';
 import {
   STOREFRONT_CUSTOM_REQUEST_ROUTE,
   STOREFRONT_DISCOVER_ROUTE,
@@ -7,6 +9,19 @@ import {
   STOREFRONT_STORE_ROUTE,
 } from '../../storefront-shell/model/storefront-navigation';
 import type { ContentPage } from './content-page';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/content.json`, under `store`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const storeMessage = messageView(
+  hydrateMessages(VI_MESSAGES.content, { brand: BRAND_NAME }),
+  'store',
+);
 
 /**
  * `/cua-hang` — the Local/store page (`APP11-S05`).
@@ -40,70 +55,62 @@ import type { ContentPage } from './content-page';
 export const LOCAL_PAGE: ContentPage = {
   id: 'local',
   path: STOREFRONT_STORE_ROUTE,
-  eyebrow: 'Ghé xưởng',
-  heading: 'Xưởng thêu Nét Thêu',
-  lead: 'Nét Thêu là một xưởng thêu cá nhân hóa. Mọi đơn thêu đều đi qua cùng một xưởng, cùng những người thợ đã dựng nên bản thêu của bạn.',
-  metaTitle: 'Ghé xưởng — Nét Thêu',
-  metaDescription:
-    'Thông tin về xưởng thêu Nét Thêu và cách liên hệ để đặt thêu theo yêu cầu, nhận tư vấn hoặc nhận hàng trực tiếp.',
+  eyebrow: storeMessage.text('eyebrow'),
+  heading: storeMessage.text('heading'),
+  lead: storeMessage.text('lead'),
+  metaTitle: storeMessage.text('metaTitle'),
+  metaDescription: storeMessage.text('metaDescription'),
   sections: [
     {
       kind: 'store-info',
       id: 'store-facts',
-      heading: 'Thông tin xưởng',
-      fallback:
-        'Thông tin địa chỉ và giờ mở cửa của xưởng sẽ được cập nhật tại đây. Trong lúc này, bạn liên hệ với Nét Thêu qua biểu mẫu gửi yêu cầu hoặc các kênh nhắn tin trên website — xưởng sẽ trao đổi trực tiếp với bạn về việc tới xưởng.',
+      heading: storeMessage.text('sections.0.heading'),
+      fallback: storeMessage.text('sections.0.fallback'),
     },
     {
       kind: 'prose',
       id: 'visiting',
-      heading: 'Tới xưởng',
-      paragraphs: [
-        'Nét Thêu làm việc theo từng đơn hàng riêng, nên xưởng hẹn trước với bạn thay vì tiếp khách vãng lai. Cách nhanh nhất để sắp xếp một buổi tới xưởng là gửi yêu cầu hoặc nhắn cho xưởng qua các kênh trên website.',
-        'Bạn có thể tới xưởng để xem chất liệu và màu chỉ trước khi chốt thiết kế, hoặc để nhận thành phẩm trực tiếp thay vì gửi chuyển phát.',
-      ],
+      heading: storeMessage.text('sections.1.heading'),
+      paragraphs: storeMessage.list('sections.1.paragraphs'),
     },
     {
       kind: 'prose',
       id: 'contact-channels',
-      heading: 'Liên hệ với xưởng',
-      paragraphs: [
-        'Nếu yêu cầu của bạn đã có sẵn nội dung và sản phẩm cụ thể, gửi yêu cầu trực tuyến là cách nhanh nhất để nhận báo giá — bạn mô tả một lần và xưởng có đủ thông tin để trả lời.',
-        'Nếu bạn mới đang cân nhắc và muốn hỏi trước, các kênh nhắn tin ở góc màn hình luôn sẵn sàng khi xưởng đã bật.',
-      ],
+      heading: storeMessage.text('sections.2.heading'),
+      paragraphs: storeMessage.list('sections.2.paragraphs'),
     },
     {
       kind: 'links',
       id: 'local-next',
-      heading: 'Trước khi ghé',
+      heading: storeMessage.text('sections.3.heading'),
       links: [
         {
           id: 'commission',
-          label: 'Gửi yêu cầu thêu',
+          label: storeMessage.text('sections.3.links.0.label'),
           href: STOREFRONT_CUSTOM_REQUEST_ROUTE,
-          hint: 'Cách nhanh nhất để xưởng nắm được yêu cầu của bạn.',
+          hint: storeMessage.text('sections.3.links.0.hint'),
         },
         {
           id: 'service',
-          label: 'Dịch vụ và quy trình',
+          label: storeMessage.text('sections.3.links.1.label'),
           href: STOREFRONT_SERVICE_ROUTE,
-          hint: 'Những gì xưởng nhận làm, và các bước làm việc.',
+          hint: storeMessage.text('sections.3.links.1.hint'),
         },
         {
           id: 'gallery',
-          label: 'Bộ sưu tập',
+          label: storeMessage.text('sections.3.links.2.label'),
           href: STOREFRONT_GALLERY_ROUTE,
-          hint: 'Tác phẩm xưởng đã hoàn thiện.',
+          hint: storeMessage.text('sections.3.links.2.hint'),
         },
         {
           id: 'discover',
-          label: 'Sản phẩm nền',
+          label: storeMessage.text('sections.3.links.3.label'),
           href: STOREFRONT_DISCOVER_ROUTE,
-          hint: 'Các sản phẩm có sẵn của xưởng.',
+          hint: storeMessage.text('sections.3.links.3.hint'),
         },
         {
           id: 'faq',
-          label: 'Câu hỏi thường gặp',
+          label: storeMessage.text('sections.3.links.4.label'),
           href: STOREFRONT_FAQ_ROUTE,
         },
       ],

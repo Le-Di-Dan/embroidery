@@ -171,6 +171,11 @@ describe('the capability the contract does not have', () => {
     // the kind of thing this guard exists to catch: no drag-and-drop, no dialog
     // primitive, no icon library, no third-party capability. The guard keeps its
     // teeth because the list is still exact.
+    //
+    // `@embroidery/i18n` and `next-intl` joined it at `APP12-V02` §5A, for the
+    // same reason and under the same test: the message repository holds text and
+    // the plugin resolves it, and neither renders a control, a layout or an
+    // interaction this screen could have used instead of building its own.
     const manifest = JSON.parse(readFileSync(join(ADMIN_SRC, '..', 'package.json'), 'utf8')) as {
       dependencies: Record<string, string>;
     };
@@ -179,11 +184,13 @@ describe('the capability the contract does not have', () => {
       '@embroidery/contracts',
       '@embroidery/design-document',
       '@embroidery/design-engine',
+      '@embroidery/i18n',
       '@embroidery/styles',
       '@embroidery/ui',
       '@tanstack/react-query',
       'axios',
       'next',
+      'next-intl',
       'react',
       'react-dom',
       'zustand',

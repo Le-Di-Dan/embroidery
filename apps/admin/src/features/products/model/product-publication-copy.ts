@@ -24,7 +24,28 @@
  * category, price, images — never about assets, derivatives, checksums or
  * buckets, which the operator neither controls nor should see.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
 import { AdminProductRequirementResponseCode } from '@embroidery/api-client';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin.json`, under `productRequirementLabel`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const productRequirementLabelMessage = messageView(VI_MESSAGES.admin, 'productRequirementLabel');
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin.json`, under `productPublication`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const productPublicationMessage = messageView(VI_MESSAGES.admin, 'productPublication');
 
 /**
  * Operator-facing text for every requirement code in the contract.
@@ -40,128 +61,133 @@ export const PRODUCT_REQUIREMENT_LABEL: Readonly<
     string
   >
 > = {
-  [AdminProductRequirementResponseCode.PRODUCT_NAME_READY]: 'Tên sản phẩm và đường dẫn đã sẵn sàng',
-  [AdminProductRequirementResponseCode.PRODUCT_DESCRIPTION_READY]: 'Đã có mô tả sản phẩm',
-  [AdminProductRequirementResponseCode.PRODUCT_CATEGORY_READY]: 'Danh mục đang được xuất bản',
-  [AdminProductRequirementResponseCode.PRODUCT_PRICE_READY]: 'Đã đặt giá sản phẩm',
-  [AdminProductRequirementResponseCode.PRODUCT_MEDIA_READY]: 'Thứ tự ảnh sản phẩm hợp lệ',
-  [AdminProductRequirementResponseCode.PRODUCT_MEDIA_ASSETS_READY]: 'Tất cả ảnh đã được duyệt',
+  [AdminProductRequirementResponseCode.PRODUCT_NAME_READY]:
+    productRequirementLabelMessage.text('PRODUCT_NAME_READY'),
+  [AdminProductRequirementResponseCode.PRODUCT_DESCRIPTION_READY]:
+    productRequirementLabelMessage.text('PRODUCT_DESCRIPTION_READY'),
+  [AdminProductRequirementResponseCode.PRODUCT_CATEGORY_READY]:
+    productRequirementLabelMessage.text('PRODUCT_CATEGORY_READY'),
+  [AdminProductRequirementResponseCode.PRODUCT_PRICE_READY]:
+    productRequirementLabelMessage.text('PRODUCT_PRICE_READY'),
+  [AdminProductRequirementResponseCode.PRODUCT_MEDIA_READY]:
+    productRequirementLabelMessage.text('PRODUCT_MEDIA_READY'),
+  [AdminProductRequirementResponseCode.PRODUCT_MEDIA_ASSETS_READY]:
+    productRequirementLabelMessage.text('PRODUCT_MEDIA_ASSETS_READY'),
   [AdminProductRequirementResponseCode.PRODUCT_MEDIA_DERIVATIVES_READY]:
-    'Ảnh hiển thị công khai đã sẵn sàng',
+    productRequirementLabelMessage.text('PRODUCT_MEDIA_DERIVATIVES_READY'),
 };
 
 export const PRODUCT_PUBLICATION_COPY = {
   /** The entry point rendered on the A03 detail screen. */
   entry: {
     /** DRAFT: the operator is going somewhere to publish. */
-    fromDraft: 'Xuất bản',
+    fromDraft: productPublicationMessage.text('entry.fromDraft'),
     /** PUBLISHED: the product is already public; this manages that. */
-    fromPublished: 'Quản lý xuất bản',
+    fromPublished: productPublicationMessage.text('entry.fromPublished'),
   },
 
   screen: {
-    title: 'Xuất bản sản phẩm',
-    backToProduct: 'Quay lại sản phẩm',
-    backToList: 'Danh sách sản phẩm',
-    loading: 'Đang tải trạng thái xuất bản…',
-    requirementsHeading: 'Điều kiện xuất bản',
-    summaryHeading: 'Thông tin sản phẩm',
-    mediaHeading: 'Ảnh sản phẩm',
+    title: productPublicationMessage.text('screen.title'),
+    backToProduct: productPublicationMessage.text('screen.backToProduct'),
+    backToList: productPublicationMessage.text('screen.backToList'),
+    loading: productPublicationMessage.text('screen.loading'),
+    requirementsHeading: productPublicationMessage.text('screen.requirementsHeading'),
+    summaryHeading: productPublicationMessage.text('screen.summaryHeading'),
+    mediaHeading: productPublicationMessage.text('screen.mediaHeading'),
     /** The read-only slug. Metadata only — never presented as a link. */
-    slugLabel: 'Đường dẫn',
-    slugNote: 'Đường dẫn do hệ thống quản lý và không thể chỉnh sửa.',
-    categoryLabel: 'Danh mục',
-    descriptionLabel: 'Mô tả',
-    priceLabel: 'Giá',
-    statusLabel: 'Trạng thái',
+    slugLabel: productPublicationMessage.text('screen.slugLabel'),
+    slugNote: productPublicationMessage.text('screen.slugNote'),
+    categoryLabel: productPublicationMessage.text('screen.categoryLabel'),
+    descriptionLabel: productPublicationMessage.text('screen.descriptionLabel'),
+    priceLabel: productPublicationMessage.text('screen.priceLabel'),
+    statusLabel: productPublicationMessage.text('screen.statusLabel'),
     /** Marks the first ordered image, matching the A03 media identity. */
-    primaryMedia: 'Ảnh đại diện',
-    noMedia: 'Chưa có ảnh nào được chọn.',
-    noDescription: 'Chưa có mô tả.',
-    noPrice: 'Chưa đặt giá.',
+    primaryMedia: productPublicationMessage.text('screen.primaryMedia'),
+    noMedia: productPublicationMessage.text('screen.noMedia'),
+    noDescription: productPublicationMessage.text('screen.noDescription'),
+    noPrice: productPublicationMessage.text('screen.noPrice'),
   },
 
   requirements: {
-    satisfied: 'Đã đủ điều kiện',
-    unsatisfied: 'Chưa đủ điều kiện',
+    satisfied: productPublicationMessage.text('requirements.satisfied'),
+    unsatisfied: productPublicationMessage.text('requirements.unsatisfied'),
     /**
      * A requirement code this build does not recognise. It renders visibly and
      * is treated as unmet — a newer server that adds a requirement must never
      * have it silently counted as satisfied by an older screen.
      */
-    unknown: 'Điều kiện chưa được hỗ trợ trong phiên bản này',
+    unknown: productPublicationMessage.text('requirements.unknown'),
   },
 
   ready: {
-    title: 'Sẵn sàng xuất bản',
-    body: 'Sản phẩm đã đáp ứng mọi điều kiện và có thể được xuất bản.',
+    title: productPublicationMessage.text('ready.title'),
+    body: productPublicationMessage.text('ready.body'),
     /**
      * Deliberately does not promise a live URL: `APP2-B04`/`APP2-S02` own the
      * public route, and this build cannot truthfully say a page exists.
      */
-    consequence:
-      'Sau khi xuất bản, sản phẩm sẽ đủ điều kiện hiển thị công khai và không thể chỉnh sửa cho tới khi được gỡ xuất bản.',
-    publish: 'Xuất bản',
-    publishing: 'Đang xuất bản…',
-    edit: 'Chỉnh sửa',
+    consequence: productPublicationMessage.text('ready.consequence'),
+    publish: productPublicationMessage.text('ready.publish'),
+    publishing: productPublicationMessage.text('ready.publishing'),
+    edit: productPublicationMessage.text('ready.edit'),
   },
 
   blocked: {
-    title: 'Còn thiếu điều kiện',
-    body: 'Sản phẩm chưa đáp ứng đủ điều kiện xuất bản. Hãy hoàn thiện bản nháp rồi quay lại.',
-    edit: 'Hoàn thiện bản nháp',
+    title: productPublicationMessage.text('blocked.title'),
+    body: productPublicationMessage.text('blocked.body'),
+    edit: productPublicationMessage.text('blocked.edit'),
   },
 
   published: {
-    title: 'Sản phẩm đang được xuất bản',
-    body: 'Sản phẩm đủ điều kiện hiển thị công khai.',
-    unpublish: 'Gỡ xuất bản',
-    unpublishing: 'Đang gỡ xuất bản…',
+    title: productPublicationMessage.text('published.title'),
+    body: productPublicationMessage.text('published.body'),
+    unpublish: productPublicationMessage.text('published.unpublish'),
+    unpublishing: productPublicationMessage.text('published.unpublishing'),
     /** A published product is not editable in `APP2-A03`; the label says so. */
-    view: 'Xem chi tiết',
+    view: productPublicationMessage.text('published.view'),
   },
 
   archived: {
-    title: 'Sản phẩm đã được lưu trữ',
-    body: 'Sản phẩm đã lưu trữ không thể xuất bản hoặc gỡ xuất bản tại màn hình này.',
+    title: productPublicationMessage.text('archived.title'),
+    body: productPublicationMessage.text('archived.body'),
   },
 
   unpublishDialog: {
-    title: 'Gỡ xuất bản sản phẩm?',
-    body: 'Sản phẩm sẽ không còn đủ điều kiện hiển thị công khai. Dữ liệu sản phẩm và ảnh đã chọn vẫn được giữ nguyên.',
+    title: productPublicationMessage.text('unpublishDialog.title'),
+    body: productPublicationMessage.text('unpublishDialog.body'),
     /**
      * Present because the two are genuinely different transitions and the
      * operator cannot be expected to know that from the verb alone.
      */
-    reassurance: 'Đây không phải thao tác xoá hoặc lưu trữ.',
-    confirm: 'Gỡ xuất bản',
-    cancel: 'Giữ nguyên',
+    reassurance: productPublicationMessage.text('unpublishDialog.reassurance'),
+    confirm: productPublicationMessage.text('unpublishDialog.confirm'),
+    cancel: productPublicationMessage.text('unpublishDialog.cancel'),
   },
 
   success: {
-    publishedTitle: 'Sản phẩm đã được xuất bản',
-    publishedBody: 'Sản phẩm hiện đủ điều kiện hiển thị công khai.',
-    unpublishedTitle: 'Đã gỡ xuất bản sản phẩm',
-    unpublishedBody: 'Sản phẩm đã trở lại trạng thái bản nháp và có thể chỉnh sửa.',
+    publishedTitle: productPublicationMessage.text('success.publishedTitle'),
+    publishedBody: productPublicationMessage.text('success.publishedBody'),
+    unpublishedTitle: productPublicationMessage.text('success.unpublishedTitle'),
+    unpublishedBody: productPublicationMessage.text('success.unpublishedBody'),
   },
 
   failure: {
     /** Readiness failed but the product loaded; the summary stays visible. */
-    readinessTitle: 'Chưa thể kiểm tra điều kiện xuất bản',
-    readinessBody: 'Không tải được điều kiện xuất bản. Hãy thử lại.',
-    retry: 'Thử lại',
-    notFoundTitle: 'Không tìm thấy sản phẩm',
-    notFoundBody: 'Sản phẩm này không tồn tại hoặc đã bị xoá khỏi danh sách.',
-    unavailableTitle: 'Chưa tải được sản phẩm',
-    unavailableBody: 'Không tải được thông tin sản phẩm. Hãy thử lại.',
+    readinessTitle: productPublicationMessage.text('failure.readinessTitle'),
+    readinessBody: productPublicationMessage.text('failure.readinessBody'),
+    retry: productPublicationMessage.text('failure.retry'),
+    notFoundTitle: productPublicationMessage.text('failure.notFoundTitle'),
+    notFoundBody: productPublicationMessage.text('failure.notFoundBody'),
+    unavailableTitle: productPublicationMessage.text('failure.unavailableTitle'),
+    unavailableBody: productPublicationMessage.text('failure.unavailableBody'),
     /**
      * The two snapshots disagree about status or token. Mutations are disabled
      * until they agree again — acting on a mixed snapshot is how a command gets
      * sent with a token that belongs to a state the operator never saw.
      */
-    mismatchTitle: 'Thông tin đang được cập nhật',
-    mismatchBody: 'Trạng thái sản phẩm vừa thay đổi. Hãy tải lại để tiếp tục.',
-    mismatchRetry: 'Tải lại',
+    mismatchTitle: productPublicationMessage.text('failure.mismatchTitle'),
+    mismatchBody: productPublicationMessage.text('failure.mismatchBody'),
+    mismatchRetry: productPublicationMessage.text('failure.mismatchRetry'),
   },
 
   /**
@@ -171,20 +197,20 @@ export const PRODUCT_PUBLICATION_COPY = {
    */
   commandFailure: {
     'not-ready': {
-      title: 'Chưa đủ điều kiện xuất bản',
-      body: 'Một số điều kiện không còn được đáp ứng. Danh sách bên dưới đã được cập nhật.',
+      title: productPublicationMessage.text('commandFailure.not-ready.title'),
+      body: productPublicationMessage.text('commandFailure.not-ready.body'),
     },
     'publish-not-allowed': {
-      title: 'Chưa thể xuất bản',
-      body: 'Trạng thái sản phẩm vừa thay đổi nên không thể xuất bản. Hãy kiểm tra lại trạng thái hiện tại.',
+      title: productPublicationMessage.text('commandFailure.publish-not-allowed.title'),
+      body: productPublicationMessage.text('commandFailure.publish-not-allowed.body'),
     },
     'unpublish-not-allowed': {
-      title: 'Chưa thể gỡ xuất bản',
-      body: 'Trạng thái sản phẩm vừa thay đổi nên không thể gỡ xuất bản. Hãy kiểm tra lại trạng thái hiện tại.',
+      title: productPublicationMessage.text('commandFailure.unpublish-not-allowed.title'),
+      body: productPublicationMessage.text('commandFailure.unpublish-not-allowed.body'),
     },
     generic: {
-      title: 'Thao tác chưa hoàn tất',
-      body: 'Chưa thực hiện được thao tác này. Hãy thử lại.',
+      title: productPublicationMessage.text('commandFailure.generic.title'),
+      body: productPublicationMessage.text('commandFailure.generic.body'),
     },
   },
 } as const;

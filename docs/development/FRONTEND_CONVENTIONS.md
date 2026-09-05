@@ -299,9 +299,48 @@ General discipline (applies within the SCSS system):
 
 Do not scatter user-facing copy through components.
 
-Use feature-local message catalogs or a future localization system.
+**Every human-facing static sentence lives in the canonical Vietnamese message
+repository**, `packages/i18n/messages/vi/*.json` (`@embroidery/i18n`), and
+nowhere else. This supersedes the earlier "feature-local message catalog" rule:
+the catalogs still exist, and still carry the *shape* of a feature's copy and
+the reasoning for each key, but the sentence itself is a key they resolve.
 
-Extract:
+```ts
+// apps/storefront/src/features/homepage/model/homepage-copy.ts
+const homepageMessage = messageView(VI_MESSAGES.storefront, 'homepage');
+
+export const HOMEPAGE_COPY = {
+  hero: {
+    heading: homepageMessage.text('hero.heading'),
+  },
+} as const;
+```
+
+Rules:
+
+- Keys are **semantic and stable** (`checkout.delivery.requiredNote`), never the
+  Vietnamese sentence itself and never generated.
+- A sentence with a value in it is **one message with a placeholder**
+  (`"{count} đơn hàng"`), never two Vietnamese fragments joined in code.
+- **Dynamic data stays dynamic.** Product names, category names, customer and
+  order data, money, dates and merchant configuration are read from the API and
+  never copied into the repository.
+- **Machine values stay in code.** Route paths, slugs, enum values, operation
+  ids, CSS class names, test ids and MIME types are not copy. A map from an enum
+  value to a *message key* may live in code; the human label may not.
+- Accessible names — `aria-label`, `alt`, `title`, `placeholder` and
+  visually-hidden text — are copy, and are **not** exempt for being invisible.
+- Two gates enforce this and both must pass:
+  `node tools/check-i18n-static-text.mjs` and
+  `node tools/check-i18n-message-keys.mjs`
+  (`CMD-CHECK-I18N-STATIC-TEXT`, `CMD-CHECK-I18N-MESSAGE-KEYS`).
+
+The locale is `vi` and there is no switcher, no `/vi` route prefix and no
+browser negotiation; `LOCALE_POLICY` in `@embroidery/i18n` declares this and the
+package's tests assert it. Instants are printed through
+`formatDisplayInstant` — one format, both applications.
+
+Also extract:
 
 - Business labels.
 - Status labels.

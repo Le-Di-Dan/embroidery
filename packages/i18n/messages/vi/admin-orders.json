@@ -1,0 +1,597 @@
+{
+  "queue": {
+    "page": {
+      "breadcrumb": "Quản trị / Đơn hàng",
+      "title": "Đơn hàng",
+      "subtitle": "Đơn hàng đã tạo từ thiết kế được duyệt, mới nhất trước.",
+      "tableLabel": "Danh sách đơn hàng"
+    },
+    "columns": {
+      "origin": "Nguồn",
+      "status": "Trạng thái",
+      "total": "Tổng tiền",
+      "currency": "Tiền tệ",
+      "createdAt": "Ngày tạo",
+      "request": "Yêu cầu",
+      "customer": "Khách hàng",
+      "code": "Mã đơn hàng"
+    },
+    "filters": {
+      "legend": "Trạng thái",
+      "originLegend": "Nguồn đơn",
+      "all": "Tất cả",
+      "selected": "{count} đã chọn",
+      "reset": "Bỏ lọc",
+      "scope": "Bộ lọc khả dụng: trạng thái và nguồn đơn. Không có tìm kiếm, khoảng ngày hay bộ lọc bằng chứng."
+    },
+    "actions": {
+      "openOrder": "Mở đơn hàng",
+      "openRequest": "Mở yêu cầu",
+      "noRequest": "—",
+      "loadMore": "Tải thêm đơn hàng",
+      "loadingMore": "Đang tải…",
+      "retry": "Thử lại"
+    },
+    "states": {
+      "loading": "Đang tải danh sách đơn hàng…",
+      "appended": "Đã tải thêm đơn hàng.",
+      "emptyTitle": "Chưa có đơn hàng nào",
+      "emptyBody": "Đơn hàng xuất hiện ở đây sau khi khách duyệt thiết kế và báo giá được chấp nhận.",
+      "filteredEmptyTitle": "Không có đơn hàng nào khớp bộ lọc",
+      "filteredEmptyBody": "Thử bỏ bớt trạng thái hoặc nguồn đơn đã chọn.",
+      "errorTitle": "Không tải được danh sách đơn hàng",
+      "errorBody": "Kết nối tới máy chủ đang gặp sự cố. Thử lại sau ít phút.",
+      "cursorErrorTitle": "Không tải tiếp được trang này",
+      "cursorErrorBody": "Danh sách cần được tải lại từ đầu.",
+      "loadMoreFailed": "Không tải thêm được. Các đơn hàng đã tải vẫn còn nguyên.",
+      "pagination": "Phân trang bằng con trỏ — không có số trang và không có tổng số bản ghi."
+    }
+  },
+  "detail": {
+    "page": {
+      "breadcrumb": "Quản trị / Đơn hàng",
+      "backToQueue": "Danh sách đơn hàng",
+      "openRequest": "Mở yêu cầu →",
+      "orderTotal": "Tổng đơn"
+    },
+    "sections": {
+      "frozenFacts": "Dữ kiện đơn hàng — đông cứng",
+      "frozenFactsHelp": "Toàn bộ giá trị dưới đây là ảnh chụp tại thời điểm tạo đơn. Màn hình không đọc lại Catalog, nên Catalog thay đổi về sau không làm đổi đơn hàng này.",
+      "items": "Dòng hàng (OrderItem) — đông cứng",
+      "itemsHelp": "Loại dòng hàng quyết định trường nào tồn tại. Không bịa SKU, biến thể hay kích cỡ cho hàng khách tự gửi.",
+      "deposit": "Tiền cọc (DEPOSIT)",
+      "depositHelp": "Nguồn sự thật duy nhất của bảng này là dữ liệu thanh toán của đơn hàng.",
+      "attempts": "Các lần thanh toán",
+      "attemptsHelp": "Lần thanh toán đã kết thúc không bao giờ được đặt lại — thử lại sẽ sinh lần thanh toán mới.",
+      "evidence": "Ảnh giao dịch khách gửi",
+      "evidenceHelp": "Chỉ là tài liệu hỗ trợ đối chiếu. Không bao giờ là căn cứ xác nhận thanh toán.",
+      "actions": "Hành động đối chiếu",
+      "history": "Lịch sử đối chiếu",
+      "historyHelp": "Chỉ dựng từ các bản ghi đối chiếu của đơn hàng. Không hiển thị dữ liệu kiểm toán, hàng đợi sự kiện hay siêu dữ liệu lưu trữ."
+    },
+    "fields": {
+      "status": "Trạng thái",
+      "total": "Tổng tiền",
+      "createdAt": "Tạo lúc",
+      "updatedAt": "Cập nhật lúc",
+      "request": "Yêu cầu gốc",
+      "customer": "Khách hàng",
+      "acceptedQuotationVersion": "Báo giá đã chấp nhận",
+      "approvalSnapshot": "Ảnh duyệt thiết kế",
+      "code": "Mã đơn hàng"
+    },
+    "items": {
+      "position": "#",
+      "product": "Sản phẩm",
+      "kind": "Loại",
+      "size": "Kích cỡ",
+      "quantity": "SL",
+      "unitPrice": "Đơn giá",
+      "lineTotal": "Thành tiền",
+      "catalog": "Catalog",
+      "customerOwned": "Khách gửi",
+      "absent": "—",
+      "absentNote": "không có",
+      "customerOwnedNote": "Sản phẩm của khách · không có SKU",
+      "skuPrefix": "SKU",
+      "stockLink": "Xem tồn kho",
+      "variantPrefix": "biến thể",
+      "sizeNote": "Kích cỡ chỉ hiển thị khi đơn hàng đã đông cứng một nhãn kích cỡ. Khi vắng mặt, ô hiển thị “không có” — không dựng nhãn giả từ biến thể hay từ Catalog hiện tại."
+    },
+    "deposit": {
+      "expectedHeading": "GIÁ TRỊ KỲ VỌNG — hệ thống sinh ra, không sửa được",
+      "expectedAmount": "Số tiền cọc kỳ vọng",
+      "expectedReference": "Nội dung CK kỳ vọng",
+      "expectedNote": "Nội dung kỳ vọng dẫn xuất từ mã đơn hàng và không lưu ở đâu cả — nên không gì có thể mâu thuẫn với nó.",
+      "obligationPrefix": "Nghĩa vụ",
+      "orderPrefix": "Đơn",
+      "satisfiedAt": "Thu đủ lúc",
+      "satisfiedBy": "Lần thanh toán đã thu đủ"
+    },
+    "attempts": {
+      "amount": "Số tiền",
+      "createdAt": "Tạo lúc",
+      "updatedAt": "Cập nhật lúc",
+      "expiresAt": "Hết hạn lúc",
+      "succeededAt": "Thành công lúc",
+      "failedAt": "Thất bại lúc",
+      "reviewReason": "Lý do đối chiếu",
+      "empty": "Chưa có lần thanh toán nào cho đơn hàng này.",
+      "pendingNote": "Chờ đối chiếu chỉ có nghĩa “đã sinh hướng dẫn chuyển khoản”. Nó KHÔNG có nghĩa khách đã chuyển tiền — hệ thống không có cách nào biết điều đó."
+    },
+    "evidence": {
+      "countLabel": "{count} ảnh",
+      "readOnly": "Chỉ đọc — Admin không xoá, không thay, không sắp xếp lại ảnh.",
+      "empty": "Khách chưa gửi ảnh giao dịch",
+      "emptyBody": "Đây là trạng thái bình thường, không phải lỗi. Bạn vẫn xác nhận được tiền cọc mà không cần ảnh — căn cứ là số tiền thực nhận trong tài khoản ngân hàng.",
+      "preview": "Xem ảnh",
+      "previewChecking": "Đang kiểm tra",
+      "previewBlocked": "Không xem được",
+      "authorityNote": "Chỉ ảnh đã được tiếp nhận mới xem được. Ảnh đang kiểm tra và ảnh không hợp lệ đều tắt nút xem, và không trạng thái nào nói lên điều gì về việc thanh toán thành hay bại.",
+      "rejectedNote": "Ảnh bị từ chối vẫn nằm lại trong lịch sử và KHÔNG có nghĩa là thanh toán thất bại. Nhân viên vẫn xác nhận được tiền cọc bằng sao kê ngân hàng.",
+      "dialogTitle": "Ảnh giao dịch",
+      "dialogClose": "Đóng",
+      "previousImage": "Ảnh trước",
+      "nextImage": "Ảnh sau",
+      "metadataSubmittedAt": "Gửi lúc",
+      "metadataMediaType": "Định dạng",
+      "metadataByteSize": "Dung lượng",
+      "imageAlt": "Ảnh giao dịch khách gửi số {position}",
+      "loading": "Đang tải ảnh…",
+      "unavailable": "Ảnh không còn xem được. Danh sách đã được tải lại.",
+      "temporary": "Tạm thời chưa lấy được ảnh. Thử lại sau ít phút.",
+      "retry": "Thử lại"
+    },
+    "actions": {
+      "verify": "Xác nhận đã nhận tiền cọc",
+      "review": "Đưa vào cần đối chiếu",
+      "reopenVerify": "Mở lại xác nhận tiền cọc",
+      "reviewAgain": "Đưa vào đối chiếu lần nữa",
+      "note": "Xác nhận ghi nhận số tiền thực nhận; đưa vào đối chiếu treo giao dịch để đối soát. Không có ô “ảnh chứng minh đã thanh toán”: ảnh không phải căn cứ.",
+      "settledNote": "Tiền cọc của đơn hàng này đã được xác nhận. Không còn hành động đối chiếu nào ở đây.",
+      "dismiss": "Huỷ",
+      "close": "Đóng",
+      "viewHistory": "Xem lịch sử đối chiếu"
+    },
+    "verify": {
+      "title": "Xác nhận đã nhận tiền cọc",
+      "help": "So khớp thủ công giữa giá trị hệ thống kỳ vọng và số tiền thực sự về tài khoản. Ảnh giao dịch không phải căn cứ.",
+      "expectedBadge": "KỲ VỌNG",
+      "expectedBadgeNote": "hệ thống sinh ra · chỉ đọc",
+      "observedBadge": "QUAN SÁT ĐƯỢC",
+      "observedBadgeNote": "nhân viên tự nhập từ sao kê ngân hàng",
+      "amountLabel": "Số tiền thực nhận",
+      "amountPlaceholder": "ví dụ 5100000",
+      "amountHelp": "Chỉ chữ số, tối đa 12 chữ số nguyên và 2 chữ số thập phân.",
+      "referenceLabel": "Nội dung/ghi chú chuyển khoản thực nhận",
+      "referencePlaceholder": "chép đúng nội dung hiện trong sao kê",
+      "referenceHelp": "Chuỗi tự do. Không ép chữ hoa, không bỏ dấu câu, không cắt ngắn — giá trị gửi đi đúng như bạn gõ.",
+      "noteLabel": "Ghi chú của nhân viên",
+      "notePlaceholder": "mô tả ngắn căn cứ đối chiếu",
+      "noteHelp": "Bắt buộc, tối đa 2000 ký tự.",
+      "required": "* bắt buộc",
+      "prefillWarning": "Các ô “quan sát được” cố ý để trống. Không tự điền sẵn giá trị kỳ vọng vào đây — nếu điền sẵn, nhân viên chỉ còn xác nhận lại kỳ vọng của hệ thống thay vì chép lại thứ ngân hàng thực sự ghi nhận.",
+      "submitting": "Đang gửi…"
+    },
+    "review": {
+      "title": "Đưa vào cần đối chiếu",
+      "help": "Dùng khi cần treo giao dịch để đối soát mà chưa xác nhận. Bản thân hành động này đã mang nghĩa cần đối chiếu — người gọi không chọn trạng thái.",
+      "reasonLabel": "Lý do đưa vào đối chiếu",
+      "reasonHelp": "Bắt buộc, tối đa 2000 ký tự.",
+      "optional": "· không bắt buộc",
+      "amountLabel": "Số tiền quan sát được",
+      "amountPlaceholder": "để trống nếu chưa thấy giao dịch nào",
+      "referenceLabel": "Nội dung CK quan sát được",
+      "referencePlaceholder": "để trống nếu chưa thấy giao dịch nào",
+      "optionalNote": "Bỏ trống hai ô dưới sẽ không ghi lại gì cả, thay vì ghi một con số bịa ra."
+    },
+    "comparison": {
+      "heading": "ĐỐI CHIẾU KỲ VỌNG VÀ QUAN SÁT ĐƯỢC",
+      "expected": "Kỳ vọng",
+      "observed": "Quan sát được",
+      "amountRow": "Số tiền",
+      "referenceRow": "Nội dung CK",
+      "serverJudged": "Việc khớp hay không khớp do máy chủ quyết định, không do màn hình này so sánh. Bảng trên chỉ đặt cạnh nhau hai giá trị đã gửi đi."
+    },
+    "outcome": {
+      "heading": "TRẠNG THÁI SAU KHI GHI NHẬN",
+      "attempt": "Lần thanh toán",
+      "obligation": "Nghĩa vụ tiền cọc",
+      "order": "Đơn hàng",
+      "successBadge": "THÀNH CÔNG",
+      "successTitle": "Đã xác nhận tiền cọc",
+      "successBody": "Ghi nhận thành công. Trang đã tải lại trạng thái hiện hành của đơn hàng.",
+      "successNote": "Không có hành động sản xuất, giữ tồn kho hay giao hàng ở đây. Những việc đó thuộc giai đoạn sau và chưa tồn tại.",
+      "reviewBadge": "CẦN ĐỐI CHIẾU",
+      "reviewTitle": "Đã chuyển giao dịch sang cần đối chiếu",
+      "reviewBody": "Máy chủ đã ghi nhận thành công. Đây là một kết quả nghiệp vụ, KHÔNG phải lỗi hệ thống và không phải “xác nhận thất bại”.",
+      "reviewNote": "Đây là một chuyển trạng thái bền vững, đã ghi vào lịch sử đối chiếu — không phải thông báo lỗi biểu mẫu. Sau khi đối soát xong, dùng lại chính hành động Xác nhận để giải quyết.",
+      "replayed": "Lần gửi trước đã được ghi nhận; lần này không ghi thêm gì.",
+      "reviewRecordedTitle": "Đã treo giao dịch để đối chiếu",
+      "reviewRecordedBody": "Lý do đã được ghi vào lịch sử đối chiếu. Tiền cọc và đơn hàng không đổi.",
+      "otherTitle": "Máy chủ đã ghi nhận thao tác",
+      "otherBody": "Trạng thái hiện hành của đơn hàng đã được tải lại và hiển thị bên dưới."
+    },
+    "requiresReview": {
+      "title": "Giao dịch đang chờ đối soát",
+      "body": "Trạng thái bền vững. Giải quyết bằng chính hành động Xác nhận — hệ thống không có thao tác “giải quyết đối chiếu” riêng.",
+      "resolveNote": "Khi đã đối soát xong, mở lại đúng biểu mẫu Xác nhận, nhập số tiền và nội dung thực nhận, rồi xác nhận."
+    },
+    "ambiguity": {
+      "badge": "PHẢN HỒI KHÔNG CHẮC CHẮN",
+      "title": "Không nhận được phản hồi cuối cùng",
+      "body": "Máy chủ có thể đã ghi nhận thành công rồi mới mất kết nối. Không thể kết luận là thất bại.",
+      "checking": "Đang kiểm tra lại trạng thái giao dịch…",
+      "unchangedTitle": "Trạng thái giao dịch chưa đổi",
+      "unchangedBody": "Lần gửi trước có thể chưa tới máy chủ. Kiểm tra lại số liệu rồi gửi lại đúng giá trị đó nếu bạn vẫn muốn xác nhận."
+    },
+    "stale": {
+      "badge": "XUNG ĐỘT ĐỒNG THỜI",
+      "title": "Một nhân viên khác đã xử lý trước",
+      "checking": "Giao dịch này vừa được cập nhật ở nơi khác. Đang tải lại trạng thái mới nhất…",
+      "body": "Trạng thái hiện hành đã được tải lại. Hãy thao tác trên dữ liệu vừa tải, không dùng lại dữ liệu cũ."
+    },
+    "history": {
+      "at": "Thời điểm",
+      "action": "Hành động",
+      "result": "Kết quả",
+      "amount": "Số tiền quan sát",
+      "admin": "Nhân viên",
+      "reason": "Lý do",
+      "bankReference": "Nội dung CK quan sát",
+      "empty": "Chưa có bản ghi đối chiếu nào cho đơn hàng này.",
+      "absent": "—",
+      "reveal": "Xem đầy đủ",
+      "hide": "Thu gọn"
+    },
+    "validation": {
+      "heading": "Vui lòng kiểm tra lại các ô được đánh dấu.",
+      "required": "Ô này là bắt buộc.",
+      "amountShape": "Chỉ nhập chữ số, tối đa 12 chữ số nguyên và 2 chữ số thập phân.",
+      "tooLong": "Tối đa 2000 ký tự."
+    },
+    "failure": {
+      "detailMissingTitle": "Không mở được đơn hàng",
+      "detailMissingBody": "Đơn hàng này không tồn tại hoặc không còn xem được.",
+      "detailRetryTitle": "Không tải được đơn hàng",
+      "detailRetryBody": "Kết nối tới máy chủ đang gặp sự cố. Thử lại sau ít phút.",
+      "unauthenticated": "Phiên đăng nhập đã hết hạn. Đăng nhập lại để tiếp tục.",
+      "retry": "Thử lại",
+      "loading": "Đang tải đơn hàng…",
+      "decisionInvalidTitle": "Máy chủ từ chối dữ liệu vừa nhập",
+      "decisionInvalidBody": "Kiểm tra lại số tiền và nội dung chuyển khoản rồi gửi lại.",
+      "decisionMissingTitle": "Không thao tác được trên lần thanh toán này",
+      "decisionMissingBody": "Lần thanh toán không còn khả dụng. Trạng thái hiện hành đã được tải lại.",
+      "decisionRetryTitle": "Không gửi được",
+      "decisionRetryBody": "Kết nối tới máy chủ đang gặp sự cố."
+    }
+  },
+  "readyMadeDetail": {
+    "frozen": {
+      "heading": "Thông tin đã chốt",
+      "help": "Ảnh chụp tại thời điểm tạo đơn. Sửa Catalog sau đó không làm thay đổi đơn này.",
+      "origin": "Nguồn đơn",
+      "customer": "Khách hàng",
+      "contact": "Liên hệ",
+      "address": "Địa chỉ nhận hàng",
+      "createdAt": "Tạo lúc",
+      "paymentDeadline": "Giữ hàng đến",
+      "paymentDeadlineAbsent": "Không còn giữ hàng",
+      "omitted": "Không hiển thị: yêu cầu thêu riêng · báo giá đã chấp nhận · bản thiết kế đã duyệt · lệnh sản xuất.",
+      "totalUnknown": "Tổng đơn hàng chưa xác định",
+      "code": "Mã đơn"
+    },
+    "items": {
+      "heading": "Sản phẩm",
+      "product": "Sản phẩm",
+      "sku": "SKU",
+      "quantity": "SL",
+      "unitPrice": "Đơn giá",
+      "help": "Ảnh chụp tại thời điểm tạo đơn. Sửa Catalog sau đó không làm thay đổi đơn này (BR-021)."
+    },
+    "shipping": {
+      "heading": "Phí giao hàng",
+      "help": "Xưởng tự nhập. Không có tính tự động, không có báo giá hãng vận chuyển.",
+      "feeLabel": "Phí giao hàng (VND)",
+      "feePlaceholder": "35000",
+      "requiredLabel": "Bắt buộc",
+      "feeHelp": "Nhập số tiền đúng như sẽ thu. Để trống nghĩa là chưa báo phí; nhập 0 nghĩa là miễn phí giao hàng.",
+      "merchandise": "Tiền hàng (đã chốt)",
+      "payable": "Tổng khách phải trả",
+      "payableUnknown": "Chưa xác định",
+      "confirm": "Xác nhận phí và mở thanh toán",
+      "confirmNote": "Xác nhận sẽ đóng băng tiền hàng, phí và tổng phải trả, tạo nghĩa vụ thanh toán FULL, đặt lại hạn giữ hàng thành 24 giờ và gửi khách liên kết thanh toán.",
+      "correct": "Cập nhật phí",
+      "correctWarning": "Cập nhật phí sẽ thay thế nghĩa vụ thanh toán hiện tại bằng một nghĩa vụ mới. Liên kết thanh toán cũ không còn dùng được và khách cần dùng liên kết mới.",
+      "saving": "Đang lưu…",
+      "frozenHeading": "Phí đã chốt",
+      "refusedTitle": "Không thể sửa phí",
+      "refusedBody": "Nghĩa vụ FULL đã được thanh toán. Mọi điều chỉnh thương mại phải đi qua quy trình huỷ/hoàn tiền.",
+      "pendingNote": "Khi FULL còn PENDING, sửa phí sẽ thay thế nghĩa vụ hiện tại bằng nghĩa vụ kế nhiệm và đơn vẫn ở AWAITING_PAYMENT."
+    },
+    "payment": {
+      "heading": "Thanh toán",
+      "note": "Ready-Made dùng đúng một nghĩa vụ FULL. Không có DEPOSIT/REMAINING và không có tỷ lệ 40/60 (BR-029).",
+      "emptyBody": "Chưa có nghĩa vụ thanh toán. Nghĩa vụ FULL được tạo khi bạn xác nhận phí giao hàng.",
+      "amount": "Số tiền phải trả",
+      "status": "Trạng thái nghĩa vụ",
+      "reference": "Nội dung chuyển khoản",
+      "attemptHeading": "Lần thanh toán hiện tại",
+      "attemptStatus": "Trạng thái",
+      "attemptAmount": "Số tiền",
+      "evidence": "Ảnh khách gửi",
+      "evidenceCount": "{count} ảnh",
+      "noAttempt": "Khách chưa bắt đầu chuyển khoản.",
+      "evidenceNote": "Ảnh chuyển khoản là tài liệu hỗ trợ. Ảnh được duyệt không có nghĩa là tiền đã về.",
+      "verify": "Đối chiếu và xác nhận",
+      "settled": "Đã xác nhận thanh toán"
+    },
+    "fulfillment": {
+      "heading": "Giao hàng",
+      "lockedHelp": "Mở sau khi thanh toán FULL được xác nhận. Đơn bán sẵn không tạo lệnh sản xuất (BR-030)."
+    },
+    "failure": {
+      "loading": "Đang tải thông tin thanh toán…",
+      "unavailableTitle": "Không tải được thông tin thanh toán",
+      "unavailableBody": "Kết nối tới máy chủ đang gặp sự cố. Thử lại sau ít phút.",
+      "retry": "Thử lại",
+      "saveFailed": "Không lưu được. Kiểm tra lại và thử một lần nữa.",
+      "stale": "Đơn hàng đã thay đổi. Màn hình đã được tải lại theo trạng thái mới nhất."
+    }
+  },
+  "fulfillment": {
+    "finalPayment": {
+      "title": "Thanh toán còn lại",
+      "readyHelp": "Sản xuất đã xong. Bước tiếp theo là mở kỳ thanh toán còn lại để khách nhận được hướng dẫn chuyển khoản.",
+      "openAction": "Yêu cầu thanh toán phần còn lại",
+      "openNote": "Mở kỳ thanh toán không tạo ra nghĩa vụ mới — nghĩa vụ đã tồn tại từ khi đơn được tạo.",
+      "awaitingBadge": "Trạng thái thanh toán: Chờ thu",
+      "awaitingHelp": "Kỳ thanh toán còn lại đã mở. Khách đã nhận được hướng dẫn chuyển khoản trên trang bảo mật của họ."
+    },
+    "openDialog": {
+      "title": "Yêu cầu thanh toán phần còn lại?",
+      "body": "Đơn hàng sẽ chuyển sang AWAITING_FINAL_PAYMENT. Khách sẽ thấy số tiền còn lại và hướng dẫn chuyển khoản trên trang thanh toán bảo mật của họ.",
+      "effectLabel": "Trạng thái sau khi xác nhận",
+      "effectValue": "AWAITING_FINAL_PAYMENT",
+      "effectNote": "Không sinh nghĩa vụ mới, không gửi thông báo tự động, không thu tiền.",
+      "confirm": "Xác nhận mở thanh toán",
+      "cancel": "Huỷ",
+      "pending": "Đang mở kỳ thanh toán…"
+    },
+    "apiGap": {
+      "title": "GIỚI HẠN API ĐÃ BIẾT",
+      "body": "Hiện không có endpoint quản trị nào chiếu nghĩa vụ còn lại: không đọc được số tiền còn lại, danh sách lần chuyển khoản, ảnh giao dịch hay lịch sử đối chiếu của nó. Vì vậy màn hình không suy ra số còn lại bằng \"tổng đơn trừ tiền cọc\": một lần tăng phí vận chuyển sẽ thay thế nghĩa vụ và làm phép trừ đó sai."
+    },
+    "verification": {
+      "title": "Xác nhận đã nhận tiền",
+      "help": "Căn cứ duy nhất là số tiền thực nhận trong tài khoản ngân hàng. Không có webhook, không có cổng thanh toán, không có đối chiếu ngân hàng tự động.",
+      "unavailable": "Chưa thể mở thao tác xác nhận từ màn hình này: cả xác nhận lẫn đưa vào đối chiếu đều cần mã lần chuyển khoản của khoản còn lại, mà không endpoint quản trị nào đang trả về. Xem giới hạn API ở trên."
+    },
+    "shipping": {
+      "title": "Thông tin giao hàng",
+      "editableBadge": "Có thể sửa",
+      "frozenBadge": "Đã đóng băng",
+      "editableHelp": "Sửa được cho tới khi bấm giao hàng. Sau khi giao, toàn bộ khối này bị đóng băng và chuyển sang chỉ đọc — không có nút đóng băng riêng.",
+      "frozenHelp": "Ảnh chụp tại thời điểm giao hàng. Chỉ đọc.",
+      "requiredNote": "Người nhận, số điện thoại, địa chỉ, tỉnh/thành và phí là bắt buộc; phường/xã, quận/huyện, đơn vị vận chuyển và mã vận đơn là tuỳ chọn.",
+      "save": "Lưu thông tin giao hàng",
+      "reset": "Hoàn tác thay đổi",
+      "saving": "Đang lưu…",
+      "saved": "Đã lưu thông tin giao hàng.",
+      "missing": "Đơn này chưa có thông tin giao hàng. Nhập đầy đủ các trường bắt buộc rồi lưu để tạo.",
+      "noTracking": "Đơn vị vận chuyển và mã vận đơn ở đây là ghi chú nội bộ. Không có tra cứu hành trình, không có trạng thái từ đơn vị vận chuyển."
+    },
+    "shippingFields": {
+      "recipientName": "Người nhận",
+      "recipientPhone": "Số điện thoại",
+      "addressLine": "Địa chỉ",
+      "ward": "Phường/Xã",
+      "district": "Quận/Huyện",
+      "province": "Tỉnh/Thành",
+      "feeAmount": "Phí vận chuyển (VND)",
+      "carrierName": "Đơn vị vận chuyển",
+      "trackingCode": "Mã vận đơn",
+      "frozenAt": "Đóng băng lúc"
+    },
+    "shippingFee": {
+      "title": "Phí vận chuyển",
+      "currentLabel": "Phí hiện tại",
+      "ruleTitle": "QUY TẮC TĂNG PHÍ",
+      "ruleBody": "Giảm phí hoặc giữ nguyên: lưu được ngay. Tăng phí: chỉ lưu được khi khách đã xác nhận đúng mức phí mới. Quản trị viên không thể xác nhận thay khách.",
+      "unsetValue": "Chưa đặt"
+    },
+    "feeRefusal": {
+      "title": "Không thể áp dụng phí vận chuyển mới",
+      "body": "Khách hàng chưa xác nhận mức phí này.",
+      "acknowledgedLabel": "Phí đang áp dụng",
+      "attemptedLabel": "Phí bạn vừa nhập",
+      "nothingWritten": "Phần còn lại của thông tin giao hàng đã không được lưu. Không có thay đổi nào được ghi.",
+      "remedy": "Cách xử lý: giữ mức phí đang áp dụng, hoặc liên hệ khách để họ xác nhận mức phí mới rồi lưu lại. Việc gửi đề nghị phí mới cho khách chưa thuộc phạm vi giai đoạn này.",
+      "noOverrideTitle": "CỐ Ý KHÔNG CÓ",
+      "noOverrideBody": "Không có nút xác nhận thay khách, không có ô tự nhập mức khách đồng ý, không hiển thị mã xác thực hay mã phiên của khách. Sự đồng ý của khách chỉ có thể do chính khách tạo ra.",
+      "restore": "Khôi phục mức phí đã lưu"
+    },
+    "dispatch": {
+      "title": "Giao hàng",
+      "help": "Đánh dấu đơn đã giao cho khách. Thông tin giao hàng sẽ bị đóng băng và chụp lại.",
+      "action": "Đánh dấu đã giao",
+      "blockedNote": "Tạm khoá vì đang có thay đổi phí chưa lưu được. Máy chủ vẫn kiểm tra lại điều kiện khi bấm.",
+      "dialogTitle": "Đánh dấu đơn hàng đã giao?",
+      "dialogBody": "Xác nhận rằng đơn hàng đã được giao cho khách. Đây là ghi nhận của cửa hàng, không phải xác nhận từ đơn vị vận chuyển.",
+      "freezeTitle": "Thông tin giao hàng sẽ bị đóng băng vĩnh viễn",
+      "freezeBody": "Sau bước này, người nhận, số điện thoại, địa chỉ, phí vận chuyển, đơn vị vận chuyển và mã vận đơn không thể sửa được nữa. Hệ thống chụp lại toàn bộ giá trị tại thời điểm giao. Hãy kiểm tra kỹ trước khi xác nhận.",
+      "snapshotTitle": "SẼ ĐƯỢC CHỤP LẠI",
+      "confirm": "Xác nhận đã giao",
+      "cancel": "Huỷ",
+      "pending": "Đang ghi nhận đã giao…"
+    },
+    "completion": {
+      "title": "Hoàn tất đơn hàng",
+      "help": "Khép lại đơn hàng sau khi đã giao và không còn việc gì phải xử lý. Đây là hành động riêng, cố ý tách khỏi bước giao hàng.",
+      "action": "Hoàn tất đơn hàng",
+      "deliveredAtLabel": "Đã giao lúc",
+      "dialogTitle": "Hoàn tất đơn hàng này?",
+      "dialogBody": "Đơn hàng sẽ chuyển sang COMPLETED. Đây là trạng thái cuối của vòng đời đơn hàng.",
+      "effectLabel": "Trạng thái sau khi xác nhận",
+      "effectValue": "COMPLETED",
+      "effectNote": "Sau khi hoàn tất, giao diện quản trị không còn thao tác nào trên đơn này: không mở lại, không giao lại, không hoàn tất lần nữa, không sửa giao hàng.",
+      "confirm": "Xác nhận hoàn tất",
+      "cancel": "Huỷ",
+      "pending": "Đang hoàn tất…"
+    },
+    "completed": {
+      "title": "Đơn hàng đã hoàn tất",
+      "noActionsTitle": "KHÔNG CÒN THAO TÁC NÀO",
+      "noActions": [
+        "Không mở lại đơn",
+        "Không hoàn tiền",
+        "Không huỷ đơn",
+        "Không sửa thông tin giao hàng",
+        "Không giao lại",
+        "Không hoàn tất lần nữa"
+      ],
+      "deferred": "Hoàn tiền và huỷ đơn không thuộc phạm vi giai đoạn này và chưa có bề mặt quản trị nào."
+    },
+    "payment": {
+      "title": "Thanh toán",
+      "depositSettled": "Tiền cọc: Đã thu",
+      "remainingSettled": "Còn lại: Đã thu",
+      "settledNote": "Đơn đã đi qua chốt chặn thanh toán khi giao hàng, nên tại đây khoản phải thu chắc chắn đã được xác nhận."
+    },
+    "locked": {
+      "title": "Chưa khả dụng ở bước này",
+      "shipping": "Thông tin giao hàng",
+      "shippingWhy": "Chỉ mở khi đơn sang READY_FOR_DELIVERY",
+      "dispatch": "Giao hàng",
+      "dispatchWhy": "Cần thanh toán còn lại được xác nhận trước",
+      "completion": "Hoàn tất đơn",
+      "completionWhy": "Chỉ có sau khi đã giao"
+    },
+    "refusal": {
+      "transitionStale": "Trạng thái nguồn đã đổi. Mời tải lại trang; màn hình không tự đoán và không tự thử lại.",
+      "shippingMissing": "Đơn này chưa có thông tin giao hàng để đọc.",
+      "shippingIncomplete": "Thiếu trường bắt buộc. Người nhận, số điện thoại, địa chỉ, tỉnh/thành và phí là bắt buộc.",
+      "shippingFrozen": "Đơn đã giao nên thông tin giao hàng không sửa được nữa. Tải lại để thấy bản đã đóng băng.",
+      "feeChangeUnavailable": "Khoản còn lại của đơn đã được thu xong, nên phí vận chuyển không đổi được nữa.",
+      "feeNotApplicable": "Mức phí này không để lại một khoản phải thu hợp lệ trên đơn.",
+      "remainingMissing": "Đơn này không có khoản phải thu đang hoạt động để tính lại.",
+      "dispatchPaymentGuard": "Đơn vẫn còn khoản phải thu chưa được xác nhận — thường do phí vận chuyển tăng sau khi khách đã trả. Trạng thái đơn không phải bằng chứng đã thu đủ.",
+      "dispatchShippingNotReady": "Thông tin giao hàng chưa đủ để giao. Kiểm tra lại các trường bắt buộc rồi lưu trước khi giao.",
+      "dispatchInvalid": "Đơn không ở trạng thái có thể giao. Mời tải lại trang; màn hình không âm thầm giao lần thứ hai.",
+      "completionInvalid": "Chỉ đơn đã giao mới hoàn tất được. Mời tải lại trang.",
+      "notFound": "Không tìm thấy đơn hàng này, hoặc bạn không có quyền với nó.",
+      "unauthenticated": "Phiên đăng nhập đã hết hạn. Đăng nhập lại rồi thử lại.",
+      "generic": "Không thực hiện được. Dữ liệu bạn vừa nhập vẫn được giữ nguyên; thử lại sau ít phút."
+    },
+    "failure": {
+      "loading": "Đang tải…",
+      "retry": "Thử lại"
+    }
+  },
+  "statusLabels": {
+    "AWAITING_DEPOSIT": {
+      "label": "Chờ đặt cọc"
+    },
+    "DEPOSIT_PAID": {
+      "label": "Đã xác nhận cọc"
+    },
+    "IN_PRODUCTION": {
+      "label": "Đang sản xuất"
+    },
+    "PRODUCTION_COMPLETED": {
+      "label": "Sản xuất xong"
+    },
+    "AWAITING_FINAL_PAYMENT": {
+      "label": "Chờ thanh toán cuối"
+    },
+    "AWAITING_SHIPPING_FEE": {
+      "label": "Chờ báo phí"
+    },
+    "AWAITING_PAYMENT": {
+      "label": "Chờ thanh toán"
+    },
+    "READY_FOR_DELIVERY": {
+      "label": "Sẵn sàng giao"
+    },
+    "DELIVERED": {
+      "label": "Đã giao"
+    },
+    "COMPLETED": {
+      "label": "Hoàn tất"
+    },
+    "ON_HOLD": {
+      "label": "Tạm giữ"
+    },
+    "CANCELLING": {
+      "label": "Đang huỷ"
+    },
+    "CANCELLED": {
+      "label": "Đã huỷ"
+    }
+  },
+  "originLabels": {
+    "READY_MADE": {
+      "label": "Bán sẵn"
+    },
+    "CUSTOM": {
+      "label": "Thêu riêng"
+    }
+  },
+  "paymentVocabulary": {
+    "obligation": {
+      "PENDING": {
+        "label": "Chưa thu"
+      },
+      "SATISFIED": {
+        "label": "Đã thu đủ"
+      },
+      "CANCELLED": {
+        "label": "Đã huỷ"
+      },
+      "SUPERSEDED": {
+        "label": "Đã thay thế"
+      }
+    },
+    "attempt": {
+      "PENDING": {
+        "label": "chờ đối chiếu"
+      },
+      "REQUIRES_REVIEW": {
+        "label": "cần đối chiếu"
+      },
+      "SUCCEEDED": {
+        "label": "thành công"
+      },
+      "FAILED": {
+        "label": "thất bại"
+      },
+      "EXPIRED": {
+        "label": "hết hạn"
+      },
+      "PROCESSING": {
+        "label": "đang xử lý"
+      },
+      "REFUNDED": {
+        "label": "đã hoàn tiền"
+      },
+      "PARTIALLY_REFUNDED": {
+        "label": "đã hoàn một phần"
+      }
+    },
+    "evidence": {
+      "UPLOADED": {
+        "label": "Đang kiểm tra"
+      },
+      "INSPECTING": {
+        "label": "Đang kiểm tra"
+      },
+      "ACCEPTED": {
+        "label": "Đã tiếp nhận"
+      },
+      "REJECTED": {
+        "label": "Không hợp lệ"
+      }
+    },
+    "unknownLabel": "Không xác định"
+  }
+}

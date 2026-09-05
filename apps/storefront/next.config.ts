@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import path from 'node:path';
 
+import createNextIntlPlugin from 'next-intl/plugin';
 import type { NextConfig } from 'next';
 
 // The shared Sass foundation is consumed by its public package name
@@ -49,11 +50,31 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '../../'),
   // Workspace packages are consumed as TypeScript source (just-in-time packages).
-  transpilePackages: ['@embroidery/api-client', '@embroidery/contracts', '@embroidery/ui'],
+  transpilePackages: [
+    '@embroidery/api-client',
+    '@embroidery/contracts',
+    '@embroidery/i18n',
+    '@embroidery/ui',
+  ],
   allowedDevOrigins: [devOrigin],
   sassOptions: {
     loadPaths: [stylesLoadPath],
   },
 };
 
-export default nextConfig;
+/**
+ * The canonical Vietnamese message repository is wired here (`APP12-V02` §5A.9).
+ *
+ * `next-intl/plugin` takes the path of this application’s request-configuration
+ * module and makes it resolvable to the framework’s server and client runtimes.
+ * It is the whole of the integration: the module it points at decides nothing on
+ * its own and defers to `@embroidery/i18n`, so both applications resolve one
+ * locale, one message tree and one set of date formats.
+ *
+ * No locale route segment is introduced by this. next-intl supports a routed
+ * `[locale]` tree and the plugin does not require one; Wave 1 declares
+ * `LOCALE_POLICY.routePrefix = false` and the route tree is unchanged.
+ */
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
+
+export default withNextIntl(nextConfig);

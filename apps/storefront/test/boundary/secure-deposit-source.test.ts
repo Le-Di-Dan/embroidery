@@ -15,6 +15,8 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { SECURE_DEPOSIT_COPY } from '../../src/features/secure-deposit-payment/model/secure-deposit-copy';
+
 const FEATURE = join(__dirname, '..', '..', 'src', 'features', 'secure-deposit-payment');
 const ROUTE = join(__dirname, '..', '..', 'src', 'app', 'truy-cap', 'thanh-toan', 'page.tsx');
 
@@ -260,20 +262,20 @@ describe('APP7-S01 — nothing outside the checkpoint is rendered or reachable',
   });
 
   it('mentions "tôi đã chuyển khoản" only to say the button does not exist', () => {
-    const copy = readFileSync(join(FEATURE, 'model', 'secure-deposit-copy.ts'), 'utf8');
-    const mentions = (
-      stripped(copy)
-        .toLowerCase()
-        .match(/tôi đã chuyển khoản/g) ?? []
-    ).length;
+    // Read from the canonical Vietnamese message repository rather than from
+    // the catalog's source. `APP12-V02` §5A moved every sentence into
+    // `packages/i18n/messages/vi/custom.json`; the catalog now holds keys, so
+    // scanning it for this phrase would find nothing and the test would pass
+    // for the wrong reason. The claim itself is unchanged — and it is now made
+    // against the text that actually ships.
+    const sentences = JSON.stringify(SECURE_DEPOSIT_COPY).toLowerCase();
+    const mentions = (sentences.match(/tôi đã chuyển khoản/g) ?? []).length;
     // Exactly one, and it is the approved sentence explaining why there is no
     // such control — `745:391`. A second would almost certainly be a label.
     expect(mentions).toBe(1);
-    expect(
-      readFileSync(join(FEATURE, 'model', 'secure-deposit-copy.ts'), 'utf8').includes(
-        'Trang này không có nút “Tôi đã chuyển khoản”',
-      ),
-    ).toBe(true);
+    expect(JSON.stringify(SECURE_DEPOSIT_COPY)).toContain(
+      'Trang này không có nút “Tôi đã chuyển khoản”',
+    );
   });
 
   it('never navigates out of the secure session', () => {

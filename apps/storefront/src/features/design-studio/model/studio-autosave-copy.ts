@@ -25,31 +25,43 @@
  * design behind it is not reachable, and the expiry copy says so plainly instead
  * of offering a retry that could only fail.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/studio.json`, under `autosave`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const autosaveMessage = messageView(VI_MESSAGES.studio, 'autosave');
+
 export const STUDIO_SAVE_COPY = {
   /** The topbar chip. One word for each state the customer can be in. */
-  chipLabel: 'Trạng thái lưu',
-  chipSaved: 'Đã lưu',
-  chipSavedAtPrefix: 'lúc',
-  chipSaving: 'Đang lưu…',
-  chipDirty: 'Chưa lưu',
-  chipOffline: 'Mất kết nối',
-  chipConflict: 'Xung đột',
-  chipFailed: 'Lưu thất bại',
+  chipLabel: autosaveMessage.text('chipLabel'),
+  chipSaved: autosaveMessage.text('chipSaved'),
+  chipSavedAtPrefix: autosaveMessage.text('chipSavedAtPrefix'),
+  chipSaving: autosaveMessage.text('chipSaving'),
+  chipDirty: autosaveMessage.text('chipDirty'),
+  chipOffline: autosaveMessage.text('chipOffline'),
+  chipConflict: autosaveMessage.text('chipConflict'),
+  chipFailed: autosaveMessage.text('chipFailed'),
 
   /** `610:3` — saved. */
-  savedHeading: 'Mọi thay đổi đã được lưu',
-  savedBody: 'Bản thiết kế được lưu tự động vào phiên làm việc ẩn danh. Không cần tài khoản.',
+  savedHeading: autosaveMessage.text('savedHeading'),
+  savedBody: autosaveMessage.text('savedBody'),
 
   /** `610:41` — saving. Editing is explicitly not blocked. */
-  savingHeading: 'Đang lưu thay đổi…',
-  savingBody: 'Thao tác vẫn tiếp tục được trong lúc lưu. Không chặn thao tác của khách hàng.',
+  savingHeading: autosaveMessage.text('savingHeading'),
+  savingBody: autosaveMessage.text('savingBody'),
 
   /** `610:77` — failed or offline. */
-  offlineHeading: 'Không lưu được — mất kết nối',
-  offlineBody: 'Thay đổi của bạn vẫn còn trên màn hình nhưng chưa tới máy chủ. Đừng đóng tab.',
-  offlineNote: 'Hệ thống sẽ tự thử lại; bạn cũng có thể bấm thử lại.',
-  offlineRetry: 'Thử lưu lại',
-  offlineDismiss: 'Tiếp tục thiết kế',
+  offlineHeading: autosaveMessage.text('offlineHeading'),
+  offlineBody: autosaveMessage.text('offlineBody'),
+  offlineNote: autosaveMessage.text('offlineNote'),
+  offlineRetry: autosaveMessage.text('offlineRetry'),
+  offlineDismiss: autosaveMessage.text('offlineDismiss'),
 
   /**
    * A save the server refused for a reason that is not the network.
@@ -60,15 +72,14 @@ export const STUDIO_SAVE_COPY = {
    * still here, the tab must stay open, retry and dismiss — with the cause left
    * unnamed rather than named wrongly. No status code, no envelope code.
    */
-  failedHeading: 'Chưa lưu được thay đổi',
-  failedBody: 'Thay đổi của bạn vẫn còn trên màn hình nhưng máy chủ chưa nhận. Đừng đóng tab.',
+  failedHeading: autosaveMessage.text('failedHeading'),
+  failedBody: autosaveMessage.text('failedBody'),
 
   /** `610:118` — stale revision. Exactly two choices, and no third. */
-  conflictHeading: 'Bản thiết kế đã được sửa ở nơi khác',
-  conflictBody:
-    'Phiên này được mở ở một tab hoặc thiết bị khác và đã lưu bản mới hơn. Máy chủ không bị ghi đè.',
-  conflictLoadLatest: 'Tải bản mới nhất',
-  conflictKeepLocal: 'Giữ bản trên màn hình',
+  conflictHeading: autosaveMessage.text('conflictHeading'),
+  conflictBody: autosaveMessage.text('conflictBody'),
+  conflictLoadLatest: autosaveMessage.text('conflictLoadLatest'),
+  conflictKeepLocal: autosaveMessage.text('conflictKeepLocal'),
   /**
    * What each choice costs, said before it is made.
    *
@@ -76,23 +87,23 @@ export const STUDIO_SAVE_COPY = {
    * two documents is going to be the one that survives. A customer choosing
    * between them without being told that is not choosing.
    */
-  conflictLoadLatestNote: 'Bản đang mở trên màn hình sẽ được thay bằng bản trên máy chủ.',
-  conflictKeepLocalNote: 'Bản trên màn hình sẽ được lưu đè lên bản mới nhất.',
+  conflictLoadLatestNote: autosaveMessage.text('conflictLoadLatestNote'),
+  conflictKeepLocalNote: autosaveMessage.text('conflictKeepLocalNote'),
 
   /** `610:159` — resume. */
-  resumeHeading: 'Khôi phục phiên',
-  resumeBody: 'Tiếp tục bản thiết kế đang dở?',
-  resumeContinue: 'Tiếp tục',
-  resumeRestart: 'Bắt đầu lại',
-  resuming: 'Đang mở lại phiên…',
-  resumeFailed: 'Chưa thể mở lại phiên thiết kế.',
+  resumeHeading: autosaveMessage.text('resumeHeading'),
+  resumeBody: autosaveMessage.text('resumeBody'),
+  resumeContinue: autosaveMessage.text('resumeContinue'),
+  resumeRestart: autosaveMessage.text('resumeRestart'),
+  resuming: autosaveMessage.text('resuming'),
+  resumeFailed: autosaveMessage.text('resumeFailed'),
 
   /** `610:201` — expired or credential lost. */
-  expiredEyebrow: 'Phiên không còn hiệu lực',
-  expiredHeading: 'Không mở được phiên thiết kế',
-  expiredBody: 'Phiên đã hết hạn hoặc cookie nhận diện không còn trên thiết bị này.',
-  expiredPickTemplate: 'Chọn mẫu khác',
+  expiredEyebrow: autosaveMessage.text('expiredEyebrow'),
+  expiredHeading: autosaveMessage.text('expiredHeading'),
+  expiredBody: autosaveMessage.text('expiredBody'),
+  expiredPickTemplate: autosaveMessage.text('expiredPickTemplate'),
 
   /** The unsaved-work region, named so it can be reached and announced. */
-  stateLabel: 'Trạng thái phiên thiết kế',
+  stateLabel: autosaveMessage.text('stateLabel'),
 } as const;

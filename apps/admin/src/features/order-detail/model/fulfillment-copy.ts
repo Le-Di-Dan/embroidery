@@ -28,27 +28,36 @@
  * backend wording change cannot leak an English stack sentence onto a
  * Vietnamese screen.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin-orders.json`, under `fulfillment`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const fulfillmentMessage = messageView(VI_MESSAGES.adminOrders, 'fulfillment');
+
 export const ORDER_FULFILLMENT_COPY = {
   finalPayment: {
-    title: 'Thanh toán còn lại',
-    readyHelp:
-      'Sản xuất đã xong. Bước tiếp theo là mở kỳ thanh toán còn lại để khách nhận được hướng dẫn chuyển khoản.',
-    openAction: 'Yêu cầu thanh toán phần còn lại',
-    openNote:
-      'Mở kỳ thanh toán không tạo ra nghĩa vụ mới — nghĩa vụ đã tồn tại từ khi đơn được tạo.',
-    awaitingBadge: 'Trạng thái thanh toán: Chờ thu',
-    awaitingHelp:
-      'Kỳ thanh toán còn lại đã mở. Khách đã nhận được hướng dẫn chuyển khoản trên trang bảo mật của họ.',
+    title: fulfillmentMessage.text('finalPayment.title'),
+    readyHelp: fulfillmentMessage.text('finalPayment.readyHelp'),
+    openAction: fulfillmentMessage.text('finalPayment.openAction'),
+    openNote: fulfillmentMessage.text('finalPayment.openNote'),
+    awaitingBadge: fulfillmentMessage.text('finalPayment.awaitingBadge'),
+    awaitingHelp: fulfillmentMessage.text('finalPayment.awaitingHelp'),
   },
   openDialog: {
-    title: 'Yêu cầu thanh toán phần còn lại?',
-    body: 'Đơn hàng sẽ chuyển sang AWAITING_FINAL_PAYMENT. Khách sẽ thấy số tiền còn lại và hướng dẫn chuyển khoản trên trang thanh toán bảo mật của họ.',
-    effectLabel: 'Trạng thái sau khi xác nhận',
-    effectValue: 'AWAITING_FINAL_PAYMENT',
-    effectNote: 'Không sinh nghĩa vụ mới, không gửi thông báo tự động, không thu tiền.',
-    confirm: 'Xác nhận mở thanh toán',
-    cancel: 'Huỷ',
-    pending: 'Đang mở kỳ thanh toán…',
+    title: fulfillmentMessage.text('openDialog.title'),
+    body: fulfillmentMessage.text('openDialog.body'),
+    effectLabel: fulfillmentMessage.text('openDialog.effectLabel'),
+    effectValue: fulfillmentMessage.text('openDialog.effectValue'),
+    effectNote: fulfillmentMessage.text('openDialog.effectNote'),
+    confirm: fulfillmentMessage.text('openDialog.confirm'),
+    cancel: fulfillmentMessage.text('openDialog.cancel'),
+    pending: fulfillmentMessage.text('openDialog.pending'),
   },
   /**
    * The named API gap, drawn rather than hidden (`811:74`).
@@ -60,55 +69,46 @@ export const ORDER_FULFILLMENT_COPY = {
    * supersedes the obligation and falsifies that arithmetic.
    */
   apiGap: {
-    title: 'GIỚI HẠN API ĐÃ BIẾT',
-    body:
-      'Hiện không có endpoint quản trị nào chiếu nghĩa vụ còn lại: không đọc được số tiền còn lại, ' +
-      'danh sách lần chuyển khoản, ảnh giao dịch hay lịch sử đối chiếu của nó. Vì vậy màn hình không ' +
-      'suy ra số còn lại bằng "tổng đơn trừ tiền cọc": một lần tăng phí vận chuyển sẽ thay thế nghĩa ' +
-      'vụ và làm phép trừ đó sai.',
+    title: fulfillmentMessage.text('apiGap.title'),
+    body: fulfillmentMessage.text('apiGap.body'),
   },
   verification: {
-    title: 'Xác nhận đã nhận tiền',
-    help: 'Căn cứ duy nhất là số tiền thực nhận trong tài khoản ngân hàng. Không có webhook, không có cổng thanh toán, không có đối chiếu ngân hàng tự động.',
-    unavailable:
-      'Chưa thể mở thao tác xác nhận từ màn hình này: cả xác nhận lẫn đưa vào đối chiếu đều cần mã lần chuyển khoản của khoản còn lại, mà không endpoint quản trị nào đang trả về. Xem giới hạn API ở trên.',
+    title: fulfillmentMessage.text('verification.title'),
+    help: fulfillmentMessage.text('verification.help'),
+    unavailable: fulfillmentMessage.text('verification.unavailable'),
   },
   shipping: {
-    title: 'Thông tin giao hàng',
-    editableBadge: 'Có thể sửa',
-    frozenBadge: 'Đã đóng băng',
-    editableHelp:
-      'Sửa được cho tới khi bấm giao hàng. Sau khi giao, toàn bộ khối này bị đóng băng và chuyển sang chỉ đọc — không có nút đóng băng riêng.',
-    frozenHelp: 'Ảnh chụp tại thời điểm giao hàng. Chỉ đọc.',
-    requiredNote:
-      'Người nhận, số điện thoại, địa chỉ, tỉnh/thành và phí là bắt buộc; phường/xã, quận/huyện, đơn vị vận chuyển và mã vận đơn là tuỳ chọn.',
-    save: 'Lưu thông tin giao hàng',
-    reset: 'Hoàn tác thay đổi',
-    saving: 'Đang lưu…',
-    saved: 'Đã lưu thông tin giao hàng.',
-    missing: 'Đơn này chưa có thông tin giao hàng. Nhập đầy đủ các trường bắt buộc rồi lưu để tạo.',
-    noTracking:
-      'Đơn vị vận chuyển và mã vận đơn ở đây là ghi chú nội bộ. Không có tra cứu hành trình, không có trạng thái từ đơn vị vận chuyển.',
+    title: fulfillmentMessage.text('shipping.title'),
+    editableBadge: fulfillmentMessage.text('shipping.editableBadge'),
+    frozenBadge: fulfillmentMessage.text('shipping.frozenBadge'),
+    editableHelp: fulfillmentMessage.text('shipping.editableHelp'),
+    frozenHelp: fulfillmentMessage.text('shipping.frozenHelp'),
+    requiredNote: fulfillmentMessage.text('shipping.requiredNote'),
+    save: fulfillmentMessage.text('shipping.save'),
+    reset: fulfillmentMessage.text('shipping.reset'),
+    saving: fulfillmentMessage.text('shipping.saving'),
+    saved: fulfillmentMessage.text('shipping.saved'),
+    missing: fulfillmentMessage.text('shipping.missing'),
+    noTracking: fulfillmentMessage.text('shipping.noTracking'),
   },
   shippingFields: {
-    recipientName: 'Người nhận',
-    recipientPhone: 'Số điện thoại',
-    addressLine: 'Địa chỉ',
-    ward: 'Phường/Xã',
-    district: 'Quận/Huyện',
-    province: 'Tỉnh/Thành',
-    feeAmount: 'Phí vận chuyển (VND)',
-    carrierName: 'Đơn vị vận chuyển',
-    trackingCode: 'Mã vận đơn',
-    frozenAt: 'Đóng băng lúc',
+    recipientName: fulfillmentMessage.text('shippingFields.recipientName'),
+    recipientPhone: fulfillmentMessage.text('shippingFields.recipientPhone'),
+    addressLine: fulfillmentMessage.text('shippingFields.addressLine'),
+    ward: fulfillmentMessage.text('shippingFields.ward'),
+    district: fulfillmentMessage.text('shippingFields.district'),
+    province: fulfillmentMessage.text('shippingFields.province'),
+    feeAmount: fulfillmentMessage.text('shippingFields.feeAmount'),
+    carrierName: fulfillmentMessage.text('shippingFields.carrierName'),
+    trackingCode: fulfillmentMessage.text('shippingFields.trackingCode'),
+    frozenAt: fulfillmentMessage.text('shippingFields.frozenAt'),
   },
   shippingFee: {
-    title: 'Phí vận chuyển',
-    currentLabel: 'Phí hiện tại',
-    ruleTitle: 'QUY TẮC TĂNG PHÍ',
-    ruleBody:
-      'Giảm phí hoặc giữ nguyên: lưu được ngay. Tăng phí: chỉ lưu được khi khách đã xác nhận đúng mức phí mới. Quản trị viên không thể xác nhận thay khách.',
-    unsetValue: 'Chưa đặt',
+    title: fulfillmentMessage.text('shippingFee.title'),
+    currentLabel: fulfillmentMessage.text('shippingFee.currentLabel'),
+    ruleTitle: fulfillmentMessage.text('shippingFee.ruleTitle'),
+    ruleBody: fulfillmentMessage.text('shippingFee.ruleBody'),
+    unsetValue: fulfillmentMessage.text('shippingFee.unsetValue'),
   },
   /**
    * The fee-increase refusal (`812:109`), and the one card in this catalog whose
@@ -122,107 +122,84 @@ export const ORDER_FULFILLMENT_COPY = {
    * operator who has no use for it.
    */
   feeRefusal: {
-    title: 'Không thể áp dụng phí vận chuyển mới',
-    body: 'Khách hàng chưa xác nhận mức phí này.',
-    acknowledgedLabel: 'Phí đang áp dụng',
-    attemptedLabel: 'Phí bạn vừa nhập',
-    nothingWritten:
-      'Phần còn lại của thông tin giao hàng đã không được lưu. Không có thay đổi nào được ghi.',
-    remedy:
-      'Cách xử lý: giữ mức phí đang áp dụng, hoặc liên hệ khách để họ xác nhận mức phí mới rồi lưu lại. Việc gửi đề nghị phí mới cho khách chưa thuộc phạm vi giai đoạn này.',
-    noOverrideTitle: 'CỐ Ý KHÔNG CÓ',
-    noOverrideBody:
-      'Không có nút xác nhận thay khách, không có ô tự nhập mức khách đồng ý, không hiển thị mã xác thực hay mã phiên của khách. Sự đồng ý của khách chỉ có thể do chính khách tạo ra.',
-    restore: 'Khôi phục mức phí đã lưu',
+    title: fulfillmentMessage.text('feeRefusal.title'),
+    body: fulfillmentMessage.text('feeRefusal.body'),
+    acknowledgedLabel: fulfillmentMessage.text('feeRefusal.acknowledgedLabel'),
+    attemptedLabel: fulfillmentMessage.text('feeRefusal.attemptedLabel'),
+    nothingWritten: fulfillmentMessage.text('feeRefusal.nothingWritten'),
+    remedy: fulfillmentMessage.text('feeRefusal.remedy'),
+    noOverrideTitle: fulfillmentMessage.text('feeRefusal.noOverrideTitle'),
+    noOverrideBody: fulfillmentMessage.text('feeRefusal.noOverrideBody'),
+    restore: fulfillmentMessage.text('feeRefusal.restore'),
   },
   dispatch: {
-    title: 'Giao hàng',
-    help: 'Đánh dấu đơn đã giao cho khách. Thông tin giao hàng sẽ bị đóng băng và chụp lại.',
-    action: 'Đánh dấu đã giao',
-    blockedNote:
-      'Tạm khoá vì đang có thay đổi phí chưa lưu được. Máy chủ vẫn kiểm tra lại điều kiện khi bấm.',
-    dialogTitle: 'Đánh dấu đơn hàng đã giao?',
-    dialogBody:
-      'Xác nhận rằng đơn hàng đã được giao cho khách. Đây là ghi nhận của cửa hàng, không phải xác nhận từ đơn vị vận chuyển.',
-    freezeTitle: 'Thông tin giao hàng sẽ bị đóng băng vĩnh viễn',
-    freezeBody:
-      'Sau bước này, người nhận, số điện thoại, địa chỉ, phí vận chuyển, đơn vị vận chuyển và mã vận đơn không thể sửa được nữa. Hệ thống chụp lại toàn bộ giá trị tại thời điểm giao. Hãy kiểm tra kỹ trước khi xác nhận.',
-    snapshotTitle: 'SẼ ĐƯỢC CHỤP LẠI',
-    confirm: 'Xác nhận đã giao',
-    cancel: 'Huỷ',
-    pending: 'Đang ghi nhận đã giao…',
+    title: fulfillmentMessage.text('dispatch.title'),
+    help: fulfillmentMessage.text('dispatch.help'),
+    action: fulfillmentMessage.text('dispatch.action'),
+    blockedNote: fulfillmentMessage.text('dispatch.blockedNote'),
+    dialogTitle: fulfillmentMessage.text('dispatch.dialogTitle'),
+    dialogBody: fulfillmentMessage.text('dispatch.dialogBody'),
+    freezeTitle: fulfillmentMessage.text('dispatch.freezeTitle'),
+    freezeBody: fulfillmentMessage.text('dispatch.freezeBody'),
+    snapshotTitle: fulfillmentMessage.text('dispatch.snapshotTitle'),
+    confirm: fulfillmentMessage.text('dispatch.confirm'),
+    cancel: fulfillmentMessage.text('dispatch.cancel'),
+    pending: fulfillmentMessage.text('dispatch.pending'),
   },
   completion: {
-    title: 'Hoàn tất đơn hàng',
-    help: 'Khép lại đơn hàng sau khi đã giao và không còn việc gì phải xử lý. Đây là hành động riêng, cố ý tách khỏi bước giao hàng.',
-    action: 'Hoàn tất đơn hàng',
-    deliveredAtLabel: 'Đã giao lúc',
-    dialogTitle: 'Hoàn tất đơn hàng này?',
-    dialogBody: 'Đơn hàng sẽ chuyển sang COMPLETED. Đây là trạng thái cuối của vòng đời đơn hàng.',
-    effectLabel: 'Trạng thái sau khi xác nhận',
-    effectValue: 'COMPLETED',
-    effectNote:
-      'Sau khi hoàn tất, giao diện quản trị không còn thao tác nào trên đơn này: không mở lại, không giao lại, không hoàn tất lần nữa, không sửa giao hàng.',
-    confirm: 'Xác nhận hoàn tất',
-    cancel: 'Huỷ',
-    pending: 'Đang hoàn tất…',
+    title: fulfillmentMessage.text('completion.title'),
+    help: fulfillmentMessage.text('completion.help'),
+    action: fulfillmentMessage.text('completion.action'),
+    deliveredAtLabel: fulfillmentMessage.text('completion.deliveredAtLabel'),
+    dialogTitle: fulfillmentMessage.text('completion.dialogTitle'),
+    dialogBody: fulfillmentMessage.text('completion.dialogBody'),
+    effectLabel: fulfillmentMessage.text('completion.effectLabel'),
+    effectValue: fulfillmentMessage.text('completion.effectValue'),
+    effectNote: fulfillmentMessage.text('completion.effectNote'),
+    confirm: fulfillmentMessage.text('completion.confirm'),
+    cancel: fulfillmentMessage.text('completion.cancel'),
+    pending: fulfillmentMessage.text('completion.pending'),
   },
   completed: {
-    title: 'Đơn hàng đã hoàn tất',
-    noActionsTitle: 'KHÔNG CÒN THAO TÁC NÀO',
-    noActions: [
-      'Không mở lại đơn',
-      'Không hoàn tiền',
-      'Không huỷ đơn',
-      'Không sửa thông tin giao hàng',
-      'Không giao lại',
-      'Không hoàn tất lần nữa',
-    ],
-    deferred:
-      'Hoàn tiền và huỷ đơn không thuộc phạm vi giai đoạn này và chưa có bề mặt quản trị nào.',
+    title: fulfillmentMessage.text('completed.title'),
+    noActionsTitle: fulfillmentMessage.text('completed.noActionsTitle'),
+    noActions: fulfillmentMessage.list('completed.noActions'),
+    deferred: fulfillmentMessage.text('completed.deferred'),
   },
   payment: {
-    title: 'Thanh toán',
-    depositSettled: 'Tiền cọc: Đã thu',
-    remainingSettled: 'Còn lại: Đã thu',
-    settledNote:
-      'Đơn đã đi qua chốt chặn thanh toán khi giao hàng, nên tại đây khoản phải thu chắc chắn đã được xác nhận.',
+    title: fulfillmentMessage.text('payment.title'),
+    depositSettled: fulfillmentMessage.text('payment.depositSettled'),
+    remainingSettled: fulfillmentMessage.text('payment.remainingSettled'),
+    settledNote: fulfillmentMessage.text('payment.settledNote'),
   },
   locked: {
-    title: 'Chưa khả dụng ở bước này',
-    shipping: 'Thông tin giao hàng',
-    shippingWhy: 'Chỉ mở khi đơn sang READY_FOR_DELIVERY',
-    dispatch: 'Giao hàng',
-    dispatchWhy: 'Cần thanh toán còn lại được xác nhận trước',
-    completion: 'Hoàn tất đơn',
-    completionWhy: 'Chỉ có sau khi đã giao',
+    title: fulfillmentMessage.text('locked.title'),
+    shipping: fulfillmentMessage.text('locked.shipping'),
+    shippingWhy: fulfillmentMessage.text('locked.shippingWhy'),
+    dispatch: fulfillmentMessage.text('locked.dispatch'),
+    dispatchWhy: fulfillmentMessage.text('locked.dispatchWhy'),
+    completion: fulfillmentMessage.text('locked.completion'),
+    completionWhy: fulfillmentMessage.text('locked.completionWhy'),
   },
   /** One sentence per classified refusal — the `820:47` catalog. */
   refusal: {
-    transitionStale:
-      'Trạng thái nguồn đã đổi. Mời tải lại trang; màn hình không tự đoán và không tự thử lại.',
-    shippingMissing: 'Đơn này chưa có thông tin giao hàng để đọc.',
-    shippingIncomplete:
-      'Thiếu trường bắt buộc. Người nhận, số điện thoại, địa chỉ, tỉnh/thành và phí là bắt buộc.',
-    shippingFrozen:
-      'Đơn đã giao nên thông tin giao hàng không sửa được nữa. Tải lại để thấy bản đã đóng băng.',
-    feeChangeUnavailable:
-      'Khoản còn lại của đơn đã được thu xong, nên phí vận chuyển không đổi được nữa.',
-    feeNotApplicable: 'Mức phí này không để lại một khoản phải thu hợp lệ trên đơn.',
-    remainingMissing: 'Đơn này không có khoản phải thu đang hoạt động để tính lại.',
-    dispatchPaymentGuard:
-      'Đơn vẫn còn khoản phải thu chưa được xác nhận — thường do phí vận chuyển tăng sau khi khách đã trả. Trạng thái đơn không phải bằng chứng đã thu đủ.',
-    dispatchShippingNotReady:
-      'Thông tin giao hàng chưa đủ để giao. Kiểm tra lại các trường bắt buộc rồi lưu trước khi giao.',
-    dispatchInvalid:
-      'Đơn không ở trạng thái có thể giao. Mời tải lại trang; màn hình không âm thầm giao lần thứ hai.',
-    completionInvalid: 'Chỉ đơn đã giao mới hoàn tất được. Mời tải lại trang.',
-    notFound: 'Không tìm thấy đơn hàng này, hoặc bạn không có quyền với nó.',
-    unauthenticated: 'Phiên đăng nhập đã hết hạn. Đăng nhập lại rồi thử lại.',
-    generic: 'Không thực hiện được. Dữ liệu bạn vừa nhập vẫn được giữ nguyên; thử lại sau ít phút.',
+    transitionStale: fulfillmentMessage.text('refusal.transitionStale'),
+    shippingMissing: fulfillmentMessage.text('refusal.shippingMissing'),
+    shippingIncomplete: fulfillmentMessage.text('refusal.shippingIncomplete'),
+    shippingFrozen: fulfillmentMessage.text('refusal.shippingFrozen'),
+    feeChangeUnavailable: fulfillmentMessage.text('refusal.feeChangeUnavailable'),
+    feeNotApplicable: fulfillmentMessage.text('refusal.feeNotApplicable'),
+    remainingMissing: fulfillmentMessage.text('refusal.remainingMissing'),
+    dispatchPaymentGuard: fulfillmentMessage.text('refusal.dispatchPaymentGuard'),
+    dispatchShippingNotReady: fulfillmentMessage.text('refusal.dispatchShippingNotReady'),
+    dispatchInvalid: fulfillmentMessage.text('refusal.dispatchInvalid'),
+    completionInvalid: fulfillmentMessage.text('refusal.completionInvalid'),
+    notFound: fulfillmentMessage.text('refusal.notFound'),
+    unauthenticated: fulfillmentMessage.text('refusal.unauthenticated'),
+    generic: fulfillmentMessage.text('refusal.generic'),
   },
   failure: {
-    loading: 'Đang tải…',
-    retry: 'Thử lại',
+    loading: fulfillmentMessage.text('failure.loading'),
+    retry: fulfillmentMessage.text('failure.retry'),
   },
 } as const;

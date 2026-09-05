@@ -19,135 +19,148 @@
  * choose them — so naming them on screen would offer the operator a choice they
  * do not have.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin.json`, under `galleryMedia`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const galleryMediaMessage = messageView(VI_MESSAGES.admin, 'galleryMedia');
+
 export const GALLERY_MEDIA_COPY = {
   section: {
-    title: 'Ảnh của mục',
+    title: galleryMediaMessage.text('section.title'),
     /** States the two facts that actually change what the operator sees. */
-    help: 'Ảnh đầu tiên là ảnh bìa. Thứ tự bên dưới là thứ tự hiển thị.',
-    empty: 'Chưa có ảnh. Cần ít nhất một ảnh để xuất bản.',
-    listLabel: 'Danh sách ảnh đã chọn',
-    add: 'Chọn ảnh có sẵn',
-    prepare: 'Chuẩn bị ảnh mới',
-    save: 'Lưu danh sách ảnh',
-    saving: 'Đang lưu…',
-    saved: 'Đã lưu danh sách ảnh.',
-    discard: 'Huỷ thay đổi ảnh',
+    help: galleryMediaMessage.text('section.help'),
+    empty: galleryMediaMessage.text('section.empty'),
+    listLabel: galleryMediaMessage.text('section.listLabel'),
+    add: galleryMediaMessage.text('section.add'),
+    prepare: galleryMediaMessage.text('section.prepare'),
+    save: galleryMediaMessage.text('section.save'),
+    saving: galleryMediaMessage.text('section.saving'),
+    saved: galleryMediaMessage.text('section.saved'),
+    discard: galleryMediaMessage.text('section.discard'),
     /** Announced politely after a reorder or a removal. */
-    reordered: 'Đã thay đổi thứ tự ảnh.',
-    removed: 'Đã gỡ ảnh khỏi mục.',
-    added: 'Đã thêm ảnh vào mục.',
-    coverSet: 'Đã đặt làm ảnh bìa.',
+    reordered: galleryMediaMessage.text('section.reordered'),
+    removed: galleryMediaMessage.text('section.removed'),
+    added: galleryMediaMessage.text('section.added'),
+    coverSet: galleryMediaMessage.text('section.coverSet'),
     /** The unsaved-media notice, in the operator's terms. */
-    dirty: 'Danh sách ảnh có thay đổi chưa lưu.',
-    lockedTitle: 'Không thể thay đổi ảnh',
-    lockedBody: 'Mục đã lưu trữ nên danh sách ảnh giữ nguyên.',
+    dirty: galleryMediaMessage.text('section.dirty'),
+    lockedTitle: galleryMediaMessage.text('section.lockedTitle'),
+    lockedBody: galleryMediaMessage.text('section.lockedBody'),
   },
 
   row: {
-    cover: 'Ảnh bìa',
-    position: (index: number) => `Ảnh ${String(index + 1)}`,
-    moveEarlier: 'Di chuyển trước',
-    moveLater: 'Di chuyển sau',
-    setCover: 'Đặt làm ảnh bìa',
-    remove: 'Gỡ ảnh',
+    cover: galleryMediaMessage.text('row.cover'),
+    position: (index: number) => galleryMediaMessage.text('row.position', { position: index + 1 }),
+    moveEarlier: galleryMediaMessage.text('row.moveEarlier'),
+    moveLater: galleryMediaMessage.text('row.moveLater'),
+    setCover: galleryMediaMessage.text('row.setCover'),
+    remove: galleryMediaMessage.text('row.remove'),
     /** The neutral tile while bytes load, and when they cannot be shown. */
-    previewLoading: 'Đang tải ảnh…',
-    previewFailed: 'Không tải được ảnh',
+    previewLoading: galleryMediaMessage.text('row.previewLoading'),
+    previewFailed: galleryMediaMessage.text('row.previewFailed'),
     /** Derived from the entry, never persisted. */
-    alt: (title: string, index: number) => `Ảnh ${String(index + 1)} của mục “${title}”`,
+    alt: (title: string, index: number) =>
+      galleryMediaMessage.text('row.alt', { position: index + 1, title }),
   },
 
   picker: {
-    title: 'Chọn ảnh cho bộ sưu tập',
-    help: 'Chỉ hiện ảnh đã chuẩn bị cho bộ sưu tập. Ảnh đã chọn không hiện lại.',
-    loading: 'Đang tải danh sách ảnh…',
-    emptyTitle: 'Chưa có ảnh nào cho bộ sưu tập',
-    emptyBody: 'Dùng “Chuẩn bị ảnh mới” để tạo ảnh từ ảnh sản phẩm.',
-    unavailableTitle: 'Không thể tải danh sách ảnh',
-    unavailableBody: 'Đã xảy ra lỗi khi tải danh sách.',
-    loadMore: 'Tải thêm',
-    loadingMore: 'Đang tải…',
-    loadMoreFailed: 'Không tải thêm được. Các ảnh đã tải vẫn còn.',
-    retry: 'Thử lại',
-    cancel: 'Huỷ',
-    confirm: 'Thêm vào mục',
-    selectionCount: (count: number) => `Đã chọn ${String(count)} ảnh`,
+    title: galleryMediaMessage.text('picker.title'),
+    help: galleryMediaMessage.text('picker.help'),
+    loading: galleryMediaMessage.text('picker.loading'),
+    emptyTitle: galleryMediaMessage.text('picker.emptyTitle'),
+    emptyBody: galleryMediaMessage.text('picker.emptyBody'),
+    unavailableTitle: galleryMediaMessage.text('picker.unavailableTitle'),
+    unavailableBody: galleryMediaMessage.text('picker.unavailableBody'),
+    loadMore: galleryMediaMessage.text('picker.loadMore'),
+    loadingMore: galleryMediaMessage.text('picker.loadingMore'),
+    loadMoreFailed: galleryMediaMessage.text('picker.loadMoreFailed'),
+    retry: galleryMediaMessage.text('picker.retry'),
+    cancel: galleryMediaMessage.text('picker.cancel'),
+    confirm: galleryMediaMessage.text('picker.confirm'),
+    selectionCount: (count: number) => galleryMediaMessage.text('picker.selectionCount', { count }),
     /** The tile image's accessible name; never rendered as visible prose. */
-    optionAlt: 'Ảnh bộ sưu tập',
+    optionAlt: galleryMediaMessage.text('picker.optionAlt'),
   },
 
   source: {
-    title: 'Chuẩn bị ảnh cho bộ sưu tập',
-    help: 'Chọn một ảnh sản phẩm. Hệ thống tạo bản sao công khai cho bộ sưu tập; ảnh gốc giữ nguyên.',
-    loading: 'Đang tải ảnh sản phẩm…',
-    emptyTitle: 'Chưa có ảnh sản phẩm phù hợp',
-    emptyBody: 'Tải ảnh lên ở mục Tài sản và chờ xử lý xong.',
-    unavailableTitle: 'Không thể tải ảnh sản phẩm',
-    unavailableBody: 'Đã xảy ra lỗi khi tải danh sách.',
-    loadMore: 'Tải thêm',
-    loadingMore: 'Đang tải…',
-    loadMoreFailed: 'Không tải thêm được. Các ảnh đã tải vẫn còn.',
-    retry: 'Thử lại',
-    cancel: 'Huỷ',
-    confirm: 'Chuẩn bị ảnh',
-    preparing: 'Đang chuẩn bị…',
-    prepared: 'Đã chuẩn bị ảnh và thêm vào mục.',
+    title: galleryMediaMessage.text('source.title'),
+    help: galleryMediaMessage.text('source.help'),
+    loading: galleryMediaMessage.text('source.loading'),
+    emptyTitle: galleryMediaMessage.text('source.emptyTitle'),
+    emptyBody: galleryMediaMessage.text('source.emptyBody'),
+    unavailableTitle: galleryMediaMessage.text('source.unavailableTitle'),
+    unavailableBody: galleryMediaMessage.text('source.unavailableBody'),
+    loadMore: galleryMediaMessage.text('source.loadMore'),
+    loadingMore: galleryMediaMessage.text('source.loadingMore'),
+    loadMoreFailed: galleryMediaMessage.text('source.loadMoreFailed'),
+    retry: galleryMediaMessage.text('source.retry'),
+    cancel: galleryMediaMessage.text('source.cancel'),
+    confirm: galleryMediaMessage.text('source.confirm'),
+    preparing: galleryMediaMessage.text('source.preparing'),
+    prepared: galleryMediaMessage.text('source.prepared'),
     /** The tile's accessible name; the visible tile shows `noPreview`. */
-    optionAlt: 'Ảnh sản phẩm',
+    optionAlt: galleryMediaMessage.text('source.optionAlt'),
     /**
      * The visible tile label. Product media has no authenticated delivery
      * route, so there is nothing to render and the tile says so in two words
      * rather than repeating a sentence on every card.
      */
-    noPreview: 'Chưa có xem trước',
+    noPreview: galleryMediaMessage.text('source.noPreview'),
   },
 
   failure: {
     /** Media replacement failures. */
     save: {
       notEligible: {
-        title: 'Không thể lưu danh sách ảnh',
-        body: 'Một ảnh đã chọn không còn dùng được. Hãy gỡ ảnh đó rồi lưu lại.',
+        title: galleryMediaMessage.text('failure.save.notEligible.title'),
+        body: galleryMediaMessage.text('failure.save.notEligible.body'),
       },
       duplicate: {
-        title: 'Không thể lưu danh sách ảnh',
-        body: 'Một ảnh xuất hiện nhiều lần. Hãy gỡ bớt rồi lưu lại.',
+        title: galleryMediaMessage.text('failure.save.duplicate.title'),
+        body: galleryMediaMessage.text('failure.save.duplicate.body'),
       },
       notFound: {
-        title: 'Không thể lưu danh sách ảnh',
-        body: 'Mục này không còn tồn tại. Hãy quay lại danh sách.',
+        title: galleryMediaMessage.text('failure.save.notFound.title'),
+        body: galleryMediaMessage.text('failure.save.notFound.body'),
       },
       unauthenticated: {
-        title: 'Phiên đăng nhập đã hết hạn',
-        body: 'Đăng nhập lại để tiếp tục. Danh sách ảnh vẫn còn.',
+        title: galleryMediaMessage.text('failure.save.unauthenticated.title'),
+        body: galleryMediaMessage.text('failure.save.unauthenticated.body'),
       },
       generic: {
-        title: 'Không thể lưu danh sách ảnh',
-        body: 'Đã xảy ra lỗi. Danh sách ảnh của bạn vẫn còn.',
+        title: galleryMediaMessage.text('failure.save.generic.title'),
+        body: galleryMediaMessage.text('failure.save.generic.body'),
       },
     },
     /** Preparation failures. */
     prepare: {
       /** The exact approved sentence for a stale source. No automatic retry. */
       staleSource: {
-        title: 'Không thể chuẩn bị ảnh',
-        body: 'Nguồn ảnh đã thay đổi. Hãy tải lại danh sách và chọn lại.',
+        title: galleryMediaMessage.text('failure.prepare.staleSource.title'),
+        body: galleryMediaMessage.text('failure.prepare.staleSource.body'),
       },
       notEligible: {
-        title: 'Không thể chuẩn bị ảnh',
-        body: 'Ảnh này không dùng được làm nguồn. Hãy chọn ảnh khác đã xử lý xong.',
+        title: galleryMediaMessage.text('failure.prepare.notEligible.title'),
+        body: galleryMediaMessage.text('failure.prepare.notEligible.body'),
       },
       unavailable: {
-        title: 'Không thể chuẩn bị ảnh',
-        body: 'Kho ảnh tạm thời không sẵn sàng. Chưa có ảnh nào được tạo.',
+        title: galleryMediaMessage.text('failure.prepare.unavailable.title'),
+        body: galleryMediaMessage.text('failure.prepare.unavailable.body'),
       },
       unauthenticated: {
-        title: 'Phiên đăng nhập đã hết hạn',
-        body: 'Đăng nhập lại để tiếp tục.',
+        title: galleryMediaMessage.text('failure.prepare.unauthenticated.title'),
+        body: galleryMediaMessage.text('failure.prepare.unauthenticated.body'),
       },
       generic: {
-        title: 'Không thể chuẩn bị ảnh',
-        body: 'Đã xảy ra lỗi. Chưa có ảnh nào được tạo.',
+        title: galleryMediaMessage.text('failure.prepare.generic.title'),
+        body: galleryMediaMessage.text('failure.prepare.generic.body'),
       },
     },
   },

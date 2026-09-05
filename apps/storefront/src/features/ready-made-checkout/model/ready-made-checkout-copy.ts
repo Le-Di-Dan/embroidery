@@ -51,19 +51,31 @@
  * read (`APP12-D01` §M).
  */
 
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/checkout.json`, under `readyMade`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const readyMadeMessage = messageView(VI_MESSAGES.checkout, 'readyMade');
+
 export const READY_MADE_CHECKOUT_COPY = {
   /** `907:168` / `907:5741` — the page heading, and the document title stem. */
-  pageTitle: 'Xác nhận đơn hàng',
+  pageTitle: readyMadeMessage.text('pageTitle'),
 
   /** `907:172` … `907:181` — the contact card. */
   contact: {
     /** `907:173`. */
-    heading: 'Liên hệ',
+    heading: readyMadeMessage.text('contact.heading'),
     /** `907:178` — why the workshop asks for it. */
-    hint: 'Xưởng dùng thông tin này để gửi liên kết theo dõi đơn hàng.',
+    hint: readyMadeMessage.text('contact.hint'),
     /** `907:180` / `907:181` — the verified affordance. The mark is decorative. */
-    verifiedMark: '✓',
-    verified: 'Đã xác minh',
+    verifiedMark: readyMadeMessage.text('contact.verifiedMark'),
+    verified: readyMadeMessage.text('contact.verified'),
     /**
      * Leaving a verified contact behind.
      *
@@ -73,26 +85,26 @@ export const READY_MADE_CHECKOUT_COPY = {
      * stated action rather than a reload — so the control names the change it
      * performs, in the delivered `APP4` restart voice. → `FU-APP12-S02-03`.
      */
-    change: 'Đổi liên hệ',
-    changeNotice: 'Đổi liên hệ sẽ cần xác minh lại trước khi đặt hàng.',
+    change: readyMadeMessage.text('contact.change'),
+    changeNotice: readyMadeMessage.text('contact.changeNotice'),
   },
 
   /** `907:182` … `907:195` — the delivery card. */
   delivery: {
     /** `907:183` / `909:260`. */
-    heading: 'Giao hàng',
+    heading: readyMadeMessage.text('delivery.heading'),
     /** `907:185`. */
-    recipientNameLabel: 'Người nhận',
+    recipientNameLabel: readyMadeMessage.text('delivery.recipientNameLabel'),
     /** `907:189`. */
-    recipientPhoneLabel: 'Số điện thoại người nhận',
+    recipientPhoneLabel: readyMadeMessage.text('delivery.recipientPhoneLabel'),
     /** `907:193`. */
-    addressLineLabel: 'Địa chỉ nhận hàng',
+    addressLineLabel: readyMadeMessage.text('delivery.addressLineLabel'),
     /**
      * The contracted administrative field the frames do not draw — see the
      * module note. The label is the delivered one from
      * `apps/admin/.../fulfillment-copy.ts`, not a new coinage.
      */
-    provinceLabel: 'Tỉnh/Thành',
+    provinceLabel: readyMadeMessage.text('delivery.provinceLabel'),
   },
 
   /**
@@ -104,61 +116,59 @@ export const READY_MADE_CHECKOUT_COPY = {
    */
   validation: {
     /** `909:265`, the one message the frame spells out. */
-    recipientNameRequired: 'Vui lòng nhập tên người nhận.',
+    recipientNameRequired: readyMadeMessage.text('validation.recipientNameRequired'),
     /**
      * The remaining three, in the same drawn sentence shape: `Vui lòng nhập` +
      * the field's own drawn label, lower-cased as the drawn example is. They are
      * a transcription of one approved pattern applied to the fields it was drawn
      * for, not four new sentences.
      */
-    recipientPhoneRequired: 'Vui lòng nhập số điện thoại người nhận.',
-    addressLineRequired: 'Vui lòng nhập địa chỉ nhận hàng.',
-    provinceRequired: 'Vui lòng nhập tỉnh/thành.',
+    recipientPhoneRequired: readyMadeMessage.text('validation.recipientPhoneRequired'),
+    addressLineRequired: readyMadeMessage.text('validation.addressLineRequired'),
+    provinceRequired: readyMadeMessage.text('validation.provinceRequired'),
     /** Bound to the contact card when no verified contact backs the order yet. */
-    contactUnverified: 'Vui lòng xác minh liên hệ trước khi đặt hàng.',
+    contactUnverified: readyMadeMessage.text('validation.contactUnverified'),
   },
 
   /** `907:200` … `907:207` — the item snapshot. */
   item: {
     /** `907:201`. */
-    heading: 'Sản phẩm',
+    heading: readyMadeMessage.text('item.heading'),
     /** `907:206` — `Trắng · M · SL 1`; the quantity prefix is drawn. */
-    quantityPrefix: 'SL',
-    separator: '·',
+    quantityPrefix: readyMadeMessage.text('item.quantityPrefix'),
+    separator: readyMadeMessage.text('item.separator'),
   },
 
   /** `907:208` … `907:225` — the summary card. */
   summary: {
     /** `907:209`. */
-    heading: 'Tạm tính',
+    heading: readyMadeMessage.text('summary.heading'),
     /** `907:211`. */
-    merchandiseLabel: 'Tiền hàng',
+    merchandiseLabel: readyMadeMessage.text('summary.merchandiseLabel'),
     /** `907:215`. */
-    shippingLabel: 'Phí giao hàng',
+    shippingLabel: readyMadeMessage.text('summary.shippingLabel'),
     /** `907:217` — never a number, and never a zero (`BR-027`). */
-    shippingPending: 'Xưởng xác nhận sau',
+    shippingPending: readyMadeMessage.text('summary.shippingPending'),
     /** `907:220`. */
-    totalLabel: 'Tổng thanh toán',
+    totalLabel: readyMadeMessage.text('summary.totalLabel'),
     /** `907:222` — the total does not exist until an operator sets the fee. */
-    totalPending: 'Có sau khi xác nhận phí',
+    totalPending: readyMadeMessage.text('summary.totalPending'),
     /** `907:224` — the one supporting block `APP12-D01` §M allows here. */
-    notice:
-      'Xưởng xác nhận phí giao hàng rồi gửi bạn liên kết thanh toán. ' +
-      'Không có tổng tiền nào được hiển thị trước bước đó.',
+    notice: readyMadeMessage.text('summary.notice'),
     /** `907:225` — the primary action. */
-    submit: 'Đặt hàng',
+    submit: readyMadeMessage.text('summary.submit'),
     /** `909:271` — the pending variant of the same button. */
-    submitPending: 'Đang gửi…',
+    submitPending: readyMadeMessage.text('summary.submitPending'),
     /** `909:273`. */
-    submitPendingNotice: 'Vui lòng không đóng trang.',
+    submitPendingNotice: readyMadeMessage.text('summary.submitPendingNotice'),
   },
 
   /** `909:274` … `909:281` — creation refused. */
   refusal: {
     /** `909:279`; the mark is decorative and the title carries the meaning. */
-    mark: '✕',
+    mark: readyMadeMessage.text('refusal.mark'),
     /** `909:281` — back to the product, never a silent retry (`909:276`). */
-    back: 'Quay lại sản phẩm',
+    back: readyMadeMessage.text('refusal.back'),
   },
 
   /**
@@ -171,8 +181,8 @@ export const READY_MADE_CHECKOUT_COPY = {
    * → `FU-APP12-S02-03`.
    */
   invalidSelection: {
-    title: 'Chưa xác định được sản phẩm cần mua',
-    body: 'Lựa chọn của bạn không còn hợp lệ. Vui lòng chọn lại trên trang sản phẩm.',
+    title: readyMadeMessage.text('invalidSelection.title'),
+    body: readyMadeMessage.text('invalidSelection.body'),
   },
 
   /**
@@ -182,31 +192,26 @@ export const READY_MADE_CHECKOUT_COPY = {
    */
   success: {
     /** `660:9` — decorative, as it is there. */
-    mark: '✓',
+    mark: readyMadeMessage.text('success.mark'),
     /** The `660:11` shape, said about an order rather than a request. */
-    title: 'Đã tạo đơn hàng của bạn',
+    title: readyMadeMessage.text('success.title'),
     /** `660:12` — the quotable, non-credential reference (`ReadyMadeOrderCreatedResponse.orderCode`). */
-    orderCodeLabel: 'Mã đơn hàng',
+    orderCodeLabel: readyMadeMessage.text('success.orderCodeLabel'),
     /** `660:14`, restated for an order: the code talks, the link opens. */
-    orderCodeNote:
-      'Mã này chỉ để bạn và xưởng nói chuyện về đơn hàng. ' +
-      'Nó không mở được đơn hàng — chỉ liên kết trong tin nhắn mới mở được.',
+    orderCodeNote: readyMadeMessage.text('success.orderCodeNote'),
     /** `660:18`, with the masked contact removed: this screen holds no mask. */
-    secureLinkTitle: 'Chúng tôi đã gửi liên kết theo dõi tới liên hệ bạn đã xác minh',
-    secureLinkBody:
-      'Mở liên kết đó để xem đơn hàng và thanh toán khi xưởng đã xác nhận phí giao hàng.',
+    secureLinkTitle: readyMadeMessage.text('success.secureLinkTitle'),
+    secureLinkBody: readyMadeMessage.text('success.secureLinkBody'),
     /** `660:21` — the same fallback advice, same voice. */
-    secureLinkFallback:
-      'Chưa thấy tin nhắn sau vài phút? Kiểm tra thư rác, hoặc liên hệ xưởng kèm mã đơn hàng ở trên.',
+    secureLinkFallback: readyMadeMessage.text('success.secureLinkFallback'),
     /** The `907:224` rule, restated once the order exists. */
-    shippingPendingNotice:
-      'Xưởng sẽ xác nhận phí giao hàng và gửi liên kết thanh toán. Chưa cần thanh toán lúc này.',
+    shippingPendingNotice: readyMadeMessage.text('success.shippingPendingNotice'),
     /** `ReadyMadeOrderCreatedResponse.merchandiseSubtotal` — the frozen figure. */
-    merchandiseLabel: 'Tiền hàng đã chốt',
+    merchandiseLabel: readyMadeMessage.text('success.merchandiseLabel'),
     /** `ReadyMadeOrderCreatedResponse.reservationExpiresAt`, read and never computed. */
-    reservationLabel: 'Xưởng giữ hàng đến',
+    reservationLabel: readyMadeMessage.text('success.reservationLabel'),
     /** Back to browsing; the secure surface is reached from the message only. */
-    continue: 'Tiếp tục xem sản phẩm',
+    continue: readyMadeMessage.text('success.continue'),
   },
 } as const;
 

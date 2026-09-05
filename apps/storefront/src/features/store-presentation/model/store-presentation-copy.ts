@@ -1,3 +1,5 @@
+import { VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
+import { BRAND_NAME } from '@embroidery/ui';
 import {
   STOREFRONT_CUSTOM_REQUEST_ROUTE,
   STOREFRONT_FAQ_ROUTE,
@@ -7,6 +9,19 @@ import {
   buildStorefrontPolicyPath,
 } from '../../storefront-shell/model/storefront-navigation';
 import { POLICY_IDS, POLICY_SLUG } from '../../content-pages';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/storefront.json`, under `storePresentation`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const storePresentationMessage = messageView(
+  hydrateMessages(VI_MESSAGES.storefront, { brand: BRAND_NAME }),
+  'storePresentation',
+);
 
 /**
  * The footer store-presentation block's content (`APP11-S05`, closing
@@ -50,43 +65,54 @@ import { POLICY_IDS, POLICY_SLUG } from '../../content-pages';
  */
 export const STORE_PRESENTATION_COPY = {
   /** Names the region. The block is a `<section>`, not a second `<footer>`. */
-  regionLabel: 'Thông tin cửa hàng',
+  regionLabel: storePresentationMessage.text('regionLabel'),
   identity: {
-    heading: 'Nét Thêu',
-    descriptor: 'Xưởng thêu cá nhân hóa',
+    heading: storePresentationMessage.text('identity.heading'),
+    descriptor: storePresentationMessage.text('identity.descriptor'),
     /** Rendered only when no store fact is canonical, so the column is never bare. */
-    fallback: 'Thông tin địa chỉ và giờ mở cửa sẽ được cập nhật.',
-    action: 'Ghé xưởng',
+    fallback: storePresentationMessage.text('identity.fallback'),
+    action: storePresentationMessage.text('identity.action'),
     actionHref: STOREFRONT_STORE_ROUTE,
   },
   contact: {
-    heading: 'Liên hệ',
+    heading: storePresentationMessage.text('contact.heading'),
     /**
      * Shown when no phone or e-mail is canonical. It routes the visitor to
      * channels that genuinely exist rather than apologising for the gap, and it
      * describes the dock without duplicating its links.
      */
-    fallback:
-      'Gửi yêu cầu trực tuyến để xưởng báo giá, hoặc nhắn cho xưởng qua các kênh ở góc màn hình.',
-    action: 'Gửi yêu cầu thêu',
+    fallback: storePresentationMessage.text('contact.fallback'),
+    action: storePresentationMessage.text('contact.action'),
     actionHref: STOREFRONT_CUSTOM_REQUEST_ROUTE,
   },
   service: {
-    heading: 'Dịch vụ & hỗ trợ',
+    heading: storePresentationMessage.text('service.heading'),
     links: [
-      { id: 'service', label: 'Dịch vụ thêu', href: STOREFRONT_SERVICE_ROUTE },
-      { id: 'faq', label: 'Câu hỏi thường gặp', href: STOREFRONT_FAQ_ROUTE },
-      { id: 'gallery', label: 'Bộ sưu tập', href: STOREFRONT_GALLERY_ROUTE },
+      {
+        id: 'service',
+        label: storePresentationMessage.text('service.links.0.label'),
+        href: STOREFRONT_SERVICE_ROUTE,
+      },
+      {
+        id: 'faq',
+        label: storePresentationMessage.text('service.links.1.label'),
+        href: STOREFRONT_FAQ_ROUTE,
+      },
+      {
+        id: 'gallery',
+        label: storePresentationMessage.text('service.links.2.label'),
+        href: STOREFRONT_GALLERY_ROUTE,
+      },
     ],
   },
   policies: {
-    heading: 'Chính sách',
+    heading: storePresentationMessage.text('policies.heading'),
     /** Labels for the four canonical policies, keyed by id. */
     labels: {
-      shipping: 'Chính sách giao hàng',
-      payment: 'Chính sách thanh toán',
-      returns: 'Chính sách đổi trả',
-      privacy: 'Chính sách bảo mật',
+      shipping: storePresentationMessage.text('policies.labels.shipping'),
+      payment: storePresentationMessage.text('policies.labels.payment'),
+      returns: storePresentationMessage.text('policies.labels.returns'),
+      privacy: storePresentationMessage.text('policies.labels.privacy'),
     },
   },
 } as const;

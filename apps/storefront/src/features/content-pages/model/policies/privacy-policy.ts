@@ -1,3 +1,5 @@
+import { VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
+import { BRAND_NAME } from '@embroidery/ui';
 import {
   STOREFRONT_FAQ_ROUTE,
   STOREFRONT_SERVICE_ROUTE,
@@ -6,6 +8,19 @@ import {
 } from '../../../storefront-shell/model/storefront-navigation';
 import type { ContentPage } from '../content-page';
 import { POLICY_SLUG } from './policy-slugs';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/content.json`, under `policies.privacy`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const policiesPrivacyMessage = messageView(
+  hydrateMessages(VI_MESSAGES.content, { brand: BRAND_NAME }),
+  'policies.privacy',
+);
 
 /**
  * `/chinh-sach/bao-mat` — the privacy policy (`APP11-S05`).
@@ -46,88 +61,75 @@ import { POLICY_SLUG } from './policy-slugs';
 export const PRIVACY_POLICY: ContentPage = {
   id: 'policy-privacy',
   path: buildStorefrontPolicyPath(POLICY_SLUG.privacy),
-  eyebrow: 'Chính sách',
-  heading: 'Chính sách bảo mật',
-  lead: 'Nét Thêu thu thập những thông tin nào của bạn, dùng vào việc gì, và bạn kiểm soát chúng ra sao.',
-  metaTitle: 'Chính sách bảo mật — Nét Thêu',
-  metaDescription:
-    'Thông tin Nét Thêu thu thập khi bạn gửi yêu cầu thêu, mục đích sử dụng, và cách đường liên kết riêng của bạn được bảo vệ.',
-  trail: { parentLabel: 'Chính sách' },
+  eyebrow: policiesPrivacyMessage.text('eyebrow'),
+  heading: policiesPrivacyMessage.text('heading'),
+  lead: policiesPrivacyMessage.text('lead'),
+  metaTitle: policiesPrivacyMessage.text('metaTitle'),
+  metaDescription: policiesPrivacyMessage.text('metaDescription'),
+  trail: { parentLabel: policiesPrivacyMessage.text('trail.parentLabel') },
   sections: [
     {
       kind: 'prose',
       id: 'what',
-      heading: 'Thông tin Nét Thêu thu thập',
-      paragraphs: [
-        'Xưởng chỉ thu thập những thông tin cần để xử lý yêu cầu của bạn. Tất cả đều do bạn cung cấp trong quá trình đặt thêu.',
-      ],
-      bullets: [
-        'Thông tin liên hệ: email hoặc số điện thoại bạn dùng để xác minh và nhận thông báo, cùng tên bạn cung cấp.',
-        'Nội dung yêu cầu: sản phẩm, biến thể, số lượng, vùng thêu, kích thước, màu sắc mong muốn và ghi chú của bạn.',
-        'Tệp bạn tải lên: hình ảnh thiết kế bạn gửi, và ảnh biên lai chuyển khoản nếu bạn chọn gửi kèm.',
-        'Thông tin đơn hàng: báo giá, các phiên bản thiết kế, khoản thanh toán và thông tin nhận hàng.',
-        'Trao đổi giữa bạn và xưởng trong quá trình xử lý đơn hàng.',
-      ],
+      heading: policiesPrivacyMessage.text('sections.0.heading'),
+      paragraphs: policiesPrivacyMessage.list('sections.0.paragraphs'),
+      bullets: policiesPrivacyMessage.list('sections.0.bullets'),
     },
     {
       kind: 'prose',
       id: 'why',
-      heading: 'Mục đích sử dụng',
-      paragraphs: [
-        'Thông tin của bạn được dùng để thực hiện chính đơn hàng của bạn, và để xưởng liên lạc với bạn về đơn hàng đó.',
-      ],
-      bullets: [
-        'Xác minh rằng người nhận báo giá và bản thiết kế đúng là bạn.',
-        'Dựng bản thêu, báo giá và sản xuất theo đúng yêu cầu bạn gửi.',
-        'Gửi thông báo về các bước trong đơn hàng của bạn.',
-        'Ghi nhận và đối chiếu thanh toán.',
-        'Bàn giao thành phẩm cho bạn.',
-      ],
+      heading: policiesPrivacyMessage.text('sections.1.heading'),
+      paragraphs: policiesPrivacyMessage.list('sections.1.paragraphs'),
+      bullets: policiesPrivacyMessage.list('sections.1.bullets'),
     },
     {
       kind: 'prose',
       id: 'secure-link',
-      heading: 'Đường liên kết riêng của bạn',
-      paragraphs: [
-        'Sau khi bạn xác minh email hoặc số điện thoại, xưởng gửi cho bạn một đường liên kết riêng để xem yêu cầu, báo giá, các phiên bản thiết kế và thực hiện thanh toán.',
-        'Đường liên kết này dành riêng cho bạn, có thời hạn và có thể được thu hồi. Bạn không nên chia sẻ nó cho người khác, vì ai có đường liên kết cũng xem được nội dung đơn hàng của bạn.',
-      ],
+      heading: policiesPrivacyMessage.text('sections.2.heading'),
+      paragraphs: policiesPrivacyMessage.list('sections.2.paragraphs'),
     },
     {
       kind: 'prose',
       id: 'design-files',
-      heading: 'Thiết kế bạn gửi lên',
-      paragraphs: [
-        'Hình ảnh thiết kế bạn tải lên được dùng để thực hiện đơn hàng của bạn. Nét Thêu không đăng công khai thiết kế của khách lên website.',
-        'Những tác phẩm xuất hiện trong bộ sưu tập công khai là do xưởng chủ động chọn và đưa lên; đây là một bước riêng do xưởng thực hiện, không phải hệ quả tự động của việc bạn đặt hàng.',
-      ],
+      heading: policiesPrivacyMessage.text('sections.3.heading'),
+      paragraphs: policiesPrivacyMessage.list('sections.3.paragraphs'),
     },
     {
       kind: 'prose',
       id: 'contact',
-      heading: 'Liên hệ về thông tin của bạn',
-      paragraphs: [
-        'Nếu bạn muốn hỏi, chỉnh sửa hoặc trao đổi về thông tin cá nhân của mình, hãy liên hệ Nét Thêu qua các kênh trên website kèm thông tin đơn hàng của bạn, để xưởng xác định đúng yêu cầu cần xử lý.',
-      ],
+      heading: policiesPrivacyMessage.text('sections.4.heading'),
+      paragraphs: policiesPrivacyMessage.list('sections.4.paragraphs'),
     },
     {
       kind: 'links',
       id: 'privacy-related',
-      heading: 'Liên quan',
+      heading: policiesPrivacyMessage.text('sections.5.heading'),
       links: [
         {
           id: 'policy-payment',
-          label: 'Chính sách thanh toán',
+          label: policiesPrivacyMessage.text('sections.5.links.0.label'),
           href: buildStorefrontPolicyPath(POLICY_SLUG.payment),
         },
         {
           id: 'policy-returns',
-          label: 'Chính sách đổi trả',
+          label: policiesPrivacyMessage.text('sections.5.links.1.label'),
           href: buildStorefrontPolicyPath(POLICY_SLUG.returns),
         },
-        { id: 'service', label: 'Dịch vụ và quy trình', href: STOREFRONT_SERVICE_ROUTE },
-        { id: 'faq', label: 'Câu hỏi thường gặp', href: STOREFRONT_FAQ_ROUTE },
-        { id: 'store', label: 'Ghé xưởng', href: STOREFRONT_STORE_ROUTE },
+        {
+          id: 'service',
+          label: policiesPrivacyMessage.text('sections.5.links.2.label'),
+          href: STOREFRONT_SERVICE_ROUTE,
+        },
+        {
+          id: 'faq',
+          label: policiesPrivacyMessage.text('sections.5.links.3.label'),
+          href: STOREFRONT_FAQ_ROUTE,
+        },
+        {
+          id: 'store',
+          label: policiesPrivacyMessage.text('sections.5.links.4.label'),
+          href: STOREFRONT_STORE_ROUTE,
+        },
       ],
     },
   ],

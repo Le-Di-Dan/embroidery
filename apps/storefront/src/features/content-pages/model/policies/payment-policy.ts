@@ -1,3 +1,5 @@
+import { VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
+import { BRAND_NAME } from '@embroidery/ui';
 import {
   STOREFRONT_CUSTOM_REQUEST_ROUTE,
   STOREFRONT_FAQ_ROUTE,
@@ -6,6 +8,19 @@ import {
 } from '../../../storefront-shell/model/storefront-navigation';
 import type { ContentPage } from '../content-page';
 import { POLICY_SLUG } from './policy-slugs';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/content.json`, under `policies.payment`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const policiesPaymentMessage = messageView(
+  hydrateMessages(VI_MESSAGES.content, { brand: BRAND_NAME }),
+  'policies.payment',
+);
 
 /**
  * `/chinh-sach/thanh-toan` — the payment policy (`APP11-S05`).
@@ -42,82 +57,72 @@ import { POLICY_SLUG } from './policy-slugs';
 export const PAYMENT_POLICY: ContentPage = {
   id: 'policy-payment',
   path: buildStorefrontPolicyPath(POLICY_SLUG.payment),
-  eyebrow: 'Chính sách',
-  heading: 'Chính sách thanh toán',
-  lead: 'Bạn thanh toán khi nào, bằng cách nào, và Nét Thêu xác nhận khoản thanh toán của bạn ra sao.',
-  metaTitle: 'Chính sách thanh toán — Nét Thêu',
-  metaDescription:
-    'Thanh toán tại Nét Thêu: đặt cọc 40% sau khi duyệt thiết kế, 60% còn lại trước khi nhận hàng, chuyển khoản ngân hàng theo đúng số tiền trên báo giá.',
-  trail: { parentLabel: 'Chính sách' },
+  eyebrow: policiesPaymentMessage.text('eyebrow'),
+  heading: policiesPaymentMessage.text('heading'),
+  lead: policiesPaymentMessage.text('lead'),
+  metaTitle: policiesPaymentMessage.text('metaTitle'),
+  metaDescription: policiesPaymentMessage.text('metaDescription'),
+  trail: { parentLabel: policiesPaymentMessage.text('trail.parentLabel') },
   sections: [
     {
       kind: 'prose',
       id: 'when',
-      heading: 'Hai mốc thanh toán',
-      paragraphs: [
-        'Bạn không phải trả tiền để nhận báo giá, và không phải trả trước khi duyệt thiết kế.',
-      ],
-      bullets: [
-        'Đặt cọc 40% giá trị đơn hàng, sau khi bạn đã duyệt bản thêu. Đây là mốc để xưởng vào sản xuất.',
-        'Thanh toán 60% còn lại trước khi xưởng bàn giao thành phẩm.',
-      ],
+      heading: policiesPaymentMessage.text('sections.0.heading'),
+      paragraphs: policiesPaymentMessage.list('sections.0.paragraphs'),
+      bullets: policiesPaymentMessage.list('sections.0.bullets'),
     },
     {
       kind: 'prose',
       id: 'quotation',
-      heading: 'Số tiền bạn thanh toán',
-      paragraphs: [
-        'Mỗi báo giá có bảng chi tiết, tổng tiền, số tiền đặt cọc, số tiền còn lại và thời hạn hiệu lực. Bạn xem toàn bộ trước khi quyết định.',
-        'Mức giá đã báo cho bạn được giữ nguyên; bảng giá thay đổi về sau không làm thay đổi báo giá bạn đang có. Nếu bạn yêu cầu thay đổi làm khác đi phạm vi đã báo giá, xưởng báo lại giá và chờ bạn xác nhận.',
-      ],
+      heading: policiesPaymentMessage.text('sections.1.heading'),
+      paragraphs: policiesPaymentMessage.list('sections.1.paragraphs'),
     },
     {
       kind: 'prose',
       id: 'method',
-      heading: 'Hình thức thanh toán',
-      paragraphs: [
-        'Nét Thêu nhận chuyển khoản ngân hàng. Ở bước thanh toán, xưởng hiển thị mã QR chuyển khoản kèm đúng số tiền của đơn hàng, để bạn không phải tự nhập lại.',
-        'Bạn có thể gửi kèm ảnh chụp biên lai chuyển khoản để xưởng đối chiếu nhanh hơn. Đây là tùy chọn hỗ trợ, không bắt buộc.',
-      ],
+      heading: policiesPaymentMessage.text('sections.2.heading'),
+      paragraphs: policiesPaymentMessage.list('sections.2.paragraphs'),
     },
     {
       kind: 'prose',
       id: 'verification',
-      heading: 'Xác nhận thanh toán',
-      paragraphs: [
-        'Nét Thêu đối chiếu và xác nhận từng khoản thanh toán thủ công. Đơn hàng chỉ được ghi nhận là đã thanh toán sau khi xưởng xác nhận, chứ không phải ngay khi trình duyệt của bạn quay về trang kết quả.',
-        'Vì vậy, giữa lúc bạn chuyển khoản và lúc trạng thái đơn hàng cập nhật có thể có một khoảng chờ. Nếu bạn đã chuyển khoản mà trạng thái chưa đổi sau một thời gian hợp lý, hãy liên hệ xưởng kèm thông tin đơn hàng của bạn.',
-      ],
+      heading: policiesPaymentMessage.text('sections.3.heading'),
+      paragraphs: policiesPaymentMessage.list('sections.3.paragraphs'),
     },
     {
       kind: 'prose',
       id: 'security',
-      heading: 'An toàn khi thanh toán',
-      paragraphs: [
-        'Nét Thêu không yêu cầu bạn cung cấp mật khẩu, mã OTP ngân hàng hay thông tin đăng nhập tài khoản ngân hàng — không qua điện thoại, tin nhắn hay bất kỳ kênh nào.',
-        'Bạn chỉ thanh toán theo thông tin hiển thị trong trang thanh toán của chính đơn hàng bạn, mở từ đường liên kết riêng xưởng đã gửi cho bạn.',
-      ],
+      heading: policiesPaymentMessage.text('sections.4.heading'),
+      paragraphs: policiesPaymentMessage.list('sections.4.paragraphs'),
     },
     {
       kind: 'links',
       id: 'payment-related',
-      heading: 'Liên quan',
+      heading: policiesPaymentMessage.text('sections.5.heading'),
       links: [
         {
           id: 'policy-shipping',
-          label: 'Chính sách giao hàng',
+          label: policiesPaymentMessage.text('sections.5.links.0.label'),
           href: buildStorefrontPolicyPath(POLICY_SLUG.shipping),
         },
         {
           id: 'policy-returns',
-          label: 'Chính sách đổi trả',
+          label: policiesPaymentMessage.text('sections.5.links.1.label'),
           href: buildStorefrontPolicyPath(POLICY_SLUG.returns),
         },
-        { id: 'service', label: 'Dịch vụ và quy trình', href: STOREFRONT_SERVICE_ROUTE },
-        { id: 'faq', label: 'Câu hỏi thường gặp', href: STOREFRONT_FAQ_ROUTE },
+        {
+          id: 'service',
+          label: policiesPaymentMessage.text('sections.5.links.2.label'),
+          href: STOREFRONT_SERVICE_ROUTE,
+        },
+        {
+          id: 'faq',
+          label: policiesPaymentMessage.text('sections.5.links.3.label'),
+          href: STOREFRONT_FAQ_ROUTE,
+        },
         {
           id: 'commission',
-          label: 'Gửi yêu cầu thêu',
+          label: policiesPaymentMessage.text('sections.5.links.4.label'),
           href: STOREFRONT_CUSTOM_REQUEST_ROUTE,
         },
       ],

@@ -13,24 +13,35 @@
  * All user-facing strings live here (FRONTEND_CONVENTIONS §14); no route path,
  * status, or business value is hard-coded in the component.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/storefront.json`, under `notFound`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const notFoundMessage = messageView(VI_MESSAGES.storefront, 'notFound');
+
 export const STOREFRONT_NOT_FOUND_COPY = {
   /** Decorative status code; rendered `aria-hidden` so it is never the a11y title. */
   code: '404',
   /** The single accessible page title (`<h1>`). */
-  heading: 'Không tìm thấy trang',
+  heading: notFoundMessage.text('heading'),
   /**
    * Safe explanation — "có thể" (may) keeps it honest across every 404 cause and
    * avoids asserting deletion. No path, request ID, or diagnostic is echoed.
    */
-  explanation:
-    'Trang bạn tìm có thể đã được di chuyển, đổi đường dẫn hoặc không tồn tại. Hãy quay về trang chủ để tiếp tục khám phá.',
+  explanation: notFoundMessage.text('explanation'),
   /** Primary recovery — links to the canonical home route. */
-  primaryLabel: 'Về trang chủ',
+  primaryLabel: notFoundMessage.text('primaryLabel'),
   /**
    * Secondary recovery label (approved). It links to `/kham-pha` since
    * `APP2-S01` built the Discover area; the `Sắp ra mắt` tag and its
    * screen-reader "chưa khả dụng" suffix were retired with the same change,
    * because an available action must not describe itself as unavailable.
    */
-  secondaryLabel: 'Khám phá tác phẩm',
+  secondaryLabel: notFoundMessage.text('secondaryLabel'),
 } as const;

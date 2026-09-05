@@ -1,3 +1,4 @@
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
 import type { FieldErrorCode, StaffLoginField } from './staff-login-form';
 
 /**
@@ -8,6 +9,26 @@ import type { FieldErrorCode, StaffLoginField } from './staff-login-form';
  */
 import { BRAND_NAME } from '@embroidery/ui';
 
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin.json`, under `loginFieldErrors`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const loginFieldErrorsMessage = messageView(VI_MESSAGES.admin, 'loginFieldErrors');
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin.json`, under `login`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const loginMessage = messageView(VI_MESSAGES.admin, 'login');
+
 export const STAFF_LOGIN_COPY = {
   brand: {
     /**
@@ -17,61 +38,62 @@ export const STAFF_LOGIN_COPY = {
      * mockup's two-line form is taken rather than stacking three.
      */
     title: BRAND_NAME,
-    supporting: 'Quản trị xưởng',
-    footnote: 'Bảng điều hành nội bộ · Chỉ dành cho nhân sự được cấp quyền truy cập.',
+    supporting: loginMessage.text('brand.supporting'),
+    footnote: loginMessage.text('brand.footnote'),
   },
   editorial: {
-    headingLine1: 'Quản trị không gian',
-    headingLine2: 'thêu thủ công.',
-    body: 'Nơi đội ngũ vận hành theo dõi tác phẩm, bộ sưu tập và yêu cầu đặt thêu — tất cả trong một bảng điều hành yên tĩnh, tập trung vào tác phẩm.',
+    headingLine1: loginMessage.text('editorial.headingLine1'),
+    headingLine2: loginMessage.text('editorial.headingLine2'),
+    body: loginMessage.text('editorial.body'),
   },
   form: {
-    title: 'Đăng nhập',
-    subtitle: 'Dành cho quản trị viên được cấp quyền truy cập.',
-    footerHelper:
-      'Chỉ tài khoản quản trị được cấp mới có thể đăng nhập. Mọi lần truy cập đều được ghi nhật ký.',
+    title: loginMessage.text('form.title'),
+    subtitle: loginMessage.text('form.subtitle'),
+    footerHelper: loginMessage.text('form.footerHelper'),
   },
   fields: {
-    email: { label: 'Email', placeholder: 'ban@xuongtheu.vn' },
-    password: { label: 'Mật khẩu' },
+    email: {
+      label: loginMessage.text('fields.email.label'),
+      placeholder: loginMessage.text('fields.email.placeholder'),
+    },
+    password: { label: loginMessage.text('fields.password.label') },
   },
   passwordToggle: {
-    show: 'Hiện',
-    hide: 'Ẩn',
-    showLabel: 'Hiện mật khẩu',
-    hideLabel: 'Ẩn mật khẩu',
+    show: loginMessage.text('passwordToggle.show'),
+    hide: loginMessage.text('passwordToggle.hide'),
+    showLabel: loginMessage.text('passwordToggle.showLabel'),
+    hideLabel: loginMessage.text('passwordToggle.hideLabel'),
   },
   submit: {
-    default: 'Đăng nhập',
-    pending: 'Đang đăng nhập…',
-    rateLimited: 'Thử lại sau ít phút',
+    default: loginMessage.text('submit.default'),
+    pending: loginMessage.text('submit.pending'),
+    rateLimited: loginMessage.text('submit.rateLimited'),
   },
   helper: {
-    pending: 'Đang xác thực thông tin đăng nhập. Vui lòng đợi trong giây lát.',
-    rateLimit: 'Nút đăng nhập sẽ mở lại sau khi hết thời gian chờ. Không cần tải lại trang.',
+    pending: loginMessage.text('helper.pending'),
+    rateLimit: loginMessage.text('helper.rateLimit'),
   },
   alert: {
-    auth: 'Email hoặc mật khẩu không đúng. Vui lòng kiểm tra lại thông tin đăng nhập.',
-    network: 'Hiện chưa thể đăng nhập. Vui lòng thử lại.',
-    unknownField: 'Thông tin đăng nhập không hợp lệ. Vui lòng kiểm tra lại.',
+    auth: loginMessage.text('alert.auth'),
+    network: loginMessage.text('alert.network'),
+    unknownField: loginMessage.text('alert.unknownField'),
   },
   rateLimit: {
-    fallbackDuration: 'ít phút',
-    message: (duration: string): string =>
-      `Bạn đã thử đăng nhập quá nhiều lần. Vì lý do an toàn, vui lòng thử lại sau ${duration}.`,
+    fallbackDuration: loginMessage.text('rateLimit.fallbackDuration'),
+    message: (duration: string): string => loginMessage.text('rateLimit.message', { duration }),
   },
 } as const;
 
 /** Field-error copy keyed by field then backend/client error code. */
 const FIELD_ERROR_COPY: Record<StaffLoginField, Partial<Record<FieldErrorCode, string>>> = {
   email: {
-    REQUIRED: 'Vui lòng nhập email.',
-    INVALID: 'Địa chỉ email không hợp lệ.',
-    TOO_LONG: 'Địa chỉ email quá dài.',
+    REQUIRED: loginFieldErrorsMessage.text('email.REQUIRED'),
+    INVALID: loginFieldErrorsMessage.text('email.INVALID'),
+    TOO_LONG: loginFieldErrorsMessage.text('email.TOO_LONG'),
   },
   password: {
-    REQUIRED: 'Vui lòng nhập mật khẩu.',
-    TOO_LONG: 'Mật khẩu quá dài.',
+    REQUIRED: loginFieldErrorsMessage.text('password.REQUIRED'),
+    TOO_LONG: loginFieldErrorsMessage.text('password.TOO_LONG'),
   },
 };
 
@@ -83,7 +105,7 @@ export function fieldErrorMessage(field: StaffLoginField, code: FieldErrorCode):
 /** Human Vietnamese duration for a Retry-After value in seconds. */
 export function formatRetryDuration(seconds: number): string {
   if (seconds >= 60) {
-    return `khoảng ${Math.ceil(seconds / 60)} phút`;
+    return loginMessage.text('retryAfterMinutes', { minutes: Math.ceil(seconds / 60) });
   }
-  return `${seconds} giây`;
+  return loginMessage.text('retryAfterSeconds', { seconds });
 }

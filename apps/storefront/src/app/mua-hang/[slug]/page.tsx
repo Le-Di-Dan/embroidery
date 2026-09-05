@@ -1,3 +1,4 @@
+import { brandedPageTitle } from '../../../features/storefront-seo';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
@@ -50,7 +51,7 @@ interface CheckoutPageProps {
  * inventory, and this route is in neither. Its absence is structural.
  */
 export const metadata: Metadata = {
-  title: `${READY_MADE_CHECKOUT_COPY.pageTitle} — Nét Thêu`,
+  title: brandedPageTitle(READY_MADE_CHECKOUT_COPY.pageTitle),
   robots: { index: false, follow: false },
 };
 

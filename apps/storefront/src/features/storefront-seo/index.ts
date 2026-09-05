@@ -12,6 +12,7 @@
 export {
   publicPageMetadata,
   publicPageTitle,
+  brandedPageTitle,
   PUBLIC_BRAND_NAME,
   PUBLIC_OG_LOCALE,
 } from './model/public-page-metadata';

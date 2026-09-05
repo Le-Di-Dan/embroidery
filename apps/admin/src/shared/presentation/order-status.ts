@@ -35,7 +35,21 @@
  * state the contract gains later degrades to the neutral fallback rather than
  * putting a raw English enum member on an otherwise Vietnamese page.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
 import type { AdminStatusTone } from '../status/admin-status-badge';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin-orders.json`, under `statusLabels`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const statusLabelsMessage = messageView(VI_MESSAGES.adminOrders, 'statusLabels');
+
+/** The label both applications use for a value the server did not classify. */
+const commonMessage = messageView(VI_MESSAGES.common);
 
 /** The `753:120` symbol vocabulary, fixed for the whole phase. */
 export const STATUS_SYMBOLS = {
@@ -75,23 +89,27 @@ interface StatusStyle {
  */
 const ORDER_STATUS_STYLES: Readonly<Record<string, StatusStyle>> = {
   AWAITING_DEPOSIT: {
-    label: 'Chờ đặt cọc',
+    label: statusLabelsMessage.text('AWAITING_DEPOSIT.label'),
     tone: 'warning',
     symbol: STATUS_SYMBOLS.waiting,
   },
   DEPOSIT_PAID: {
-    label: 'Đã xác nhận cọc',
+    label: statusLabelsMessage.text('DEPOSIT_PAID.label'),
     tone: 'success',
     symbol: STATUS_SYMBOLS.succeeded,
   },
-  IN_PRODUCTION: { label: 'Đang sản xuất', tone: 'info', symbol: STATUS_SYMBOLS.running },
+  IN_PRODUCTION: {
+    label: statusLabelsMessage.text('IN_PRODUCTION.label'),
+    tone: 'info',
+    symbol: STATUS_SYMBOLS.running,
+  },
   PRODUCTION_COMPLETED: {
-    label: 'Sản xuất xong',
+    label: statusLabelsMessage.text('PRODUCTION_COMPLETED.label'),
     tone: 'info',
     symbol: STATUS_SYMBOLS.working,
   },
   AWAITING_FINAL_PAYMENT: {
-    label: 'Chờ thanh toán cuối',
+    label: statusLabelsMessage.text('AWAITING_FINAL_PAYMENT.label'),
     tone: 'warning',
     symbol: STATUS_SYMBOLS.waiting,
   },
@@ -106,29 +124,49 @@ const ORDER_STATUS_STYLES: Readonly<Record<string, StatusStyle>> = {
   // they opened — so the queue's shorter form is the one name, and the longer
   // one reads as an expansion of it rather than a second label.
   AWAITING_SHIPPING_FEE: {
-    label: 'Chờ báo phí',
+    label: statusLabelsMessage.text('AWAITING_SHIPPING_FEE.label'),
     tone: 'warning',
     symbol: STATUS_SYMBOLS.waiting,
   },
   AWAITING_PAYMENT: {
-    label: 'Chờ thanh toán',
+    label: statusLabelsMessage.text('AWAITING_PAYMENT.label'),
     tone: 'warning',
     symbol: STATUS_SYMBOLS.waiting,
   },
   READY_FOR_DELIVERY: {
-    label: 'Sẵn sàng giao',
+    label: statusLabelsMessage.text('READY_FOR_DELIVERY.label'),
     tone: 'info',
     symbol: STATUS_SYMBOLS.running,
   },
-  DELIVERED: { label: 'Đã giao', tone: 'success', symbol: STATUS_SYMBOLS.succeeded },
-  COMPLETED: { label: 'Hoàn tất', tone: 'success', symbol: STATUS_SYMBOLS.succeeded },
-  ON_HOLD: { label: 'Tạm giữ', tone: 'neutral', symbol: STATUS_SYMBOLS.idle },
-  CANCELLING: { label: 'Đang huỷ', tone: 'neutral', symbol: STATUS_SYMBOLS.idle },
-  CANCELLED: { label: 'Đã huỷ', tone: 'neutral', symbol: STATUS_SYMBOLS.idle },
+  DELIVERED: {
+    label: statusLabelsMessage.text('DELIVERED.label'),
+    tone: 'success',
+    symbol: STATUS_SYMBOLS.succeeded,
+  },
+  COMPLETED: {
+    label: statusLabelsMessage.text('COMPLETED.label'),
+    tone: 'success',
+    symbol: STATUS_SYMBOLS.succeeded,
+  },
+  ON_HOLD: {
+    label: statusLabelsMessage.text('ON_HOLD.label'),
+    tone: 'neutral',
+    symbol: STATUS_SYMBOLS.idle,
+  },
+  CANCELLING: {
+    label: statusLabelsMessage.text('CANCELLING.label'),
+    tone: 'neutral',
+    symbol: STATUS_SYMBOLS.idle,
+  },
+  CANCELLED: {
+    label: statusLabelsMessage.text('CANCELLED.label'),
+    tone: 'neutral',
+    symbol: STATUS_SYMBOLS.idle,
+  },
 };
 
 /** The neutral fallback, for a state this build has no approved label for. */
-export const UNKNOWN_ORDER_STATUS_LABEL = 'Không xác định';
+export const UNKNOWN_ORDER_STATUS_LABEL = commonMessage.text('value.unknown');
 
 export function presentOrderStatus(status: unknown): StatusPresentation {
   const style = typeof status === 'string' ? ORDER_STATUS_STYLES[status] : undefined;

@@ -1,3 +1,5 @@
+import { VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
+import { BRAND_NAME } from '@embroidery/ui';
 import {
   STOREFRONT_CUSTOM_REQUEST_ROUTE,
   STOREFRONT_FAQ_ROUTE,
@@ -8,6 +10,16 @@ import {
 } from '../../storefront-shell/model/storefront-navigation';
 import type { ContentPage } from './content-page';
 import { POLICY_SLUG } from './policies/policy-slugs';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/content.json`, under `faq`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const faqMessage = messageView(hydrateMessages(VI_MESSAGES.content, { brand: BRAND_NAME }), 'faq');
 
 /**
  * `/cau-hoi-thuong-gap` — the FAQ page (`APP11-S05`).
@@ -40,126 +52,99 @@ import { POLICY_SLUG } from './policies/policy-slugs';
 export const FAQ_PAGE: ContentPage = {
   id: 'faq',
   path: STOREFRONT_FAQ_ROUTE,
-  eyebrow: 'Hỗ trợ',
-  heading: 'Câu hỏi thường gặp',
-  lead: 'Những câu hỏi khách hàng hay đặt ra trước khi bắt đầu một đơn thêu theo yêu cầu tại Nét Thêu.',
-  metaTitle: 'Câu hỏi thường gặp — Nét Thêu',
-  metaDescription:
-    'Giải đáp về cách gửi yêu cầu thêu, chuẩn bị thiết kế, duyệt bản thêu, đặt cọc, thanh toán và nhận hàng tại Nét Thêu.',
+  eyebrow: faqMessage.text('eyebrow'),
+  heading: faqMessage.text('heading'),
+  lead: faqMessage.text('lead'),
+  metaTitle: faqMessage.text('metaTitle'),
+  metaDescription: faqMessage.text('metaDescription'),
   sections: [
     {
       kind: 'faq',
       id: 'faq-list',
-      heading: 'Giải đáp',
+      heading: faqMessage.text('sections.0.heading'),
       items: [
         {
           id: 'how-to-start',
-          question: 'Tôi bắt đầu một đơn thêu theo yêu cầu như thế nào?',
-          answer: [
-            'Bạn gửi yêu cầu trực tuyến, mô tả sản phẩm muốn thêu, nội dung cần thêu, vùng thêu và kích thước mong muốn, kèm hình ảnh thiết kế của bạn.',
-            'Để xưởng gửi lại báo giá và bản thiết kế cho đúng người, bạn cần xác minh email hoặc số điện thoại. Sau đó xưởng gửi bạn một đường liên kết riêng để theo dõi yêu cầu.',
-          ],
+          question: faqMessage.text('sections.0.items.0.question'),
+          answer: faqMessage.list('sections.0.items.0.answer'),
         },
         {
           id: 'what-to-prepare',
-          question: 'Tôi cần chuẩn bị gì trước khi gửi yêu cầu?',
-          answer: [
-            'Nội dung cần thêu ở chất lượng hình ảnh tốt nhất bạn có, sản phẩm bạn muốn thêu lên, vùng thêu, kích thước mong muốn và số lượng.',
-            'Bạn không cần chuẩn bị file kỹ thuật cho máy thêu. Xưởng dựng bản thêu từ thiết kế bạn gửi.',
-          ],
+          question: faqMessage.text('sections.0.items.1.question'),
+          answer: faqMessage.list('sections.0.items.1.answer'),
         },
         {
           id: 'own-product',
-          question: 'Tôi mang sản phẩm của mình tới thêu được không?',
-          answer: [
-            'Được. Khi gửi yêu cầu, bạn chọn hướng sản phẩm do bạn cung cấp, mô tả sản phẩm và gửi kèm hình ảnh cùng kích thước.',
-            'Xưởng sẽ xem sản phẩm và cho bạn biết vùng thêu nào khả thi trước khi báo giá.',
-          ],
+          question: faqMessage.text('sections.0.items.2.question'),
+          answer: faqMessage.list('sections.0.items.2.answer'),
         },
         {
           id: 'design-review',
-          question: 'Tôi được xem bản thêu trước khi xưởng làm chứ?',
-          answer: [
-            'Có. Xưởng dựng bản thêu và gửi bạn duyệt qua đường liên kết riêng. Xưởng chỉ vào sản xuất sau khi bạn duyệt.',
-            'Bạn có thể yêu cầu chỉnh sửa. Mỗi lần chỉnh sửa tạo một phiên bản mới, nên bạn luôn đối chiếu được với bản trước đó.',
-          ],
+          question: faqMessage.text('sections.0.items.3.question'),
+          answer: faqMessage.list('sections.0.items.3.answer'),
         },
         {
           id: 'quotation',
-          question: 'Báo giá được tính như thế nào?',
-          answer: [
-            'Xưởng báo giá thủ công theo kích thước bản thêu, số màu chỉ, độ phức tạp, số lượng, giá sản phẩm nền nếu bạn mua của xưởng, và phí giao hàng nếu có.',
-            'Báo giá có bảng chi tiết và thời hạn hiệu lực. Mức giá đã báo cho bạn không thay đổi theo bảng giá về sau.',
-          ],
+          question: faqMessage.text('sections.0.items.4.question'),
+          answer: faqMessage.list('sections.0.items.4.answer'),
         },
         {
           id: 'payment',
-          question: 'Tôi thanh toán vào lúc nào?',
-          answer: [
-            'Sau khi bạn duyệt thiết kế, bạn đặt cọc 40% để xưởng vào sản xuất. Phần 60% còn lại thanh toán trước khi nhận hàng.',
-            'Xưởng nhận chuyển khoản ngân hàng. Chi tiết ở trang chính sách thanh toán.',
-          ],
+          question: faqMessage.text('sections.0.items.5.question'),
+          answer: faqMessage.list('sections.0.items.5.answer'),
         },
         {
           id: 'delivery',
-          question: 'Tôi nhận hàng bằng cách nào?',
-          answer: [
-            'Bạn có thể nhận trực tiếp tại xưởng, hoặc để xưởng gửi tới địa chỉ của bạn. Phí giao hàng, nếu có, nằm trong báo giá bạn đã xem.',
-            'Chi tiết ở trang chính sách giao hàng.',
-          ],
+          question: faqMessage.text('sections.0.items.6.question'),
+          answer: faqMessage.list('sections.0.items.6.answer'),
         },
         {
           id: 'revisions',
-          question: 'Tôi được sửa thiết kế bao nhiêu lần?',
-          answer: [
-            'Không có giới hạn cứng về số vòng chỉnh sửa. Xưởng làm việc cùng bạn tới khi bản thêu đúng ý.',
-            'Nếu một thay đổi làm khác đi phạm vi đã báo giá — chẳng hạn đổi kích thước hay tăng số màu — xưởng sẽ báo lại giá trước khi làm tiếp.',
-          ],
+          question: faqMessage.text('sections.0.items.7.question'),
+          answer: faqMessage.list('sections.0.items.7.answer'),
         },
         {
           id: 'see-examples',
-          question: 'Tôi xem tác phẩm xưởng đã làm ở đâu?',
-          answer: [
-            'Bộ sưu tập tập hợp những tác phẩm xưởng đã hoàn thiện, kèm mô tả chất liệu và kỹ thuật.',
-          ],
+          question: faqMessage.text('sections.0.items.8.question'),
+          answer: faqMessage.list('sections.0.items.8.answer'),
         },
       ],
     },
     {
       kind: 'links',
       id: 'faq-next',
-      heading: 'Xem thêm',
+      heading: faqMessage.text('sections.1.heading'),
       links: [
         {
           id: 'service',
-          label: 'Dịch vụ và quy trình',
+          label: faqMessage.text('sections.1.links.0.label'),
           href: STOREFRONT_SERVICE_ROUTE,
-          hint: 'Toàn bộ các bước từ yêu cầu tới thành phẩm.',
+          hint: faqMessage.text('sections.1.links.0.hint'),
         },
         {
           id: 'gallery',
-          label: 'Bộ sưu tập',
+          label: faqMessage.text('sections.1.links.1.label'),
           href: STOREFRONT_GALLERY_ROUTE,
-          hint: 'Tác phẩm xưởng đã hoàn thiện.',
+          hint: faqMessage.text('sections.1.links.1.hint'),
         },
         {
           id: 'commission',
-          label: 'Gửi yêu cầu thêu',
+          label: faqMessage.text('sections.1.links.2.label'),
           href: STOREFRONT_CUSTOM_REQUEST_ROUTE,
         },
         {
           id: 'policy-payment',
-          label: 'Chính sách thanh toán',
+          label: faqMessage.text('sections.1.links.3.label'),
           href: buildStorefrontPolicyPath(POLICY_SLUG.payment),
         },
         {
           id: 'policy-shipping',
-          label: 'Chính sách giao hàng',
+          label: faqMessage.text('sections.1.links.4.label'),
           href: buildStorefrontPolicyPath(POLICY_SLUG.shipping),
         },
         {
           id: 'store',
-          label: 'Ghé xưởng',
+          label: faqMessage.text('sections.1.links.5.label'),
           href: STOREFRONT_STORE_ROUTE,
         },
       ],

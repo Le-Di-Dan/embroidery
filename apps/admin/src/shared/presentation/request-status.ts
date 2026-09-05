@@ -41,21 +41,36 @@
  * moves between the request detail, the quotation workbench and the design-case
  * workbench, and a request must not change its name in transit.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin-wave2.json`, under `requestStatusLabels`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const requestStatusLabelsMessage = messageView(VI_MESSAGES.adminWave2, 'requestStatusLabels');
+
+/** The label both applications use for a value the server did not classify. */
+const commonMessage = messageView(VI_MESSAGES.common);
+
 const REQUEST_STATUS_LABELS: Readonly<Record<string, string>> = {
-  NEW: 'Mới',
-  UNDER_REVIEW: 'Đang xem xét',
-  NEEDS_CLARIFICATION: 'Cần làm rõ',
-  QUOTED: 'Đã báo giá',
-  QUOTE_ACCEPTED: 'Đã nhận báo giá',
-  DIGITIZING: 'Đang số hoá',
-  DESIGN_REVIEW: 'Duyệt thiết kế',
-  APPROVED: 'Đã duyệt',
-  REJECTED: 'Đã từ chối',
-  CANCELLED: 'Đã huỷ',
+  NEW: requestStatusLabelsMessage.text('NEW'),
+  UNDER_REVIEW: requestStatusLabelsMessage.text('UNDER_REVIEW'),
+  NEEDS_CLARIFICATION: requestStatusLabelsMessage.text('NEEDS_CLARIFICATION'),
+  QUOTED: requestStatusLabelsMessage.text('QUOTED'),
+  QUOTE_ACCEPTED: requestStatusLabelsMessage.text('QUOTE_ACCEPTED'),
+  DIGITIZING: requestStatusLabelsMessage.text('DIGITIZING'),
+  DESIGN_REVIEW: requestStatusLabelsMessage.text('DESIGN_REVIEW'),
+  APPROVED: requestStatusLabelsMessage.text('APPROVED'),
+  REJECTED: requestStatusLabelsMessage.text('REJECTED'),
+  CANCELLED: requestStatusLabelsMessage.text('CANCELLED'),
 };
 
 /** The neutral fallback, for a status this build has no approved label for. */
-export const UNKNOWN_REQUEST_STATUS_LABEL = 'Không xác định';
+export const UNKNOWN_REQUEST_STATUS_LABEL = commonMessage.text('value.unknown');
 
 export interface RequestStatusPresentation {
   /** The stored value when this build has a label for it, else `UNKNOWN`. */

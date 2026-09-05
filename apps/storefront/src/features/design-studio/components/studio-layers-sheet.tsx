@@ -181,7 +181,9 @@ function SheetRow({
       >
         <span className="studio-layers-sheet__name">{row.label}</span>
         {/* `610:353` marks the top row in words rather than by position alone. */}
-        {topmost ? <span className="studio-layers-sheet__badge">trên cùng</span> : null}
+        {topmost ? (
+          <span className="studio-layers-sheet__badge">{STUDIO_LAYER_COPY.topmostBadge}</span>
+        ) : null}
       </button>
 
       <div className="studio-layers-sheet__controls">

@@ -13,6 +13,7 @@
  * `merchandiseSubtotal` or `feeAmount`, and neither is exported to anything
  * that handles one.
  */
+import { formatDisplayInstant } from '@embroidery/i18n';
 
 /**
  * A server-measured byte count, for reading.
@@ -31,36 +32,39 @@ export function formatByteSize(byteSize: number): string {
   return `${Math.max(1, Math.round(kilobytes))} KB`;
 }
 
-const TWO_DIGITS = 2;
-
-function pad(value: number): string {
-  return String(value).padStart(TWO_DIGITS, '0');
-}
-
 /**
- * An ISO instant in the approved `HH:mm ngày dd/MM/yyyy` form (`910:336`).
+ * An ISO instant in the product's one display form, `dd/MM/yyyy · HH:mm`.
  *
- * Rendered in the **viewer's** local zone, because every instant on this screen
- * is something the customer is meant to relate to their own day: when the
- * workshop releases their reserved stock, and when their access link stops
- * working. `Date` is used for the calendar arithmetic and nothing else — no
- * duration is computed, no countdown ticks, and nothing on this route
- * re-renders because time passed.
+ * ## Why the shape changed
  *
- * That matters twice over here. A countdown on a payment surface is forbidden
- * (`APP9-S01` §9's rule, kept), and §29 forbids comparing any deadline against
- * the clock to decide a state: expiry is a fact the server publishes as
- * `terminationReason`, never one this browser derives from a timestamp it is
- * merely displaying.
+ * This route used to print `HH:mm ngày dd/MM/yyyy`, hand-assembled from `Date`
+ * parts, while the Admin printed the same class of instant through
+ * `Intl.DateTimeFormat('vi-VN', { dateStyle: 'short' })` and three other
+ * surfaces used three further variants. `V01-UX-021` recorded the result: an
+ * operator reading an order beside the customer's own page had to work out
+ * which convention each screen was using. `APP12-V02` §30 makes one format
+ * canonical, and it lives in `@embroidery/i18n` so there is nothing left to
+ * disagree with.
  *
- * An unparseable value comes back verbatim rather than as `NaN/NaN/NaN`: an
+ * ## Why the zone is now the store's
+ *
+ * The previous implementation used the **viewer's** zone. `formatDisplayInstant`
+ * pins `Asia/Ho_Chi_Minh` instead, and that is the correction rather than a
+ * regression: the deadline being displayed is when *the workshop* releases the
+ * reserved stock, so the workshop's clock is the one both sides must read. A
+ * customer travelling abroad and the operator handling their order now see the
+ * same string for the same instant.
+ *
+ * Nothing about *stored* time changed (§30 forbids it): this is presentation,
+ * the server remains the authority for the instants themselves, and no duration
+ * is computed here. A countdown on a payment surface stays forbidden
+ * (`APP9-S01` §9's rule, kept), and §29's rule holds — expiry is the server's
+ * published `terminationReason`, never something derived from this timestamp.
+ *
+ * An unparseable value comes back verbatim rather than as `Invalid Date`: an
  * unexpected server string shown as it is beats a placeholder that reads like a
  * bug in the customer's order.
  */
 export function formatInstant(iso: string): string {
-  const at = new Date(iso);
-  if (Number.isNaN(at.getTime())) {
-    return iso;
-  }
-  return `${pad(at.getHours())}:${pad(at.getMinutes())} ngày ${pad(at.getDate())}/${pad(at.getMonth() + 1)}/${at.getFullYear()}`;
+  return formatDisplayInstant(iso) ?? iso;
 }

@@ -25,6 +25,7 @@ import { join, relative, sep } from 'node:path';
 import {
   isStorefrontNavRouteActive,
   STOREFRONT_GALLERY_ROUTE,
+  STOREFRONT_PRIMARY_NAV,
 } from '../../src/features/storefront-shell/model/storefront-navigation';
 
 const APP_DIR = join(__dirname, '..', '..', 'src', 'app');
@@ -299,11 +300,6 @@ describe('gallery feed content boundary', () => {
 });
 
 describe('navigation activation', () => {
-  const shellCode = codeOnly(
-    collect(SHELL_DIR, /\.(ts|tsx)$/)
-      .map((path) => readFileSync(path, 'utf8'))
-      .join('\n'),
-  );
   const homepageCode = codeOnly(
     collect(HOMEPAGE_DIR, /\.(ts|tsx)$/)
       .map((path) => readFileSync(path, 'utf8'))
@@ -311,16 +307,23 @@ describe('navigation activation', () => {
   );
 
   it('routes the shell Bộ sưu tập item to the canonical constant', () => {
-    expect(shellCode).toMatch(
-      /\{ id: 'collections', label: 'Bộ sưu tập', route: STOREFRONT_GALLERY_ROUTE \}/,
-    );
+    // Asserted against the navigation model rather than against the source text
+    // of its label. `APP12-V02` §5A moved every label into the canonical message
+    // repository, so a regex over this file could now only prove where a *key*
+    // is written. What the test was actually protecting is unchanged and is
+    // checked directly: the Collections item points at the canonical route.
+    const collections = STOREFRONT_PRIMARY_NAV.find((item) => item.id === 'collections');
+    expect(collections?.route).toBe(STOREFRONT_GALLERY_ROUTE);
   });
 
   it('leaves the areas that are still unbuilt non-interactive', () => {
     // Studio has no landing page and Journal was deleted from the approved
     // Homepage; neither gains an href here.
-    expect(shellCode).toMatch(/\{ id: 'studio', label: 'Studio', route: null \}/);
-    expect(shellCode).toMatch(/\{ id: 'journal', label: 'Nhật ký', route: null \}/);
+    for (const id of ['studio', 'journal']) {
+      const item = STOREFRONT_PRIMARY_NAV.find((entry) => entry.id === id);
+      expect(item).toBeDefined();
+      expect(item?.route).toBeNull();
+    }
   });
 
   it('marks the section active for a descendant route, ready for S03', () => {

@@ -22,30 +22,44 @@
  * `docs/design/USER_FLOW_ARCHITECTURE.md` §6.3 (the commission ask comes after
  * appreciation, and is never presented in isolation).
  */
+import { VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
 import { BRAND_NAME } from '@embroidery/ui';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/storefront.json`, under `homepage`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const homepageMessage = messageView(
+  hydrateMessages(VI_MESSAGES.storefront, { brand: BRAND_NAME }),
+  'homepage',
+);
 
 export const HOMEPAGE_COPY = {
   /** Section 1 — Hero. Owns the page's single `<h1>`. */
   hero: {
-    heading: 'Xưởng thêu thủ công theo yêu cầu',
-    lead: 'Mỗi tác phẩm được thêu tay theo câu chuyện riêng của bạn — từ ý tưởng đầu tiên đến bản thêu hoàn chỉnh.',
+    heading: homepageMessage.text('hero.heading'),
+    lead: homepageMessage.text('hero.lead'),
     /** The lower-commitment move, deliberately first (USER_FLOW §6.3). */
-    exploreAction: 'Khám phá tác phẩm',
-    commissionAction: 'Đặt thêu theo yêu cầu',
+    exploreAction: homepageMessage.text('hero.exploreAction'),
+    commissionAction: homepageMessage.text('hero.commissionAction'),
   },
 
   /** Section 2 — Featured Works. */
   featured: {
-    heading: 'Tác phẩm nổi bật',
-    intro: 'Một vài tác phẩm đã hoàn thiện tại xưởng.',
-    action: 'Xem tất cả tác phẩm',
+    heading: homepageMessage.text('featured.heading'),
+    intro: homepageMessage.text('featured.intro'),
+    action: homepageMessage.text('featured.action'),
   },
 
   /** Section 3 — Discover Feed preview. */
   discover: {
-    heading: 'Khám phá',
-    intro: 'Chất liệu, kỹ thuật và câu chuyện phía sau từng đường thêu.',
-    action: 'Vào trang khám phá',
+    heading: homepageMessage.text('discover.heading'),
+    intro: homepageMessage.text('discover.intro'),
+    action: homepageMessage.text('discover.action'),
   },
 
   /**
@@ -53,59 +67,54 @@ export const HOMEPAGE_COPY = {
    * slugs, no link. `APP11-S02` supplies the feed this section will point at.
    */
   collections: {
-    heading: 'Bộ sưu tập',
-    intro:
-      'Các tác phẩm được nhóm theo chủ đề và kỹ thuật, để bạn thấy được chiều sâu và phạm vi của xưởng.',
+    heading: homepageMessage.text('collections.heading'),
+    intro: homepageMessage.text('collections.intro'),
     /**
      * The continuation into the gallery feed (`APP11-S02`). It names the
      * destination rather than the mechanism — no "xem thêm", no count, and
      * nothing about a checkpoint.
      */
-    action: 'Xem bộ sưu tập',
+    action: homepageMessage.text('collections.action'),
   },
 
   /** Section 5 — Studio Story. */
   story: {
-    heading: 'Câu chuyện của xưởng',
-    paragraphs: [
-      `${BRAND_NAME} làm việc trực tiếp với từng khách hàng, trên từng tác phẩm một.`,
-      'Chúng tôi bắt đầu từ ý tưởng của bạn, dựng bản thiết kế, rồi cùng bạn chỉnh sửa cho đến khi bản thiết kế đúng với điều bạn hình dung.',
-      'Chỉ khi đó khung thêu mới bắt đầu chạy. Không có sản phẩm hàng loạt — mỗi đơn hàng là một lần hợp tác.',
-    ],
+    heading: homepageMessage.text('story.heading'),
+    paragraphs: homepageMessage.list('story.paragraphs'),
   },
 
   /** Section 6 — Commission CTA. */
   commission: {
-    heading: 'Đặt thêu theo yêu cầu',
-    lead: 'Bạn duyệt bản thiết kế trước, rồi mới thanh toán.',
+    heading: homepageMessage.text('commission.heading'),
+    lead: homepageMessage.text('commission.lead'),
     /** Process transparency, from `docs/04-BUSINESS-RULES.md` BR-005. */
-    stepsLabel: 'Các bước đặt thêu',
+    stepsLabel: homepageMessage.text('commission.stepsLabel'),
     steps: [
       {
         id: 'request',
-        title: 'Gửi yêu cầu',
-        body: 'Mô tả ý tưởng, kích thước và số lượng bạn cần.',
+        title: homepageMessage.text('commission.steps.0.title'),
+        body: homepageMessage.text('commission.steps.0.body'),
       },
       {
         id: 'review',
-        title: 'Duyệt thiết kế',
-        body: 'Xưởng gửi báo giá và bản thiết kế để bạn xem và yêu cầu chỉnh sửa.',
+        title: homepageMessage.text('commission.steps.1.title'),
+        body: homepageMessage.text('commission.steps.1.body'),
       },
       {
         id: 'deposit',
-        title: 'Đặt cọc và sản xuất',
-        body: 'Sau khi bạn duyệt thiết kế, đơn hàng được đặt cọc 40% và bắt đầu thêu.',
+        title: homepageMessage.text('commission.steps.2.title'),
+        body: homepageMessage.text('commission.steps.2.body'),
       },
     ],
-    action: 'Bắt đầu yêu cầu',
+    action: homepageMessage.text('commission.action'),
   },
 
   /** Shared states for the two product-backed sections. */
   works: {
-    loading: 'Đang tải tác phẩm…',
-    empty: 'Các tác phẩm sẽ xuất hiện tại đây sau khi được xưởng hoàn thiện.',
-    error: 'Chưa thể tải các tác phẩm. Bạn vẫn có thể khám phá hoặc gửi yêu cầu thêu.',
+    loading: homepageMessage.text('works.loading'),
+    empty: homepageMessage.text('works.empty'),
+    error: homepageMessage.text('works.error'),
     /** Screen-reader text for a work with no deliverable thumbnail. */
-    imageMissing: 'Chưa có ảnh cho tác phẩm này.',
+    imageMissing: homepageMessage.text('works.imageMissing'),
   },
 } as const;

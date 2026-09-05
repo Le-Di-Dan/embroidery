@@ -14,26 +14,37 @@
  * 'Bộ sưu tập'" — so the heading below is quoted from the approved board rather
  * than written here.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/storefront.json`, under `galleryFeed`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const galleryFeedMessage = messageView(VI_MESSAGES.storefront, 'galleryFeed');
+
 export const GALLERY_COPY = {
   /** The page's single `<h1>`, quoted from the approved accessibility board. */
-  heading: 'Bộ sưu tập',
-  intro:
-    'Những nhóm tác phẩm được xưởng tuyển chọn theo chủ đề và kỹ thuật, mỗi mục là một câu chuyện riêng.',
+  heading: galleryFeedMessage.text('heading'),
+  intro: galleryFeedMessage.text('intro'),
   /** Accessible name for the feed collection. */
-  feedLabel: 'Các mục bộ sưu tập',
+  feedLabel: galleryFeedMessage.text('feedLabel'),
   /** Accessible name for the loading placeholder collection. */
-  skeletonLabel: 'Đang tải bộ sưu tập',
-  initialLoading: 'Đang tải bộ sưu tập…',
-  empty: 'Chưa có mục bộ sưu tập.',
+  skeletonLabel: galleryFeedMessage.text('skeletonLabel'),
+  initialLoading: galleryFeedMessage.text('initialLoading'),
+  empty: galleryFeedMessage.text('empty'),
   initialError: {
-    heading: 'Không thể tải bộ sưu tập',
-    action: 'Thử lại',
+    heading: galleryFeedMessage.text('initialError.heading'),
+    action: galleryFeedMessage.text('initialError.action'),
   },
   continuation: {
-    loadMore: 'Tải thêm mục',
-    loading: 'Đang tải thêm…',
-    error: 'Không thể tải thêm mục.',
-    retry: 'Thử lại',
+    loadMore: galleryFeedMessage.text('continuation.loadMore'),
+    loading: galleryFeedMessage.text('continuation.loading'),
+    error: galleryFeedMessage.text('continuation.error'),
+    retry: galleryFeedMessage.text('continuation.retry'),
   },
   card: {
     /**
@@ -41,14 +52,14 @@ export const GALLERY_COPY = {
      * The card shows a neutral placeholder — never a fabricated URL and never a
      * retry that would hammer a route already answering 404.
      */
-    imageUnavailable: 'Chưa hiển thị được ảnh của mục này.',
+    imageUnavailable: galleryFeedMessage.text('card.imageUnavailable'),
     /**
      * The one detail action per card, activated by `APP11-S03` when
      * `/bo-suu-tap/[slug]` landed. Visible text only: on its own it repeats
      * across every card, so `galleryDetailActionLabel` supplies the accessible
      * name that names the entry.
      */
-    detailAction: 'Xem chi tiết',
+    detailAction: galleryFeedMessage.text('card.detailAction'),
   },
 } as const;
 
@@ -79,5 +90,5 @@ export function galleryCoverAlt(entryTitle: string): string {
  * per-entry link-label field for an operator to fill in, and none is wanted.
  */
 export function galleryDetailActionLabel(entryTitle: string): string {
-  return `Xem chi tiết mục ${entryTitle}`;
+  return galleryFeedMessage.text('galleryDetailActionLabel', { entryTitle });
 }

@@ -19,36 +19,48 @@
  * *A failure message never echoes the server.* The server's message may name a
  * table or a constraint. Every string below is fixed, chosen by the code alone.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin-wave2.json`, under `placement`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const placementMessage = messageView(VI_MESSAGES.adminWave2, 'placement');
+
 export const PLACEMENT_COPY = {
   screen: {
-    title: 'Vị trí thêu',
-    subtitle: 'Xác định mặt sản phẩm và vùng thêu cho phép.',
-    backToProduct: 'Quay lại sản phẩm',
+    title: placementMessage.text('screen.title'),
+    subtitle: placementMessage.text('screen.subtitle'),
+    backToProduct: placementMessage.text('screen.backToProduct'),
   },
 
   entry: {
-    label: 'Vị trí thêu',
+    label: placementMessage.text('entry.label'),
   },
 
   states: {
-    loading: 'Đang tải vị trí thêu…',
-    notFoundTitle: 'Không tìm thấy sản phẩm',
-    notFoundBody: 'Sản phẩm này không tồn tại hoặc đã bị gỡ khỏi danh sách.',
-    unavailableTitle: 'Không tải được vị trí thêu',
-    unavailableBody: 'Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại.',
-    retry: 'Thử lại',
-    backToList: 'Về danh sách sản phẩm',
-    emptyTitle: 'Chưa có mặt sản phẩm nào',
-    emptyBody: 'Thêm mặt sản phẩm đầu tiên để bắt đầu xác định vùng thêu.',
+    loading: placementMessage.text('states.loading'),
+    notFoundTitle: placementMessage.text('states.notFoundTitle'),
+    notFoundBody: placementMessage.text('states.notFoundBody'),
+    unavailableTitle: placementMessage.text('states.unavailableTitle'),
+    unavailableBody: placementMessage.text('states.unavailableBody'),
+    retry: placementMessage.text('states.retry'),
+    backToList: placementMessage.text('states.backToList'),
+    emptyTitle: placementMessage.text('states.emptyTitle'),
+    emptyBody: placementMessage.text('states.emptyBody'),
   },
 
   hierarchy: {
-    title: 'Sản phẩm · Mặt · Vùng thêu',
-    productLabel: 'Sản phẩm',
-    sidesLabel: 'Mặt sản phẩm',
-    areasLabel: 'Vùng thêu',
-    addSide: 'Thêm mặt sản phẩm',
-    addArea: 'Thêm vùng thêu',
+    title: placementMessage.text('hierarchy.title'),
+    productLabel: placementMessage.text('hierarchy.productLabel'),
+    sidesLabel: placementMessage.text('hierarchy.sidesLabel'),
+    areasLabel: placementMessage.text('hierarchy.areasLabel'),
+    addSide: placementMessage.text('hierarchy.addSide'),
+    addArea: placementMessage.text('hierarchy.addArea'),
     /**
      * Retirement, never deletion — the row stays as history.
      *
@@ -56,143 +68,142 @@ export const PLACEMENT_COPY = {
      * 1280, and a longer label wrapped to four lines and squeezed the row name
      * it sits beside. What is being retired is unambiguous from the row.
      */
-    retireSide: 'Ngừng dùng',
-    retireArea: 'Ngừng dùng',
-    undoRetire: 'Hoàn tác',
-    retiredBadge: 'Đã ngừng dùng',
-    pendingRetireBadge: 'Sẽ ngừng dùng sau khi lưu',
-    supersededBadge: 'Đã được thay thế',
-    newBadge: 'Mới',
-    noAreas: 'Chưa có vùng thêu',
-    unnamedSide: 'Mặt chưa đặt tên',
-    unnamedArea: 'Vùng chưa đặt tên',
+    retireSide: placementMessage.text('hierarchy.retireSide'),
+    retireArea: placementMessage.text('hierarchy.retireArea'),
+    undoRetire: placementMessage.text('hierarchy.undoRetire'),
+    retiredBadge: placementMessage.text('hierarchy.retiredBadge'),
+    pendingRetireBadge: placementMessage.text('hierarchy.pendingRetireBadge'),
+    supersededBadge: placementMessage.text('hierarchy.supersededBadge'),
+    newBadge: placementMessage.text('hierarchy.newBadge'),
+    noAreas: placementMessage.text('hierarchy.noAreas'),
+    unnamedSide: placementMessage.text('hierarchy.unnamedSide'),
+    unnamedArea: placementMessage.text('hierarchy.unnamedArea'),
   },
 
   preview: {
-    title: 'Xem trước vị trí',
-    empty: 'Chọn một mặt sản phẩm để xem trước.',
+    title: placementMessage.text('preview.title'),
+    empty: placementMessage.text('preview.empty'),
     /** Alt-equivalent for the background layer; never a filename. */
-    backgroundAlt: (side: string) => `Ảnh nền của ${side}`,
-    backgroundLoading: 'Đang tải ảnh nền…',
+    backgroundAlt: (side: string) => placementMessage.text('preview.backgroundAlt', { side }),
+    backgroundLoading: placementMessage.text('preview.backgroundLoading'),
     /** `404` — the server will not resolve a background here; retrying cannot help. */
-    backgroundUnavailable: 'Chưa có ảnh nền dùng được cho mặt này.',
+    backgroundUnavailable: placementMessage.text('preview.backgroundUnavailable'),
     /** `503`/transport — the row says it exists, so trying again is the right advice. */
-    backgroundFailed: 'Không tải được ảnh nền.',
-    backgroundRetry: 'Thử lại',
+    backgroundFailed: placementMessage.text('preview.backgroundFailed'),
+    backgroundRetry: placementMessage.text('preview.backgroundRetry'),
     /**
      * A background Asset was chosen but not saved yet. The server still serves
      * the previous one, so nothing is drawn rather than showing bytes that would
      * misrepresent the pending choice.
      */
-    backgroundPending: 'Ảnh nền mới sẽ hiển thị sau khi lưu.',
+    backgroundPending: placementMessage.text('preview.backgroundPending'),
     /** A Side that has never been saved has no address to fetch from. */
-    backgroundUnsavedSide: 'Lưu mặt sản phẩm để xem ảnh nền.',
-    canvasLabel: (width: number, height: number) => `Khung nền ${width} × ${height} px`,
-    areaLabel: (name: string) => `Vùng thêu ${name}`,
-    outsideCanvas: 'Vùng thêu nằm ngoài khung nền.',
-    safeBoundary: 'Ranh giới an toàn',
+    backgroundUnsavedSide: placementMessage.text('preview.backgroundUnsavedSide'),
+    canvasLabel: (width: number, height: number) =>
+      placementMessage.text('preview.canvasLabel', { width, height }),
+    areaLabel: (name: string) => placementMessage.text('preview.areaLabel', { name }),
+    outsideCanvas: placementMessage.text('preview.outsideCanvas'),
+    safeBoundary: placementMessage.text('preview.safeBoundary'),
   },
 
   inspector: {
-    title: 'Thông số',
-    empty: 'Chọn một mặt hoặc một vùng thêu để chỉnh sửa.',
-    sideSection: 'Mặt sản phẩm',
-    areaSection: 'Vùng thêu',
-    readOnlyRetired: 'Hàng đã ngừng dùng chỉ để tham khảo và không thể chỉnh sửa.',
+    title: placementMessage.text('inspector.title'),
+    empty: placementMessage.text('inspector.empty'),
+    sideSection: placementMessage.text('inspector.sideSection'),
+    areaSection: placementMessage.text('inspector.areaSection'),
+    readOnlyRetired: placementMessage.text('inspector.readOnlyRetired'),
   },
 
   fields: {
-    code: 'Mã',
-    codeHelp: 'Chữ thường, số, gạch ngang hoặc gạch dưới. Tối đa 64 ký tự.',
-    name: 'Tên hiển thị',
-    nameHelp: 'Tên mà nhân viên nhìn thấy. Không phải mã định danh.',
-    displayOrder: 'Thứ tự hiển thị',
-    displayOrderHelp: 'Số nguyên từ 0 đến 10.000.',
-    backgroundAsset: 'Ảnh nền',
-    backgroundAssetHelp: 'Chọn một tài sản đã được duyệt làm ảnh nền cho mặt này.',
-    chooseBackground: 'Chọn ảnh nền',
-    changeBackground: 'Đổi ảnh nền',
-    imageWidthPx: 'Chiều rộng ảnh (px)',
-    imageHeightPx: 'Chiều cao ảnh (px)',
-    physicalWidthMm: 'Chiều rộng thực tế (mm)',
-    physicalHeightMm: 'Chiều cao thực tế (mm)',
-    pxPerMm: 'Tỷ lệ (px/mm)',
-    pxPerMmHelp: 'Phải khớp với cả chiều rộng và chiều cao của mặt này.',
-    boundXPx: 'Toạ độ X (px)',
-    boundYPx: 'Toạ độ Y (px)',
-    boundWidthPx: 'Chiều rộng vùng (px)',
-    boundHeightPx: 'Chiều cao vùng (px)',
-    maxWidthMm: 'Giới hạn rộng (mm)',
-    maxHeightMm: 'Giới hạn cao (mm)',
-    maxHelp: 'Để trống nếu chỉ giới hạn bởi kích thước mặt.',
+    code: placementMessage.text('fields.code'),
+    codeHelp: placementMessage.text('fields.codeHelp'),
+    name: placementMessage.text('fields.name'),
+    nameHelp: placementMessage.text('fields.nameHelp'),
+    displayOrder: placementMessage.text('fields.displayOrder'),
+    displayOrderHelp: placementMessage.text('fields.displayOrderHelp'),
+    backgroundAsset: placementMessage.text('fields.backgroundAsset'),
+    backgroundAssetHelp: placementMessage.text('fields.backgroundAssetHelp'),
+    chooseBackground: placementMessage.text('fields.chooseBackground'),
+    changeBackground: placementMessage.text('fields.changeBackground'),
+    imageWidthPx: placementMessage.text('fields.imageWidthPx'),
+    imageHeightPx: placementMessage.text('fields.imageHeightPx'),
+    physicalWidthMm: placementMessage.text('fields.physicalWidthMm'),
+    physicalHeightMm: placementMessage.text('fields.physicalHeightMm'),
+    pxPerMm: placementMessage.text('fields.pxPerMm'),
+    pxPerMmHelp: placementMessage.text('fields.pxPerMmHelp'),
+    boundXPx: placementMessage.text('fields.boundXPx'),
+    boundYPx: placementMessage.text('fields.boundYPx'),
+    boundWidthPx: placementMessage.text('fields.boundWidthPx'),
+    boundHeightPx: placementMessage.text('fields.boundHeightPx'),
+    maxWidthMm: placementMessage.text('fields.maxWidthMm'),
+    maxHeightMm: placementMessage.text('fields.maxHeightMm'),
+    maxHelp: placementMessage.text('fields.maxHelp'),
   },
 
   validation: {
-    required: 'Vui lòng nhập giá trị.',
-    notNumber: 'Giá trị phải là một số.',
-    notPositive: 'Giá trị phải lớn hơn 0.',
-    negative: 'Giá trị không được âm.',
-    tooLarge: 'Giá trị vượt quá giới hạn cho phép.',
-    codeFormat: 'Mã chỉ gồm chữ thường, số, gạch ngang hoặc gạch dưới.',
-    nameLength: 'Tên hiển thị quá dài.',
-    orderRange: 'Thứ tự hiển thị phải là số nguyên từ 0 đến 10.000.',
-    outsideCanvas: 'Vùng thêu phải nằm hoàn toàn trong khung nền.',
-    scaleMismatch: 'Tỷ lệ px/mm không khớp với kích thước ảnh và kích thước thực tế.',
-    duplicateCode: 'Mã này đã được dùng.',
-    summaryTitle: 'Không thể lưu vì còn giá trị chưa hợp lệ',
-    summaryBody: 'Vui lòng sửa các trường được đánh dấu rồi lưu lại.',
+    required: placementMessage.text('validation.required'),
+    notNumber: placementMessage.text('validation.notNumber'),
+    notPositive: placementMessage.text('validation.notPositive'),
+    negative: placementMessage.text('validation.negative'),
+    tooLarge: placementMessage.text('validation.tooLarge'),
+    codeFormat: placementMessage.text('validation.codeFormat'),
+    nameLength: placementMessage.text('validation.nameLength'),
+    orderRange: placementMessage.text('validation.orderRange'),
+    outsideCanvas: placementMessage.text('validation.outsideCanvas'),
+    scaleMismatch: placementMessage.text('validation.scaleMismatch'),
+    duplicateCode: placementMessage.text('validation.duplicateCode'),
+    summaryTitle: placementMessage.text('validation.summaryTitle'),
+    summaryBody: placementMessage.text('validation.summaryBody'),
   },
 
   save: {
-    action: 'Lưu vị trí thêu',
-    saving: 'Đang lưu…',
-    saved: 'Đã lưu vị trí thêu.',
-    unsaved: 'Có thay đổi chưa lưu',
-    clean: 'Chưa có thay đổi',
-    discard: 'Huỷ thay đổi',
+    action: placementMessage.text('save.action'),
+    saving: placementMessage.text('save.saving'),
+    saved: placementMessage.text('save.saved'),
+    unsaved: placementMessage.text('save.unsaved'),
+    clean: placementMessage.text('save.clean'),
+    discard: placementMessage.text('save.discard'),
   },
 
   failure: {
-    genericTitle: 'Không lưu được vị trí thêu',
-    genericBody: 'Đã xảy ra lỗi khi lưu. Các thay đổi của bạn vẫn được giữ nguyên.',
-    invalidTitle: 'Máy chủ từ chối vị trí thêu',
-    invalidBody: 'Một số giá trị chưa hợp lệ. Vui lòng kiểm tra lại rồi lưu lại.',
-    geometryTitle: 'Hình học vị trí thêu không hợp lệ',
-    geometryBody: 'Vùng thêu phải nằm trong khung nền và tỷ lệ px/mm phải khớp với kích thước mặt.',
-    immutableTitle: 'Vị trí thêu đang được sử dụng',
-    immutableBody:
-      'Mặt hoặc vùng thêu này đã được dùng trong mẫu thiết kế nên không thể đổi mã hay hình học. Hãy ngừng dùng nó và thêm một hàng thay thế.',
-    backgroundTitle: 'Ảnh nền không dùng được',
-    backgroundBody: 'Ảnh nền đã chọn không tồn tại hoặc không được phép dùng cho mặt sản phẩm.',
-    networkTitle: 'Không kết nối được máy chủ',
-    networkBody: 'Các thay đổi của bạn vẫn được giữ nguyên. Vui lòng thử lưu lại.',
+    genericTitle: placementMessage.text('failure.genericTitle'),
+    genericBody: placementMessage.text('failure.genericBody'),
+    invalidTitle: placementMessage.text('failure.invalidTitle'),
+    invalidBody: placementMessage.text('failure.invalidBody'),
+    geometryTitle: placementMessage.text('failure.geometryTitle'),
+    geometryBody: placementMessage.text('failure.geometryBody'),
+    immutableTitle: placementMessage.text('failure.immutableTitle'),
+    immutableBody: placementMessage.text('failure.immutableBody'),
+    backgroundTitle: placementMessage.text('failure.backgroundTitle'),
+    backgroundBody: placementMessage.text('failure.backgroundBody'),
+    networkTitle: placementMessage.text('failure.networkTitle'),
+    networkBody: placementMessage.text('failure.networkBody'),
   },
 
   conflict: {
-    title: 'Vị trí thêu đã thay đổi trên máy chủ',
-    body: 'Một thay đổi khác đã được lưu sau khi bạn mở màn hình này. Máy chủ chưa ghi đè bất cứ điều gì.',
-    keepNote:
-      'Bản nháp của bạn vẫn hiển thị để đối chiếu, nhưng chưa được lưu và chỉ tồn tại trong trình duyệt này.',
-    reload: 'Tải lại bản mới nhất',
-    keep: 'Giữ bản nháp để đối chiếu',
-    banner: 'Bản nháp chưa được lưu. Hãy tải lại bản mới nhất trước khi lưu.',
+    title: placementMessage.text('conflict.title'),
+    body: placementMessage.text('conflict.body'),
+    keepNote: placementMessage.text('conflict.keepNote'),
+    reload: placementMessage.text('conflict.reload'),
+    keep: placementMessage.text('conflict.keep'),
+    banner: placementMessage.text('conflict.banner'),
   },
 
   picker: {
-    title: 'Chọn ảnh nền',
-    help: 'Chỉ những tài sản đã được duyệt làm ảnh danh mục mới xuất hiện ở đây.',
-    loading: 'Đang tải tài sản…',
-    emptyTitle: 'Chưa có tài sản nào dùng được',
-    emptyBody: 'Tải lên và chờ duyệt tài sản trước khi chọn làm ảnh nền.',
-    unavailableTitle: 'Không tải được danh sách tài sản',
-    unavailableBody: 'Đã xảy ra lỗi khi tải tài sản. Vui lòng thử lại.',
-    retry: 'Thử lại',
-    loadMore: 'Tải thêm tài sản',
-    loadingMore: 'Đang tải…',
-    loadMoreFailed: 'Không tải thêm được. Vui lòng thử lại.',
-    cancel: 'Huỷ',
-    confirm: 'Dùng ảnh này',
-    selected: 'Đang chọn',
+    title: placementMessage.text('picker.title'),
+    help: placementMessage.text('picker.help'),
+    loading: placementMessage.text('picker.loading'),
+    emptyTitle: placementMessage.text('picker.emptyTitle'),
+    emptyBody: placementMessage.text('picker.emptyBody'),
+    unavailableTitle: placementMessage.text('picker.unavailableTitle'),
+    unavailableBody: placementMessage.text('picker.unavailableBody'),
+    retry: placementMessage.text('picker.retry'),
+    loadMore: placementMessage.text('picker.loadMore'),
+    loadingMore: placementMessage.text('picker.loadingMore'),
+    loadMoreFailed: placementMessage.text('picker.loadMoreFailed'),
+    cancel: placementMessage.text('picker.cancel'),
+    confirm: placementMessage.text('picker.confirm'),
+    selected: placementMessage.text('picker.selected'),
     /**
      * Picker tiles stay placeholders after `APP3-A01-C1`.
      *
@@ -202,12 +213,12 @@ export const PLACEMENT_COPY = {
      * forbids — so the picker names the media type it can prove and nothing it
      * cannot show.
      */
-    thumbnailPlaceholder: 'Ảnh xem trước có sau khi lưu vào mặt sản phẩm.',
+    thumbnailPlaceholder: placementMessage.text('picker.thumbnailPlaceholder'),
   },
 
   mobile: {
-    title: 'Cần màn hình rộng hơn',
-    body: 'Việc xác định vị trí thêu cần thao tác chính xác trên khung nền nên chỉ hỗ trợ trên màn hình máy tính. Bạn vẫn có thể xem cấu trúc bên dưới.',
-    readOnlyBadge: 'Chỉ xem',
+    title: placementMessage.text('mobile.title'),
+    body: placementMessage.text('mobile.body'),
+    readOnlyBadge: placementMessage.text('mobile.readOnlyBadge'),
   },
 } as const;

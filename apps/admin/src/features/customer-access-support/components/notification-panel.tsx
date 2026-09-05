@@ -135,7 +135,7 @@ export function NotificationPanel({
             <div className="customer-access-card__row">
               <dt>{COPY.template}</dt>
               <dd data-testid="notification-template">
-                {intent.templateKey} · v{intent.templateVersion}
+                {COPY.templateValue(intent.templateKey, intent.templateVersion)}
               </dd>
             </div>
           </dl>

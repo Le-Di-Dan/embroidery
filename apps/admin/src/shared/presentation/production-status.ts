@@ -35,10 +35,24 @@
  * storefront renders a production state, and no customer surface exists in APP8
  * at all.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
 import type { AdminProductionJobListStatusItem } from '@embroidery/api-client';
 
 import type { AdminStatusTone } from '../status/admin-status-badge';
 import { STATUS_SYMBOLS } from './order-status';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin-wave2.json`, under `productionStatusLabels`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const productionStatusLabelsMessage = messageView(VI_MESSAGES.adminWave2, 'productionStatusLabels');
+
+/** The label both applications use for a value the server did not classify. */
+const commonMessage = messageView(VI_MESSAGES.common);
 
 export type ProductionStatusValue =
   (typeof AdminProductionJobListStatusItem)[keyof typeof AdminProductionJobListStatusItem];
@@ -66,14 +80,30 @@ interface StatusStyle {
  * for no reason.
  */
 const PRODUCTION_STATUS_STYLES: Readonly<Record<string, StatusStyle>> = {
-  PLANNED: { label: 'Đã lên lệnh', tone: 'info', symbol: STATUS_SYMBOLS.waiting },
-  STARTED: { label: 'Đang sản xuất', tone: 'warning', symbol: STATUS_SYMBOLS.running },
-  COMPLETED: { label: 'Hoàn tất', tone: 'success', symbol: STATUS_SYMBOLS.succeeded },
-  CANCELLED: { label: 'Đã huỷ', tone: 'error', symbol: STATUS_SYMBOLS.ended },
+  PLANNED: {
+    label: productionStatusLabelsMessage.text('PLANNED.label'),
+    tone: 'info',
+    symbol: STATUS_SYMBOLS.waiting,
+  },
+  STARTED: {
+    label: productionStatusLabelsMessage.text('STARTED.label'),
+    tone: 'warning',
+    symbol: STATUS_SYMBOLS.running,
+  },
+  COMPLETED: {
+    label: productionStatusLabelsMessage.text('COMPLETED.label'),
+    tone: 'success',
+    symbol: STATUS_SYMBOLS.succeeded,
+  },
+  CANCELLED: {
+    label: productionStatusLabelsMessage.text('CANCELLED.label'),
+    tone: 'error',
+    symbol: STATUS_SYMBOLS.ended,
+  },
 };
 
 /** The neutral fallback, for a state this build has no approved label for. */
-export const UNKNOWN_PRODUCTION_STATUS_LABEL = 'Không xác định';
+export const UNKNOWN_PRODUCTION_STATUS_LABEL = commonMessage.text('value.unknown');
 
 /**
  * Total by construction: accepts `unknown` and always returns a presentation.

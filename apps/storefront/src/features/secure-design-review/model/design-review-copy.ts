@@ -35,168 +35,181 @@
  * behaviour that must never vary.
  */
 
+import { VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
+import { BRAND_NAME } from '@embroidery/ui';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/custom.json`, under `designReview`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const designReviewMessage = messageView(
+  hydrateMessages(VI_MESSAGES.custom, { brand: BRAND_NAME }),
+  'designReview',
+);
+
 export const DESIGN_REVIEW_COPY = {
   /** The document title. Reused as the accessible page name. */
-  pageTitle: 'Duyệt mẫu thiết kế — Nét Thêu',
+  pageTitle: designReviewMessage.text('pageTitle'),
 
   /** `707:12` … `710:210` — the card headline, one per drawn state. */
   titles: {
-    review: 'Mẫu thêu của bạn đã sẵn sàng để duyệt',
-    approved: 'Bạn đã duyệt mẫu thiết kế này',
-    revisionRequested: 'Cửa hàng đã nhận yêu cầu chỉnh sửa của bạn',
-    versionMismatch: 'Cửa hàng đã gửi một phiên bản mới hơn',
+    review: designReviewMessage.text('titles.review'),
+    approved: designReviewMessage.text('titles.approved'),
+    revisionRequested: designReviewMessage.text('titles.revisionRequested'),
+    versionMismatch: designReviewMessage.text('titles.versionMismatch'),
   },
 
   /** `707:13` … `710:211` — the line under the headline. */
   subtitles: {
     review: (version: number, sentAt: string) =>
-      `Phiên bản ${String(version)} · Cửa hàng gửi ngày ${sentAt}`,
-    approved: (version: number) =>
-      `Phiên bản ${String(version)} · Bản duyệt này đã được lưu lại và không thay đổi được nữa.`,
+      designReviewMessage.text('subtitles.review', { version, sentAt }),
+    approved: (version: number) => designReviewMessage.text('subtitles.approved', { version }),
     revisionRequested: (version: number) =>
-      `Phiên bản ${String(version)} · Cửa hàng sẽ xem phản hồi của bạn và chuẩn bị bản chỉnh sửa.`,
+      designReviewMessage.text('subtitles.revisionRequested', { version }),
     versionMismatch: (version: number) =>
-      `Phiên bản ${String(version)} là bản mới nhất hiện nay. Vui lòng xem lại trước khi quyết định.`,
+      designReviewMessage.text('subtitles.versionMismatch', { version }),
   },
 
   /** `707:11` — the status pill. Never colour alone. */
   badges: {
-    review: 'Chờ bạn duyệt',
-    approving: 'Đang gửi quyết định',
-    approved: 'Đã duyệt',
-    revisionRequested: 'Đã yêu cầu chỉnh sửa',
-    versionMismatch: 'Có phiên bản mới',
+    review: designReviewMessage.text('badges.review'),
+    approving: designReviewMessage.text('badges.approving'),
+    approved: designReviewMessage.text('badges.approved'),
+    revisionRequested: designReviewMessage.text('badges.revisionRequested'),
+    versionMismatch: designReviewMessage.text('badges.versionMismatch'),
   },
 
   /** `707:30` — the exact version the decision binds, printed beside the artwork. */
   exactVersion: {
-    legend: 'Bản thiết kế bạn đang xem',
-    version: (version: number) => `Phiên bản ${String(version)}`,
-    schema: (schemaVersion: number) => `Định dạng tài liệu v${String(schemaVersion)}`,
-    hashLabel: 'Mã kiểm tra bản vẽ',
-    note: 'Quyết định của bạn gắn với đúng phiên bản và đúng bản vẽ hiển thị ở đây.',
+    legend: designReviewMessage.text('exactVersion.legend'),
+    version: (version: number) => designReviewMessage.text('exactVersion.version', { version }),
+    schema: (schemaVersion: number) =>
+      designReviewMessage.text('exactVersion.schema', { schemaVersion }),
+    hashLabel: designReviewMessage.text('exactVersion.hashLabel'),
+    note: designReviewMessage.text('exactVersion.note'),
   },
 
   /** `707:40` — the browser-side preview. */
   preview: {
-    label: 'Xem trước mẫu thêu',
+    label: designReviewMessage.text('preview.label'),
     /** The repeated mark's two fixed words, ahead of the runtime token. */
-    watermarkWordmark: 'NÉT THÊU',
-    watermarkTag: 'XEM TRƯỚC',
+    watermarkWordmark: designReviewMessage.text('preview.watermarkWordmark'),
+    watermarkTag: designReviewMessage.text('preview.watermarkTag'),
     /** `609:371`, reused verbatim: marked, and no download exists. */
-    watermarkPolicy:
-      'Bản xem trước được đánh dấu chìm và chỉ hiển thị trong trình duyệt. Trang này không có chức năng tải về.',
+    watermarkPolicy: designReviewMessage.text('preview.watermarkPolicy'),
     /** Image elements have no bytes on this surface; the frame is honest about it. */
-    imagePlaceholder: 'Ảnh của bạn',
-    failure: 'Không hiển thị được bản vẽ này trên trình duyệt của bạn.',
-    failureNote:
-      'Vui lòng liên hệ cửa hàng để được gửi lại. Đừng duyệt mẫu mà bạn chưa nhìn thấy đầy đủ.',
+    imagePlaceholder: designReviewMessage.text('preview.imagePlaceholder'),
+    failure: designReviewMessage.text('preview.failure'),
+    failureNote: designReviewMessage.text('preview.failureNote'),
   },
 
   /** `711:3` — the effective agreement set, rendered verbatim. */
   agreements: {
-    legend: 'Điều khoản bạn cần đồng ý trước khi duyệt',
-    intro:
-      'Đây là nội dung đang có hiệu lực. Quyết định duyệt của bạn được lưu cùng đúng các bản điều khoản này.',
-    accept: 'Tôi đã đọc và đồng ý với nội dung trên',
-    versionLabel: (version: number) => `Bản ${String(version)}`,
+    legend: designReviewMessage.text('agreements.legend'),
+    intro: designReviewMessage.text('agreements.intro'),
+    accept: designReviewMessage.text('agreements.accept'),
+    versionLabel: (version: number) =>
+      designReviewMessage.text('agreements.versionLabel', { version }),
     /** `709:3` — why the approve control is unavailable. */
     outstanding: (remaining: number) =>
-      `Còn ${String(remaining)} mục điều khoản bạn chưa đánh dấu đồng ý.`,
-    changed:
-      'Nội dung điều khoản đã được cập nhật. Vui lòng đọc lại và đánh dấu đồng ý một lần nữa.',
+      designReviewMessage.text('agreements.outstanding', { remaining }),
+    changed: designReviewMessage.text('agreements.changed'),
   },
 
   /** `707:55`, `710:109` — the two customer actions. */
   actions: {
-    approve: 'Duyệt mẫu này',
-    approving: 'Đang gửi…',
-    requestRevision: 'Yêu cầu chỉnh sửa',
-    reviewLatest: 'Xem phiên bản mới nhất',
+    approve: designReviewMessage.text('actions.approve'),
+    approving: designReviewMessage.text('actions.approving'),
+    requestRevision: designReviewMessage.text('actions.requestRevision'),
+    reviewLatest: designReviewMessage.text('actions.reviewLatest'),
   },
 
   /** `709:84` — the in-progress frame. */
   approving: {
-    title: 'Đang gửi quyết định duyệt của bạn',
-    body: 'Vui lòng không đóng trang này.',
+    title: designReviewMessage.text('approving.title'),
+    body: designReviewMessage.text('approving.body'),
   },
 
   /** `710:3` — the approval confirmation, before the decision leaves the browser. */
   approveConfirm: {
-    title: 'Xác nhận duyệt mẫu thiết kế',
-    body: 'Sau khi duyệt, bản thiết kế này được lưu cố định và không chỉnh sửa được nữa. Mọi thay đổi sau đó sẽ là một phiên bản mới.',
-    binds: (version: number) => `Bạn đang duyệt phiên bản ${String(version)}.`,
-    terms: 'Bạn đồng ý với các điều khoản đã đánh dấu ở trên.',
-    noPayment: 'Duyệt mẫu không thu tiền, không tạo đơn hàng và chưa bắt đầu sản xuất.',
-    confirm: 'Xác nhận duyệt',
-    cancel: 'Quay lại',
+    title: designReviewMessage.text('approveConfirm.title'),
+    body: designReviewMessage.text('approveConfirm.body'),
+    binds: (version: number) => designReviewMessage.text('approveConfirm.binds', { version }),
+    terms: designReviewMessage.text('approveConfirm.terms'),
+    noPayment: designReviewMessage.text('approveConfirm.noPayment'),
+    confirm: designReviewMessage.text('approveConfirm.confirm'),
+    cancel: designReviewMessage.text('approveConfirm.cancel'),
   },
 
   /** `710:3` — step-up re-verification, run inside this route. */
   stepUp: {
-    title: 'Xác minh lại trước khi duyệt',
-    body: 'Để bảo vệ bạn, cửa hàng cần xác minh lại liên hệ của bạn trước khi ghi nhận quyết định duyệt.',
-    stay: 'Bạn vẫn đang ở trang này. Đừng đóng trang cho đến khi hoàn tất.',
-    safety: 'Cửa hàng không bao giờ hỏi mã xác minh qua điện thoại hay tin nhắn.',
-    verified: 'Đã xác minh. Đang tải lại bản thiết kế mới nhất…',
-    cancel: 'Huỷ',
-    live: 'Cần xác minh lại trước khi duyệt.',
+    title: designReviewMessage.text('stepUp.title'),
+    body: designReviewMessage.text('stepUp.body'),
+    stay: designReviewMessage.text('stepUp.stay'),
+    safety: designReviewMessage.text('stepUp.safety'),
+    verified: designReviewMessage.text('stepUp.verified'),
+    cancel: designReviewMessage.text('stepUp.cancel'),
+    live: designReviewMessage.text('stepUp.live'),
   },
 
   /** `710:109` — the revision form. */
   revision: {
-    title: 'Yêu cầu chỉnh sửa mẫu thiết kế',
-    body: 'Hãy mô tả cụ thể điều bạn muốn thay đổi. Cửa hàng sẽ dựa vào nội dung này để chuẩn bị bản tiếp theo.',
-    label: 'Điều bạn muốn thay đổi',
-    placeholder: 'Ví dụ: chữ ở ngực trái cần lớn hơn một chút và đổi sang màu trắng.',
-    required: 'Vui lòng mô tả điều bạn muốn thay đổi.',
-    tooLong: (max: number) => `Nội dung tối đa ${String(max)} ký tự.`,
-    counter: (used: number, max: number) => `${String(used)}/${String(max)} ký tự`,
-    noStepUp: 'Yêu cầu chỉnh sửa không cần xác minh lại vì không cam kết điều gì.',
-    submit: 'Gửi yêu cầu chỉnh sửa',
-    submitting: 'Đang gửi…',
-    cancel: 'Quay lại',
+    title: designReviewMessage.text('revision.title'),
+    body: designReviewMessage.text('revision.body'),
+    label: designReviewMessage.text('revision.label'),
+    placeholder: designReviewMessage.text('revision.placeholder'),
+    required: designReviewMessage.text('revision.required'),
+    tooLong: (max: number) => designReviewMessage.text('revision.tooLong', { max }),
+    counter: (used: number, max: number) =>
+      designReviewMessage.text('revision.counter', { used, max }),
+    noStepUp: designReviewMessage.text('revision.noStepUp'),
+    submit: designReviewMessage.text('revision.submit'),
+    submitting: designReviewMessage.text('revision.submitting'),
+    cancel: designReviewMessage.text('revision.cancel'),
   },
 
   /** `709:164`, `713:61` — the committed approval. */
   approved: {
-    heading: 'Quyết định đã được ghi nhận',
-    approvedAt: (at: string) => `Thời điểm duyệt: ${at}`,
-    versionLabel: (version: number) => `Phiên bản đã duyệt: ${String(version)}`,
-    hashLabel: 'Mã kiểm tra bản vẽ đã duyệt',
-    snapshotLabel: 'Mã bản lưu duyệt',
-    acceptedTerms: 'Các điều khoản bạn đã đồng ý',
+    heading: designReviewMessage.text('approved.heading'),
+    approvedAt: (at: string) => designReviewMessage.text('approved.approvedAt', { at }),
+    versionLabel: (version: number) =>
+      designReviewMessage.text('approved.versionLabel', { version }),
+    hashLabel: designReviewMessage.text('approved.hashLabel'),
+    snapshotLabel: designReviewMessage.text('approved.snapshotLabel'),
+    acceptedTerms: designReviewMessage.text('approved.acceptedTerms'),
     /** Nothing beyond the snapshot is claimed. */
-    scope:
-      'Bản thiết kế đã được lưu cố định. Việc thu tiền, tạo đơn hàng, giữ hàng và sản xuất không nằm trong bước này.',
-    replayed:
-      'Quyết định này đã được ghi nhận trước đó. Đây là cùng một bản lưu, không phải bản mới.',
-    live: 'Bạn đã duyệt mẫu thiết kế này.',
+    scope: designReviewMessage.text('approved.scope'),
+    replayed: designReviewMessage.text('approved.replayed'),
+    live: designReviewMessage.text('approved.live'),
   },
 
   /** The committed revision request. */
   revisionRequested: {
-    heading: 'Yêu cầu chỉnh sửa đã được ghi nhận',
-    decidedAt: (at: string) => `Thời điểm gửi: ${at}`,
-    versionLabel: (version: number) => `Phiên bản đã gửi phản hồi: ${String(version)}`,
+    heading: designReviewMessage.text('revisionRequested.heading'),
+    decidedAt: (at: string) => designReviewMessage.text('revisionRequested.decidedAt', { at }),
+    versionLabel: (version: number) =>
+      designReviewMessage.text('revisionRequested.versionLabel', { version }),
     /** Truthful: no new draft exists, and the request did not move. */
-    scope:
-      'Cửa hàng đã nhận phản hồi của bạn. Bản chỉnh sửa chưa được tạo và yêu cầu của bạn vẫn đang ở bước duyệt mẫu.',
-    live: 'Đã gửi yêu cầu chỉnh sửa.',
+    scope: designReviewMessage.text('revisionRequested.scope'),
+    live: designReviewMessage.text('revisionRequested.live'),
   },
 
   /** `710:203` — the exact-version race. */
   mismatch: {
-    title: 'Bản thiết kế đã thay đổi',
-    body: 'Quyết định vừa rồi chưa được ghi nhận. Cửa hàng đã gửi một phiên bản khác, nên bạn cần xem lại và quyết định lần nữa.',
-    live: 'Có phiên bản mới. Vui lòng xem lại.',
+    title: designReviewMessage.text('mismatch.title'),
+    body: designReviewMessage.text('mismatch.body'),
+    live: designReviewMessage.text('mismatch.live'),
   },
 
   /** The terms race — a change of terms only, never called a version mismatch. */
   termsChanged: {
-    title: 'Điều khoản đã được cập nhật',
-    body: 'Quyết định vừa rồi chưa được ghi nhận. Nội dung điều khoản đã thay đổi, nên bạn cần đọc lại và đánh dấu đồng ý một lần nữa.',
-    live: 'Điều khoản đã thay đổi. Vui lòng đọc lại.',
+    title: designReviewMessage.text('termsChanged.title'),
+    body: designReviewMessage.text('termsChanged.body'),
+    live: designReviewMessage.text('termsChanged.live'),
   },
 
   /**
@@ -207,32 +220,32 @@ export const DESIGN_REVIEW_COPY = {
    */
   notices: {
     TRANSIENT: {
-      title: 'Chưa gửi được quyết định',
-      body: 'Kết nối bị gián đoạn nên chưa có gì được ghi nhận. Vui lòng thử lại.',
+      title: designReviewMessage.text('notices.TRANSIENT.title'),
+      body: designReviewMessage.text('notices.TRANSIENT.body'),
     },
     INVALID_TRANSITION: {
-      title: 'Phiên bản này đã có quyết định',
-      body: 'Bản thiết kế này đã được quyết định trước đó. Nội dung bên dưới là tình trạng mới nhất.',
+      title: designReviewMessage.text('notices.INVALID_TRANSITION.title'),
+      body: designReviewMessage.text('notices.INVALID_TRANSITION.body'),
     },
     DUPLICATE_OPERATION: {
-      title: 'Quyết định đang được xử lý',
-      body: 'Một quyết định cho phiên bản này đang được ghi nhận. Vui lòng đợi một chút rồi kiểm tra lại.',
+      title: designReviewMessage.text('notices.DUPLICATE_OPERATION.title'),
+      body: designReviewMessage.text('notices.DUPLICATE_OPERATION.body'),
     },
     IDEMPOTENCY_CONFLICT: {
-      title: 'Chưa gửi được quyết định',
-      body: 'Cửa hàng chưa ghi nhận quyết định này. Nội dung bên dưới là tình trạng mới nhất; vui lòng quyết định lại.',
+      title: designReviewMessage.text('notices.IDEMPOTENCY_CONFLICT.title'),
+      body: designReviewMessage.text('notices.IDEMPOTENCY_CONFLICT.body'),
     },
     POLICY_UNAVAILABLE: {
-      title: 'Tạm thời chưa duyệt được',
-      body: 'Hệ thống chưa lấy được nội dung điều khoản đang có hiệu lực. Đây là sự cố phía cửa hàng, không phải do bạn. Vui lòng thử lại sau.',
+      title: designReviewMessage.text('notices.POLICY_UNAVAILABLE.title'),
+      body: designReviewMessage.text('notices.POLICY_UNAVAILABLE.body'),
     },
   },
 
   /** Polite live-region announcements. */
   live: {
-    authorized: 'Đã mở bản thiết kế chờ duyệt.',
-    approving: 'Đang gửi quyết định duyệt.',
-    revisionSubmitting: 'Đang gửi yêu cầu chỉnh sửa.',
-    reconciling: 'Đang tải lại bản thiết kế mới nhất.',
+    authorized: designReviewMessage.text('live.authorized'),
+    approving: designReviewMessage.text('live.approving'),
+    revisionSubmitting: designReviewMessage.text('live.revisionSubmitting'),
+    reconciling: designReviewMessage.text('live.reconciling'),
   },
 } as const;

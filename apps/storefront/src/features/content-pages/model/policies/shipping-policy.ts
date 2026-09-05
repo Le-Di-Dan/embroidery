@@ -1,3 +1,5 @@
+import { VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
+import { BRAND_NAME } from '@embroidery/ui';
 import {
   STOREFRONT_CUSTOM_REQUEST_ROUTE,
   STOREFRONT_FAQ_ROUTE,
@@ -6,6 +8,19 @@ import {
 } from '../../../storefront-shell/model/storefront-navigation';
 import type { ContentPage } from '../content-page';
 import { POLICY_SLUG } from './policy-slugs';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/content.json`, under `policies.shipping`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const policiesShippingMessage = messageView(
+  hydrateMessages(VI_MESSAGES.content, { brand: BRAND_NAME }),
+  'policies.shipping',
+);
 
 /**
  * `/chinh-sach/giao-hang` — the shipping policy (`APP11-S05`).
@@ -37,78 +52,72 @@ import { POLICY_SLUG } from './policy-slugs';
 export const SHIPPING_POLICY: ContentPage = {
   id: 'policy-shipping',
   path: buildStorefrontPolicyPath(POLICY_SLUG.shipping),
-  eyebrow: 'Chính sách',
-  heading: 'Chính sách giao hàng',
-  lead: 'Cách Nét Thêu bàn giao thành phẩm cho bạn, và những gì được thống nhất trước khi hàng rời xưởng.',
-  metaTitle: 'Chính sách giao hàng — Nét Thêu',
-  metaDescription:
-    'Cách Nét Thêu bàn giao thành phẩm: nhận tại xưởng hoặc gửi tới địa chỉ của bạn, phí giao hàng báo trước trong báo giá.',
-  trail: { parentLabel: 'Chính sách' },
+  eyebrow: policiesShippingMessage.text('eyebrow'),
+  heading: policiesShippingMessage.text('heading'),
+  lead: policiesShippingMessage.text('lead'),
+  metaTitle: policiesShippingMessage.text('metaTitle'),
+  metaDescription: policiesShippingMessage.text('metaDescription'),
+  trail: { parentLabel: policiesShippingMessage.text('trail.parentLabel') },
   sections: [
     {
       kind: 'prose',
       id: 'handover',
-      heading: 'Hai cách nhận hàng',
-      paragraphs: [
-        'Sau khi thêu xong và bạn đã thanh toán đủ, xưởng bàn giao thành phẩm theo cách bạn chọn khi đặt hàng.',
-      ],
-      bullets: ['Nhận trực tiếp tại xưởng.', 'Xưởng gửi tới địa chỉ bạn cung cấp.'],
+      heading: policiesShippingMessage.text('sections.0.heading'),
+      paragraphs: policiesShippingMessage.list('sections.0.paragraphs'),
+      bullets: policiesShippingMessage.list('sections.0.bullets'),
     },
     {
       kind: 'prose',
       id: 'fee',
-      heading: 'Phí giao hàng',
-      paragraphs: [
-        'Nếu đơn hàng của bạn cần giao tới địa chỉ, phí giao hàng được xưởng ghi rõ trong báo giá trước khi bạn đặt cọc. Bạn xem được khoản này trong bảng chi tiết báo giá.',
-        'Xưởng không tự động tính phí từ bên thứ ba. Nếu chi phí giao hàng thay đổi so với báo giá ban đầu, xưởng báo lại và chờ bạn xác nhận trước khi tiếp tục.',
-      ],
+      heading: policiesShippingMessage.text('sections.1.heading'),
+      paragraphs: policiesShippingMessage.list('sections.1.paragraphs'),
     },
     {
       kind: 'prose',
       id: 'timing',
-      heading: 'Thời điểm bàn giao',
-      paragraphs: [
-        'Xưởng chỉ bàn giao sau khi bản thêu hoàn tất và phần thanh toán còn lại đã được ghi nhận.',
-        'Nét Thêu thêu thủ công theo từng yêu cầu riêng, nên thời gian hoàn thiện phụ thuộc vào độ phức tạp và số lượng của đơn hàng. Xưởng trao đổi mốc thời gian dự kiến với bạn trong quá trình báo giá, thay vì áp một mốc cố định cho mọi đơn.',
-      ],
+      heading: policiesShippingMessage.text('sections.2.heading'),
+      paragraphs: policiesShippingMessage.list('sections.2.paragraphs'),
     },
     {
       kind: 'prose',
       id: 'tracking',
-      heading: 'Theo dõi đơn hàng',
-      paragraphs: [
-        'Bạn theo dõi tiến trình đơn hàng qua đường liên kết riêng mà xưởng gửi cho bạn, và xưởng chủ động báo khi có bước mới.',
-        'Website của Nét Thêu không tích hợp hệ thống tra cứu hành trình của đơn vị vận chuyển. Nếu đơn hàng của bạn được gửi qua một đơn vị vận chuyển, xưởng cung cấp thông tin xưởng có khi bạn hỏi.',
-      ],
+      heading: policiesShippingMessage.text('sections.3.heading'),
+      paragraphs: policiesShippingMessage.list('sections.3.paragraphs'),
     },
     {
       kind: 'prose',
       id: 'on-arrival',
-      heading: 'Khi nhận hàng',
-      paragraphs: [
-        'Bạn nên kiểm tra thành phẩm ngay khi nhận. Nếu có vấn đề, liên hệ Nét Thêu sớm nhất có thể để xưởng xem xét cùng bạn.',
-      ],
+      heading: policiesShippingMessage.text('sections.4.heading'),
+      paragraphs: policiesShippingMessage.list('sections.4.paragraphs'),
     },
     {
       kind: 'links',
       id: 'shipping-related',
-      heading: 'Liên quan',
+      heading: policiesShippingMessage.text('sections.5.heading'),
       links: [
         {
           id: 'policy-payment',
-          label: 'Chính sách thanh toán',
+          label: policiesShippingMessage.text('sections.5.links.0.label'),
           href: buildStorefrontPolicyPath(POLICY_SLUG.payment),
         },
         {
           id: 'policy-returns',
-          label: 'Chính sách đổi trả',
+          label: policiesShippingMessage.text('sections.5.links.1.label'),
           href: buildStorefrontPolicyPath(POLICY_SLUG.returns),
         },
-        { id: 'faq', label: 'Câu hỏi thường gặp', href: STOREFRONT_FAQ_ROUTE },
-        { id: 'store', label: 'Ghé xưởng', href: STOREFRONT_STORE_ROUTE },
+        {
+          id: 'faq',
+          label: policiesShippingMessage.text('sections.5.links.2.label'),
+          href: STOREFRONT_FAQ_ROUTE,
+        },
+        {
+          id: 'store',
+          label: policiesShippingMessage.text('sections.5.links.3.label'),
+          href: STOREFRONT_STORE_ROUTE,
+        },
         {
           id: 'commission',
-          label: 'Gửi yêu cầu thêu',
+          label: policiesShippingMessage.text('sections.5.links.4.label'),
           href: STOREFRONT_CUSTOM_REQUEST_ROUTE,
         },
       ],

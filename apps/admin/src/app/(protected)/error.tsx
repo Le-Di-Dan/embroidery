@@ -1,11 +1,21 @@
 'use client';
 
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin.json`, under `protectedError`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const protectedErrorMessage = messageView(VI_MESSAGES.admin, 'protectedError');
+
 const ERROR_COPY = {
-  title: 'Không thể xác minh phiên đăng nhập',
-  detail:
-    'Hiện chưa thể kết nối tới dịch vụ xác thực. Đây là sự cố tạm thời của máy chủ, ' +
-    'không phải do bạn đã đăng xuất. Vui lòng thử lại.',
-  retry: 'Thử lại',
+  title: protectedErrorMessage.text('title'),
+  detail: protectedErrorMessage.text('detail'),
+  retry: protectedErrorMessage.text('retry'),
 } as const;
 
 /**

@@ -11,25 +11,37 @@
  * sentence that has to be precise: a customer told they can drag will try to
  * drag an element, and this checkpoint moves the picture, never the design.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/studio.json`, under `viewport`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const viewportMessage = messageView(VI_MESSAGES.studio, 'viewport');
+
 export const STUDIO_VIEWPORT_COPY = {
-  toolbarLabel: 'Thu phóng khung thiết kế',
+  toolbarLabel: viewportMessage.text('toolbarLabel'),
 
-  zoomOut: 'Thu nhỏ',
-  zoomIn: 'Phóng to',
+  zoomOut: viewportMessage.text('zoomOut'),
+  zoomIn: viewportMessage.text('zoomIn'),
   /** Stated as text, not only as the size of things, so it is readable aloud. */
-  zoomValue: (percent: number) => `Mức phóng ${String(percent)}%`,
-  fit: 'Vừa khung',
-  fitHint: 'Đưa khung thiết kế về mức phóng ban đầu',
+  zoomValue: (percent: number) => viewportMessage.text('zoomValue', { percent }),
+  fit: viewportMessage.text('fit'),
+  fitHint: viewportMessage.text('fitHint'),
 
-  safeAreaShow: 'Hiện vùng thêu cho phép',
-  safeAreaHide: 'Ẩn vùng thêu cho phép',
+  safeAreaShow: viewportMessage.text('safeAreaShow'),
+  safeAreaHide: viewportMessage.text('safeAreaHide'),
   /**
    * The legend the approved Safe Area frame carries.
    *
    * It explains what the dashed rectangle means, which is the only thing that
    * makes hiding it a meaningful choice rather than a switch with no subject.
    */
-  safeAreaLegend: 'Đường nét đứt là vùng thêu cho phép của mặt thêu này.',
+  safeAreaLegend: viewportMessage.text('safeAreaLegend'),
 
   /**
    * The pan affordance, worded for what it actually does.
@@ -39,5 +51,5 @@ export const STUDIO_VIEWPORT_COPY = {
    * a single position. A hint offering a gesture that cannot move anything is
    * the same defect as a disabled button with no reason.
    */
-  panHint: 'Kéo trên nền khung để xem phần khác của thiết kế.',
+  panHint: viewportMessage.text('panHint'),
 } as const;

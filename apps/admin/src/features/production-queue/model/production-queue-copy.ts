@@ -13,103 +13,100 @@
  * body as an engineer-facing annotation, exactly as `782:243` draws it and as
  * the refusal catalog (`787:3`) requires.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin-wave2.json`, under `productionQueue`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const productionQueueMessage = messageView(VI_MESSAGES.adminWave2, 'productionQueue');
+
 export const PRODUCTION_QUEUE_COPY = {
   page: {
-    breadcrumb: 'Quản trị / Sản xuất',
-    title: 'Hàng đợi sản xuất',
+    breadcrumb: productionQueueMessage.text('page.breadcrumb'),
+    title: productionQueueMessage.text('page.title'),
     /** The sidenav entry (`780:22`) — shorter than the page title, as drawn. */
-    navLabel: 'Sản xuất',
-    tableLabel: 'Danh sách lệnh sản xuất',
+    navLabel: productionQueueMessage.text('page.navLabel'),
+    tableLabel: productionQueueMessage.text('page.tableLabel'),
     /**
      * `780:29`. States what the queue publishes *and* what it does not, so an
      * operator who expects an `ORD-…` code or a product name learns where those
      * live instead of hunting for a column that was never designed.
      */
-    source:
-      'Nguồn: GET /api/admin/production-jobs. Hàng đợi công bố định danh lệnh/đơn/bản duyệt, ' +
-      'trạng thái và mốc thời gian — KHÔNG có mã đơn dạng ORD-… và KHÔNG có đặc tả sản xuất. ' +
-      'Hai thứ đó chỉ có ở màn chi tiết.',
-    ordering:
-      'Thứ tự xác định: mới nhất trước theo (createdAt, id) — cùng khoá mà con trỏ keyset dùng, ' +
-      'nên tải thêm không bỏ sót và không lặp bản ghi.',
+    source: productionQueueMessage.text('page.source'),
+    ordering: productionQueueMessage.text('page.ordering'),
   },
   columns: {
-    jobId: 'Mã lệnh (jobId)',
-    orderId: 'Đơn hàng (orderId)',
-    approvalSnapshotId: 'Bản duyệt (approvalSnapshotId)',
-    status: 'Trạng thái',
-    createdAt: 'Tạo lúc',
-    milestone: 'Mốc gần nhất',
-    open: 'Mở lệnh',
+    jobId: productionQueueMessage.text('columns.jobId'),
+    orderId: productionQueueMessage.text('columns.orderId'),
+    approvalSnapshotId: productionQueueMessage.text('columns.approvalSnapshotId'),
+    status: productionQueueMessage.text('columns.status'),
+    createdAt: productionQueueMessage.text('columns.createdAt'),
+    milestone: productionQueueMessage.text('columns.milestone'),
+    open: productionQueueMessage.text('columns.open'),
   },
   milestones: {
     /** `780:57` renders an absent milestone as an em dash, never as "chưa rõ". */
-    none: '—',
-    started: 'bắt đầu',
-    completed: 'xong',
-    cancelled: 'huỷ',
+    none: productionQueueMessage.text('milestones.none'),
+    started: productionQueueMessage.text('milestones.started'),
+    completed: productionQueueMessage.text('milestones.completed'),
+    cancelled: productionQueueMessage.text('milestones.cancelled'),
   },
   filters: {
-    statusLegend: 'Trạng thái',
-    statusDropdownTitle: 'Lọc theo trạng thái',
-    all: 'Tất cả',
-    selected: (count: number) => `${String(count)} đã chọn`,
-    vocabulary:
-      'Bốn giá trị này là toàn bộ từ vựng trạng thái LC-18. Không có giá trị thứ năm, ' +
-      'và “tất cả” không phải một giá trị gửi lên — bỏ trống nghĩa là không lọc.',
-    orderLabel: 'Đơn hàng',
-    orderPlaceholder: 'lọc theo orderId (UUID)',
-    orderHelp: 'Lọc theo orderId. Đây không phải mã đơn ORD-… — hàng đợi không nhận mã đơn.',
-    orderInvalid: 'orderId phải là một UUID. Chưa gửi bộ lọc nào.',
-    scope: 'Chỉ hai bộ lọc: status[] và orderId. Không ưu tiên, không SLA, không thợ, không máy.',
-    clearStatus: 'Xoá bộ lọc trạng thái',
-    clearOrder: 'Xoá bộ lọc đơn hàng',
-    clearAll: 'Xoá tất cả bộ lọc',
+    statusLegend: productionQueueMessage.text('filters.statusLegend'),
+    statusDropdownTitle: productionQueueMessage.text('filters.statusDropdownTitle'),
+    all: productionQueueMessage.text('filters.all'),
+    selected: (count: number) => productionQueueMessage.text('filters.selected', { count }),
+    vocabulary: productionQueueMessage.text('filters.vocabulary'),
+    orderLabel: productionQueueMessage.text('filters.orderLabel'),
+    orderPlaceholder: productionQueueMessage.text('filters.orderPlaceholder'),
+    orderHelp: productionQueueMessage.text('filters.orderHelp'),
+    orderInvalid: productionQueueMessage.text('filters.orderInvalid'),
+    scope: productionQueueMessage.text('filters.scope'),
+    clearStatus: productionQueueMessage.text('filters.clearStatus'),
+    clearOrder: productionQueueMessage.text('filters.clearOrder'),
+    clearAll: productionQueueMessage.text('filters.clearAll'),
   },
   actions: {
-    open: 'Mở →',
-    loadMore: 'Tải thêm lệnh sản xuất',
-    loadingMore: 'Đang tải…',
-    retry: 'Thử lại',
-    backToFirstPage: 'Về trang đầu',
-    signIn: 'Đăng nhập lại',
-    openOrders: 'Mở danh sách đơn hàng',
+    open: productionQueueMessage.text('actions.open'),
+    loadMore: productionQueueMessage.text('actions.loadMore'),
+    loadingMore: productionQueueMessage.text('actions.loadingMore'),
+    retry: productionQueueMessage.text('actions.retry'),
+    backToFirstPage: productionQueueMessage.text('actions.backToFirstPage'),
+    signIn: productionQueueMessage.text('actions.signIn'),
+    openOrders: productionQueueMessage.text('actions.openOrders'),
   },
   states: {
-    loading: 'Đang tải hàng đợi sản xuất…',
-    loadingNote:
-      'Không hiển thị dòng “0 kết quả” trong lúc tải — trạng thái rỗng chỉ được kết luận ' +
-      'sau khi máy chủ trả lời.',
-    appended: 'Đã tải thêm lệnh sản xuất.',
-    emptyTitle: 'Chưa có lệnh sản xuất nào',
-    emptyBody:
-      'Lệnh sản xuất được tạo từ một đơn hàng đã thanh toán cọc và đã có bản duyệt, ở màn ' +
-      'chi tiết đơn hàng. Hàng đợi này không tự tạo lệnh và không có nút “tạo lệnh” đứng ' +
-      'một mình — vì API tạo lệnh cần một orderId cụ thể.',
-    filteredEmptyTitle: 'Không có lệnh nào khớp bộ lọc',
-    filteredEmptyBody:
-      'Bỏ bớt điều kiện để xem thêm. Trạng thái rỗng vì bộ lọc khác hẳn trạng thái rỗng vì ' +
-      'chưa có dữ liệu — hai màn này không được dùng chung một câu chữ.',
+    loading: productionQueueMessage.text('states.loading'),
+    loadingNote: productionQueueMessage.text('states.loadingNote'),
+    appended: productionQueueMessage.text('states.appended'),
+    emptyTitle: productionQueueMessage.text('states.emptyTitle'),
+    emptyBody: productionQueueMessage.text('states.emptyBody'),
+    filteredEmptyTitle: productionQueueMessage.text('states.filteredEmptyTitle'),
+    filteredEmptyBody: productionQueueMessage.text('states.filteredEmptyBody'),
     /** `782:81` names the active conditions back to the operator. */
-    filteredEmptyActive: (conditions: string) => `Đang lọc: ${conditions}.`,
-    filteredEmptyStatuses: (labels: string) => `trạng thái ${labels}`,
-    filteredEmptyOrder: (shortId: string) => `đơn hàng ${shortId}`,
-    cursorErrorTitle: 'Trang không hợp lệ',
-    cursorErrorBody:
-      'PRODUCTION_CURSOR_INVALID · 400. Con trỏ phân trang đã cũ hoặc bị sửa. ' +
-      'Quay về trang đầu để đọc lại từ bản ghi mới nhất.',
-    errorTitle: 'Không tải được hàng đợi',
-    errorBody:
-      'Lỗi máy chủ · 500. Chưa lấy được danh sách lệnh sản xuất. Không có lệnh nào bị thay đổi.',
-    unauthenticatedTitle: 'Phiên đăng nhập đã hết hạn',
-    unauthenticatedBody: '401. Đăng nhập lại để tiếp tục.',
-    loadMoreFailed: 'Không tải thêm được. Các lệnh đã tải vẫn còn nguyên.',
-    pagination: 'Phân trang keyset (hasNext / nextCursor) — không số trang, không tổng số bản ghi.',
-    exhausted: 'hasNext = false · đã ở cuối danh sách.',
+    filteredEmptyActive: (conditions: string) =>
+      productionQueueMessage.text('states.filteredEmptyActive', { conditions }),
+    filteredEmptyStatuses: (labels: string) =>
+      productionQueueMessage.text('states.filteredEmptyStatuses', { labels }),
+    filteredEmptyOrder: (shortId: string) =>
+      productionQueueMessage.text('states.filteredEmptyOrder', { shortId }),
+    cursorErrorTitle: productionQueueMessage.text('states.cursorErrorTitle'),
+    cursorErrorBody: productionQueueMessage.text('states.cursorErrorBody'),
+    errorTitle: productionQueueMessage.text('states.errorTitle'),
+    errorBody: productionQueueMessage.text('states.errorBody'),
+    unauthenticatedTitle: productionQueueMessage.text('states.unauthenticatedTitle'),
+    unauthenticatedBody: productionQueueMessage.text('states.unauthenticatedBody'),
+    loadMoreFailed: productionQueueMessage.text('states.loadMoreFailed'),
+    pagination: productionQueueMessage.text('states.pagination'),
+    exhausted: productionQueueMessage.text('states.exhausted'),
   },
   responsive: {
     /** `789:158` — the single reduction the approved narrow frame makes. */
-    narrowNote:
-      'Ở bề ngang hẹp, cột “Bản duyệt (approvalSnapshotId)” được ẩn; mã bản duyệt luôn hiển thị đầy đủ ở màn chi tiết.',
+    narrowNote: productionQueueMessage.text('responsive.narrowNote'),
   },
 } as const;

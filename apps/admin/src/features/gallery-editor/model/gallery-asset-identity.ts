@@ -11,14 +11,29 @@
  * request parameter, and putting it on screen would be an internal identifier
  * presented as if it meant something to the person reading it.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin.json`, under `mediaTypeLabels`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const mediaTypeLabelsMessage = messageView(VI_MESSAGES.admin, 'mediaTypeLabels');
+
+/** The label both applications use for a value the server did not classify. */
+const commonMessage = messageView(VI_MESSAGES.common);
+
 const MEDIA_TYPE_LABELS: Readonly<Record<string, string>> = {
-  'image/png': 'Ảnh PNG',
-  'image/jpeg': 'Ảnh JPEG',
-  'image/webp': 'Ảnh WebP',
+  'image/png': mediaTypeLabelsMessage.text('image/png'),
+  'image/jpeg': mediaTypeLabelsMessage.text('image/jpeg'),
+  'image/webp': mediaTypeLabelsMessage.text('image/webp'),
 };
 
 /** The neutral label for a media type this build has no name for. */
-export const UNKNOWN_MEDIA_TYPE_LABEL = 'Ảnh';
+export const UNKNOWN_MEDIA_TYPE_LABEL = commonMessage.text('value.unknownImage');
 
 export function resolveAssetTitle(mediaType: string): string {
   return MEDIA_TYPE_LABELS[mediaType] ?? UNKNOWN_MEDIA_TYPE_LABEL;

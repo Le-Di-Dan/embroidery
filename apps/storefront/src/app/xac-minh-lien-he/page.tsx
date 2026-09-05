@@ -1,3 +1,6 @@
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+import { brandedPageTitle } from '../../features/storefront-seo';
 import type { Metadata } from 'next';
 
 import { VerificationQueryProvider } from '../../features/contact-verification';
@@ -14,9 +17,15 @@ import { VerificationQueryProvider } from '../../features/contact-verification';
  * is reached from a flow; letting a crawler surface it would only produce
  * visitors with no challenge to answer.
  */
+/**
+ * The browser title and description, from the canonical Vietnamese message
+ * repository (`packages/i18n/messages/vi/seo.json`, under `storefront.contactVerification`).
+ */
+const seoMessage = messageView(VI_MESSAGES.seo, 'storefront.contactVerification');
+
 export const metadata: Metadata = {
-  title: 'Xác minh liên hệ — Nét Thêu',
-  description: 'Nhập email hoặc số điện thoại để nhận mã xác minh gồm 6 chữ số.',
+  title: brandedPageTitle(seoMessage.text('title')),
+  description: seoMessage.text('description'),
   robots: { index: false, follow: false },
 };
 

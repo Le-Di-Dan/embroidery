@@ -15,39 +15,51 @@
  * `Gỡ xuất bản`, `Lưu trữ` and `Xoá` belong to `APP2-A03`/`APP2-A04` and must
  * not exist as copy before the capability behind them exists.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin.json`, under `products`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const productsMessage = messageView(VI_MESSAGES.admin, 'products');
+
 export const PRODUCT_COPY = {
   page: {
     /** The screen's single `<h1>`, and the navigation label for `/products`. */
-    title: 'Sản phẩm',
+    title: productsMessage.text('page.title'),
     /** Desktop subtitle (`439:183`). */
-    subtitleWide: 'Quản lý bản nháp và sản phẩm đã xuất bản của xưởng.',
+    subtitleWide: productsMessage.text('page.subtitleWide'),
     /** Mobile subtitle (`440:232`) — the approved shorter line at 390. */
-    subtitleNarrow: 'Bản nháp và sản phẩm đã xuất bản.',
+    subtitleNarrow: productsMessage.text('page.subtitleNarrow'),
     /** Accessible name of the desktop table. */
-    tableLabel: 'Danh sách sản phẩm',
+    tableLabel: productsMessage.text('page.tableLabel'),
     /** Accessible name of the mobile card collection. */
-    collectionLabel: 'Danh sách sản phẩm',
+    collectionLabel: productsMessage.text('page.collectionLabel'),
   },
 
   columns: {
-    product: 'Sản phẩm',
-    category: 'Danh mục',
-    status: 'Trạng thái',
+    product: productsMessage.text('columns.product'),
+    category: productsMessage.text('columns.category'),
+    status: productsMessage.text('columns.status'),
   },
 
   filters: {
-    statusLabel: 'Trạng thái',
-    categoryLabel: 'Danh mục',
-    statusAll: 'Tất cả trạng thái',
-    categoryAll: 'Tất cả danh mục',
+    statusLabel: productsMessage.text('filters.statusLabel'),
+    categoryLabel: productsMessage.text('filters.categoryLabel'),
+    statusAll: productsMessage.text('filters.statusAll'),
+    categoryAll: productsMessage.text('filters.categoryAll'),
   },
 
   /** Status language from the approved handoff (`498:272` — Bộ lọc trạng thái). */
   status: {
-    draft: 'Bản nháp',
-    published: 'Đã xuất bản',
-    archived: 'Đã lưu trữ',
-    unknown: 'Chưa xác định',
+    draft: productsMessage.text('status.draft'),
+    published: productsMessage.text('status.published'),
+    archived: productsMessage.text('status.archived'),
+    unknown: productsMessage.text('status.unknown'),
   },
 
   // No category label catalog. A category's name is **data** — it comes from the
@@ -61,20 +73,20 @@ export const PRODUCT_COPY = {
      * delivery operation, so there is no image and no URL to render — only an
      * honest statement that a preview does not exist yet.
      */
-    placeholder: 'Chưa có ảnh xem trước',
+    placeholder: productsMessage.text('media.placeholder'),
   },
 
   list: {
-    loading: 'Đang tải danh sách sản phẩm…',
-    unavailableTitle: 'Không thể tải danh sách sản phẩm',
-    unavailableDescription: 'Danh sách sản phẩm hiện chưa tải được. Hãy thử lại sau giây lát.',
-    unavailableRetry: 'Thử lại',
+    loading: productsMessage.text('list.loading'),
+    unavailableTitle: productsMessage.text('list.unavailableTitle'),
+    unavailableDescription: productsMessage.text('list.unavailableDescription'),
+    unavailableRetry: productsMessage.text('list.unavailableRetry'),
     /** Shown only when no filter is active (`440:187` / `440:188`). */
-    emptyTitle: 'Chưa có sản phẩm',
-    emptyDescription: 'Các sản phẩm sẽ xuất hiện tại đây sau khi bản nháp đầu tiên được tạo.',
+    emptyTitle: productsMessage.text('list.emptyTitle'),
+    emptyDescription: productsMessage.text('list.emptyDescription'),
     /** Shown when a filter is active (`498:272` — Hành vi bộ lọc). */
-    filteredEmptyTitle: 'Không có sản phẩm phù hợp',
-    filteredEmptyDescription: 'Hãy thử chọn trạng thái hoặc danh mục khác.',
+    filteredEmptyTitle: productsMessage.text('list.filteredEmptyTitle'),
+    filteredEmptyDescription: productsMessage.text('list.filteredEmptyDescription'),
   },
 
   /**
@@ -83,17 +95,17 @@ export const PRODUCT_COPY = {
    * no checkpoint has shipped the capability behind those words.
    */
   actions: {
-    create: 'Tạo sản phẩm',
-    edit: 'Chỉnh sửa',
+    create: productsMessage.text('actions.create'),
+    edit: productsMessage.text('actions.edit'),
     /** Column heading for the desktop action cell. */
-    columnLabel: 'Hành động',
+    columnLabel: productsMessage.text('actions.columnLabel'),
   },
 
   continuation: {
-    action: 'Tải thêm sản phẩm',
-    loading: 'Đang tải thêm…',
-    loaded: 'Đã tải thêm sản phẩm.',
-    errorMessage: 'Không thể tải thêm sản phẩm.',
-    retry: 'Thử lại',
+    action: productsMessage.text('continuation.action'),
+    loading: productsMessage.text('continuation.loading'),
+    loaded: productsMessage.text('continuation.loaded'),
+    errorMessage: productsMessage.text('continuation.errorMessage'),
+    retry: productsMessage.text('continuation.retry'),
   },
 } as const;

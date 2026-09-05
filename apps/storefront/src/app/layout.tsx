@@ -1,4 +1,6 @@
+import { HTML_LANG, VI_MESSAGES, messageView } from '@embroidery/i18n';
 import type { Metadata } from 'next';
+import { NextIntlClientProvider } from 'next-intl';
 import type { ReactNode } from 'react';
 
 import { getStorefrontPublicOrigin } from '../config/public-origin';
@@ -59,6 +61,12 @@ import '../styles/main.scss';
  * the actual cost belongs to `APP12-H05`, which owns performance; H02 records
  * it rather than trading security away for it.
  */
+/**
+ * The app-wide fallback title and description, from the canonical Vietnamese
+ * message repository (`packages/i18n/messages/vi/seo.json`).
+ */
+const seoMessage = messageView(VI_MESSAGES.seo);
+
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -71,8 +79,8 @@ export function generateMetadata(): Metadata {
     // the request that would otherwise have served a canonical URL pointing at
     // a host nobody configured.
     metadataBase: new URL(getStorefrontPublicOrigin()),
-    title: 'Embroidery Commerce — Storefront',
-    description: 'Cửa hàng thêu — sản phẩm nền và dịch vụ thêu theo yêu cầu.',
+    title: seoMessage.text('storefront.app.title'),
+    description: seoMessage.text('storefront.app.description'),
   };
 }
 
@@ -84,9 +92,11 @@ export function generateMetadata(): Metadata {
  */
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="vi">
+    <html lang={HTML_LANG}>
       <body>
-        <StorefrontShell>{children}</StorefrontShell>
+        <NextIntlClientProvider>
+          <StorefrontShell>{children}</StorefrontShell>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

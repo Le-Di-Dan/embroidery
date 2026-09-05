@@ -1,0 +1,1106 @@
+{
+  "shell": {
+    "brand": {
+      "eyebrow": "BẢNG QUẢN TRỊ"
+    },
+    "actor": "Quản trị viên",
+    "skipToContent": "Bỏ qua tới nội dung chính",
+    "nav": {
+      "sidebarLabel": "Điều hướng chính",
+      "drawerLabel": "Điều hướng",
+      "future": "Các khu vực nghiệp vụ sẽ xuất hiện trong các giai đoạn sau.",
+      "openMenu": "Mở menu điều hướng",
+      "closeMenu": "Đóng menu điều hướng"
+    },
+    "logout": {
+      "action": "Đăng xuất",
+      "pending": "Đang đăng xuất…",
+      "error": "Hiện chưa thể đăng xuất. Vui lòng thử lại.",
+      "retry": "Thử lại"
+    },
+    "loading": {
+      "status": "Đang tải thông tin quản trị viên…"
+    },
+    "reconnect": {
+      "status": "Mất kết nối tạm thời. Đang thử kết nối lại…"
+    },
+    "sessionExpired": {
+      "title": "Phiên đăng nhập đã hết hạn",
+      "description": "Phiên làm việc của bạn đã kết thúc vì lý do an toàn. Vui lòng đăng nhập lại để tiếp tục.",
+      "action": "Đăng nhập lại"
+    },
+    "placeholder": {
+      "heading": "Quyền truy cập quản trị đã sẵn sàng",
+      "body": "Bạn đã đăng nhập vào bảng điều hành. Các chức năng vận hành — sản phẩm, đơn hàng, thiết kế và yêu cầu đặt thêu — sẽ xuất hiện trong các giai đoạn tiếp theo."
+    }
+  },
+  "login": {
+    "brand": {
+      "supporting": "Quản trị xưởng",
+      "footnote": "Bảng điều hành nội bộ · Chỉ dành cho nhân sự được cấp quyền truy cập."
+    },
+    "editorial": {
+      "headingLine1": "Quản trị không gian",
+      "headingLine2": "thêu thủ công.",
+      "body": "Nơi đội ngũ vận hành theo dõi tác phẩm, bộ sưu tập và yêu cầu đặt thêu — tất cả trong một bảng điều hành yên tĩnh, tập trung vào tác phẩm."
+    },
+    "form": {
+      "title": "Đăng nhập",
+      "subtitle": "Dành cho quản trị viên được cấp quyền truy cập.",
+      "footerHelper": "Chỉ tài khoản quản trị được cấp mới có thể đăng nhập. Mọi lần truy cập đều được ghi nhật ký."
+    },
+    "fields": {
+      "email": {
+        "label": "Email",
+        "placeholder": "ban@xuongtheu.vn"
+      },
+      "password": {
+        "label": "Mật khẩu"
+      }
+    },
+    "passwordToggle": {
+      "show": "Hiện",
+      "hide": "Ẩn",
+      "showLabel": "Hiện mật khẩu",
+      "hideLabel": "Ẩn mật khẩu"
+    },
+    "submit": {
+      "default": "Đăng nhập",
+      "pending": "Đang đăng nhập…",
+      "rateLimited": "Thử lại sau ít phút"
+    },
+    "helper": {
+      "pending": "Đang xác thực thông tin đăng nhập. Vui lòng đợi trong giây lát.",
+      "rateLimit": "Nút đăng nhập sẽ mở lại sau khi hết thời gian chờ. Không cần tải lại trang."
+    },
+    "alert": {
+      "auth": "Email hoặc mật khẩu không đúng. Vui lòng kiểm tra lại thông tin đăng nhập.",
+      "network": "Hiện chưa thể đăng nhập. Vui lòng thử lại.",
+      "unknownField": "Thông tin đăng nhập không hợp lệ. Vui lòng kiểm tra lại."
+    },
+    "rateLimit": {
+      "fallbackDuration": "ít phút",
+      "message": "Bạn đã thử đăng nhập quá nhiều lần. Vì lý do an toàn, vui lòng thử lại sau {duration}."
+    },
+    "retryAfterMinutes": "khoảng {minutes} phút",
+    "retryAfterSeconds": "{seconds} giây"
+  },
+  "assets": {
+    "page": {
+      "title": "Tài sản hình ảnh",
+      "subtitle": "Tải ảnh sản phẩm lên và theo dõi trạng thái xử lý trước khi dùng cho tác phẩm.",
+      "collectionLabel": "Danh sách tài sản hình ảnh"
+    },
+    "upload": {
+      "action": "Tải ảnh lên",
+      "dropTitle": "Kéo và thả ảnh vào đây",
+      "dropHint": "hoặc chọn tệp từ máy của bạn",
+      "browse": "Chọn tệp",
+      "formats": "Hỗ trợ định dạng PNG, JPEG và WebP.",
+      "mobileHint": "Trên thiết bị di động, hãy dùng nút “Tải ảnh lên” để chọn ảnh từ máy — không cần thao tác kéo thả.",
+      "inputLabel": "Chọn ảnh sản phẩm để tải lên",
+      "selectedTitle": "Đã chọn · {name}",
+      "selectedDescription": "Ảnh đã sẵn sàng để tải lên.",
+      "submit": "Bắt đầu tải lên",
+      "clear": "Chọn ảnh khác"
+    },
+    "progress": {
+      "uploadingTitle": "Đang tải lên · {name}",
+      "determinate": "Đã tải {percent}% — vui lòng giữ trang này mở.",
+      "indeterminate": "Đang tải lên — vui lòng giữ trang này mở.",
+      "label": "Tiến trình tải lên",
+      "cancel": "Huỷ tải lên"
+    },
+    "processing": {
+      "title": "Đang xử lý · {name}",
+      "description": "Ảnh đang được kiểm tra tự động. Bạn có thể rời khỏi trang — quá trình vẫn tiếp tục."
+    },
+    "accepted": {
+      "title": "Sẵn sàng · {name}",
+      "description": "Ảnh đã được kiểm tra và có thể dùng cho tác phẩm."
+    },
+    "rejected": {
+      "title": "Không thể sử dụng · {name}",
+      "description": "Tệp này không phải là ảnh PNG, JPEG hoặc WebP hợp lệ nên không thể dùng cho tác phẩm. Hãy tải lên một ảnh khác.",
+      "action": "Tải ảnh khác lên"
+    },
+    "unknownState": {
+      "title": "Chưa xác định · {name}",
+      "description": "Chưa thể xác định kết quả kiểm tra của ảnh này. Hãy tải lại trang sau ít phút để xem trạng thái mới nhất."
+    },
+    "cancelled": {
+      "title": "Đã huỷ tải lên",
+      "description": "Bạn đã huỷ khi ảnh đang được gửi đi, nên chưa thể khẳng định máy chủ đã nhận được ảnh hay chưa. Danh sách bên dưới đã được làm mới. Nếu chưa thấy ảnh, hãy thử lại.",
+      "retry": "Thử lại lần tải lên này",
+      "dismiss": "Bỏ qua"
+    },
+    "uploadError": {
+      "title": "Không thể tải ảnh lên",
+      "retry": "Thử lại lần tải lên này",
+      "dismiss": "Bỏ qua"
+    },
+    "status": {
+      "pending": "Đã tải lên / Đang chờ xử lý",
+      "processing": "Đang xử lý",
+      "ready": "Sẵn sàng",
+      "rejected": "Không thể sử dụng",
+      "unknown": "Chưa xác định"
+    },
+    "identity": {
+      "titlePng": "Ảnh PNG",
+      "titleJpeg": "Ảnh JPEG",
+      "titleWebp": "Ảnh WebP",
+      "titleUnknown": "Tài sản hình ảnh",
+      "unitBytes": "B",
+      "unitKilobytes": "KB",
+      "unitMegabytes": "MB",
+      "metaUnavailable": "Chưa có thông tin chi tiết",
+      "thumbnailPlaceholder": "Chưa có ảnh xem trước"
+    },
+    "list": {
+      "loading": "Đang tải danh sách tài sản…",
+      "unavailableTitle": "Không thể tải danh sách tài sản",
+      "unavailableDescription": "Danh sách tài sản hiện chưa tải được. Hãy thử lại sau giây lát.",
+      "unavailableRetry": "Thử lại",
+      "emptyTitle": "Chưa có tài sản hình ảnh nào",
+      "emptyDescription": "Hãy tải lên ảnh sản phẩm đầu tiên để bắt đầu. Ảnh sẽ được kiểm tra tự động trước khi sẵn sàng sử dụng."
+    },
+    "continuation": {
+      "action": "Tải thêm tài sản",
+      "loading": "Đang tải thêm…",
+      "loaded": "Đã tải thêm tài sản.",
+      "errorMessage": "Không thể tải thêm tài sản.",
+      "retry": "Thử lại"
+    },
+    "errors": {
+      "mediaUnsupported": "Chỉ chấp nhận ảnh PNG, JPEG hoặc WebP. Hãy chọn một ảnh khác.",
+      "tooLarge": "Ảnh vượt quá dung lượng cho phép. Hãy chọn một ảnh nhỏ hơn.",
+      "multipleFiles": "Mỗi lần chỉ tải lên được một ảnh. Hãy chọn một tệp.",
+      "signatureMismatch": "Nội dung tệp không khớp với định dạng ảnh đã khai báo. Hãy chọn ảnh khác.",
+      "metadataInvalid": "Yêu cầu tải lên không hợp lệ. Hãy chọn lại ảnh và thử lại.",
+      "idempotencyConflict": "Lần tải lên này đã được dùng cho một yêu cầu khác. Hãy chọn lại ảnh và bắt đầu lượt tải mới.",
+      "uploadInProgress": "Ảnh này đang được tải lên. Hãy đợi lượt tải hiện tại kết thúc.",
+      "stateConflict": "Lượt tải lên này không còn hiệu lực. Hãy chọn lại ảnh và thử lại.",
+      "timeout": "Quá trình tải lên mất quá nhiều thời gian và đã dừng lại. Hãy thử lại.",
+      "unavailable": "Dịch vụ lưu trữ ảnh tạm thời không khả dụng. Hãy thử lại sau giây lát.",
+      "rateLimited": "Bạn đang thao tác quá nhanh. Hãy đợi một lát rồi thử lại.",
+      "network": "Không có kết nối tới máy chủ. Hãy kiểm tra kết nối mạng và thử lại.",
+      "notFound": "Không tìm thấy tài sản này.",
+      "sessionExpired": "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại để tiếp tục.",
+      "unexpected": "Đã xảy ra lỗi ngoài dự kiến. Hãy thử lại sau giây lát."
+    }
+  },
+  "categories": {
+    "page": {
+      "title": "Danh mục",
+      "subtitle": "Danh mục điều khiển bộ lọc Khám phá, breadcrumb và sitemap. Cấu trúc phẳng — không có danh mục cha.",
+      "create": "Tạo danh mục",
+      "footnote": "Nhãn danh mục lấy từ tên đã lưu — không có bảng ánh xạ tiếng Việt biên dịch sẵn trong Storefront hay Admin (BR-034)."
+    },
+    "table": {
+      "caption": "Danh sách danh mục",
+      "name": "Tên danh mục",
+      "status": "Trạng thái",
+      "publishedProducts": "Sản phẩm đang bán",
+      "indexable": "Lập chỉ mục",
+      "indexableYes": "Có",
+      "indexableNo": "Không",
+      "indexableNotApplicable": "—"
+    },
+    "list": {
+      "loading": "Đang tải danh mục…",
+      "empty": "Chưa có danh mục nào. Tạo danh mục đầu tiên để bắt đầu.",
+      "failed": "Không tải được danh sách danh mục.",
+      "retry": "Thử lại"
+    },
+    "form": {
+      "createTitle": "Tạo danh mục",
+      "nameLabel": "Tên danh mục",
+      "slugLabel": "Slug",
+      "slugHelp": "Chỉ chữ thường, số và dấu gạch ngang. Slug sẽ bị khoá sau lần xuất bản đầu tiên.",
+      "slugLockedChip": "🔒 khoá sau khi xuất bản",
+      "slugLockedHelp": "Đã xuất bản nên không thể đổi. Đổi tên không làm đổi slug.",
+      "indexableLabel": "Cho phép lập chỉ mục (sitemap, canonical)",
+      "displayOrderLabel": "Thứ tự hiển thị",
+      "displayOrderHelp": "Số nhỏ hiện trước. Không tự đánh số: đổi một danh mục không đánh lại các danh mục khác.",
+      "saveDraft": "Lưu nháp",
+      "save": "Lưu",
+      "publish": "Xuất bản",
+      "archive": "Lưu trữ",
+      "cancel": "Đóng",
+      "saving": "Đang lưu…",
+      "publishing": "Đang xuất bản…",
+      "archiving": "Đang lưu trữ…",
+      "archivedNotice": "Danh mục đã lưu trữ nên chỉ xem được. Không thể sửa, không thể xuất bản lại và không thể xoá.",
+      "savedNotice": "Đã lưu danh mục.",
+      "publishedNotice": "Đã xuất bản danh mục. Slug từ nay bị khoá.",
+      "archivedDoneNotice": "Đã lưu trữ danh mục. Danh mục không còn hiển thị công khai."
+    },
+    "validation": {
+      "nameRequired": "Nhập tên danh mục.",
+      "nameTooLong": "Tên danh mục tối đa 120 ký tự.",
+      "slugRequired": "Nhập slug.",
+      "slugMalformed": "Slug chỉ gồm chữ thường, số và dấu gạch ngang, ví dụ: qua-tang-doanh-nghiep.",
+      "slugTooLong": "Slug tối đa 80 ký tự.",
+      "displayOrderInvalid": "Thứ tự hiển thị phải là một số nguyên không âm.",
+      "displayOrderRange": "Thứ tự hiển thị nằm trong khoảng 0 đến 100000."
+    },
+    "archiveRefusal": {
+      "title": "Không thể lưu trữ danh mục",
+      "symbol": "✕",
+      "body": "Còn {count} sản phẩm đang bán thuộc danh mục này. Hãy chuyển chúng sang danh mục khác hoặc gỡ khỏi trang bán trước.",
+      "action": "Xem {count} sản phẩm"
+    },
+    "failure": {
+      "notFound": "Danh mục này không còn tồn tại. Tải lại danh sách để xem trạng thái mới nhất.",
+      "slugConflict": "Slug này đã thuộc về một danh mục khác. Chọn slug khác.",
+      "slugImmutable": "Slug đã bị khoá sau khi xuất bản nên không thể đổi.",
+      "invalidTransition": "Không thực hiện được thay đổi trạng thái này. Tải lại danh sách để xem trạng thái mới nhất.",
+      "inventoryTooLarge": "Danh sách danh mục quá lớn để hiển thị. Liên hệ đội kỹ thuật trước khi tạo thêm danh mục.",
+      "generic": "Không thực hiện được thao tác. Thử lại sau ít phút."
+    },
+    "conflict": {
+      "title": "Danh mục đã được người khác thay đổi",
+      "body": "Có người vừa lưu danh mục này. Tải lại để lấy bản mới nhất — thay đổi chưa lưu của bạn sẽ mất.",
+      "reload": "Tải lại bản mới nhất",
+      "close": "Để nguyên"
+    }
+  },
+  "galleryList": {
+    "page": {
+      "breadcrumb": "Quản trị / Bộ sưu tập",
+      "title": "Bộ sưu tập",
+      "navLabel": "Bộ sưu tập",
+      "tableLabel": "Danh sách mục bộ sưu tập"
+    },
+    "columns": {
+      "entry": "Mục",
+      "displayOrder": "Thứ tự",
+      "linkedProduct": "Sản phẩm liên kết",
+      "status": "Trạng thái"
+    },
+    "entry": {
+      "slugPrefix": "/",
+      "openLabel": "Mở mục “{title}”",
+      "assetCount": "{count} ảnh"
+    },
+    "linkedProduct": {
+      "linked": "Đã liên kết",
+      "unlinked": "Chưa liên kết"
+    },
+    "cover": {
+      "placeholder": "Chưa có ảnh bìa",
+      "failed": "Không tải được ảnh bìa",
+      "alt": "Ảnh bìa của mục “{title}”"
+    },
+    "filters": {
+      "statusLabel": "Trạng thái",
+      "all": "Tất cả trạng thái",
+      "reset": "Xoá bộ lọc"
+    },
+    "actions": {
+      "loadMore": "Tải thêm mục",
+      "loadingMore": "Đang tải thêm…",
+      "retry": "Thử lại",
+      "signIn": "Đăng nhập lại"
+    },
+    "states": {
+      "loading": "Đang tải danh sách bộ sưu tập…",
+      "appended": "Đã tải thêm mục bộ sưu tập.",
+      "emptyTitle": "Chưa có mục bộ sưu tập",
+      "emptyBody": "Tạo mục đầu tiên để bắt đầu bộ sưu tập.",
+      "filteredEmptyTitle": "Không có mục phù hợp với trạng thái đã chọn",
+      "filteredEmptyActive": "Đang lọc: {label}.",
+      "filteredEmptyBody": "Bỏ bộ lọc để xem toàn bộ mục.",
+      "errorTitle": "Không thể tải danh sách bộ sưu tập",
+      "errorBody": "Đã xảy ra lỗi khi tải danh sách. Không có mục nào bị thay đổi.",
+      "unauthenticatedTitle": "Phiên đăng nhập đã hết hạn",
+      "unauthenticatedBody": "Đăng nhập lại để tiếp tục.",
+      "loadMoreFailed": "Không thể tải thêm mục. Các mục đã tải vẫn còn nguyên.",
+      "exhausted": "Đã hiển thị toàn bộ mục."
+    }
+  },
+  "galleryEditor": {
+    "create": {
+      "open": "Tạo mục mới",
+      "title": "Tạo mục bộ sưu tập",
+      "help": "Mục mới là bản nháp. Ảnh, sản phẩm liên kết và xuất bản làm ở bước sau.",
+      "submit": "Tạo mục",
+      "submitting": "Đang tạo…",
+      "cancel": "Huỷ",
+      "fields": {
+        "title": "Tên mục",
+        "slugHelp": "Chữ thường không dấu, số và gạch ngang. Không đổi được sau khi tạo.",
+        "description": "Mô tả",
+        "displayOrder": "Thứ tự hiển thị",
+        "displayOrderHelp": "Số nhỏ hơn đứng trước.",
+        "isIndexable": "Cho phép lập chỉ mục tìm kiếm",
+        "slug": "Đường dẫn"
+      },
+      "suggestSlug": "Gợi ý từ tên mục",
+      "validation": {
+        "summaryTitle": "Hãy kiểm tra lại các thông tin sau",
+        "titleRequired": "Hãy nhập tên mục.",
+        "slugRequired": "Hãy nhập đường dẫn.",
+        "slugInvalid": "Đường dẫn chỉ gồm chữ thường không dấu, số và gạch ngang.",
+        "descriptionRequired": "Hãy nhập mô tả.",
+        "displayOrderInvalid": "Thứ tự hiển thị phải là số nguyên không âm."
+      },
+      "failure": {
+        "slugConflict": {
+          "title": "Đường dẫn đã được dùng",
+          "body": "Một mục khác đang dùng đường dẫn này. Hãy chọn đường dẫn khác."
+        },
+        "invalid": {
+          "title": "Không thể tạo mục",
+          "body": "Thông tin chưa hợp lệ. Hãy kiểm tra lại."
+        },
+        "unauthenticated": {
+          "title": "Phiên đăng nhập đã hết hạn",
+          "body": "Đăng nhập lại để tiếp tục. Thông tin vừa nhập vẫn còn."
+        },
+        "generic": {
+          "title": "Không thể tạo mục",
+          "body": "Đã xảy ra lỗi. Chưa có mục nào được tạo."
+        }
+      }
+    },
+    "detail": {
+      "breadcrumb": "Quản trị / Bộ sưu tập",
+      "backToList": "Về danh sách",
+      "loading": "Đang tải mục bộ sưu tập…",
+      "notFoundTitle": "Không tìm thấy mục bộ sưu tập",
+      "notFoundBody": "Mục này không tồn tại hoặc đã bị gỡ.",
+      "unavailableTitle": "Không thể tải mục bộ sưu tập",
+      "unavailableBody": "Đã xảy ra lỗi khi tải. Không có gì thay đổi.",
+      "unauthenticatedTitle": "Phiên đăng nhập đã hết hạn",
+      "unauthenticatedBody": "Đăng nhập lại để tiếp tục.",
+      "retry": "Thử lại",
+      "signIn": "Đăng nhập lại"
+    },
+    "authoring": {
+      "groupTitle": "Thông tin mục",
+      "seoGroupTitle": "Tối ưu tìm kiếm",
+      "save": "Lưu thay đổi",
+      "saving": "Đang lưu…",
+      "saved": "Đã lưu thay đổi.",
+      "discard": "Huỷ thay đổi",
+      "fields": {
+        "title": "Tên mục",
+        "slugLocked": "Đường dẫn được cố định sau khi tạo.",
+        "description": "Mô tả",
+        "displayOrder": "Thứ tự hiển thị",
+        "displayOrderHelp": "Số nhỏ hơn đứng trước.",
+        "seoTitle": "Tiêu đề tìm kiếm",
+        "seoTitleHelp": "Để trống sẽ dùng tên mục.",
+        "seoDescription": "Mô tả tìm kiếm",
+        "seoDescriptionHelp": "Để trống sẽ dùng mô tả của mục.",
+        "isIndexable": "Cho phép lập chỉ mục tìm kiếm",
+        "isIndexableHelp": "Tắt sẽ ẩn trang khỏi kết quả tìm kiếm và sơ đồ trang. Mục vẫn xuất bản được.",
+        "slug": "Đường dẫn"
+      },
+      "validation": {
+        "summaryTitle": "Hãy kiểm tra lại các thông tin sau",
+        "titleRequired": "Hãy nhập tên mục.",
+        "displayOrderInvalid": "Thứ tự hiển thị phải là số nguyên không âm.",
+        "seoTitleTooLong": "Tiêu đề tìm kiếm quá dài.",
+        "seoDescriptionTooLong": "Mô tả tìm kiếm quá dài."
+      },
+      "failure": {
+        "invalid": {
+          "title": "Không thể lưu thay đổi",
+          "body": "Thông tin chưa hợp lệ. Hãy kiểm tra lại rồi lưu."
+        },
+        "notFound": {
+          "title": "Không thể lưu thay đổi",
+          "body": "Mục này không còn tồn tại. Hãy quay lại danh sách."
+        },
+        "unauthenticated": {
+          "title": "Phiên đăng nhập đã hết hạn",
+          "body": "Đăng nhập lại để tiếp tục. Thay đổi của bạn vẫn còn."
+        },
+        "generic": {
+          "title": "Không thể lưu thay đổi",
+          "body": "Đã xảy ra lỗi. Thay đổi của bạn vẫn còn trên màn hình."
+        }
+      }
+    },
+    "linkedProduct": {
+      "groupTitle": "Sản phẩm liên kết",
+      "help": "Tuỳ chọn. Không liên kết vẫn xuất bản được.",
+      "none": "Chưa liên kết",
+      "choose": "Chọn sản phẩm",
+      "change": "Đổi sản phẩm",
+      "clear": "Bỏ liên kết",
+      "resolving": "Đang tải tên…",
+      "unresolved": "Đã liên kết — không tải được tên",
+      "picker": {
+        "title": "Chọn sản phẩm để liên kết",
+        "help": "Chọn một sản phẩm. Bỏ liên kết được bất cứ lúc nào.",
+        "loading": "Đang tải danh sách sản phẩm…",
+        "emptyTitle": "Chưa có sản phẩm nào",
+        "emptyBody": "Tạo sản phẩm ở mục Sản phẩm trước.",
+        "unavailableTitle": "Không thể tải danh sách sản phẩm",
+        "unavailableBody": "Đã xảy ra lỗi khi tải danh sách.",
+        "loadMore": "Tải thêm",
+        "loadingMore": "Đang tải…",
+        "loadMoreFailed": "Không tải thêm được. Các mục đã tải vẫn còn.",
+        "retry": "Thử lại",
+        "cancel": "Đóng",
+        "select": "Chọn"
+      }
+    },
+    "publication": {
+      "groupTitle": "Xuất bản",
+      "statusLabel": "Trạng thái",
+      "readyTitle": "Sẵn sàng xuất bản",
+      "readyBody": "Mục đã đủ thông tin bắt buộc.",
+      "blockedTitle": "Chưa thể xuất bản",
+      "blockedBody": "Hoàn tất các mục sau rồi lưu:",
+      "publishedTitle": "Đang hiển thị công khai",
+      "publishedBody": "Mục đang hiển thị trong bộ sưu tập công khai.",
+      "archivedTitle": "Mục đã lưu trữ",
+      "archivedBody": "Mục đã lưu trữ: không xuất bản, gỡ xuất bản hay đổi ảnh được.",
+      "requirements": {
+        "title": "Có tên mục",
+        "description": "Có mô tả",
+        "asset": "Có ít nhất một ảnh đã lưu",
+        "slug": "Có đường dẫn"
+      },
+      "unsavedTitle": "Còn thay đổi chưa lưu",
+      "unsavedBody": "Lưu thay đổi trước khi xuất bản hoặc gỡ xuất bản.",
+      "publish": "Xuất bản",
+      "publishing": "Đang xuất bản…",
+      "published": "Đã xuất bản mục.",
+      "unpublish": "Gỡ xuất bản",
+      "unpublishing": "Đang gỡ xuất bản…",
+      "unpublished": "Đã gỡ xuất bản mục.",
+      "confirmUnpublish": {
+        "title": "Gỡ xuất bản mục này?",
+        "body": "Mục trở lại bản nháp và không còn hiển thị công khai. Ảnh, mô tả và thông tin tìm kiếm giữ nguyên. Đây không phải là xoá.",
+        "confirm": "Gỡ xuất bản",
+        "cancel": "Giữ nguyên"
+      },
+      "failure": {
+        "notReady": {
+          "title": "Chưa thể xuất bản",
+          "body": "Mục còn thiếu thông tin bắt buộc. Xem danh sách bên dưới."
+        },
+        "notAllowed": {
+          "title": "Không thực hiện được",
+          "body": "Trạng thái hiện tại không cho phép thao tác này."
+        },
+        "notFound": {
+          "title": "Không thực hiện được",
+          "body": "Mục này không còn tồn tại. Hãy quay lại danh sách."
+        },
+        "unauthenticated": {
+          "title": "Phiên đăng nhập đã hết hạn",
+          "body": "Đăng nhập lại để tiếp tục."
+        },
+        "generic": {
+          "title": "Không thực hiện được",
+          "body": "Đã xảy ra lỗi. Trạng thái của mục không thay đổi."
+        }
+      }
+    },
+    "conflict": {
+      "title": "Mục bộ sưu tập đã thay đổi",
+      "body": "Mục bộ sưu tập đã thay đổi ở nơi khác. Tải lại dữ liệu mới nhất trước khi tiếp tục.",
+      "bodyWithChanges": "Mục bộ sưu tập đã thay đổi ở nơi khác. Tải lại dữ liệu mới nhất trước khi tiếp tục — thay đổi chưa lưu sẽ bị bỏ.",
+      "reload": "Tải lại",
+      "close": "Để sau"
+    },
+    "unsaved": {
+      "title": "Rời khỏi trang khi chưa lưu?",
+      "body": "Bạn có thay đổi chưa lưu. Rời trang sẽ bỏ các thay đổi này.",
+      "stay": "Ở lại",
+      "leave": "Rời khỏi trang"
+    }
+  },
+  "galleryMedia": {
+    "section": {
+      "title": "Ảnh của mục",
+      "help": "Ảnh đầu tiên là ảnh bìa. Thứ tự bên dưới là thứ tự hiển thị.",
+      "empty": "Chưa có ảnh. Cần ít nhất một ảnh để xuất bản.",
+      "listLabel": "Danh sách ảnh đã chọn",
+      "add": "Chọn ảnh có sẵn",
+      "prepare": "Chuẩn bị ảnh mới",
+      "save": "Lưu danh sách ảnh",
+      "saving": "Đang lưu…",
+      "saved": "Đã lưu danh sách ảnh.",
+      "discard": "Huỷ thay đổi ảnh",
+      "reordered": "Đã thay đổi thứ tự ảnh.",
+      "removed": "Đã gỡ ảnh khỏi mục.",
+      "added": "Đã thêm ảnh vào mục.",
+      "coverSet": "Đã đặt làm ảnh bìa.",
+      "dirty": "Danh sách ảnh có thay đổi chưa lưu.",
+      "lockedTitle": "Không thể thay đổi ảnh",
+      "lockedBody": "Mục đã lưu trữ nên danh sách ảnh giữ nguyên."
+    },
+    "row": {
+      "cover": "Ảnh bìa",
+      "position": "Ảnh {position}",
+      "moveEarlier": "Di chuyển trước",
+      "moveLater": "Di chuyển sau",
+      "setCover": "Đặt làm ảnh bìa",
+      "remove": "Gỡ ảnh",
+      "previewLoading": "Đang tải ảnh…",
+      "previewFailed": "Không tải được ảnh",
+      "alt": "Ảnh {position} của mục “{title}”"
+    },
+    "picker": {
+      "title": "Chọn ảnh cho bộ sưu tập",
+      "help": "Chỉ hiện ảnh đã chuẩn bị cho bộ sưu tập. Ảnh đã chọn không hiện lại.",
+      "loading": "Đang tải danh sách ảnh…",
+      "emptyTitle": "Chưa có ảnh nào cho bộ sưu tập",
+      "emptyBody": "Dùng “Chuẩn bị ảnh mới” để tạo ảnh từ ảnh sản phẩm.",
+      "unavailableTitle": "Không thể tải danh sách ảnh",
+      "unavailableBody": "Đã xảy ra lỗi khi tải danh sách.",
+      "loadMore": "Tải thêm",
+      "loadingMore": "Đang tải…",
+      "loadMoreFailed": "Không tải thêm được. Các ảnh đã tải vẫn còn.",
+      "retry": "Thử lại",
+      "cancel": "Huỷ",
+      "confirm": "Thêm vào mục",
+      "selectionCount": "Đã chọn {count} ảnh",
+      "optionAlt": "Ảnh bộ sưu tập"
+    },
+    "source": {
+      "title": "Chuẩn bị ảnh cho bộ sưu tập",
+      "help": "Chọn một ảnh sản phẩm. Hệ thống tạo bản sao công khai cho bộ sưu tập; ảnh gốc giữ nguyên.",
+      "loading": "Đang tải ảnh sản phẩm…",
+      "emptyTitle": "Chưa có ảnh sản phẩm phù hợp",
+      "emptyBody": "Tải ảnh lên ở mục Tài sản và chờ xử lý xong.",
+      "unavailableTitle": "Không thể tải ảnh sản phẩm",
+      "unavailableBody": "Đã xảy ra lỗi khi tải danh sách.",
+      "loadMore": "Tải thêm",
+      "loadingMore": "Đang tải…",
+      "loadMoreFailed": "Không tải thêm được. Các ảnh đã tải vẫn còn.",
+      "retry": "Thử lại",
+      "cancel": "Huỷ",
+      "confirm": "Chuẩn bị ảnh",
+      "preparing": "Đang chuẩn bị…",
+      "prepared": "Đã chuẩn bị ảnh và thêm vào mục.",
+      "optionAlt": "Ảnh sản phẩm",
+      "noPreview": "Chưa có xem trước"
+    },
+    "failure": {
+      "save": {
+        "notEligible": {
+          "title": "Không thể lưu danh sách ảnh",
+          "body": "Một ảnh đã chọn không còn dùng được. Hãy gỡ ảnh đó rồi lưu lại."
+        },
+        "duplicate": {
+          "title": "Không thể lưu danh sách ảnh",
+          "body": "Một ảnh xuất hiện nhiều lần. Hãy gỡ bớt rồi lưu lại."
+        },
+        "notFound": {
+          "title": "Không thể lưu danh sách ảnh",
+          "body": "Mục này không còn tồn tại. Hãy quay lại danh sách."
+        },
+        "unauthenticated": {
+          "title": "Phiên đăng nhập đã hết hạn",
+          "body": "Đăng nhập lại để tiếp tục. Danh sách ảnh vẫn còn."
+        },
+        "generic": {
+          "title": "Không thể lưu danh sách ảnh",
+          "body": "Đã xảy ra lỗi. Danh sách ảnh của bạn vẫn còn."
+        }
+      },
+      "prepare": {
+        "staleSource": {
+          "title": "Không thể chuẩn bị ảnh",
+          "body": "Nguồn ảnh đã thay đổi. Hãy tải lại danh sách và chọn lại."
+        },
+        "notEligible": {
+          "title": "Không thể chuẩn bị ảnh",
+          "body": "Ảnh này không dùng được làm nguồn. Hãy chọn ảnh khác đã xử lý xong."
+        },
+        "unavailable": {
+          "title": "Không thể chuẩn bị ảnh",
+          "body": "Kho ảnh tạm thời không sẵn sàng. Chưa có ảnh nào được tạo."
+        },
+        "unauthenticated": {
+          "title": "Phiên đăng nhập đã hết hạn",
+          "body": "Đăng nhập lại để tiếp tục."
+        },
+        "generic": {
+          "title": "Không thể chuẩn bị ảnh",
+          "body": "Đã xảy ra lỗi. Chưa có ảnh nào được tạo."
+        }
+      }
+    }
+  },
+  "products": {
+    "page": {
+      "title": "Sản phẩm",
+      "subtitleWide": "Quản lý bản nháp và sản phẩm đã xuất bản của xưởng.",
+      "subtitleNarrow": "Bản nháp và sản phẩm đã xuất bản.",
+      "tableLabel": "Danh sách sản phẩm",
+      "collectionLabel": "Danh sách sản phẩm"
+    },
+    "columns": {
+      "product": "Sản phẩm",
+      "category": "Danh mục",
+      "status": "Trạng thái"
+    },
+    "filters": {
+      "statusLabel": "Trạng thái",
+      "categoryLabel": "Danh mục",
+      "statusAll": "Tất cả trạng thái",
+      "categoryAll": "Tất cả danh mục"
+    },
+    "status": {
+      "draft": "Bản nháp",
+      "published": "Đã xuất bản",
+      "archived": "Đã lưu trữ",
+      "unknown": "Chưa xác định"
+    },
+    "media": {
+      "placeholder": "Chưa có ảnh xem trước"
+    },
+    "list": {
+      "loading": "Đang tải danh sách sản phẩm…",
+      "unavailableTitle": "Không thể tải danh sách sản phẩm",
+      "unavailableDescription": "Danh sách sản phẩm hiện chưa tải được. Hãy thử lại sau giây lát.",
+      "unavailableRetry": "Thử lại",
+      "emptyTitle": "Chưa có sản phẩm",
+      "emptyDescription": "Các sản phẩm sẽ xuất hiện tại đây sau khi bản nháp đầu tiên được tạo.",
+      "filteredEmptyTitle": "Không có sản phẩm phù hợp",
+      "filteredEmptyDescription": "Hãy thử chọn trạng thái hoặc danh mục khác."
+    },
+    "actions": {
+      "create": "Tạo sản phẩm",
+      "edit": "Chỉnh sửa",
+      "columnLabel": "Hành động"
+    },
+    "continuation": {
+      "action": "Tải thêm sản phẩm",
+      "loading": "Đang tải thêm…",
+      "loaded": "Đã tải thêm sản phẩm.",
+      "errorMessage": "Không thể tải thêm sản phẩm.",
+      "retry": "Thử lại"
+    }
+  },
+  "productForm": {
+    "create": {
+      "title": "Sản phẩm mới",
+      "subtitle": "Tạo bản nháp với thông tin cơ bản. Giá và ảnh được thêm ở bước chỉnh sửa.",
+      "submit": "Tạo bản nháp",
+      "cancel": "Huỷ",
+      "submitting": "Đang tạo…",
+      "created": "Đã tạo bản nháp sản phẩm.",
+      "failedTitle": "Chưa thể tạo bản nháp",
+      "failedBody": "Bản nháp chưa được tạo. Hãy kiểm tra thông tin và thử lại."
+    },
+    "edit": {
+      "subtitle": "Bản nháp chưa hiển thị công khai. Thay đổi chỉ được lưu khi bạn chọn “Lưu thay đổi”.",
+      "subtitleNarrow": "Bản nháp chưa hiển thị công khai.",
+      "save": "Lưu thay đổi",
+      "cancel": "Huỷ thay đổi",
+      "saving": "Đang lưu…",
+      "savingTitle": "Đang lưu thay đổi…",
+      "savingHelp": "Vui lòng không đóng trang cho tới khi lưu xong.",
+      "saveFailedTitle": "Chưa thể lưu thay đổi",
+      "saveFailedBody": "Thay đổi chưa được lưu. Hãy thử lại sau giây lát.",
+      "savePublishNote": "Lưu thay đổi và Xuất bản là hai hành động tách biệt. Xuất bản thuộc bước sau."
+    },
+    "detail": {
+      "loading": "Đang tải sản phẩm…",
+      "notFoundTitle": "Không tìm thấy sản phẩm",
+      "notFoundBody": "Sản phẩm này không tồn tại hoặc đã bị gỡ khỏi danh sách.",
+      "notEditableTitle": "Sản phẩm không thể chỉnh sửa",
+      "notEditableBody": "Chỉ bản nháp mới có thể chỉnh sửa tại màn hình này.",
+      "unavailableTitle": "Không thể tải sản phẩm",
+      "unavailableBody": "Sản phẩm hiện chưa tải được. Hãy thử lại sau giây lát.",
+      "retry": "Thử lại",
+      "backToList": "Về danh sách sản phẩm"
+    },
+    "groups": {
+      "basic": "Thông tin cơ bản",
+      "category": "Danh mục",
+      "price": "Giá",
+      "media": "Ảnh sản phẩm",
+      "categoryPriceMedia": "Danh mục, Giá & Ảnh"
+    },
+    "fields": {
+      "nameLabel": "Tên sản phẩm",
+      "nameHelp": "Tên hiển thị công khai khi sản phẩm được xuất bản.",
+      "namePlaceholder": "Nhập tên sản phẩm",
+      "descriptionLabel": "Mô tả",
+      "descriptionHelp": "Mô tả ngắn hiển thị trên trang sản phẩm công khai.",
+      "categoryLabel": "Danh mục sản phẩm",
+      "categoryHelp": "Chọn một danh mục để sản phẩm xuất hiện đúng nhóm.",
+      "categoryPlaceholder": "Chọn danh mục",
+      "categoryUnassignable": "Danh mục hiện tại \"{name}\" không còn nhận sản phẩm mới. Chọn danh mục khác trước khi lưu.",
+      "categoryMissing": "Danh mục hiện tại không còn tồn tại. Chọn danh mục khác trước khi lưu.",
+      "priceLabel": "Giá cơ bản",
+      "priceHelp": "Số nguyên đồng, không dấu phân cách. Để trống nếu chưa xác định giá."
+    },
+    "validation": {
+      "summaryTitle": "Chưa thể lưu thay đổi",
+      "createSummaryTitle": "Chưa thể tạo bản nháp",
+      "nameRequired": "Tên sản phẩm không được để trống.",
+      "categoryRequired": "Hãy chọn một danh mục cho sản phẩm.",
+      "priceInvalid": "Giá cơ bản phải là số nguyên đồng, không âm."
+    },
+    "status": {
+      "cardTitle": "Trạng thái",
+      "draftNote": "Bản nháp không hiển thị với khách truy cập. Sản phẩm chỉ công khai sau khi được xuất bản."
+    },
+    "media": {
+      "pick": "Chọn ảnh",
+      "help": "Chỉ ảnh ở trạng thái “Sẵn sàng” mới có thể chọn. Ảnh đầu tiên là ảnh đại diện; dùng “Di chuyển trước/sau” để đổi thứ tự.",
+      "helpNarrow": "Chỉ ảnh “Sẵn sàng” mới chọn được. Ảnh đầu tiên là ảnh đại diện.",
+      "roleThumbnail": "Ảnh đại diện",
+      "roleGallery": "Ảnh thư viện",
+      "moveEarlier": "Di chuyển trước",
+      "moveLater": "Di chuyển sau",
+      "remove": "Gỡ ảnh",
+      "empty": "Chưa chọn ảnh nào cho sản phẩm này.",
+      "listLabel": "Ảnh đã chọn",
+      "reordered": "Đã đổi thứ tự ảnh.",
+      "removed": "Đã gỡ ảnh khỏi sản phẩm."
+    },
+    "picker": {
+      "title": "Chọn ảnh cho sản phẩm",
+      "help": "Chỉ hiển thị ảnh ở trạng thái “Sẵn sàng”. Ảnh đang xử lý hoặc không thể sử dụng sẽ không xuất hiện ở đây. Danh sách tải theo từng trang.",
+      "close": "Đóng",
+      "confirm": "Dùng ảnh đã chọn",
+      "cancel": "Huỷ",
+      "statusReady": "Sẵn sàng",
+      "loading": "Đang tải danh sách ảnh…",
+      "emptyTitle": "Chưa có ảnh nào sẵn sàng",
+      "emptyBody": "Hãy tải ảnh lên ở màn hình Tài sản hình ảnh trước khi chọn.",
+      "unavailableTitle": "Không thể tải danh sách ảnh",
+      "unavailableBody": "Danh sách ảnh hiện chưa tải được. Hãy thử lại sau giây lát.",
+      "retry": "Thử lại",
+      "loadMore": "Tải thêm tài sản",
+      "loadingMore": "Đang tải thêm…",
+      "loadMoreFailed": "Không thể tải thêm tài sản.",
+      "selectionCount": "Đã chọn {count} ảnh"
+    },
+    "conflict": {
+      "title": "Sản phẩm đã được cập nhật ở nơi khác",
+      "body": "Dữ liệu trên máy chủ đã thay đổi kể từ lần bạn mở sản phẩm này. Hãy tải lại để xem phiên bản mới nhất trước khi tiếp tục chỉnh sửa.",
+      "reload": "Tải lại dữ liệu",
+      "close": "Đóng"
+    },
+    "unsaved": {
+      "title": "Bỏ các thay đổi chưa lưu?",
+      "body": "Những thay đổi trên màn hình này sẽ không được lưu.",
+      "leave": "Rời khỏi trang",
+      "stay": "Tiếp tục chỉnh sửa"
+    },
+    "identity": {
+      "titlePng": "Ảnh PNG",
+      "titleJpeg": "Ảnh JPEG",
+      "titleWebp": "Ảnh WebP",
+      "titleUnknown": "Tài sản hình ảnh",
+      "unitBytes": "B",
+      "unitKilobytes": "KB",
+      "unitMegabytes": "MB",
+      "metaUnavailable": "Chưa có thông tin chi tiết",
+      "placeholder": "Chưa có ảnh xem trước"
+    },
+    "slug": {
+      "cardTitle": "Đường dẫn",
+      "note": "Do hệ thống tạo và không thay đổi, kể cả khi đổi tên sản phẩm.",
+      "inlinePrefix": "Đường dẫn: ",
+      "inlineSuffix": " · do hệ thống tạo, không thay đổi."
+    }
+  },
+  "productSaveFailure": {
+    "media-unavailable": {
+      "title": "Chưa thể lưu ảnh đã chọn",
+      "body": "Một ảnh trong lựa chọn không còn ở trạng thái “Sẵn sàng”. Hãy chọn lại ảnh rồi lưu thay đổi."
+    }
+  },
+  "productPublication": {
+    "entry": {
+      "fromDraft": "Xuất bản",
+      "fromPublished": "Quản lý xuất bản"
+    },
+    "screen": {
+      "title": "Xuất bản sản phẩm",
+      "backToProduct": "Quay lại sản phẩm",
+      "backToList": "Danh sách sản phẩm",
+      "loading": "Đang tải trạng thái xuất bản…",
+      "requirementsHeading": "Điều kiện xuất bản",
+      "summaryHeading": "Thông tin sản phẩm",
+      "mediaHeading": "Ảnh sản phẩm",
+      "slugLabel": "Đường dẫn",
+      "slugNote": "Đường dẫn do hệ thống quản lý và không thể chỉnh sửa.",
+      "categoryLabel": "Danh mục",
+      "descriptionLabel": "Mô tả",
+      "priceLabel": "Giá",
+      "statusLabel": "Trạng thái",
+      "primaryMedia": "Ảnh đại diện",
+      "noMedia": "Chưa có ảnh nào được chọn.",
+      "noDescription": "Chưa có mô tả.",
+      "noPrice": "Chưa đặt giá."
+    },
+    "requirements": {
+      "satisfied": "Đã đủ điều kiện",
+      "unsatisfied": "Chưa đủ điều kiện",
+      "unknown": "Điều kiện chưa được hỗ trợ trong phiên bản này"
+    },
+    "ready": {
+      "title": "Sẵn sàng xuất bản",
+      "body": "Sản phẩm đã đáp ứng mọi điều kiện và có thể được xuất bản.",
+      "consequence": "Sau khi xuất bản, sản phẩm sẽ đủ điều kiện hiển thị công khai và không thể chỉnh sửa cho tới khi được gỡ xuất bản.",
+      "publish": "Xuất bản",
+      "publishing": "Đang xuất bản…",
+      "edit": "Chỉnh sửa"
+    },
+    "blocked": {
+      "title": "Còn thiếu điều kiện",
+      "body": "Sản phẩm chưa đáp ứng đủ điều kiện xuất bản. Hãy hoàn thiện bản nháp rồi quay lại.",
+      "edit": "Hoàn thiện bản nháp"
+    },
+    "published": {
+      "title": "Sản phẩm đang được xuất bản",
+      "body": "Sản phẩm đủ điều kiện hiển thị công khai.",
+      "unpublish": "Gỡ xuất bản",
+      "unpublishing": "Đang gỡ xuất bản…",
+      "view": "Xem chi tiết"
+    },
+    "archived": {
+      "title": "Sản phẩm đã được lưu trữ",
+      "body": "Sản phẩm đã lưu trữ không thể xuất bản hoặc gỡ xuất bản tại màn hình này."
+    },
+    "unpublishDialog": {
+      "title": "Gỡ xuất bản sản phẩm?",
+      "body": "Sản phẩm sẽ không còn đủ điều kiện hiển thị công khai. Dữ liệu sản phẩm và ảnh đã chọn vẫn được giữ nguyên.",
+      "reassurance": "Đây không phải thao tác xoá hoặc lưu trữ.",
+      "confirm": "Gỡ xuất bản",
+      "cancel": "Giữ nguyên"
+    },
+    "success": {
+      "publishedTitle": "Sản phẩm đã được xuất bản",
+      "publishedBody": "Sản phẩm hiện đủ điều kiện hiển thị công khai.",
+      "unpublishedTitle": "Đã gỡ xuất bản sản phẩm",
+      "unpublishedBody": "Sản phẩm đã trở lại trạng thái bản nháp và có thể chỉnh sửa."
+    },
+    "failure": {
+      "readinessTitle": "Chưa thể kiểm tra điều kiện xuất bản",
+      "readinessBody": "Không tải được điều kiện xuất bản. Hãy thử lại.",
+      "retry": "Thử lại",
+      "notFoundTitle": "Không tìm thấy sản phẩm",
+      "notFoundBody": "Sản phẩm này không tồn tại hoặc đã bị xoá khỏi danh sách.",
+      "unavailableTitle": "Chưa tải được sản phẩm",
+      "unavailableBody": "Không tải được thông tin sản phẩm. Hãy thử lại.",
+      "mismatchTitle": "Thông tin đang được cập nhật",
+      "mismatchBody": "Trạng thái sản phẩm vừa thay đổi. Hãy tải lại để tiếp tục.",
+      "mismatchRetry": "Tải lại"
+    },
+    "commandFailure": {
+      "not-ready": {
+        "title": "Chưa đủ điều kiện xuất bản",
+        "body": "Một số điều kiện không còn được đáp ứng. Danh sách bên dưới đã được cập nhật."
+      },
+      "publish-not-allowed": {
+        "title": "Chưa thể xuất bản",
+        "body": "Trạng thái sản phẩm vừa thay đổi nên không thể xuất bản. Hãy kiểm tra lại trạng thái hiện tại."
+      },
+      "unpublish-not-allowed": {
+        "title": "Chưa thể gỡ xuất bản",
+        "body": "Trạng thái sản phẩm vừa thay đổi nên không thể gỡ xuất bản. Hãy kiểm tra lại trạng thái hiện tại."
+      },
+      "generic": {
+        "title": "Thao tác chưa hoàn tất",
+        "body": "Chưa thực hiện được thao tác này. Hãy thử lại."
+      }
+    }
+  },
+  "productRequirementLabel": {
+    "PRODUCT_NAME_READY": "Tên sản phẩm và đường dẫn đã sẵn sàng",
+    "PRODUCT_DESCRIPTION_READY": "Đã có mô tả sản phẩm",
+    "PRODUCT_CATEGORY_READY": "Danh mục đang được xuất bản",
+    "PRODUCT_PRICE_READY": "Đã đặt giá sản phẩm",
+    "PRODUCT_MEDIA_READY": "Thứ tự ảnh sản phẩm hợp lệ",
+    "PRODUCT_MEDIA_ASSETS_READY": "Tất cả ảnh đã được duyệt",
+    "PRODUCT_MEDIA_DERIVATIVES_READY": "Ảnh hiển thị công khai đã sẵn sàng"
+  },
+  "skuStock": {
+    "page": {
+      "breadcrumb": "Quản trị / Kho / SKU",
+      "title": "Tồn kho SKU",
+      "source": "Nguồn: GET /api/admin/skus/{skuId}/stock. Bản ghi tồn được tạo lười ở lần đọc đầu tiên — một SKU chưa từng kiểm kho vẫn mở được và bắt đầu từ 0.",
+      "skuLabel": "SKU",
+      "identifiers": "skuId {skuId} · skuStockId {skuStockId}",
+      "adjust": "Điều chỉnh tồn kho",
+      "loading": "Đang tải tồn kho…"
+    },
+    "pill": {
+      "healthy": "Đủ tồn",
+      "lowStock": "Sắp hết hàng"
+    },
+    "metrics": {
+      "onHand": "Tồn thực tế (quantityOnHand)",
+      "onHandNote": "Bộ đếm vận hành. Không bao giờ âm (CST-061).",
+      "held": "Đang giữ mềm (heldQuantity)",
+      "heldNote": "Tổng giữ mềm còn hiệu lực. Không trừ tồn thực tế.",
+      "reserved": "Đã giữ chính thức (reservedQuantity)",
+      "reservedNote": "Tổng giữ kho chính thức còn hiệu lực.",
+      "available": "Khả dụng (available)",
+      "availableNote": "Tính dưới khoá dòng, không lưu trữ. Chỉ đúng trong giao dịch đã tính ra nó."
+    },
+    "threshold": {
+      "lowStockTitle": "Dưới ngưỡng cảnh báo (lowStockThreshold = {threshold})",
+      "lowStockBody": "lowStock so sánh tồn THỰC TẾ với ngưỡng — giữ mềm và giữ chính thức không làm cờ này bật. Khả dụng âm là hệ quả hợp lệ của giữ kho vượt tồn, không phải lỗi dữ liệu. Ngưỡng do hệ thống cấu hình; APP8 không có thao tác sửa ngưỡng nên màn này chỉ hiển thị.",
+      "configured": "lowStockThreshold = {threshold} · lowStock = false. Không có thao tác sửa ngưỡng trong APP8 — B01 không công bố API nào cho việc đó.",
+      "absent": "lowStockThreshold vắng mặt · lowStock = false. Khi không cấu hình ngưỡng, cờ luôn false — không suy diễn ngưỡng từ số lượng."
+    },
+    "ledger": {
+      "title": "Lịch sử chuyển động",
+      "bound": "Mới nhất trước · tối đa 100 bản ghi",
+      "source": "Nguồn: GET …/stock/ledger. Không có API phân trang — hợp đồng chỉ trả một trang kèm cờ truncated. Không thiết kế cuộn vô hạn giả.",
+      "columns": {
+        "entryKind": "Loại chuyển động",
+        "quantity": "Số lượng",
+        "onHandDelta": "Ảnh hưởng tồn",
+        "reason": "Lý do",
+        "occurredAt": "Thời điểm"
+      },
+      "noReason": "—",
+      "truncatedTitle": "Đang hiển thị 100 chuyển động mới nhất",
+      "truncatedBody": "Còn chuyển động cũ hơn không nằm trong trang này. APP8-B01 chưa công bố hợp đồng phân trang cho sổ kho, nên không có nút “tải thêm”, không cuộn vô hạn và không số trang.",
+      "failureTitle": "Không tải được lịch sử chuyển động",
+      "failureBody": "Số liệu tồn kho bên trên vẫn là dữ liệu máy chủ. Chỉ phần lịch sử chưa đọc được.",
+      "retry": "Tải lại lịch sử"
+    },
+    "newAnchor": {
+      "lead": "SKU {skuId} · Bản ghi tồn vừa được tạo lười ở lần đọc này. Giá trị khởi tạo 0 là câu trả lời của kho, không phải giá trị mặc định do giao diện bịa ra.",
+      "title": "Chưa có chuyển động nào cho SKU này",
+      "body": "Mảng entries rỗng là câu trả lời bình thường, không phải lỗi. Số lượng thực đầu tiên chỉ đến qua một điều chỉnh có kiểm toán — không có thao tác “ghi đè tồn tuyệt đối” trong APP8."
+    },
+    "failure": {
+      "missingTitle": "Không tìm thấy SKU",
+      "missingBody": "INVENTORY_SKU_NOT_FOUND · 404. Khoá ngoại là thẩm quyền duy nhất về việc SKU có tồn tại hay không — giao diện không tự kiểm tra trước. Kiểm tra lại mã SKU hoặc mở lại từ danh mục.",
+      "backToCatalog": "Mở lại từ danh mục",
+      "retryTitle": "Không tải được tồn kho",
+      "retryBody": "Lỗi máy chủ · 500. Dữ liệu tồn kho chưa hiển thị được. Không có số liệu nào được đoán và không có điều chỉnh nào được gửi.",
+      "reload": "Tải lại",
+      "retry": "Thử lại",
+      "unauthenticatedTitle": "Phiên đăng nhập đã hết hạn",
+      "unauthenticatedBody": "401. Đăng nhập lại để tiếp tục. Mọi thao tác kho đều yêu cầu phiên quản trị hợp lệ.",
+      "signIn": "Đăng nhập lại",
+      "forbiddenTitle": "Thao tác bị từ chối",
+      "forbiddenBody": "403. Thực hiện lại từ giao diện quản trị chính thức."
+    },
+    "adjust": {
+      "title": "Điều chỉnh tồn kho",
+      "context": "SKU {skuId} · tồn hiện tại {onHand} · khả dụng {available}",
+      "deltaLabel": "Chênh lệch (số nguyên có dấu) · bắt buộc",
+      "deltaHelp": "Số nguyên khác 0. Dấu − để giảm, + để tăng. Không nhận số thập phân.",
+      "reasonLabel": "Lý do · bắt buộc",
+      "reasonHelp": "Bắt buộc. Chuỗi trắng không được coi là lý do. Tối đa 2.000 ký tự.",
+      "consequenceTitle": "Hệ quả của thao tác này",
+      "consequenceBody": "Điều chỉnh là một chênh lệch CÓ DẤU cộng vào tồn thực tế, được ghi vào sổ kiểm toán kèm lý do và danh tính quản trị viên. Không có ghi đè tuyệt đối: một giá trị tuyệt đối sẽ xoá mất thay đổi mà giao dịch khác vừa ghi.",
+      "previewTitle": "Sau khi áp dụng",
+      "previewBody": "Tồn thực tế {onHandBefore} → {onHandAfter} · khả dụng {availableBefore} → {availableAfter}. Con số xem trước này chỉ để định hướng; kết quả thật do máy chủ tính dưới khoá dòng.",
+      "cancel": "Huỷ",
+      "submit": "Áp dụng điều chỉnh",
+      "submitting": "Đang áp dụng…",
+      "close": "Đóng"
+    },
+    "validation": {
+      "blockedTitle": "Chặn tại chỗ, không gửi đi",
+      "blockedBody": "Cả hai lỗi trên đều được máy chủ từ chối bằng 400. Giao diện nêu đúng trường sai để quản trị viên sửa ngay, thay vì gửi một yêu cầu chắc chắn hỏng.",
+      "deltaRequired": "Vui lòng nhập chênh lệch.",
+      "deltaNotInteger": "Chênh lệch phải là số nguyên — không nhận số thập phân.",
+      "deltaZero": "Điều chỉnh phải làm thay đổi số lượng — chênh lệch 0 không hợp lệ.",
+      "deltaOutOfRange": "Chênh lệch vượt quá phạm vi hợp đồng cho phép.",
+      "reasonRequired": "Vui lòng nhập lý do. Đây là bằng chứng kiểm toán bắt buộc cho mọi điều chỉnh.",
+      "reasonTooLong": "Lý do vượt quá 2.000 ký tự."
+    },
+    "submitting": {
+      "context": "SKU {skuId} · đang ghi vào sổ kho",
+      "title": "Đang xử lý",
+      "body": "Không đóng cửa sổ và không bấm lại. Nếu kết nối gián đoạn, kết quả thật vẫn là kết quả máy chủ đã ghi — hãy tải lại tồn kho để đọc lại, đừng gửi lại một điều chỉnh thứ hai."
+    },
+    "success": {
+      "title": "Đã ghi điều chỉnh",
+      "context": "SKU {skuId}",
+      "noteTitle": "Tồn kho đã cập nhật",
+      "noteBody": "Tồn thực tế {onHandBefore} → {onHandAfter}. Khả dụng {availableBefore} → {availableAfter}. Một dòng ADJUSTMENT đã được ghi vào sổ kèm lý do và danh tính người thực hiện.",
+      "ledgerTitle": "Sổ kho là nguồn dựng lại",
+      "ledgerBody": "Tổng cột “ảnh hưởng tồn” dựng lại đúng bộ đếm. Sổ chỉ ghi thêm, không sửa và không xoá.",
+      "viewLedger": "Xem lịch sử chuyển động"
+    },
+    "refusal": {
+      "negativeHeading": "Không thể áp dụng điều chỉnh",
+      "negativeContext": "SKU {skuId} · tồn hiện tại {onHand}",
+      "negativeTitle": "Điều chỉnh sẽ làm tồn kho âm",
+      "negativeBody": "INVENTORY_STOCK_WOULD_GO_NEGATIVE · 409. Tồn thực tế là {onHand}; {movement} sẽ đưa về {resulting}. Không có gì được ghi: không đổi tồn, không thêm dòng sổ. Hãy nhập chênh lệch không vượt quá {onHand}, hoặc kiểm kho lại trước.",
+      "overrideTitle": "Vì sao không có quyền ghi đè",
+      "overrideBody": "Quyền ghi đè của quản trị viên áp dụng cho việc điều chỉnh, nhưng KHÔNG BAO GIỜ cho tồn kho âm. Ràng buộc CSDL là chốt chặn cuối; đây là câu trả lời mà quản trị viên hành động được.",
+      "editDelta": "Sửa chênh lệch",
+      "missingTitle": "Không tìm thấy SKU",
+      "missingBody": "INVENTORY_SKU_NOT_FOUND · 404. Không có gì được ghi. Kiểm tra lại mã SKU hoặc mở lại từ danh mục.",
+      "unauthenticatedTitle": "Phiên đăng nhập đã hết hạn",
+      "unauthenticatedBody": "401. Không có gì được ghi. Đăng nhập lại để tiếp tục.",
+      "forbiddenTitle": "Thao tác bị từ chối",
+      "forbiddenBody": "403. Không có gì được ghi. Thực hiện lại từ giao diện quản trị chính thức.",
+      "serverTitle": "Có lỗi xảy ra",
+      "serverBody": "500. Thử lại. Không đoán số liệu và không hiển thị thông tin nội bộ của máy chủ.",
+      "ambiguousTitle": "Chưa biết kết quả",
+      "ambiguousBody": "Kết nối gián đoạn trước khi máy chủ trả lời. Điều chỉnh có thể đã được ghi. Số liệu bên dưới đã được đọc lại từ máy chủ — hãy kiểm tra trước khi gửi bất kỳ điều chỉnh nào khác.",
+      "decreaseBy": "giảm {amount}",
+      "changeBy": "thay đổi {amount}"
+    }
+  },
+  "galleryStatusLabels": {
+    "DRAFT": {
+      "label": "Bản nháp"
+    },
+    "PUBLISHED": {
+      "label": "Đã xuất bản"
+    },
+    "ARCHIVED": {
+      "label": "Đã lưu trữ"
+    }
+  },
+  "categoryStatusLabels": {
+    "DRAFT": {
+      "label": "Nháp"
+    },
+    "PUBLISHED": {
+      "label": "Đang hiển thị"
+    },
+    "ARCHIVED": {
+      "label": "Đã lưu trữ"
+    }
+  },
+  "mediaTypeLabels": {
+    "image/png": "Ảnh PNG",
+    "image/jpeg": "Ảnh JPEG",
+    "image/webp": "Ảnh WebP"
+  },
+  "loginFieldErrors": {
+    "email": {
+      "REQUIRED": "Vui lòng nhập email.",
+      "INVALID": "Địa chỉ email không hợp lệ.",
+      "TOO_LONG": "Địa chỉ email quá dài."
+    },
+    "password": {
+      "REQUIRED": "Vui lòng nhập mật khẩu.",
+      "TOO_LONG": "Mật khẩu quá dài."
+    }
+  },
+  "nav": {
+    "adminPrimaryNav": {
+      "label": "Tổng quan"
+    }
+  },
+  "productPlacementEntry": {
+    "placementEntryLabel": "Vị trí thêu"
+  },
+  "protectedError": {
+    "title": "Không thể xác minh phiên đăng nhập",
+    "detail": "Hiện chưa thể kết nối tới dịch vụ xác thực. Đây là sự cố tạm thời của máy chủ, không phải do bạn đã đăng xuất. Vui lòng thử lại.",
+    "retry": "Thử lại"
+  }
+}

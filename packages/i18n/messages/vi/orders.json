@@ -1,0 +1,192 @@
+{
+  "secureLink": {
+    "bootstrap": {
+      "title": "Đang mở liên kết an toàn",
+      "body": "Vui lòng chờ trong giây lát.",
+      "caption": "Không đóng tab trong lúc kiểm tra."
+    },
+    "unavailable": {
+      "title": "Liên kết không sử dụng được",
+      "alertTitle": "Không mở được liên kết này",
+      "alertBody": "Liên kết có thể đã hết hạn, đã được thay bằng liên kết mới, hoặc không dành cho thiết bị này. Hãy dùng liên kết mới nhất trong tin nhắn của bạn.",
+      "body": "Nếu bạn vẫn cần truy cập, hãy trả lời tin nhắn gần nhất của {brand} để được gửi liên kết mới."
+    },
+    "transientError": {
+      "title": "Không kết nối được",
+      "alertTitle": "Mất kết nối tới máy chủ",
+      "alertBody": "Chúng tôi chưa kiểm tra được liên kết. Đây là lỗi kết nối, không phải liên kết của bạn có vấn đề.",
+      "retry": "Thử lại"
+    },
+    "home": "Về trang chủ",
+    "live": {
+      "bootstrap": "Đang kiểm tra liên kết an toàn.",
+      "unavailable": "Liên kết không sử dụng được.",
+      "transientError": "Không kết nối được máy chủ. Bạn có thể thử lại."
+    },
+    "pageTitle": "Truy cập an toàn — {brand}"
+  },
+  "orderAccess": {
+    "title": "Thanh toán đơn hàng",
+    "order": {
+      "prefix": "Đơn hàng",
+      "suffix": "Liên kết chỉ dành cho bạn"
+    },
+    "states": {
+      "AWAITING_SHIPPING_FEE": {
+        "pill": "Chờ xưởng báo phí giao hàng",
+        "body": "Xưởng đang tính phí giao hàng cho địa chỉ của bạn.",
+        "note": "Chưa có mã QR và chưa có tổng tiền — cả hai chỉ xuất hiện sau khi phí được xác nhận."
+      },
+      "AWAITING_PAYMENT": {
+        "pill": "Chờ thanh toán",
+        "body": "Xưởng đã xác nhận phí giao hàng. Bạn có thể chuyển khoản theo thông tin bên dưới."
+      },
+      "PAYMENT_UNDER_REVIEW": {
+        "pill": "Xưởng đang đối chiếu",
+        "body": "Xưởng đã nhận thông tin và đang đối chiếu khoản chuyển.",
+        "note": "Hướng dẫn chuyển khoản vẫn hiển thị bên dưới cho tới khi xưởng xác nhận."
+      },
+      "READY_FOR_DELIVERY": {
+        "pill": "Đã thanh toán · chuẩn bị giao",
+        "body": "Xưởng đã xác nhận thanh toán và đang chuẩn bị hàng."
+      },
+      "DELIVERED": {
+        "pill": "Đã giao",
+        "body": "Đơn hàng đã được giao."
+      },
+      "COMPLETED": {
+        "pill": "Hoàn tất",
+        "body": "Cảm ơn bạn đã đặt hàng tại {brand}."
+      },
+      "CANCELLED": {
+        "pill": "Đã huỷ",
+        "body": "Đơn hàng đã được huỷ."
+      },
+      "EXPIRED": {
+        "pill": "Hết hạn giữ hàng",
+        "body": "Đơn đã huỷ vì quá hạn giữ hàng 24 giờ.",
+        "note": "Hàng đã trả lại kho. Bạn có thể đặt lại từ trang sản phẩm."
+      },
+      "OTHER_STATE": {
+        "pill": "Đang cập nhật",
+        "body": "Đơn hàng của bạn đang được xưởng xử lý.",
+        "note": "Xưởng sẽ liên hệ với bạn nếu cần thêm thông tin."
+      }
+    },
+    "amount": {
+      "title": "Số tiền cần thanh toán",
+      "highlightLabel": "Tổng thanh toán",
+      "merchandiseLabel": "Tiền hàng",
+      "feeLabel": "Phí giao hàng",
+      "pendingFee": "Có sau khi xưởng xác nhận phí giao hàng"
+    },
+    "transfer": {
+      "title": "Chuyển khoản ngân hàng",
+      "bankLabel": "Ngân hàng",
+      "accountNameLabel": "Chủ tài khoản",
+      "accountNumberLabel": "Số tài khoản",
+      "referenceLabel": "Nội dung chuyển khoản",
+      "referenceNote": "Giữ nguyên nội dung chuyển khoản để xưởng đối chiếu đúng đơn của bạn."
+    },
+    "qr": {
+      "title": "Quét mã để chuyển khoản",
+      "hint": "Mã QR đã gồm đúng số tiền và nội dung chuyển khoản. Nếu không quét được, bạn dùng thông tin chuyển khoản ngân hàng của đơn này.",
+      "alt": "Mã QR chuyển khoản đã gồm sẵn số tiền và nội dung chuyển khoản của đơn hàng này.",
+      "loading": "Đang tạo mã QR…",
+      "failed": "Chưa tạo được mã QR.",
+      "retry": "Thử lại",
+      "download": "Tải mã QR",
+      "truth": "Quét mã hoặc chuyển tiền chưa có nghĩa là đơn đã được thanh toán. Xưởng sẽ đối chiếu và xác nhận."
+    },
+    "evidence": {
+      "title": "Ảnh xác nhận chuyển khoản",
+      "lead": "Không bắt buộc. Gửi ảnh giúp xưởng đối chiếu nhanh hơn.",
+      "choosePrefix": "Chọn ảnh (tối đa",
+      "chooseSuffix": ")",
+      "constraint": "Ảnh JPG, PNG hoặc WebP, mỗi ảnh tối đa 10 MB.",
+      "uploading": "Đang gửi ảnh…",
+      "optionalBadge": "Không bắt buộc",
+      "empty": "Bạn chưa gửi ảnh nào.",
+      "listLabel": "Ảnh xác nhận chuyển khoản đã gửi",
+      "truth": "Ảnh đã nhận không có nghĩa là đã thanh toán. Xưởng vẫn cần đối chiếu khoản chuyển.",
+      "quotaReached": "Bạn đã gửi đủ số ảnh cho lần chuyển khoản này."
+    },
+    "evidenceStatus": {
+      "UPLOADED": {
+        "label": "Đang kiểm tra",
+        "note": "Xưởng đã nhận được ảnh và đang kiểm tra tệp."
+      },
+      "INSPECTING": {
+        "label": "Đang kiểm tra",
+        "note": "Xưởng đã nhận được ảnh và đang kiểm tra tệp."
+      },
+      "ACCEPTED": {
+        "label": "Ảnh dùng được",
+        "note": "Ảnh rõ và dùng được để đối chiếu. Xưởng vẫn cần kiểm tra khoản chuyển."
+      },
+      "REJECTED": {
+        "label": "Ảnh không dùng được",
+        "note": "Tệp này không đọc được. Bạn có thể gửi ảnh khác."
+      }
+    },
+    "evidenceFailure": {
+      "MEDIA_UNSUPPORTED": "Chỉ nhận ảnh JPG, PNG hoặc WebP.",
+      "TOO_LARGE": "Ảnh vượt quá 10 MB. Bạn thử gửi ảnh nhẹ hơn.",
+      "QUOTA_REACHED": "Bạn đã gửi đủ số ảnh cho lần chuyển khoản này.",
+      "ATTEMPT_CLOSED": "Lần chuyển khoản này đã khép lại, không nhận thêm ảnh.",
+      "REVERIFICATION_REQUIRED": "Cần xác minh lại trước khi gửi ảnh.",
+      "IN_PROGRESS": "Một ảnh đang được gửi. Bạn chờ ảnh đó xong rồi thử lại.",
+      "TRANSIENT": "Chưa gửi được ảnh. Bạn thử lại giúp xưởng nhé.",
+      "retry": "Gửi lại ảnh"
+    },
+    "access": {
+      "expiryPrefix": "Liên kết này hết hạn lúc",
+      "expirySuffix": "."
+    },
+    "deadline": {
+      "prefix": "Xưởng giữ hàng cho bạn tới",
+      "suffix": "."
+    },
+    "attempt": {
+      "start": "Hiện thông tin chuyển khoản",
+      "starting": "Đang mở…",
+      "opened": "Thông tin chuyển khoản đã sẵn sàng bên dưới.",
+      "superseded": "Xưởng vừa cập nhật phí giao hàng, nên số tiền đã thay đổi. Bạn chuyển khoản theo số tiền mới bên dưới."
+    },
+    "attemptFailure": {
+      "FULL_PAYMENT_NOT_PAYABLE": "Đơn hàng này hiện chưa nhận thanh toán. Bạn tải lại trang giúp xưởng nhé.",
+      "DUPLICATE_OPERATION": "Yêu cầu đang được xử lý. Bạn chờ trong giây lát.",
+      "IDEMPOTENCY_CONFLICT": "Có một yêu cầu khác cho đơn này. Bạn tải lại trang rồi thử lại.",
+      "FULL_PAYMENT_INSTRUCTIONS_UNAVAILABLE": "Chưa lấy được thông tin chuyển khoản. Bạn thử lại trong ít phút.",
+      "TRANSIENT": "Chưa mở được thông tin chuyển khoản. Bạn thử lại giúp xưởng nhé."
+    },
+    "stepUp": {
+      "title": "Xác minh lại trước khi thanh toán",
+      "body": "Để bảo vệ đơn hàng, xưởng cần xác minh lại liên hệ của bạn trước khi hiện thông tin chuyển khoản.",
+      "stay": "Bạn ở lại trang này trong lúc xác minh — đóng trang sẽ phải mở lại liên kết từ tin nhắn.",
+      "safety": "Xưởng không bao giờ hỏi mã xác minh qua điện thoại hay tin nhắn.",
+      "verified": "Đã xác minh. Đang mở thông tin chuyển khoản…",
+      "cancel": "Để sau"
+    },
+    "copy": {
+      "short": "Sao chép",
+      "amount": "Sao chép số tiền",
+      "accountNumber": "Sao chép số tài khoản",
+      "reference": "Sao chép nội dung chuyển khoản",
+      "doneAmount": "Đã sao chép số tiền.",
+      "doneAccountNumber": "Đã sao chép số tài khoản.",
+      "doneReference": "Đã sao chép nội dung chuyển khoản.",
+      "failed": "Chưa sao chép được. Bạn chọn và sao chép thủ công giúp xưởng nhé."
+    },
+    "live": {
+      "authorized": "Đã mở đơn hàng của bạn.",
+      "qrLoading": "Đang tạo mã QR.",
+      "qrReady": "Mã QR đã sẵn sàng.",
+      "initiating": "Đang mở thông tin chuyển khoản.",
+      "stepUp": "Cần xác minh lại trước khi tiếp tục.",
+      "evidenceUploaded": "Đã gửi ảnh xác nhận."
+    },
+    "pageTitle": "Đơn hàng của bạn — {brand}",
+    "pageDescription": "Xem trạng thái đơn hàng, số tiền cần thanh toán và thông tin chuyển khoản qua liên kết truy cập an toàn."
+  }
+}

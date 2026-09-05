@@ -1,4 +1,10 @@
 /**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/storefront.json`), not in this file
+ * (`APP12-V02` §5A).
+ */
+const navMessage = messageView(VI_MESSAGES.storefront, 'shell.navItems');
+/**
  * Storefront primary navigation model (APP1-S01A; Discover activated by
  * `APP2-S01`).
  *
@@ -13,6 +19,7 @@
  */
 
 /** The canonical Storefront home route; the brand link targets it. */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
 export const STOREFRONT_HOME_ROUTE = '/';
 
 /**
@@ -212,11 +219,23 @@ export interface StorefrontNavItem {
  * no Studio landing page, so any `href` here would have to invent one.
  */
 export const STOREFRONT_PRIMARY_NAV: readonly StorefrontNavItem[] = [
-  { id: 'discover', label: 'Khám phá', route: STOREFRONT_DISCOVER_ROUTE },
-  { id: 'collections', label: 'Bộ sưu tập', route: STOREFRONT_GALLERY_ROUTE },
+  {
+    id: 'discover',
+    label: navMessage.text('storefrontPrimaryNav.label'),
+    route: STOREFRONT_DISCOVER_ROUTE,
+  },
+  {
+    id: 'collections',
+    label: navMessage.text('storefrontPrimaryNav.label2'),
+    route: STOREFRONT_GALLERY_ROUTE,
+  },
   { id: 'studio', label: 'Studio', route: null },
-  { id: 'commission', label: 'Đặt thêu', route: STOREFRONT_CUSTOM_REQUEST_ROUTE },
-  { id: 'journal', label: 'Nhật ký', route: null },
+  {
+    id: 'commission',
+    label: navMessage.text('storefrontPrimaryNav.label3'),
+    route: STOREFRONT_CUSTOM_REQUEST_ROUTE,
+  },
+  { id: 'journal', label: navMessage.text('storefrontPrimaryNav.label4'), route: null },
 ];
 
 /**

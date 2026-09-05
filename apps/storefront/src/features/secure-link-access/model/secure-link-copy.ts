@@ -32,12 +32,28 @@
  * entry; `634:119` states that state keeps its layout at both sizes.
  */
 
+import { VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
+import { BRAND_NAME } from '@embroidery/ui';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/orders.json`, under `secureLink`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const secureLinkMessage = messageView(
+  hydrateMessages(VI_MESSAGES.orders, { brand: BRAND_NAME }),
+  'secureLink',
+);
+
 export const SECURE_LINK_COPY = {
   /** `629:9` / `629:10` / `629:16` — bootstrap while the landing resolves. */
   bootstrap: {
-    title: 'Đang mở liên kết an toàn',
-    body: 'Vui lòng chờ trong giây lát.',
-    caption: 'Không đóng tab trong lúc kiểm tra.',
+    title: secureLinkMessage.text('bootstrap.title'),
+    body: secureLinkMessage.text('bootstrap.body'),
+    caption: secureLinkMessage.text('bootstrap.caption'),
   },
 
   /**
@@ -46,24 +62,22 @@ export const SECURE_LINK_COPY = {
    * the same wherever it is read.
    */
   unavailable: {
-    title: 'Liên kết không sử dụng được',
-    alertTitle: 'Không mở được liên kết này',
-    alertBody:
-      'Liên kết có thể đã hết hạn, đã được thay bằng liên kết mới, hoặc không dành cho thiết bị này. Hãy dùng liên kết mới nhất trong tin nhắn của bạn.',
-    body: 'Nếu bạn vẫn cần truy cập, hãy trả lời tin nhắn gần nhất của Nét Thêu để được gửi liên kết mới.',
+    title: secureLinkMessage.text('unavailable.title'),
+    alertTitle: secureLinkMessage.text('unavailable.alertTitle'),
+    alertBody: secureLinkMessage.text('unavailable.alertBody'),
+    body: secureLinkMessage.text('unavailable.body'),
   },
 
   /** `629:59` … `629:66` — transport uncertainty, kept distinct on purpose. */
   transientError: {
-    title: 'Không kết nối được',
-    alertTitle: 'Mất kết nối tới máy chủ',
-    alertBody:
-      'Chúng tôi chưa kiểm tra được liên kết. Đây là lỗi kết nối, không phải liên kết của bạn có vấn đề.',
-    retry: 'Thử lại',
+    title: secureLinkMessage.text('transientError.title'),
+    alertTitle: secureLinkMessage.text('transientError.alertTitle'),
+    alertBody: secureLinkMessage.text('transientError.alertBody'),
+    retry: secureLinkMessage.text('transientError.retry'),
   },
 
   /** `629:48` / `629:65` / `629:98` — the one navigation out of every dead end. */
-  home: 'Về trang chủ',
+  home: secureLinkMessage.text('home'),
 
   /**
    * The polite live-region announcements (`634:145`, `634:146`).
@@ -73,11 +87,11 @@ export const SECURE_LINK_COPY = {
    * reason the visible copy does not.
    */
   live: {
-    bootstrap: 'Đang kiểm tra liên kết an toàn.',
-    unavailable: 'Liên kết không sử dụng được.',
-    transientError: 'Không kết nối được máy chủ. Bạn có thể thử lại.',
+    bootstrap: secureLinkMessage.text('live.bootstrap'),
+    unavailable: secureLinkMessage.text('live.unavailable'),
+    transientError: secureLinkMessage.text('live.transientError'),
   },
 
   /** The document title. Reused as the accessible page name. */
-  pageTitle: 'Truy cập an toàn — Nét Thêu',
+  pageTitle: secureLinkMessage.text('pageTitle'),
 } as const;

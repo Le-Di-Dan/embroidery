@@ -26,93 +26,102 @@
  * SQL fragment or error code reaches this catalog; the conflict names the
  * situation, not the wire format.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin-wave2.json`, under `designTemplateEditor`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const designTemplateEditorMessage = messageView(VI_MESSAGES.adminWave2, 'designTemplateEditor');
+
 export const DESIGN_TEMPLATE_EDITOR_COPY = {
   page: {
-    backToList: 'Danh sách mẫu thêu',
+    backToList: designTemplateEditorMessage.text('page.backToList'),
     /** The one `APP3-A04` affordance: navigation, never a lifecycle command. */
-    managePublication: 'Quản lý xuất bản',
-    loading: 'Đang tải mẫu thêu…',
-    notFoundTitle: 'Không tìm thấy mẫu thêu',
-    notFoundBody: 'Mẫu thêu này không tồn tại hoặc đã bị xoá khỏi danh sách.',
-    loadFailedTitle: 'Không tải được mẫu thêu',
-    loadFailedBody: 'Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại.',
-    retry: 'Thử lại',
+    managePublication: designTemplateEditorMessage.text('page.managePublication'),
+    loading: designTemplateEditorMessage.text('page.loading'),
+    notFoundTitle: designTemplateEditorMessage.text('page.notFoundTitle'),
+    notFoundBody: designTemplateEditorMessage.text('page.notFoundBody'),
+    loadFailedTitle: designTemplateEditorMessage.text('page.loadFailedTitle'),
+    loadFailedBody: designTemplateEditorMessage.text('page.loadFailedBody'),
+    retry: designTemplateEditorMessage.text('page.retry'),
   },
 
   status: {
-    draft: 'Bản nháp',
-    published: 'Đã xuất bản',
-    archived: 'Đã lưu trữ',
-    unknown: 'Không xác định',
+    draft: designTemplateEditorMessage.text('status.draft'),
+    published: designTemplateEditorMessage.text('status.published'),
+    archived: designTemplateEditorMessage.text('status.archived'),
+    unknown: designTemplateEditorMessage.text('status.unknown'),
   },
 
   version: {
     /** Truthful for a header `APP3-B03` created and `APP3-B03A` has not saved. */
-    none: 'Chưa có phiên bản',
-    current: (version: number) => `Phiên bản hiện tại: v${String(version)}`,
+    none: designTemplateEditorMessage.text('version.none'),
+    current: (version: number) => designTemplateEditorMessage.text('version.current', { version }),
   },
 
   save: {
-    action: 'Lưu phiên bản',
+    action: designTemplateEditorMessage.text('save.action'),
     /** The chip. Four states, and `conflict` is not a kind of error. */
-    chipSaved: 'Đã lưu',
-    chipUnsaved: 'Chưa lưu',
-    chipSaving: 'Đang lưu…',
-    chipConflict: 'Xung đột phiên bản',
+    chipSaved: designTemplateEditorMessage.text('save.chipSaved'),
+    chipUnsaved: designTemplateEditorMessage.text('save.chipUnsaved'),
+    chipSaving: designTemplateEditorMessage.text('save.chipSaving'),
+    chipConflict: designTemplateEditorMessage.text('save.chipConflict'),
     /** Announced politely so a save does not interrupt an operator mid-edit. */
-    announcedSaved: (version: number) => `Đã lưu phiên bản v${String(version)}.`,
-    announcedSaving: 'Đang lưu phiên bản…',
-    failedTitle: 'Không lưu được phiên bản',
-    failedBody: 'Đã xảy ra lỗi khi lưu. Bản nháp của bạn vẫn được giữ nguyên.',
-    rejectedTitle: 'Máy chủ từ chối tài liệu này',
-    rejectedBody: 'Tài liệu chưa hợp lệ để lưu. Bản nháp của bạn vẫn được giữ nguyên.',
-    notEditableTitle: 'Mẫu thêu này không còn ở trạng thái bản nháp',
-    notEditableBody:
-      'Chỉ bản nháp mới lưu được phiên bản mới. Vui lòng tải lại để xem trạng thái mới nhất.',
+    announcedSaved: (version: number) =>
+      designTemplateEditorMessage.text('save.announcedSaved', { version }),
+    announcedSaving: designTemplateEditorMessage.text('save.announcedSaving'),
+    failedTitle: designTemplateEditorMessage.text('save.failedTitle'),
+    failedBody: designTemplateEditorMessage.text('save.failedBody'),
+    rejectedTitle: designTemplateEditorMessage.text('save.rejectedTitle'),
+    rejectedBody: designTemplateEditorMessage.text('save.rejectedBody'),
+    notEditableTitle: designTemplateEditorMessage.text('save.notEditableTitle'),
+    notEditableBody: designTemplateEditorMessage.text('save.notEditableBody'),
   },
 
   conflict: {
-    title: 'Máy chủ đã có phiên bản mới hơn',
+    title: designTemplateEditorMessage.text('conflict.title'),
     /** The load-bearing sentence: nothing of the operator's was written. */
-    notOverwritten:
-      'Máy chủ chưa ghi đè bất cứ thay đổi nào. Phiên bản trên máy chủ vẫn nguyên vẹn.',
-    body: 'Một phiên bản mới đã được lưu sau khi bạn mở mẫu này, nên bản nháp của bạn không còn dựa trên phiên bản hiện tại.',
-    noMerge: 'Hệ thống không tự động gộp hai bản. Bạn cần chọn một trong hai.',
-    reload: 'Tải phiên bản mới nhất',
-    reloadHelp: 'Thay thế bản nháp trên máy bạn bằng phiên bản mới nhất của máy chủ.',
-    keepLocal: 'Giữ bản nháp trên máy',
-    keepLocalHelp:
-      'Giữ nội dung bạn đang sửa. Bản nháp chỉ nằm trong trình duyệt này và chưa lưu được.',
+    notOverwritten: designTemplateEditorMessage.text('conflict.notOverwritten'),
+    body: designTemplateEditorMessage.text('conflict.body'),
+    noMerge: designTemplateEditorMessage.text('conflict.noMerge'),
+    reload: designTemplateEditorMessage.text('conflict.reload'),
+    reloadHelp: designTemplateEditorMessage.text('conflict.reloadHelp'),
+    keepLocal: designTemplateEditorMessage.text('conflict.keepLocal'),
+    keepLocalHelp: designTemplateEditorMessage.text('conflict.keepLocalHelp'),
     /** Shown persistently after the dialog closes, so nothing looks saved. */
-    banner:
-      'Bản nháp của bạn dựa trên một phiên bản cũ. Hãy tải lại phiên bản mới nhất trước khi lưu.',
-    reloadDiscardTitle: 'Bỏ bản nháp trên máy?',
-    reloadDiscardBody: 'Tải phiên bản mới nhất sẽ thay thế toàn bộ nội dung bạn đang sửa.',
-    reloadDiscardConfirm: 'Tải lại và bỏ bản nháp',
-    reloadDiscardCancel: 'Giữ bản nháp',
+    banner: designTemplateEditorMessage.text('conflict.banner'),
+    reloadDiscardTitle: designTemplateEditorMessage.text('conflict.reloadDiscardTitle'),
+    reloadDiscardBody: designTemplateEditorMessage.text('conflict.reloadDiscardBody'),
+    reloadDiscardConfirm: designTemplateEditorMessage.text('conflict.reloadDiscardConfirm'),
+    reloadDiscardCancel: designTemplateEditorMessage.text('conflict.reloadDiscardCancel'),
   },
 
   unsaved: {
-    title: 'Rời khỏi trang khi chưa lưu?',
-    body: 'Bản nháp của bạn chưa được lưu lên máy chủ và sẽ mất nếu rời khỏi trang.',
-    leave: 'Rời khỏi trang',
-    stay: 'Ở lại và tiếp tục sửa',
+    title: designTemplateEditorMessage.text('unsaved.title'),
+    body: designTemplateEditorMessage.text('unsaved.body'),
+    leave: designTemplateEditorMessage.text('unsaved.leave'),
+    stay: designTemplateEditorMessage.text('unsaved.stay'),
   },
 
   readOnly: {
-    publishedTitle: 'Mẫu thêu đã xuất bản — chỉ xem',
-    archivedTitle: 'Mẫu thêu đã lưu trữ — chỉ xem',
-    body: 'Chỉ mẫu ở trạng thái bản nháp mới chỉnh sửa được. Các thao tác vòng đời thuộc bước sau (APP3-A04).',
+    publishedTitle: designTemplateEditorMessage.text('readOnly.publishedTitle'),
+    archivedTitle: designTemplateEditorMessage.text('readOnly.archivedTitle'),
+    body: designTemplateEditorMessage.text('readOnly.body'),
   },
 
   mobile: {
-    title: 'Chỉnh sửa mẫu thêu cần màn hình lớn',
-    body: 'Trình chỉnh sửa mẫu chỉ dùng được trên máy tính. Trên màn hình nhỏ, trang này chỉ hiển thị thông tin.',
+    title: designTemplateEditorMessage.text('mobile.title'),
+    body: designTemplateEditorMessage.text('mobile.body'),
   },
 
   scope: {
-    title: 'Phạm vi',
-    none: 'Chưa gán phạm vi',
+    title: designTemplateEditorMessage.text('scope.title'),
+    none: designTemplateEditorMessage.text('scope.none'),
     /**
      * The unscoped Template that can **no longer** be assigned one.
      *
@@ -123,18 +132,20 @@ export const DESIGN_TEMPLATE_EDITOR_COPY = {
      *
      * The assignable case never reaches here: it gets the selector instead.
      */
-    noneBody:
-      'Mọi tài liệu thiết kế đều cần một phạm vi (sản phẩm · mặt · vùng thêu). Chỉ gán được phạm vi cho bản nháp chưa có phiên bản nào, và mẫu này không còn ở trạng thái đó.',
-    unresolvedTitle: 'Không xác định được phạm vi',
-    unresolvedBody:
-      'Mặt hoặc vùng thêu được mẫu này tham chiếu không còn tồn tại trên sản phẩm. Bản nháp của bạn vẫn được giữ nguyên.',
-    loading: 'Đang tải phạm vi…',
-    failedTitle: 'Không tải được phạm vi',
-    failedBody: 'Đã xảy ra lỗi khi tải thông tin sản phẩm. Vui lòng thử lại.',
-    product: (name: string) => `Sản phẩm: ${name}`,
-    side: (name: string) => `Mặt: ${name}`,
-    area: (name: string) => `Vùng thêu: ${name}`,
-    canvas: (width: number, height: number) => `Khung vẽ ${String(width)}×${String(height)} px`,
+    noneBody: designTemplateEditorMessage.text('scope.noneBody'),
+    unresolvedTitle: designTemplateEditorMessage.text('scope.unresolvedTitle'),
+    unresolvedBody: designTemplateEditorMessage.text('scope.unresolvedBody'),
+    loading: designTemplateEditorMessage.text('scope.loading'),
+    failedTitle: designTemplateEditorMessage.text('scope.failedTitle'),
+    failedBody: designTemplateEditorMessage.text('scope.failedBody'),
+    product: (name: string) => designTemplateEditorMessage.text('scope.product', { name }),
+    side: (name: string) => designTemplateEditorMessage.text('scope.side', { name }),
+    area: (name: string) => designTemplateEditorMessage.text('scope.area', { name }),
+    canvas: (width: number, height: number) =>
+      designTemplateEditorMessage.text('scope.canvas', {
+        width,
+        height,
+      }),
   },
 
   /**
@@ -145,121 +156,120 @@ export const DESIGN_TEMPLATE_EDITOR_COPY = {
    * exist. It says *assign*, once, and afterwards the scope is context.
    */
   assign: {
-    title: 'Chọn phạm vi cho mẫu',
-    intro:
-      'Mẫu này chưa có phạm vi. Chọn sản phẩm, mặt và vùng thêu để bắt đầu thiết kế. Phạm vi chỉ gán được một lần và không đổi được sau đó.',
-    productLabel: 'Sản phẩm',
-    productPlaceholder: 'Chọn sản phẩm',
-    productLoading: 'Đang tải danh sách sản phẩm…',
-    productFailedTitle: 'Không tải được danh sách sản phẩm',
-    productFailedBody: 'Đã xảy ra lỗi khi tải sản phẩm. Vui lòng thử lại.',
-    productEmpty: 'Chưa có sản phẩm nào để chọn.',
-    sideLabel: 'Mặt sản phẩm',
-    sidePlaceholder: 'Chọn mặt',
-    sideLoading: 'Đang tải mặt và vùng thêu…',
-    sideFailedTitle: 'Không tải được mặt và vùng thêu',
-    sideFailedBody: 'Đã xảy ra lỗi khi tải thông tin sản phẩm. Vui lòng thử lại.',
+    title: designTemplateEditorMessage.text('assign.title'),
+    intro: designTemplateEditorMessage.text('assign.intro'),
+    productLabel: designTemplateEditorMessage.text('assign.productLabel'),
+    productPlaceholder: designTemplateEditorMessage.text('assign.productPlaceholder'),
+    productLoading: designTemplateEditorMessage.text('assign.productLoading'),
+    productFailedTitle: designTemplateEditorMessage.text('assign.productFailedTitle'),
+    productFailedBody: designTemplateEditorMessage.text('assign.productFailedBody'),
+    productEmpty: designTemplateEditorMessage.text('assign.productEmpty'),
+    sideLabel: designTemplateEditorMessage.text('assign.sideLabel'),
+    sidePlaceholder: designTemplateEditorMessage.text('assign.sidePlaceholder'),
+    sideLoading: designTemplateEditorMessage.text('assign.sideLoading'),
+    sideFailedTitle: designTemplateEditorMessage.text('assign.sideFailedTitle'),
+    sideFailedBody: designTemplateEditorMessage.text('assign.sideFailedBody'),
     /** Truthful: retired rows exist but may not be chosen for a *new* scope. */
-    sideEmpty: 'Sản phẩm này chưa có mặt nào đang dùng được.',
-    areaLabel: 'Vùng thêu',
-    areaPlaceholder: 'Chọn vùng thêu',
-    areaEmpty: 'Mặt này chưa có vùng thêu nào đang dùng được.',
-    submit: 'Gán phạm vi',
-    submitting: 'Đang gán phạm vi…',
+    sideEmpty: designTemplateEditorMessage.text('assign.sideEmpty'),
+    areaLabel: designTemplateEditorMessage.text('assign.areaLabel'),
+    areaPlaceholder: designTemplateEditorMessage.text('assign.areaPlaceholder'),
+    areaEmpty: designTemplateEditorMessage.text('assign.areaEmpty'),
+    submit: designTemplateEditorMessage.text('assign.submit'),
+    submitting: designTemplateEditorMessage.text('assign.submitting'),
     /** Why the button is disabled, stated rather than left to be guessed. */
-    incomplete: 'Chọn đủ sản phẩm, mặt và vùng thêu để tiếp tục.',
-    retry: 'Thử lại',
-    assignedAnnouncement: 'Đã gán phạm vi. Bạn có thể bắt đầu thiết kế.',
-    notAssignableTitle: 'Mẫu này không còn gán được phạm vi',
-    notAssignableBody:
-      'Mẫu đã được gán phạm vi ở nơi khác, đã có phiên bản, hoặc không còn là bản nháp. Nội dung hiển thị đã được cập nhật theo máy chủ.',
-    invalidTitle: 'Phạm vi không hợp lệ',
-    invalidBody:
-      'Máy chủ không chấp nhận tổ hợp sản phẩm · mặt · vùng thêu này. Vui lòng chọn lại.',
-    failedTitle: 'Không gán được phạm vi',
-    failedBody: 'Đã xảy ra lỗi khi gán phạm vi. Lựa chọn của bạn vẫn được giữ nguyên.',
+    incomplete: designTemplateEditorMessage.text('assign.incomplete'),
+    retry: designTemplateEditorMessage.text('assign.retry'),
+    assignedAnnouncement: designTemplateEditorMessage.text('assign.assignedAnnouncement'),
+    notAssignableTitle: designTemplateEditorMessage.text('assign.notAssignableTitle'),
+    notAssignableBody: designTemplateEditorMessage.text('assign.notAssignableBody'),
+    invalidTitle: designTemplateEditorMessage.text('assign.invalidTitle'),
+    invalidBody: designTemplateEditorMessage.text('assign.invalidBody'),
+    failedTitle: designTemplateEditorMessage.text('assign.failedTitle'),
+    failedBody: designTemplateEditorMessage.text('assign.failedBody'),
   },
 
   background: {
-    loading: 'Đang tải ảnh nền…',
-    unavailable: 'Mặt này chưa có ảnh nền được duyệt.',
-    failed: 'Không tải được ảnh nền.',
-    retry: 'Thử lại',
+    loading: designTemplateEditorMessage.text('background.loading'),
+    unavailable: designTemplateEditorMessage.text('background.unavailable'),
+    failed: designTemplateEditorMessage.text('background.failed'),
+    retry: designTemplateEditorMessage.text('background.retry'),
   },
 
   stage: {
-    title: 'Khung thiết kế',
+    title: designTemplateEditorMessage.text('stage.title'),
     label: (width: number, height: number) =>
-      `Khung thiết kế ${String(width)}×${String(height)} px`,
-    empty: 'Tài liệu chưa có phần tử nào. Thêm chữ để bắt đầu.',
-    outOfBounds: 'Nằm ngoài vùng thêu',
+      designTemplateEditorMessage.text('stage.label', {
+        width,
+        height,
+      }),
+    empty: designTemplateEditorMessage.text('stage.empty'),
+    outOfBounds: designTemplateEditorMessage.text('stage.outOfBounds'),
     /**
      * A draft may legitimately sit outside the area — `APP3-B04` owns the
      * publication guard, and refusing a save here would be a second, weaker
      * definition of publishable.
      */
-    outOfBoundsNote:
-      'Phần tử nằm ngoài vùng thêu vẫn lưu được ở bản nháp. Điều kiện xuất bản được kiểm tra ở bước xuất bản.',
+    outOfBoundsNote: designTemplateEditorMessage.text('stage.outOfBoundsNote'),
   },
 
   layers: {
-    title: 'Lớp',
-    empty: 'Chưa có lớp nào.',
-    unnamedText: 'Chữ',
-    typeText: 'Chữ',
-    typeImage: 'Ảnh',
-    typeShape: 'Hình',
-    typeFreehand: 'Nét vẽ',
-    typeGroup: 'Nhóm',
-    hidden: 'Đang ẩn',
-    locked: 'Đang khoá',
-    selected: 'Đang chọn',
+    title: designTemplateEditorMessage.text('layers.title'),
+    empty: designTemplateEditorMessage.text('layers.empty'),
+    unnamedText: designTemplateEditorMessage.text('layers.unnamedText'),
+    typeText: designTemplateEditorMessage.text('layers.typeText'),
+    typeImage: designTemplateEditorMessage.text('layers.typeImage'),
+    typeShape: designTemplateEditorMessage.text('layers.typeShape'),
+    typeFreehand: designTemplateEditorMessage.text('layers.typeFreehand'),
+    typeGroup: designTemplateEditorMessage.text('layers.typeGroup'),
+    hidden: designTemplateEditorMessage.text('layers.hidden'),
+    locked: designTemplateEditorMessage.text('layers.locked'),
+    selected: designTemplateEditorMessage.text('layers.selected'),
     /** Document order is bottom-first; the list shows top-first, and says so. */
-    orderNote: 'Lớp trên cùng hiển thị trước.',
-    addText: 'Thêm chữ',
-    addTextLimit: 'Đã đạt giới hạn số phần tử của tài liệu.',
-    remove: 'Xoá lớp',
+    orderNote: designTemplateEditorMessage.text('layers.orderNote'),
+    addText: designTemplateEditorMessage.text('layers.addText'),
+    addTextLimit: designTemplateEditorMessage.text('layers.addTextLimit'),
+    remove: designTemplateEditorMessage.text('layers.remove'),
   },
 
   image: {
     /** Visible, disabled, and labelled with what it waits for. */
-    add: 'Thêm ảnh mẫu',
-    addDisabled: 'Thêm ảnh mẫu chưa khả dụng.',
-    addDisabledReason: 'Đang chờ luồng tạo tài sản TEMPLATE_SOURCE.',
+    add: designTemplateEditorMessage.text('image.add'),
+    addDisabled: designTemplateEditorMessage.text('image.addDisabled'),
+    addDisabledReason: designTemplateEditorMessage.text('image.addDisabledReason'),
     /**
      * There is no authenticated Admin route that serves Template draft asset
      * bytes, so the element is drawn as an honest empty frame. Its Asset id is
      * deliberately not used as a label — an internal identifier is not a name.
      */
-    placeholder: 'Ảnh mẫu (chưa xem trước được)',
-    placeholderNote: 'Chưa có kênh xem trước ảnh mẫu cho bản nháp trong trang quản trị.',
+    placeholder: designTemplateEditorMessage.text('image.placeholder'),
+    placeholderNote: designTemplateEditorMessage.text('image.placeholderNote'),
   },
 
   inspector: {
-    title: 'Thuộc tính',
-    none: 'Chọn một lớp để xem thuộc tính.',
-    unsupported: 'Loại phần tử này chưa chỉnh sửa được trong trình quản trị.',
-    textSection: 'Nội dung chữ',
-    transformSection: 'Vị trí và kích thước',
-    textLabel: 'Nội dung',
-    fontLabel: 'Phông chữ',
-    fontSizeLabel: 'Cỡ chữ (px)',
-    fontWeightLabel: 'Độ đậm',
-    fontStyleLabel: 'Kiểu chữ',
-    fontStyleNormal: 'Thường',
-    fontStyleItalic: 'Nghiêng',
-    alignLabel: 'Căn lề',
-    alignLeft: 'Trái',
-    alignCenter: 'Giữa',
-    alignRight: 'Phải',
-    fillLabel: 'Màu chữ',
-    xLabel: 'X (px)',
-    yLabel: 'Y (px)',
-    widthLabel: 'Chiều rộng (px)',
-    heightLabel: 'Chiều cao (px)',
-    rotationLabel: 'Xoay (độ)',
-    invalidNumber: 'Giá trị không hợp lệ.',
+    title: designTemplateEditorMessage.text('inspector.title'),
+    none: designTemplateEditorMessage.text('inspector.none'),
+    unsupported: designTemplateEditorMessage.text('inspector.unsupported'),
+    textSection: designTemplateEditorMessage.text('inspector.textSection'),
+    transformSection: designTemplateEditorMessage.text('inspector.transformSection'),
+    textLabel: designTemplateEditorMessage.text('inspector.textLabel'),
+    fontLabel: designTemplateEditorMessage.text('inspector.fontLabel'),
+    fontSizeLabel: designTemplateEditorMessage.text('inspector.fontSizeLabel'),
+    fontWeightLabel: designTemplateEditorMessage.text('inspector.fontWeightLabel'),
+    fontStyleLabel: designTemplateEditorMessage.text('inspector.fontStyleLabel'),
+    fontStyleNormal: designTemplateEditorMessage.text('inspector.fontStyleNormal'),
+    fontStyleItalic: designTemplateEditorMessage.text('inspector.fontStyleItalic'),
+    alignLabel: designTemplateEditorMessage.text('inspector.alignLabel'),
+    alignLeft: designTemplateEditorMessage.text('inspector.alignLeft'),
+    alignCenter: designTemplateEditorMessage.text('inspector.alignCenter'),
+    alignRight: designTemplateEditorMessage.text('inspector.alignRight'),
+    fillLabel: designTemplateEditorMessage.text('inspector.fillLabel'),
+    xLabel: designTemplateEditorMessage.text('inspector.xLabel'),
+    yLabel: designTemplateEditorMessage.text('inspector.yLabel'),
+    widthLabel: designTemplateEditorMessage.text('inspector.widthLabel'),
+    heightLabel: designTemplateEditorMessage.text('inspector.heightLabel'),
+    rotationLabel: designTemplateEditorMessage.text('inspector.rotationLabel'),
+    invalidNumber: designTemplateEditorMessage.text('inspector.invalidNumber'),
     /** The controlled registry is the only source of a font (IMP-D044 PO-10). */
-    fontNote: 'Chỉ dùng được phông chữ trong danh mục đã duyệt.',
+    fontNote: designTemplateEditorMessage.text('inspector.fontNote'),
   },
 } as const;

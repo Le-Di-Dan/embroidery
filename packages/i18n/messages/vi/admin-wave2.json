@@ -1,0 +1,1477 @@
+{
+  "designTemplates": {
+    "page": {
+      "title": "Mẫu thêu",
+      "subtitleWide": "Quản lý mẫu thiết kế dùng cho vùng thêu của sản phẩm.",
+      "subtitleNarrow": "Quản lý mẫu thiết kế."
+    },
+    "actions": {
+      "create": "Tạo mẫu thêu",
+      "retry": "Thử lại",
+      "loadMore": "Trang sau",
+      "loadingMore": "Đang tải…"
+    },
+    "filters": {
+      "label": "Bộ lọc",
+      "statusLabel": "Trạng thái",
+      "statusAll": "Tất cả trạng thái",
+      "productLabel": "Sản phẩm",
+      "productAll": "Tất cả sản phẩm",
+      "constraint": "Danh sách sắp xếp theo thời gian tạo, mới nhất trước. Không có tìm kiếm hay sắp xếp tuỳ chọn.",
+      "productUnavailable": "Không tải được danh sách sản phẩm để lọc."
+    },
+    "status": {
+      "draft": "Bản nháp",
+      "published": "Đã xuất bản",
+      "archived": "Đã lưu trữ",
+      "unknown": "Không xác định"
+    },
+    "columns": {
+      "name": "Tên mẫu",
+      "status": "Trạng thái",
+      "scope": "Phạm vi",
+      "version": "Phiên bản",
+      "updated": "Cập nhật",
+      "actions": "Thao tác"
+    },
+    "row": {
+      "noVersion": "Chưa có phiên bản",
+      "versionNotInList": "Xem trong chi tiết mẫu",
+      "noScope": "Chưa gán phạm vi",
+      "scopeAssigned": "Đã gán phạm vi",
+      "scopeOnProduct": "Sản phẩm: {product}",
+      "archivedAt": "Lưu trữ {at}"
+    },
+    "editAffordance": {
+      "label": "Mở trình chỉnh sửa"
+    },
+    "states": {
+      "loading": "Đang tải danh sách mẫu thêu…",
+      "emptyTitle": "Chưa có mẫu thêu nào",
+      "emptyBody": "Tạo mẫu thêu đầu tiên để bắt đầu.",
+      "emptyFilteredTitle": "Không có mẫu thêu phù hợp",
+      "emptyFilteredBody": "Thử đổi bộ lọc hoặc tạo mẫu thêu mới.",
+      "errorTitle": "Không tải được danh sách mẫu thêu",
+      "errorBody": "Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại.",
+      "cursorErrorTitle": "Không tải được trang tiếp theo",
+      "cursorErrorBody": "Liên kết trang không hợp lệ. Vui lòng tải lại danh sách.",
+      "loadMoreFailed": "Không tải thêm được. Vui lòng thử lại."
+    },
+    "create": {
+      "title": "Tạo mẫu thêu",
+      "help": "Mẫu mới được tạo ở trạng thái bản nháp và chưa có phiên bản nào.",
+      "nameLabel": "Tên mẫu",
+      "nameHelp": "Tên hiển thị cho nhân viên. Tối đa 120 ký tự.",
+      "descriptionLabel": "Mô tả",
+      "descriptionHelp": "Không bắt buộc. Tối đa 2.000 ký tự.",
+      "slugNote": "Đường dẫn công khai được máy chủ tạo từ tên mẫu.",
+      "submit": "Tạo mẫu",
+      "submitting": "Đang tạo…",
+      "cancel": "Huỷ",
+      "created": "Đã tạo mẫu “{name}” ở trạng thái bản nháp, chưa có phiên bản.",
+      "nameRequired": "Vui lòng nhập tên mẫu.",
+      "nameTooLong": "Tên mẫu quá dài.",
+      "descriptionTooLong": "Mô tả quá dài.",
+      "failedTitle": "Không tạo được mẫu thêu",
+      "failedBody": "Đã xảy ra lỗi khi tạo. Nội dung bạn nhập vẫn được giữ nguyên.",
+      "addressUnreservedTitle": "Chưa cấp được đường dẫn cho mẫu",
+      "addressUnreservedBody": "Máy chủ chưa cấp được đường dẫn công khai. Vui lòng thử lại."
+    }
+  },
+  "designTemplateEditor": {
+    "page": {
+      "backToList": "Danh sách mẫu thêu",
+      "managePublication": "Quản lý xuất bản",
+      "loading": "Đang tải mẫu thêu…",
+      "notFoundTitle": "Không tìm thấy mẫu thêu",
+      "notFoundBody": "Mẫu thêu này không tồn tại hoặc đã bị xoá khỏi danh sách.",
+      "loadFailedTitle": "Không tải được mẫu thêu",
+      "loadFailedBody": "Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại.",
+      "retry": "Thử lại"
+    },
+    "status": {
+      "draft": "Bản nháp",
+      "published": "Đã xuất bản",
+      "archived": "Đã lưu trữ",
+      "unknown": "Không xác định"
+    },
+    "version": {
+      "none": "Chưa có phiên bản",
+      "current": "Phiên bản hiện tại: v{version}"
+    },
+    "save": {
+      "action": "Lưu phiên bản",
+      "chipSaved": "Đã lưu",
+      "chipUnsaved": "Chưa lưu",
+      "chipSaving": "Đang lưu…",
+      "chipConflict": "Xung đột phiên bản",
+      "announcedSaved": "Đã lưu phiên bản v{version}.",
+      "announcedSaving": "Đang lưu phiên bản…",
+      "failedTitle": "Không lưu được phiên bản",
+      "failedBody": "Đã xảy ra lỗi khi lưu. Bản nháp của bạn vẫn được giữ nguyên.",
+      "rejectedTitle": "Máy chủ từ chối tài liệu này",
+      "rejectedBody": "Tài liệu chưa hợp lệ để lưu. Bản nháp của bạn vẫn được giữ nguyên.",
+      "notEditableTitle": "Mẫu thêu này không còn ở trạng thái bản nháp",
+      "notEditableBody": "Chỉ bản nháp mới lưu được phiên bản mới. Vui lòng tải lại để xem trạng thái mới nhất."
+    },
+    "conflict": {
+      "title": "Máy chủ đã có phiên bản mới hơn",
+      "notOverwritten": "Máy chủ chưa ghi đè bất cứ thay đổi nào. Phiên bản trên máy chủ vẫn nguyên vẹn.",
+      "body": "Một phiên bản mới đã được lưu sau khi bạn mở mẫu này, nên bản nháp của bạn không còn dựa trên phiên bản hiện tại.",
+      "noMerge": "Hệ thống không tự động gộp hai bản. Bạn cần chọn một trong hai.",
+      "reload": "Tải phiên bản mới nhất",
+      "reloadHelp": "Thay thế bản nháp trên máy bạn bằng phiên bản mới nhất của máy chủ.",
+      "keepLocal": "Giữ bản nháp trên máy",
+      "keepLocalHelp": "Giữ nội dung bạn đang sửa. Bản nháp chỉ nằm trong trình duyệt này và chưa lưu được.",
+      "banner": "Bản nháp của bạn dựa trên một phiên bản cũ. Hãy tải lại phiên bản mới nhất trước khi lưu.",
+      "reloadDiscardTitle": "Bỏ bản nháp trên máy?",
+      "reloadDiscardBody": "Tải phiên bản mới nhất sẽ thay thế toàn bộ nội dung bạn đang sửa.",
+      "reloadDiscardConfirm": "Tải lại và bỏ bản nháp",
+      "reloadDiscardCancel": "Giữ bản nháp"
+    },
+    "unsaved": {
+      "title": "Rời khỏi trang khi chưa lưu?",
+      "body": "Bản nháp của bạn chưa được lưu lên máy chủ và sẽ mất nếu rời khỏi trang.",
+      "leave": "Rời khỏi trang",
+      "stay": "Ở lại và tiếp tục sửa"
+    },
+    "readOnly": {
+      "publishedTitle": "Mẫu thêu đã xuất bản — chỉ xem",
+      "archivedTitle": "Mẫu thêu đã lưu trữ — chỉ xem",
+      "body": "Chỉ mẫu ở trạng thái bản nháp mới chỉnh sửa được. Các thao tác vòng đời thuộc bước sau (APP3-A04)."
+    },
+    "mobile": {
+      "title": "Chỉnh sửa mẫu thêu cần màn hình lớn",
+      "body": "Trình chỉnh sửa mẫu chỉ dùng được trên máy tính. Trên màn hình nhỏ, trang này chỉ hiển thị thông tin."
+    },
+    "scope": {
+      "title": "Phạm vi",
+      "none": "Chưa gán phạm vi",
+      "noneBody": "Mọi tài liệu thiết kế đều cần một phạm vi (sản phẩm · mặt · vùng thêu). Chỉ gán được phạm vi cho bản nháp chưa có phiên bản nào, và mẫu này không còn ở trạng thái đó.",
+      "unresolvedTitle": "Không xác định được phạm vi",
+      "unresolvedBody": "Mặt hoặc vùng thêu được mẫu này tham chiếu không còn tồn tại trên sản phẩm. Bản nháp của bạn vẫn được giữ nguyên.",
+      "loading": "Đang tải phạm vi…",
+      "failedTitle": "Không tải được phạm vi",
+      "failedBody": "Đã xảy ra lỗi khi tải thông tin sản phẩm. Vui lòng thử lại.",
+      "product": "Sản phẩm: {name}",
+      "side": "Mặt: {name}",
+      "area": "Vùng thêu: {name}",
+      "canvas": "Khung vẽ {width}×{height} px"
+    },
+    "assign": {
+      "title": "Chọn phạm vi cho mẫu",
+      "intro": "Mẫu này chưa có phạm vi. Chọn sản phẩm, mặt và vùng thêu để bắt đầu thiết kế. Phạm vi chỉ gán được một lần và không đổi được sau đó.",
+      "productLabel": "Sản phẩm",
+      "productPlaceholder": "Chọn sản phẩm",
+      "productLoading": "Đang tải danh sách sản phẩm…",
+      "productFailedTitle": "Không tải được danh sách sản phẩm",
+      "productFailedBody": "Đã xảy ra lỗi khi tải sản phẩm. Vui lòng thử lại.",
+      "productEmpty": "Chưa có sản phẩm nào để chọn.",
+      "sideLabel": "Mặt sản phẩm",
+      "sidePlaceholder": "Chọn mặt",
+      "sideLoading": "Đang tải mặt và vùng thêu…",
+      "sideFailedTitle": "Không tải được mặt và vùng thêu",
+      "sideFailedBody": "Đã xảy ra lỗi khi tải thông tin sản phẩm. Vui lòng thử lại.",
+      "sideEmpty": "Sản phẩm này chưa có mặt nào đang dùng được.",
+      "areaLabel": "Vùng thêu",
+      "areaPlaceholder": "Chọn vùng thêu",
+      "areaEmpty": "Mặt này chưa có vùng thêu nào đang dùng được.",
+      "submit": "Gán phạm vi",
+      "submitting": "Đang gán phạm vi…",
+      "incomplete": "Chọn đủ sản phẩm, mặt và vùng thêu để tiếp tục.",
+      "retry": "Thử lại",
+      "assignedAnnouncement": "Đã gán phạm vi. Bạn có thể bắt đầu thiết kế.",
+      "notAssignableTitle": "Mẫu này không còn gán được phạm vi",
+      "notAssignableBody": "Mẫu đã được gán phạm vi ở nơi khác, đã có phiên bản, hoặc không còn là bản nháp. Nội dung hiển thị đã được cập nhật theo máy chủ.",
+      "invalidTitle": "Phạm vi không hợp lệ",
+      "invalidBody": "Máy chủ không chấp nhận tổ hợp sản phẩm · mặt · vùng thêu này. Vui lòng chọn lại.",
+      "failedTitle": "Không gán được phạm vi",
+      "failedBody": "Đã xảy ra lỗi khi gán phạm vi. Lựa chọn của bạn vẫn được giữ nguyên."
+    },
+    "background": {
+      "loading": "Đang tải ảnh nền…",
+      "unavailable": "Mặt này chưa có ảnh nền được duyệt.",
+      "failed": "Không tải được ảnh nền.",
+      "retry": "Thử lại"
+    },
+    "stage": {
+      "title": "Khung thiết kế",
+      "label": "Khung thiết kế {width}×{height} px",
+      "empty": "Tài liệu chưa có phần tử nào. Thêm chữ để bắt đầu.",
+      "outOfBounds": "Nằm ngoài vùng thêu",
+      "outOfBoundsNote": "Phần tử nằm ngoài vùng thêu vẫn lưu được ở bản nháp. Điều kiện xuất bản được kiểm tra ở bước xuất bản."
+    },
+    "layers": {
+      "title": "Lớp",
+      "empty": "Chưa có lớp nào.",
+      "unnamedText": "Chữ",
+      "typeText": "Chữ",
+      "typeImage": "Ảnh",
+      "typeShape": "Hình",
+      "typeFreehand": "Nét vẽ",
+      "typeGroup": "Nhóm",
+      "hidden": "Đang ẩn",
+      "locked": "Đang khoá",
+      "selected": "Đang chọn",
+      "orderNote": "Lớp trên cùng hiển thị trước.",
+      "addText": "Thêm chữ",
+      "addTextLimit": "Đã đạt giới hạn số phần tử của tài liệu.",
+      "remove": "Xoá lớp"
+    },
+    "image": {
+      "add": "Thêm ảnh mẫu",
+      "addDisabled": "Thêm ảnh mẫu chưa khả dụng.",
+      "addDisabledReason": "Đang chờ luồng tạo tài sản TEMPLATE_SOURCE.",
+      "placeholder": "Ảnh mẫu (chưa xem trước được)",
+      "placeholderNote": "Chưa có kênh xem trước ảnh mẫu cho bản nháp trong trang quản trị."
+    },
+    "inspector": {
+      "title": "Thuộc tính",
+      "none": "Chọn một lớp để xem thuộc tính.",
+      "unsupported": "Loại phần tử này chưa chỉnh sửa được trong trình quản trị.",
+      "textSection": "Nội dung chữ",
+      "transformSection": "Vị trí và kích thước",
+      "textLabel": "Nội dung",
+      "fontLabel": "Phông chữ",
+      "fontSizeLabel": "Cỡ chữ (px)",
+      "fontWeightLabel": "Độ đậm",
+      "fontStyleLabel": "Kiểu chữ",
+      "fontStyleNormal": "Thường",
+      "fontStyleItalic": "Nghiêng",
+      "alignLabel": "Căn lề",
+      "alignLeft": "Trái",
+      "alignCenter": "Giữa",
+      "alignRight": "Phải",
+      "fillLabel": "Màu chữ",
+      "xLabel": "X (px)",
+      "yLabel": "Y (px)",
+      "widthLabel": "Chiều rộng (px)",
+      "heightLabel": "Chiều cao (px)",
+      "rotationLabel": "Xoay (độ)",
+      "invalidNumber": "Giá trị không hợp lệ.",
+      "fontNote": "Chỉ dùng được phông chữ trong danh mục đã duyệt."
+    }
+  },
+  "designTemplateLifecycle": {
+    "page": {
+      "back": "← Mẫu thêu",
+      "versionSuffix": "phiên bản bất biến",
+      "noVersion": "chưa có phiên bản",
+      "loading": "Đang tải mẫu thêu…",
+      "loadFailed": "Không tải được mẫu thêu này.",
+      "notFound": "Mẫu thêu này không tồn tại.",
+      "retry": "Thử lại"
+    },
+    "readiness": {
+      "title": "Điều kiện xuất bản · GRD-T01",
+      "footer": "Toàn bộ 7 điều kiện phải đạt. Máy chủ không tự sửa mẫu — nếu không đạt, mẫu giữ nguyên.",
+      "legendChecked": "Máy chủ kiểm tra khi xuất bản",
+      "labels": {
+        "IMMUTABLE_VERSION": "Có phiên bản bất biến",
+        "SCOPE_COMPLETE": "Phạm vi đầy đủ",
+        "DOCUMENT_VALID": "Tài liệu hợp lệ (APP3-P01)",
+        "SCOPE_ACTIVE": "Chuỗi Sản phẩm → Mặt → Vùng còn hiệu lực",
+        "PLACEMENT_MATCHES": "Khớp vị trí (APP3-P02)",
+        "WITHIN_AREA": "Nằm trong vùng thêu",
+        "MEDIA_ELIGIBLE": "Ảnh đủ điều kiện"
+      },
+      "details": {
+        "versionSaved": "Đã lưu {value}",
+        "versionMissing": "Chưa có phiên bản nào được lưu",
+        "scopePresent": "{value}",
+        "scopeMissing": "Chưa gán Sản phẩm · Mặt · Vùng thêu",
+        "documentValid": "Sơ đồ hợp lệ, độ phức tạp trong hạn",
+        "documentInvalid": "Tài liệu không hợp lệ theo APP3-P01",
+        "scopeActive": "Không có mặt/vùng bị thu hồi",
+        "scopeRetired": "Mặt hoặc vùng thêu đã bị thu hồi",
+        "scopeNotRead": "Chưa đọc được phạm vi",
+        "placementMatches": "Placement khớp Mặt và Vùng đã chọn",
+        "placementMismatch": "Placement không khớp Mặt hoặc Vùng đã chọn",
+        "withinArea": "Mọi phần tử nằm trong ranh giới",
+        "outOfBounds": "Có phần tử nằm ngoài ranh giới vùng thêu",
+        "geometryNotEvaluable": "Không kiểm tra được — máy chủ sẽ kiểm tra khi xuất bản",
+        "noVersionYet": "Không kiểm tra được — chưa có phiên bản",
+        "mediaNoneReferenced": "Tài liệu không dùng ảnh nào",
+        "mediaCheckedOnPublish": "Máy chủ kiểm tra khi xuất bản"
+      }
+    },
+    "actions": {
+      "title": "Hành động vòng đời",
+      "readyHeading": "Sẵn sàng xuất bản",
+      "readyBody": "Mẫu này đạt cả 7 điều kiện GRD-T01. Xuất bản sẽ đưa mẫu ra Studio khách hàng cho đúng vùng thêu đã gán.",
+      "advisoryHeading": "Có thể xuất bản",
+      "advisoryBody": "Những điều kiện kiểm tra được ở đây đều đạt. Máy chủ vẫn chạy đủ 7 điều kiện GRD-T01 khi bạn xuất bản.",
+      "blockedBadge": "Không thể xuất bản",
+      "blockedBody": "Máy chủ từ chối xuất bản và không thay đổi gì. Sửa từng mục bên trái rồi thử lại.",
+      "blockedCount": "{count} điều kiện chưa đạt",
+      "publish": "Xuất bản mẫu thêu",
+      "publishNote": "Xuất bản không tạo phiên bản mới — {value} hiện tại chính là bản được công bố.",
+      "unpublish": "Gỡ xuất bản",
+      "unpublishNote": "Gỡ xuất bản đưa mẫu về DRAFT để sửa tiếp. Mọi phiên bản đã công bố vẫn được giữ nguyên.",
+      "publishedHeading": "Đang xuất bản",
+      "publishedBody": "Khách hàng có thể thấy mẫu này trong Studio khi Sản phẩm · Mặt · Vùng thêu vẫn còn hiệu lực.",
+      "dangerZone": "Vùng nguy hiểm",
+      "archive": "Lưu trữ mẫu thêu",
+      "archiveNote": "Lưu trữ là thu hồi lâu dài, không phải xoá. Phiên bản và liên kết vẫn được giữ.",
+      "fixListTitle": "Cần xử lý",
+      "fixListFooter": "Không có đường tắt bỏ qua điều kiện. GRD-T01 không thể rút gọn."
+    },
+    "archived": {
+      "title": "Mẫu đã lưu trữ",
+      "heading": "{value} · ARCHIVED",
+      "body": "Lưu trữ ngày {value} · Mọi phiên bản và lịch sử công bố vẫn còn nguyên.",
+      "bodyNoDate": "Mọi phiên bản và lịch sử công bố vẫn còn nguyên.",
+      "reasonNote": "Lý do lưu trữ được ghi trong nhật ký kiểm toán, không hiển thị ở đây.",
+      "restore": "Khôi phục về DRAFT",
+      "restoreNote": "Khôi phục đưa mẫu về DRAFT — không xuất bản lại. Phạm vi giữ nguyên, không được sửa tự động."
+    },
+    "publishDialog": {
+      "title": "Xuất bản “{value}”?",
+      "body": "Khách hàng sẽ thấy mẫu này trong Studio cho {value}. Bạn có thể gỡ xuất bản bất cứ lúc nào.",
+      "bodyNoScope": "Khách hàng sẽ thấy mẫu này trong Studio cho vùng thêu đã gán.",
+      "version": "Phiên bản công bố: {value}",
+      "confirm": "Xuất bản",
+      "cancel": "Huỷ"
+    },
+    "unpublishDialog": {
+      "title": "Gỡ xuất bản “{value}”?",
+      "body": "Mẫu sẽ không còn hiển thị với khách hàng và trở lại DRAFT để sửa tiếp. Không có phiên bản nào bị xoá.",
+      "confirm": "Gỡ xuất bản",
+      "cancel": "Huỷ"
+    },
+    "archiveDialog": {
+      "badge": "Hành động thu hồi",
+      "title": "Lưu trữ “{value}”?",
+      "body": "Mẫu sẽ biến mất khỏi Studio khách hàng ngay lập tức. Không có phiên bản nào bị xoá và có thể khôi phục sau.",
+      "reasonLabel": "Lý do lưu trữ *",
+      "reasonHint": "Bắt buộc, tối đa 500 ký tự. Lý do được ghi vào nhật ký kiểm toán.",
+      "confirm": "Lưu trữ mẫu thêu",
+      "cancel": "Huỷ"
+    },
+    "restoreDialog": {
+      "badge": "Khôi phục",
+      "title": "Khôi phục “{value}” về DRAFT?",
+      "body": "Mẫu trở lại DRAFT và có thể sửa tiếp — không được xuất bản lại. Phiên bản và mốc công bố cũ vẫn giữ nguyên, phạm vi không được sửa tự động. Điều kiện xuất bản chỉ được kiểm tra khi bạn xuất bản lần sau.",
+      "reasonLabel": "Lý do khôi phục *",
+      "reasonHint": "Bắt buộc, tối đa 500 ký tự. Lý do được ghi vào nhật ký kiểm toán.",
+      "confirm": "Khôi phục về DRAFT",
+      "cancel": "Huỷ"
+    },
+    "reason": {
+      "blank": "Vui lòng nhập lý do.",
+      "tooLong": "Lý do tối đa 500 ký tự."
+    },
+    "outcome": {
+      "published": "Đã xuất bản mẫu thêu. Trạng thái hiện tại: PUBLISHED.",
+      "unpublished": "Đã gỡ xuất bản. Trạng thái hiện tại: DRAFT.",
+      "archived": "Đã lưu trữ mẫu thêu. Trạng thái hiện tại: ARCHIVED.",
+      "restored": "Đã khôi phục mẫu thêu. Trạng thái hiện tại: DRAFT.",
+      "working": "Đang gửi yêu cầu…"
+    },
+    "failure": {
+      "notReady": "Máy chủ chưa cho xuất bản mẫu này. Mẫu thêu chưa được xuất bản và máy chủ không thay đổi gì. Xem lại các điều kiện bên trái rồi thử lại.",
+      "staleReloaded": "Mẫu thêu đã thay đổi từ lúc mở trang, nên yêu cầu không được thực hiện lại. Trạng thái mới nhất đã được tải; kiểm tra rồi chọn lại hành động.",
+      "staleReasonCleared": "Mẫu thêu đã thay đổi nên xác nhận cũ không còn hiệu lực. Nhập lại lý do nếu bạn vẫn muốn tiếp tục.",
+      "rejected": "Yêu cầu không hợp lệ. Kiểm tra lại lý do rồi thử lại.",
+      "unauthenticated": "Phiên đăng nhập đã hết hạn. Đăng nhập lại rồi thử lại.",
+      "missing": "Mẫu thêu này không còn tồn tại.",
+      "generic": "Không thực hiện được yêu cầu. Thử lại sau."
+    }
+  },
+  "placement": {
+    "screen": {
+      "title": "Vị trí thêu",
+      "subtitle": "Xác định mặt sản phẩm và vùng thêu cho phép.",
+      "backToProduct": "Quay lại sản phẩm"
+    },
+    "entry": {
+      "label": "Vị trí thêu"
+    },
+    "states": {
+      "loading": "Đang tải vị trí thêu…",
+      "notFoundTitle": "Không tìm thấy sản phẩm",
+      "notFoundBody": "Sản phẩm này không tồn tại hoặc đã bị gỡ khỏi danh sách.",
+      "unavailableTitle": "Không tải được vị trí thêu",
+      "unavailableBody": "Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại.",
+      "retry": "Thử lại",
+      "backToList": "Về danh sách sản phẩm",
+      "emptyTitle": "Chưa có mặt sản phẩm nào",
+      "emptyBody": "Thêm mặt sản phẩm đầu tiên để bắt đầu xác định vùng thêu."
+    },
+    "hierarchy": {
+      "title": "Sản phẩm · Mặt · Vùng thêu",
+      "productLabel": "Sản phẩm",
+      "sidesLabel": "Mặt sản phẩm",
+      "areasLabel": "Vùng thêu",
+      "addSide": "Thêm mặt sản phẩm",
+      "addArea": "Thêm vùng thêu",
+      "retireSide": "Ngừng dùng",
+      "retireArea": "Ngừng dùng",
+      "undoRetire": "Hoàn tác",
+      "retiredBadge": "Đã ngừng dùng",
+      "pendingRetireBadge": "Sẽ ngừng dùng sau khi lưu",
+      "supersededBadge": "Đã được thay thế",
+      "newBadge": "Mới",
+      "noAreas": "Chưa có vùng thêu",
+      "unnamedSide": "Mặt chưa đặt tên",
+      "unnamedArea": "Vùng chưa đặt tên"
+    },
+    "preview": {
+      "title": "Xem trước vị trí",
+      "empty": "Chọn một mặt sản phẩm để xem trước.",
+      "backgroundAlt": "Ảnh nền của {side}",
+      "backgroundLoading": "Đang tải ảnh nền…",
+      "backgroundUnavailable": "Chưa có ảnh nền dùng được cho mặt này.",
+      "backgroundFailed": "Không tải được ảnh nền.",
+      "backgroundRetry": "Thử lại",
+      "backgroundPending": "Ảnh nền mới sẽ hiển thị sau khi lưu.",
+      "backgroundUnsavedSide": "Lưu mặt sản phẩm để xem ảnh nền.",
+      "canvasLabel": "Khung nền {width} × {height} px",
+      "areaLabel": "Vùng thêu {name}",
+      "outsideCanvas": "Vùng thêu nằm ngoài khung nền.",
+      "safeBoundary": "Ranh giới an toàn"
+    },
+    "inspector": {
+      "title": "Thông số",
+      "empty": "Chọn một mặt hoặc một vùng thêu để chỉnh sửa.",
+      "sideSection": "Mặt sản phẩm",
+      "areaSection": "Vùng thêu",
+      "readOnlyRetired": "Hàng đã ngừng dùng chỉ để tham khảo và không thể chỉnh sửa."
+    },
+    "fields": {
+      "codeHelp": "Chữ thường, số, gạch ngang hoặc gạch dưới. Tối đa 64 ký tự.",
+      "name": "Tên hiển thị",
+      "nameHelp": "Tên mà nhân viên nhìn thấy. Không phải mã định danh.",
+      "displayOrder": "Thứ tự hiển thị",
+      "displayOrderHelp": "Số nguyên từ 0 đến 10.000.",
+      "backgroundAsset": "Ảnh nền",
+      "backgroundAssetHelp": "Chọn một tài sản đã được duyệt làm ảnh nền cho mặt này.",
+      "chooseBackground": "Chọn ảnh nền",
+      "changeBackground": "Đổi ảnh nền",
+      "imageWidthPx": "Chiều rộng ảnh (px)",
+      "imageHeightPx": "Chiều cao ảnh (px)",
+      "physicalWidthMm": "Chiều rộng thực tế (mm)",
+      "physicalHeightMm": "Chiều cao thực tế (mm)",
+      "pxPerMm": "Tỷ lệ (px/mm)",
+      "pxPerMmHelp": "Phải khớp với cả chiều rộng và chiều cao của mặt này.",
+      "boundXPx": "Toạ độ X (px)",
+      "boundYPx": "Toạ độ Y (px)",
+      "boundWidthPx": "Chiều rộng vùng (px)",
+      "boundHeightPx": "Chiều cao vùng (px)",
+      "maxWidthMm": "Giới hạn rộng (mm)",
+      "maxHeightMm": "Giới hạn cao (mm)",
+      "maxHelp": "Để trống nếu chỉ giới hạn bởi kích thước mặt.",
+      "code": "Mã"
+    },
+    "validation": {
+      "required": "Vui lòng nhập giá trị.",
+      "notNumber": "Giá trị phải là một số.",
+      "notPositive": "Giá trị phải lớn hơn 0.",
+      "negative": "Giá trị không được âm.",
+      "tooLarge": "Giá trị vượt quá giới hạn cho phép.",
+      "codeFormat": "Mã chỉ gồm chữ thường, số, gạch ngang hoặc gạch dưới.",
+      "nameLength": "Tên hiển thị quá dài.",
+      "orderRange": "Thứ tự hiển thị phải là số nguyên từ 0 đến 10.000.",
+      "outsideCanvas": "Vùng thêu phải nằm hoàn toàn trong khung nền.",
+      "scaleMismatch": "Tỷ lệ px/mm không khớp với kích thước ảnh và kích thước thực tế.",
+      "duplicateCode": "Mã này đã được dùng.",
+      "summaryTitle": "Không thể lưu vì còn giá trị chưa hợp lệ",
+      "summaryBody": "Vui lòng sửa các trường được đánh dấu rồi lưu lại."
+    },
+    "save": {
+      "action": "Lưu vị trí thêu",
+      "saving": "Đang lưu…",
+      "saved": "Đã lưu vị trí thêu.",
+      "unsaved": "Có thay đổi chưa lưu",
+      "clean": "Chưa có thay đổi",
+      "discard": "Huỷ thay đổi"
+    },
+    "failure": {
+      "genericTitle": "Không lưu được vị trí thêu",
+      "genericBody": "Đã xảy ra lỗi khi lưu. Các thay đổi của bạn vẫn được giữ nguyên.",
+      "invalidTitle": "Máy chủ từ chối vị trí thêu",
+      "invalidBody": "Một số giá trị chưa hợp lệ. Vui lòng kiểm tra lại rồi lưu lại.",
+      "geometryTitle": "Hình học vị trí thêu không hợp lệ",
+      "geometryBody": "Vùng thêu phải nằm trong khung nền và tỷ lệ px/mm phải khớp với kích thước mặt.",
+      "immutableTitle": "Vị trí thêu đang được sử dụng",
+      "immutableBody": "Mặt hoặc vùng thêu này đã được dùng trong mẫu thiết kế nên không thể đổi mã hay hình học. Hãy ngừng dùng nó và thêm một hàng thay thế.",
+      "backgroundTitle": "Ảnh nền không dùng được",
+      "backgroundBody": "Ảnh nền đã chọn không tồn tại hoặc không được phép dùng cho mặt sản phẩm.",
+      "networkTitle": "Không kết nối được máy chủ",
+      "networkBody": "Các thay đổi của bạn vẫn được giữ nguyên. Vui lòng thử lưu lại."
+    },
+    "conflict": {
+      "title": "Vị trí thêu đã thay đổi trên máy chủ",
+      "body": "Một thay đổi khác đã được lưu sau khi bạn mở màn hình này. Máy chủ chưa ghi đè bất cứ điều gì.",
+      "keepNote": "Bản nháp của bạn vẫn hiển thị để đối chiếu, nhưng chưa được lưu và chỉ tồn tại trong trình duyệt này.",
+      "reload": "Tải lại bản mới nhất",
+      "keep": "Giữ bản nháp để đối chiếu",
+      "banner": "Bản nháp chưa được lưu. Hãy tải lại bản mới nhất trước khi lưu."
+    },
+    "picker": {
+      "title": "Chọn ảnh nền",
+      "help": "Chỉ những tài sản đã được duyệt làm ảnh danh mục mới xuất hiện ở đây.",
+      "loading": "Đang tải tài sản…",
+      "emptyTitle": "Chưa có tài sản nào dùng được",
+      "emptyBody": "Tải lên và chờ duyệt tài sản trước khi chọn làm ảnh nền.",
+      "unavailableTitle": "Không tải được danh sách tài sản",
+      "unavailableBody": "Đã xảy ra lỗi khi tải tài sản. Vui lòng thử lại.",
+      "retry": "Thử lại",
+      "loadMore": "Tải thêm tài sản",
+      "loadingMore": "Đang tải…",
+      "loadMoreFailed": "Không tải thêm được. Vui lòng thử lại.",
+      "cancel": "Huỷ",
+      "confirm": "Dùng ảnh này",
+      "selected": "Đang chọn",
+      "thumbnailPlaceholder": "Ảnh xem trước có sau khi lưu vào mặt sản phẩm."
+    },
+    "mobile": {
+      "title": "Cần màn hình rộng hơn",
+      "body": "Việc xác định vị trí thêu cần thao tác chính xác trên khung nền nên chỉ hỗ trợ trên màn hình máy tính. Bạn vẫn có thể xem cấu trúc bên dưới.",
+      "readOnlyBadge": "Chỉ xem"
+    }
+  },
+  "productionJob": {
+    "page": {
+      "breadcrumbRoot": "Quản trị / Sản xuất",
+      "breadcrumb": "Quản trị / Sản xuất / Lệnh {shortJobId}",
+      "backToQueue": "← Hàng đợi sản xuất",
+      "title": "Chi tiết lệnh sản xuất"
+    },
+    "header": {
+      "jobLabel": "Lệnh sản xuất",
+      "openOrder": "Mở đơn hàng →",
+      "approval": "Bản duyệt {shortApprovalId} · một lệnh cho mỗi (đơn hàng, bản duyệt)",
+      "createdAt": "Tạo lúc {at}",
+      "startedAt": "Bắt đầu {at}",
+      "completedAt": "Hoàn tất {at}",
+      "cancelledAt": "Huỷ lúc {at}",
+      "updatedAt": "Cập nhật {at}",
+      "notStarted": "Chưa bắt đầu",
+      "reworkedFrom": "Làm lại từ lệnh {shortJobId} · lệnh này là lệnh mới"
+    },
+    "cancellation": {
+      "title": "Lệnh sản xuất đã huỷ",
+      "source": "Nguồn: cancelledReason — bằng chứng bắt buộc trên một lệnh đã huỷ.",
+      "reasonLabel": "Lý do huỷ",
+      "boundaryTitle": "Đây là huỷ LỆNH SẢN XUẤT, không phải huỷ đơn hàng",
+      "boundaryBody": "Trạng thái thương mại của đơn hàng KHÔNG đổi vì thao tác này: không chuyển sang “đang huỷ”, không hoàn tiền, không phát sinh phiếu chi. Huỷ đơn và hoàn tiền là một quy trình riêng nằm ngoài APP8."
+    },
+    "specification": {
+      "title": "Đặc tả sản xuất đã đóng băng",
+      "source": "Nguồn: production_specifications — bản sao đóng băng, không phải danh mục đang sống.",
+      "frozenTitle": "Đặc tả bất biến — chỉ đọc",
+      "frozenBody": "Sao chép từ đúng bản duyệt tại thời điểm tạo lệnh và không bao giờ đọc lại từ danh mục đang sống. Đổi tên sản phẩm sau đó KHÔNG làm đổi những giá trị dưới đây. Đây không phải biểu mẫu sửa được.",
+      "productName": "Tên sản phẩm (đóng băng)",
+      "variantLabel": "Nhãn biến thể",
+      "sideName": "Mặt",
+      "areaName": "Vùng thêu",
+      "dimensions": "Kích thước vật lý",
+      "quantityTotal": "Số lượng đã duyệt",
+      "documentHash": "Mã băm tài liệu đã duyệt (documentHash)",
+      "documentHashNote": "Nguồn gốc của tệp máy. Chỉ hiển thị dạng an toàn cho vận hành — không có đường tải, không có khoá lưu trữ, không có tệp gốc.",
+      "productionParameters": "Tham số sản xuất (productionParameters)",
+      "variantAbsent": "— (khách tự mang: luôn vắng)",
+      "parametersAbsent": "— (không ghi tham số khi tạo lệnh)",
+      "missingTitle": "Không đọc được đặc tả đã đóng băng",
+      "missingBody": "Máy chủ trả về lệnh này không kèm đặc tả. Không có giá trị nào được dựng lại từ danh mục đang sống để lấp chỗ trống — con số sai còn tệ hơn ô trống."
+    },
+    "reservation": {
+      "title": "Giữ kho (chỉ đọc)",
+      "source": "Nguồn: reservationSummary — ngữ cảnh hiển thị.",
+      "catalogItems": "Dòng hàng Catalog",
+      "customerOwnedItems": "Dòng hàng COP",
+      "skuLabel": "SKU",
+      "stockLabel": "skuStockId",
+      "quantity": "× {value}",
+      "copTitle": "Đơn này không cần giữ kho",
+      "copBody": "Toàn bộ dòng hàng là sản phẩm khách tự mang (COP). Không có SKU nào để giữ, nên việc KHÔNG có giữ kho là đúng thiết kế — trạng thái hợp lệ, không phải cảnh báo và không phải lỗi.",
+      "copNote": "required = false. Bắt đầu sản xuất vẫn hoạt động bình thường và sẽ tiêu thụ 0 giữ kho — danh sách giữ kho trả về rỗng, không phải thiếu dữ liệu.",
+      "mixedTitle": "Đơn hỗn hợp",
+      "mixedBody": "Chỉ phần Catalog có giữ kho. Phần COP không có và sẽ không bao giờ có — không tạo dòng giữ kho giả cho nó.",
+      "terminalNote": "Bản ghi giữ kho vẫn hiển thị ở trạng thái cuối — nhờ vậy “đã từng giữ rồi giải phóng” phân biệt được với “chưa từng có giữ kho”.",
+      "consumedNote": "Tồn kho đã được tiêu thụ khi bắt đầu sản xuất. CONSUMED là trạng thái cuối — không quay lại RESERVED.",
+      "notGate": "Đây là ngữ cảnh, KHÔNG phải cổng chặn. Máy chủ quyết định dưới khoá dòng tồn kho, đọc lại tại thời điểm đó — không dựa vào bảng này.",
+      "noneYetTitle": "Chưa có bản ghi giữ kho nào",
+      "noneYetBody": "Đơn có dòng hàng Catalog nhưng máy chủ chưa trả về bản ghi giữ kho nào. Màn này không suy ra vì sao — bắt đầu sản xuất vẫn do máy chủ quyết định dưới khoá dòng.",
+      "missingTitle": "Không đọc được tóm tắt giữ kho",
+      "missingBody": "Máy chủ trả về lệnh này không kèm tóm tắt giữ kho. Không có dòng nào được dựng ra để lấp chỗ trống."
+    },
+    "reservationStatus": {
+      "RESERVED": "Đang giữ",
+      "CONSUMED": "Đã tiêu thụ",
+      "RELEASED": "Đã giải phóng",
+      "EXPIRED": "Đã hết hạn",
+      "unknown": "Không xác định"
+    },
+    "history": {
+      "title": "Lịch sử chuyển trạng thái",
+      "source": "Nguồn: transitions — chỉ ghi thêm, theo đúng thứ tự đã ghi.",
+      "columnTransition": "Chuyển trạng thái",
+      "columnActor": "Người thực hiện",
+      "columnAt": "Thời điểm",
+      "columnReason": "Lý do",
+      "emptyTitle": "Chưa có chuyển trạng thái nào",
+      "emptyBody": "Một lệnh vừa tạo có lịch sử rỗng. Việc tạo lệnh KHÔNG được ghi như một dòng chuyển trạng thái, nên ở đây không có dòng “tạo lệnh” — bịa ra nó là bịa ra một bản ghi không tồn tại.",
+      "noCreationRow": "Không có dòng “tạo lệnh”: việc tạo lệnh không được ghi như một chuyển trạng thái, nên lịch sử bắt đầu từ nước đi thật đầu tiên.",
+      "actorNote": "Danh tính người thực hiện hiển thị ở dạng an toàn: vai trò và mã quản trị viên rút gọn. Khách hàng không bao giờ xuất hiện ở đây.",
+      "noReason": "—"
+    },
+    "actions": {
+      "title": "Hành động",
+      "start": "Bắt đầu sản xuất",
+      "complete": "Hoàn tất sản xuất",
+      "cancel": "Huỷ lệnh sản xuất",
+      "plannedNote": "Bắt đầu sẽ tiêu thụ tồn kho Catalog đang giữ và chuyển đơn sang “đang sản xuất”. Máy chủ có thể từ chối nếu trạng thái cọc, đơn hàng hoặc giữ kho đã thay đổi.",
+      "plannedCopNote": "Đơn chỉ có sản phẩm khách tự mang: bắt đầu sản xuất không tiêu thụ tồn kho nào.",
+      "startedNote": "Hoàn tất chuyển đơn sang “đã sản xuất xong”. Huỷ một lệnh ĐANG SẢN XUẤT không hoàn lại tồn kho đã tiêu thụ.",
+      "completedNote": "Lệnh đã hoàn tất. APP8 không còn thao tác nào trên lệnh này: không bắt đầu lại, không huỷ. Thanh toán phần còn lại, giao hàng và quyết toán thuộc pha sau.",
+      "completedOrderNote": "Đơn hàng đã ở trạng thái “đã sản xuất xong”. APP8 dừng đúng tại đây.",
+      "cancelledNote": "Lệnh đã huỷ và không thể chạy lại. Làm lại là một LỆNH MỚI có mã riêng, không phải khôi phục lệnh này — và APP8 không giao hàng khả năng đó.",
+      "cancelledStockNote": "Huỷ từ PLANNED đã giải phóng giữ kho. Nếu huỷ khi đang STARTED thì tồn đã tiêu thụ KHÔNG được hoàn lại.",
+      "serverOwnsLegality": "Tính hợp lệ do máy chủ sở hữu. Nút hiển thị theo trạng thái đang đọc được, nhưng bấm được không có nghĩa là chắc chắn thành công.",
+      "narrowNote": "Ở bề ngang hẹp, cột phụ xuống dưới và khối hành động lên trên."
+    },
+    "states": {
+      "loading": "Đang tải chi tiết lệnh sản xuất…",
+      "loadingNote": "Không hiển thị hành động nào trong lúc tải — bộ nút chỉ được dựng sau khi máy chủ trả về trạng thái thật.",
+      "notFoundTitle": "Không tìm thấy lệnh sản xuất",
+      "notFoundBody": "PRODUCTION_JOB_NOT_FOUND · 404. Lệnh không tồn tại hoặc đã bị xoá khỏi đường dẫn. Quay về hàng đợi.",
+      "forbiddenTitle": "Yêu cầu bị từ chối",
+      "forbiddenBody": "403. Yêu cầu đến từ nguồn máy chủ không chấp nhận. Lặp lại y hệt cũng bị từ chối.",
+      "unauthenticatedTitle": "Phiên đăng nhập đã hết hạn",
+      "unauthenticatedBody": "401. Đăng nhập lại để tiếp tục.",
+      "errorTitle": "Không tải được chi tiết lệnh",
+      "errorBody": "Lỗi máy chủ · 500. Chưa đọc được lệnh sản xuất này. Không có lệnh nào bị thay đổi.",
+      "retry": "Thử lại",
+      "signIn": "Đăng nhập lại",
+      "backToQueue": "Về hàng đợi sản xuất",
+      "refreshed": "Đã cập nhật. Lệnh hiện ở trạng thái {label}."
+    }
+  },
+  "productionTransition": {
+    "common": {
+      "effectsTitle": "Thao tác này thực hiện đồng thời, trong một giao dịch",
+      "rowJob": "Lệnh sản xuất",
+      "rowOrder": "Đơn hàng",
+      "rowReservation": "Giữ kho Catalog",
+      "orderUnchanged": "không đổi",
+      "dismiss": "Huỷ bỏ",
+      "back": "Quay lại",
+      "submitting": "Đang xử lý…",
+      "submittingSubtitle": "Lệnh {shortJobId} · đang chờ máy chủ xác nhận",
+      "submittingLockTitle": "Đừng bấm lại và đừng đóng cửa sổ",
+      "submittingLockBody": "Máy chủ đang quyết định dưới khoá dòng. Nếu một thao tác khác đang giữ khoá, yêu cầu này chờ rồi đọc lại trạng thái mới nhất — chờ là hành vi đúng, không phải treo.",
+      "submittingDropTitle": "Nếu mất kết nối giữa chừng",
+      "submittingDropBody": "Kết quả thật là kết quả máy chủ đã ghi, không phải thứ trình duyệt kịp nhìn thấy. Tải lại chi tiết lệnh để đọc trạng thái thật, thay vì gửi lại lần hai.",
+      "submittingOptimisticTitle": "Không chuyển trạng thái lạc quan",
+      "submittingOptimisticBody": "Giao diện KHÔNG hiển thị trạng thái mới trước khi máy chủ xác nhận. Trạng thái trên màn chỉ đổi sau khi có phản hồi thành công.",
+      "subtitleWithOrder": "Lệnh {shortJobId} · đơn {orderCode}",
+      "subtitleWithStatus": "Lệnh {shortJobId} · đang ở trạng thái {statusLabel}"
+    },
+    "start": {
+      "title": "Bắt đầu sản xuất?",
+      "confirm": "Bắt đầu sản xuất",
+      "submittingTitle": "Đang bắt đầu sản xuất…",
+      "consumeTitle": "Tồn kho đang giữ sẽ bị tiêu thụ",
+      "consumeBody": "Phần tồn kho Catalog đang ở trạng thái giữ chính thức sẽ chuyển sang ĐÃ TIÊU THỤ. Đây là bước một chiều: không có thao tác nào trong APP8 đưa tồn đã tiêu thụ trở lại.",
+      "refusalTitle": "Máy chủ có thể từ chối",
+      "refusalBody": "Tính hợp lệ được quyết định lại tại thời điểm nhấn, dưới khoá dòng: nếu cọc không còn thoả, đơn bị giữ/đang huỷ, bản duyệt đã đổi, hoặc giữ kho không còn hiệu lực/không đủ, thao tác bị từ chối và KHÔNG có gì được ghi. Giao diện không tự phán quyết trước.",
+      "copTitle": "Đơn chỉ có sản phẩm khách tự mang",
+      "copBody": "Với đơn COP, phần “tiêu thụ giữ kho” đơn giản là không có gì để làm — vẫn bắt đầu được bình thường và danh sách giữ kho bị tiêu thụ trả về rỗng."
+    },
+    "complete": {
+      "title": "Hoàn tất sản xuất?",
+      "confirm": "Hoàn tất sản xuất",
+      "submittingTitle": "Đang hoàn tất sản xuất…",
+      "noInventoryTitle": "Không đụng đến tồn kho",
+      "noInventoryBody": "Hoàn tất không chuyển động tồn kho: phần Catalog đã được tiêu thụ ngay khi bắt đầu. Danh sách giữ kho bị ảnh hưởng bởi thao tác này là rỗng.",
+      "stopTitle": "APP8 dừng tại đây",
+      "stopBody": "Sau khi hoàn tất, thanh toán phần còn lại, giao hàng và quyết toán diễn ra ở pha sau — không có nút nào cho chúng trên màn này, kể cả sau khi thành công.",
+      "refusalTitle": "Máy chủ có thể từ chối",
+      "refusalBody": "Nếu lệnh đã bị người khác chuyển trạng thái, thao tác bị từ chối vì không còn hợp lệ. Tải lại để đọc trạng thái mới nhất."
+    },
+    "cancel": {
+      "titleFromPlanned": "Huỷ lệnh sản xuất?",
+      "titleFromStarted": "Huỷ lệnh đang sản xuất?",
+      "confirm": "Huỷ lệnh sản xuất",
+      "submittingTitle": "Đang huỷ lệnh sản xuất…",
+      "scopeTitle": "Đây là huỷ LỆNH SẢN XUẤT — không phải huỷ đơn hàng",
+      "scopeBody": "Trạng thái thương mại của đơn hàng KHÔNG thay đổi: không chuyển sang “đang huỷ”, không hoàn tiền, không phát sinh phiếu chi. Nếu khách muốn huỷ đơn và lấy lại tiền, đó là một quy trình khác, nằm ngoài APP8.",
+      "releaseTitle": "Giữ kho còn hiệu lực sẽ được giải phóng",
+      "releaseBody": "Lệnh chưa bắt đầu nên chưa tiêu thụ gì. Phần giữ kho còn ở trạng thái RESERVED sẽ được giải phóng và tồn khả dụng tăng trở lại. Nếu không còn gì đang giữ, danh sách trả về rỗng — không có gì được bịa thêm.",
+      "noRestoreTitle": "Tồn kho đã tiêu thụ sẽ KHÔNG được hoàn lại",
+      "noRestoreBody": "Phần tồn kho Catalog đã bị tiêu thụ khi lệnh bắt đầu. Huỷ lệnh không đưa chúng về kho: hàng đã ra khỏi kệ. Muốn đưa tồn trở lại thì phải là một điều chỉnh tồn kho riêng, có lý do và có kiểm toán.",
+      "stillNotOrderTitle": "Vẫn không phải huỷ đơn hàng",
+      "stillNotOrderBody": "Đơn hàng giữ nguyên trạng thái thương mại hiện tại. Huỷ đơn và hoàn tiền là quy trình riêng, nằm ngoài APP8.",
+      "reasonLabel": "Lý do huỷ",
+      "reasonRequiredBadge": "bắt buộc",
+      "reasonHelp": "Bắt buộc. Lý do được ghi vĩnh viễn vào lịch sử chuyển trạng thái và không sửa được về sau. Tối đa 1.000 ký tự.",
+      "reasonMissing": "Vui lòng nhập lý do huỷ. Đây là bằng chứng bắt buộc — chuỗi toàn khoảng trắng không được chấp nhận.",
+      "reasonTooLong": "Lý do huỷ tối đa {max} ký tự.",
+      "blockedTitle": "Vì sao nút đang tắt",
+      "blockedBody": "PRODUCTION_CANCELLATION_REASON_REQUIRED · 400. Máy chủ từ chối một yêu cầu huỷ không có lý do, nên giao diện chặn tại chỗ thay vì gửi đi một yêu cầu chắc chắn hỏng. Ngược lại, hai thao tác Bắt đầu và Hoàn tất KHÔNG nhận lý do — gửi kèm sẽ bị từ chối, nên chúng không có ô nhập này."
+    },
+    "refusals": {
+      "depositNotSatisfied": {
+        "title": "Đơn chưa thanh toán cọc",
+        "body": "PRODUCTION_DEPOSIT_NOT_SATISFIED · 409. Cọc của đơn chưa được xác minh thoả, nên không bắt đầu sản xuất được. Xác minh cọc ở màn đơn hàng trước."
+      },
+      "orderOnHold": {
+        "title": "Đơn hàng đang bị giữ",
+        "body": "PRODUCTION_ORDER_ON_HOLD · 409. Đơn đang bị giữ hoặc đang huỷ. Gỡ trạng thái giữ ở màn đơn hàng trước khi chuyển trạng thái sản xuất."
+      },
+      "blocked": {
+        "title": "Trạng thái đơn không cho phép",
+        "body": "PRODUCTION_BLOCKED · 409. Đơn không ở trạng thái phù hợp cho nước đi sản xuất này. Mở đơn hàng để xem trạng thái hiện tại."
+      },
+      "approvalMismatch": {
+        "title": "Bản duyệt không khớp",
+        "body": "PRODUCTION_APPROVAL_MISMATCH · 409. Bản duyệt mà đơn đang được sản xuất theo đã thay đổi, nên lệnh này không còn khớp. Mở đơn hàng để đọc bản duyệt hiện hành."
+      },
+      "reservationNotActive": {
+        "title": "Giữ kho đã thay đổi",
+        "body": "PRODUCTION_RESERVATION_NOT_ACTIVE · 409. Phần giữ kho mà đơn cần đang thiếu hoặc không còn hiệu lực. Không có gì được ghi. Đọc lại lệnh rồi quyết định tiếp."
+      },
+      "reservationInsufficient": {
+        "title": "Giữ kho không đủ số lượng",
+        "body": "PRODUCTION_RESERVATION_INSUFFICIENT · 409. Số lượng đang giữ ít hơn số lượng đã duyệt. Kiểm tra tồn kho SKU trước khi bắt đầu."
+      },
+      "invalidTransition": {
+        "title": "Trạng thái sản xuất đã thay đổi",
+        "body": "PRODUCTION_INVALID_TRANSITION · 409. Thao tác này không còn hợp lệ — thường vì người khác vừa chuyển trạng thái trước. Trạng thái mới nhất đã được đọc lại phía dưới."
+      },
+      "reasonRequired": {
+        "title": "Thiếu lý do huỷ",
+        "body": "PRODUCTION_CANCELLATION_REASON_REQUIRED · 400. Máy chủ từ chối một yêu cầu huỷ không có lý do. Nhập lý do rồi gửi lại."
+      },
+      "notFound": {
+        "title": "Không tìm thấy lệnh sản xuất",
+        "body": "PRODUCTION_JOB_NOT_FOUND · 404. Lệnh không còn tồn tại. Quay về hàng đợi."
+      },
+      "unauthenticated": {
+        "title": "Phiên đăng nhập đã hết hạn",
+        "body": "401. Chưa có gì được ghi. Đăng nhập lại rồi thực hiện lại thao tác."
+      },
+      "forbidden": {
+        "title": "Yêu cầu bị từ chối",
+        "body": "403. Yêu cầu đến từ nguồn máy chủ không chấp nhận. Lặp lại y hệt cũng bị từ chối."
+      },
+      "ambiguous": {
+        "title": "Không rõ máy chủ đã ghi hay chưa",
+        "body": "Mất kết nối trước khi đọc được câu trả lời. Thao tác có thể đã được ghi. KHÔNG gửi lại — trạng thái thật đã được đọc lại phía dưới."
+      },
+      "server": {
+        "title": "Không thực hiện được thao tác",
+        "body": "Lỗi máy chủ · 500. Trạng thái thật đã được đọc lại phía dưới."
+      }
+    },
+    "conflict": {
+      "reloadedNote": "Chi tiết lệnh đã được đọc lại từ máy chủ và bộ nút được dựng lại theo trạng thái vừa đọc. Không có lần gửi lại tự động nào.",
+      "close": "Đóng"
+    }
+  },
+  "productionQueue": {
+    "page": {
+      "breadcrumb": "Quản trị / Sản xuất",
+      "title": "Hàng đợi sản xuất",
+      "navLabel": "Sản xuất",
+      "tableLabel": "Danh sách lệnh sản xuất",
+      "source": "Nguồn: GET /api/admin/production-jobs. Hàng đợi công bố định danh lệnh/đơn/bản duyệt, trạng thái và mốc thời gian — KHÔNG có mã đơn dạng ORD-… và KHÔNG có đặc tả sản xuất. Hai thứ đó chỉ có ở màn chi tiết.",
+      "ordering": "Thứ tự xác định: mới nhất trước theo (createdAt, id) — cùng khoá mà con trỏ keyset dùng, nên tải thêm không bỏ sót và không lặp bản ghi."
+    },
+    "columns": {
+      "jobId": "Mã lệnh (jobId)",
+      "orderId": "Đơn hàng (orderId)",
+      "approvalSnapshotId": "Bản duyệt (approvalSnapshotId)",
+      "status": "Trạng thái",
+      "createdAt": "Tạo lúc",
+      "milestone": "Mốc gần nhất",
+      "open": "Mở lệnh"
+    },
+    "milestones": {
+      "none": "—",
+      "started": "bắt đầu",
+      "completed": "xong",
+      "cancelled": "huỷ"
+    },
+    "filters": {
+      "statusLegend": "Trạng thái",
+      "statusDropdownTitle": "Lọc theo trạng thái",
+      "all": "Tất cả",
+      "selected": "{count} đã chọn",
+      "vocabulary": "Bốn giá trị này là toàn bộ từ vựng trạng thái LC-18. Không có giá trị thứ năm, và “tất cả” không phải một giá trị gửi lên — bỏ trống nghĩa là không lọc.",
+      "orderLabel": "Đơn hàng",
+      "orderPlaceholder": "lọc theo orderId (UUID)",
+      "orderHelp": "Lọc theo orderId. Đây không phải mã đơn ORD-… — hàng đợi không nhận mã đơn.",
+      "orderInvalid": "orderId phải là một UUID. Chưa gửi bộ lọc nào.",
+      "scope": "Chỉ hai bộ lọc: status[] và orderId. Không ưu tiên, không SLA, không thợ, không máy.",
+      "clearStatus": "Xoá bộ lọc trạng thái",
+      "clearOrder": "Xoá bộ lọc đơn hàng",
+      "clearAll": "Xoá tất cả bộ lọc"
+    },
+    "actions": {
+      "open": "Mở →",
+      "loadMore": "Tải thêm lệnh sản xuất",
+      "loadingMore": "Đang tải…",
+      "retry": "Thử lại",
+      "backToFirstPage": "Về trang đầu",
+      "signIn": "Đăng nhập lại",
+      "openOrders": "Mở danh sách đơn hàng"
+    },
+    "states": {
+      "loading": "Đang tải hàng đợi sản xuất…",
+      "loadingNote": "Không hiển thị dòng “0 kết quả” trong lúc tải — trạng thái rỗng chỉ được kết luận sau khi máy chủ trả lời.",
+      "appended": "Đã tải thêm lệnh sản xuất.",
+      "emptyTitle": "Chưa có lệnh sản xuất nào",
+      "emptyBody": "Lệnh sản xuất được tạo từ một đơn hàng đã thanh toán cọc và đã có bản duyệt, ở màn chi tiết đơn hàng. Hàng đợi này không tự tạo lệnh và không có nút “tạo lệnh” đứng một mình — vì API tạo lệnh cần một orderId cụ thể.",
+      "filteredEmptyTitle": "Không có lệnh nào khớp bộ lọc",
+      "filteredEmptyBody": "Bỏ bớt điều kiện để xem thêm. Trạng thái rỗng vì bộ lọc khác hẳn trạng thái rỗng vì chưa có dữ liệu — hai màn này không được dùng chung một câu chữ.",
+      "filteredEmptyActive": "Đang lọc: {conditions}.",
+      "filteredEmptyStatuses": "trạng thái {labels}",
+      "filteredEmptyOrder": "đơn hàng {shortId}",
+      "cursorErrorTitle": "Trang không hợp lệ",
+      "cursorErrorBody": "PRODUCTION_CURSOR_INVALID · 400. Con trỏ phân trang đã cũ hoặc bị sửa. Quay về trang đầu để đọc lại từ bản ghi mới nhất.",
+      "errorTitle": "Không tải được hàng đợi",
+      "errorBody": "Lỗi máy chủ · 500. Chưa lấy được danh sách lệnh sản xuất. Không có lệnh nào bị thay đổi.",
+      "unauthenticatedTitle": "Phiên đăng nhập đã hết hạn",
+      "unauthenticatedBody": "401. Đăng nhập lại để tiếp tục.",
+      "loadMoreFailed": "Không tải thêm được. Các lệnh đã tải vẫn còn nguyên.",
+      "pagination": "Phân trang keyset (hasNext / nextCursor) — không số trang, không tổng số bản ghi.",
+      "exhausted": "hasNext = false · đã ở cuối danh sách."
+    },
+    "responsive": {
+      "narrowNote": "Ở bề ngang hẹp, cột “Bản duyệt (approvalSnapshotId)” được ẩn; mã bản duyệt luôn hiển thị đầy đủ ở màn chi tiết."
+    }
+  },
+  "requestQueue": {
+    "page": {
+      "title": "Yêu cầu thêu riêng",
+      "subtitle": "Hàng đợi xử lý các yêu cầu khách đã gửi.",
+      "tableLabel": "Danh sách yêu cầu thêu riêng"
+    },
+    "scope": {
+      "applied": "Đang hiển thị trạng thái: {statuses}.",
+      "note": "Hàng đợi chỉ hiển thị các trạng thái nêu trên, không phải toàn bộ yêu cầu."
+    },
+    "columns": {
+      "status": "Trạng thái",
+      "subject": "Đối tượng thêu",
+      "customer": "Khách hàng",
+      "submitted": "Thời điểm gửi",
+      "quantity": "Số lượng",
+      "actions": "Chi tiết",
+      "code": "Mã yêu cầu"
+    },
+    "filters": {
+      "statusLabel": "Trạng thái",
+      "statusTriage": "Cần xử lý (mặc định)",
+      "subjectLabel": "Đối tượng thêu",
+      "subjectAll": "Tất cả",
+      "reset": "Xoá bộ lọc"
+    },
+    "status": {
+      "new": "Mới",
+      "underReview": "Đang xem xét",
+      "needsClarification": "Cần làm rõ",
+      "quoted": "Đã báo giá",
+      "quoteAccepted": "Đã nhận báo giá",
+      "digitizing": "Đang số hoá",
+      "designReview": "Duyệt thiết kế",
+      "approved": "Đã duyệt",
+      "rejected": "Đã từ chối",
+      "cancelled": "Đã huỷ",
+      "unknown": "Không xác định"
+    },
+    "subject": {
+      "catalog": "Sản phẩm cửa hàng",
+      "customerOwned": "Đồ khách tự có",
+      "unknown": "Không xác định",
+      "missingSummary": "Không còn thông tin sản phẩm"
+    },
+    "customer": {
+      "unnamed": "Khách chưa đặt tên hiển thị"
+    },
+    "states": {
+      "loading": "Đang tải hàng đợi yêu cầu…",
+      "emptyTitle": "Chưa có yêu cầu nào cần xử lý",
+      "emptyBody": "Khi khách gửi một yêu cầu thêu riêng, yêu cầu đó sẽ xuất hiện ở đây.",
+      "filteredEmptyTitle": "Không có yêu cầu nào khớp bộ lọc",
+      "filteredEmptyBody": "Hãy nới bộ lọc hoặc xoá bộ lọc để quay lại hàng đợi mặc định.",
+      "errorTitle": "Không tải được hàng đợi yêu cầu",
+      "errorBody": "Chưa rõ hàng đợi đang có gì. Hãy thử tải lại.",
+      "cursorErrorTitle": "Trang tiếp theo không còn hợp lệ",
+      "cursorErrorBody": "Hãy tải lại hàng đợi từ trang đầu.",
+      "loadMoreFailed": "Không tải được trang tiếp theo.",
+      "appended": "Đã tải thêm một trang yêu cầu."
+    },
+    "actions": {
+      "open": "Xem chi tiết",
+      "retry": "Thử lại",
+      "loadMore": "Trang sau",
+      "loadingMore": "Đang tải…"
+    }
+  },
+  "requestDetail": {
+    "page": {
+      "title": "Yêu cầu {code}",
+      "backToQueue": "Quay lại hàng đợi"
+    },
+    "sections": {
+      "subject": "Đối tượng thêu",
+      "customer": "Khách hàng",
+      "quantity": "Số lượng",
+      "evidence": "Hình ảnh khách gửi",
+      "history": "Lịch sử trạng thái",
+      "notes": "Ghi chú nội bộ",
+      "actions": "Hành động"
+    },
+    "status": {
+      "label": "Trạng thái hiện tại"
+    },
+    "request": {
+      "submittedAt": "Thời điểm gửi",
+      "updatedAt": "Cập nhật lần cuối",
+      "customerNote": "Lời nhắn của khách",
+      "noCustomerNote": "Khách không để lại lời nhắn."
+    },
+    "reason": {
+      "internal": "Lý do nội bộ (chỉ nhân viên đọc)",
+      "customerVisible": "Nội dung gửi khách (khách sẽ đọc)",
+      "none": "Không có",
+      "currentHeading": "Lý do của trạng thái hiện tại"
+    },
+    "subject": {
+      "catalog": "Sản phẩm cửa hàng",
+      "customerOwned": "Đồ khách tự có",
+      "unknown": "Không xác định",
+      "productName": "Sản phẩm",
+      "productSlug": "Đường dẫn sản phẩm",
+      "variantColor": "Màu",
+      "variantSize": "Kích cỡ",
+      "designSession": "Phiên thiết kế",
+      "itemName": "Tên món đồ",
+      "itemDescription": "Mô tả của khách",
+      "width": "Chiều rộng",
+      "height": "Chiều cao",
+      "millimetres": "mm",
+      "unavailableLabel": "Không còn thông tin",
+      "noDescription": "Khách không mô tả thêm.",
+      "copHasNoDesign": "Đồ khách tự có không đi kèm phiên thiết kế."
+    },
+    "designPreview": {
+      "heading": "Bản thiết kế",
+      "unavailable": "Chưa xem được bản thiết kế trên màn hình này.",
+      "provenanceHelp": "Mã phiên chỉ dùng để tra cứu nguồn gốc, không mở được bản thiết kế."
+    },
+    "customer": {
+      "displayName": "Tên hiển thị",
+      "unnamed": "Khách chưa đặt tên hiển thị",
+      "verifiedAt": "Xác minh từ",
+      "contacts": "Liên hệ",
+      "maskedNote": "Liên hệ hiển thị dạng che, không tra ngược được giá trị gốc.",
+      "primary": "Liên hệ chính",
+      "verified": "Đã xác minh",
+      "unverified": "Chưa xác minh",
+      "email": "Email",
+      "phone": "Số điện thoại",
+      "missing": "Không còn hồ sơ khách hàng.",
+      "noContacts": "Không có liên hệ nào đang hoạt động."
+    },
+    "quantity": {
+      "total": "Tổng số lượng",
+      "lines": "Chi tiết theo dòng",
+      "sizeLabel": "Kích cỡ",
+      "units": "Số lượng",
+      "noSize": "Không ghi kích cỡ",
+      "empty": "Yêu cầu không có dòng số lượng nào.",
+      "readOnly": "Số lượng giữ nguyên như khách đã gửi."
+    },
+    "evidence": {
+      "roleCopImage": "Ảnh món đồ của khách",
+      "roleReference": "Ảnh tham khảo",
+      "roleUnknown": "Tệp đính kèm",
+      "altText": "{role} {position}",
+      "linkedAt": "Đính kèm lúc",
+      "size": "Dung lượng",
+      "loading": "Đang tải ảnh…",
+      "empty": "Khách chưa gửi ảnh nào.",
+      "unavailable": "Không mở được ảnh này.",
+      "retryable": "Chưa tải được ảnh.",
+      "retry": "Thử lại",
+      "open": "Xem ảnh lớn",
+      "close": "Đóng",
+      "viewerLabel": "Ảnh khách gửi"
+    },
+    "history": {
+      "empty": "Chưa có thao tác duyệt nào. Khi khách gửi yêu cầu, hệ thống không ghi bước chuyển nào.",
+      "movedTo": "Chuyển sang",
+      "movedFrom": "Từ",
+      "occurredAt": "Thời điểm",
+      "actor": "Người thực hiện",
+      "actorAdmin": "Nhân viên",
+      "actorCustomer": "Khách hàng",
+      "actorSystem": "Hệ thống",
+      "actorUnknown": "Không xác định",
+      "sequence": "Bước"
+    },
+    "notes": {
+      "empty": "Chưa có ghi chú nội bộ nào.",
+      "kindSpam": "Spam",
+      "kindReject": "Từ chối",
+      "kindPause": "Tạm dừng",
+      "kindClarify": "Yêu cầu làm rõ",
+      "kindNote": "Ghi chú",
+      "kindUnknown": "Ghi chú",
+      "appendOnly": "Ghi chú chỉ thêm mới, không sửa và không xoá.",
+      "internalOnly": "Ghi chú nội bộ không gửi cho khách.",
+      "addHeading": "Thêm ghi chú nội bộ",
+      "addLabel": "Nội dung ghi chú",
+      "addSubmit": "Lưu ghi chú",
+      "addSubmitting": "Đang lưu…",
+      "added": "Đã lưu ghi chú.",
+      "author": "Nhân viên"
+    },
+    "actions": {
+      "startReview": "Bắt đầu xem xét",
+      "resumeReview": "Tiếp tục xem xét",
+      "needsClarification": "Yêu cầu khách làm rõ",
+      "reject": "Từ chối yêu cầu",
+      "cancel": "Huỷ yêu cầu",
+      "none": "Trạng thái này không có thao tác duyệt nào ở bước hiện tại.",
+      "confirm": "Xác nhận",
+      "dismiss": "Đóng"
+    },
+    "dialog": {
+      "clarifyTitle": "Yêu cầu khách làm rõ",
+      "clarifyHelp": "Khách sẽ đọc nội dung gửi khách. Lý do nội bộ chỉ nhân viên thấy.",
+      "rejectTitle": "Từ chối yêu cầu",
+      "rejectHelp": "Từ chối là bước cuối. Khách sẽ đọc nội dung gửi khách.",
+      "cancelTitle": "Huỷ yêu cầu",
+      "cancelHelp": "Huỷ là bước cuối. Khách sẽ đọc nội dung gửi khách.",
+      "noteLabel": "Ghi chú nội bộ",
+      "noteOptionalLabel": "Ghi chú nội bộ (không bắt buộc)",
+      "noteKindLabel": "Loại ghi chú",
+      "rejectKindReject": "Từ chối",
+      "rejectKindSpam": "Spam",
+      "submitting": "Đang gửi…"
+    },
+    "validation": {
+      "heading": "Chưa gửi được. Hãy kiểm tra các mục sau.",
+      "internalRequired": "Hãy nhập lý do nội bộ.",
+      "customerRequired": "Hãy nhập nội dung gửi khách.",
+      "noteRequired": "Hãy nhập ghi chú nội bộ.",
+      "tooLong": "Nội dung tối đa 2000 ký tự."
+    },
+    "outcome": {
+      "successHeading": "Đã cập nhật yêu cầu.",
+      "successBody": "Trạng thái và lịch sử bên dưới là dữ liệu đã lưu.",
+      "conflictHeading": "Yêu cầu đã được người khác xử lý.",
+      "conflictBody": "Màn hình đã tải lại trạng thái mới nhất. Hãy xem lại rồi chọn thao tác khác.",
+      "failureHeading": "Chưa gửi được thao tác.",
+      "failureBody": "Nội dung bạn nhập vẫn được giữ. Hãy thử gửi lại.",
+      "unauthenticated": "Phiên đăng nhập đã hết hạn."
+    },
+    "states": {
+      "loading": "Đang tải yêu cầu…",
+      "notFoundTitle": "Không mở được yêu cầu này",
+      "notFoundBody": "Yêu cầu không tồn tại hoặc không thuộc quyền xem của bạn.",
+      "errorTitle": "Không tải được yêu cầu",
+      "errorBody": "Chưa rõ yêu cầu đang ở trạng thái nào. Hãy thử tải lại.",
+      "retry": "Thử lại"
+    }
+  },
+  "requestDesignCase": {
+    "page": {
+      "title": "Thiết kế cho yêu cầu {code}",
+      "subtitle": "Số hoá bản thiết kế và gửi khách hàng duyệt.",
+      "backToRequest": "Quay lại chi tiết yêu cầu"
+    },
+    "sections": {
+      "source": "Nguồn số hoá",
+      "versions": "Các phiên bản thiết kế",
+      "selected": "Phiên bản đang xem",
+      "reviews": "Phản hồi của khách hàng",
+      "approval": "Bằng chứng duyệt",
+      "context": "Thông tin yêu cầu"
+    },
+    "context": {
+      "status": "Trạng thái yêu cầu",
+      "customer": "Khách hàng",
+      "quantity": "Tổng số lượng",
+      "branch": "Loại yêu cầu",
+      "branchCatalog": "Sản phẩm trong cửa hàng",
+      "branchCustomerOwned": "Sản phẩm khách tự có",
+      "unknown": "Không xác định"
+    },
+    "source": {
+      "catalogTitle": "Bản khách đã gửi",
+      "catalogHint": "Bản thiết kế khách hàng gửi kèm yêu cầu. Đây là nguồn để số hoá, không phải phiên bản chính thức.",
+      "loading": "Đang tải bản khách đã gửi…",
+      "absentTitle": "Không có bản thiết kế gửi kèm",
+      "absentBody": "Yêu cầu này không còn phiên làm việc thiết kế nào để đọc. Hãy số hoá từ chính tài liệu yêu cầu; hệ thống không dựng một bản trắng thay thế.",
+      "copTitle": "Ảnh khách hàng cung cấp",
+      "copBody": "Yêu cầu sản phẩm khách tự có không có phiên làm việc thiết kế. Nguồn số hoá là tài liệu và ảnh khách gửi kèm yêu cầu.",
+      "copEmpty": "Yêu cầu này chưa có ảnh nào để xem.",
+      "evidenceLoading": "Đang tải ảnh…",
+      "evidenceFailed": "Không tải được ảnh này.",
+      "evidenceRetry": "Thử lại",
+      "evidenceAlt": "Ảnh khách hàng cung cấp số {index}",
+      "previewLabel": "Xem trước bản thiết kế",
+      "previewEmpty": "Bản thiết kế này chưa có phần tử nào."
+    },
+    "gate": {
+      "title": "Chưa tới bước số hoá",
+      "body": "Chỉ có thể tạo phiên bản thiết kế khi yêu cầu đang ở bước số hoá hoặc đang chờ khách duyệt.",
+      "quoteAcceptedHint": "Yêu cầu đã được khách chấp nhận báo giá. Hãy chuyển sang bước số hoá ở màn hình chi tiết yêu cầu.",
+      "goToRequest": "Mở chi tiết yêu cầu"
+    },
+    "states": {
+      "loading": "Đang tải hồ sơ thiết kế…",
+      "errorTitle": "Không tải được hồ sơ thiết kế",
+      "errorRetryable": "Đã xảy ra lỗi khi tải. Vui lòng thử lại.",
+      "errorMissing": "Không tìm thấy yêu cầu này, hoặc bạn không có quyền xem.",
+      "errorUnresolvable": "Yêu cầu này chưa có hồ sơ thiết kế hợp lệ. Vui lòng báo quản trị viên; màn hình không tự tạo hồ sơ mới.",
+      "errorUnauthenticated": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+      "retry": "Tải lại"
+    },
+    "history": {
+      "empty": "Chưa có phiên bản thiết kế nào.",
+      "loading": "Đang tải danh sách phiên bản…",
+      "columnVersion": "Phiên bản",
+      "columnStatus": "Trạng thái phiên bản",
+      "columnCurrent": "Bản đang dựng",
+      "columnReview": "Kết quả duyệt",
+      "columnSentAt": "Thời điểm gửi duyệt",
+      "select": "Xem phiên bản này",
+      "currentYes": "Bản mới nhất",
+      "currentNo": "—",
+      "reviewNone": "Chưa có",
+      "awaitingReview": "Khách đang duyệt"
+    },
+    "versionStatus": {
+      "DRAFT": "Bản nháp",
+      "SENT_FOR_REVIEW": "Đã gửi duyệt",
+      "REVISION_REQUESTED": "Khách yêu cầu chỉnh sửa",
+      "APPROVED": "Khách đã duyệt",
+      "SUPERSEDED": "Đã thay thế",
+      "VOID": "Đã huỷ",
+      "unknown": "Không xác định"
+    },
+    "reviewOutcome": {
+      "APPROVE": "Đã duyệt",
+      "REQUEST_REVISION": "Yêu cầu chỉnh sửa",
+      "unknown": "Không xác định"
+    },
+    "selected": {
+      "none": "Chọn một phiên bản để xem chi tiết.",
+      "loading": "Đang tải phiên bản…",
+      "version": "Phiên bản {version}",
+      "documentHash": "Mã băm tài liệu",
+      "documentHashAbsent": "Chưa gửi duyệt nên chưa có mã băm",
+      "schemaVersion": "Phiên bản lược đồ tài liệu",
+      "parent": "Tiếp nối phiên bản",
+      "parentNone": "Bản đầu tiên",
+      "placement": "Vị trí thêu",
+      "dimensions": "Kích thước vùng thêu",
+      "dimensionsValue": "{width} × {height} mm",
+      "openAuthoring": "Mở trình số hoá",
+      "createFromThis": "Tạo bản nháp mới từ phiên bản này",
+      "send": "Gửi khách duyệt",
+      "awaitingTitle": "Đang chờ khách hàng duyệt",
+      "awaitingBody": "Phiên bản này đã gửi và không thể chỉnh sửa. Kết quả duyệt là quyết định của khách hàng.",
+      "revisionTitle": "Khách hàng yêu cầu chỉnh sửa",
+      "revisionBody": "Phiên bản này giữ nguyên làm lịch sử. Hãy tạo một bản nháp mới từ nó để chỉnh sửa.",
+      "immutableTitle": "Phiên bản đã cố định",
+      "immutableBody": "Phiên bản này thuộc lịch sử và không thể chỉnh sửa hay gửi lại.",
+      "approvedTitle": "Khách hàng đã duyệt",
+      "approvedBody": "Bản duyệt là bằng chứng cố định và không thể chỉnh sửa."
+    },
+    "reviews": {
+      "empty": "Khách hàng chưa đưa ra quyết định nào cho phiên bản này.",
+      "decidedAt": "Thời điểm quyết định",
+      "feedbackLabel": "Nội dung khách hàng gửi",
+      "feedbackNone": "Khách hàng không kèm nội dung."
+    },
+    "create": {
+      "open": "Tạo bản nháp mới",
+      "title": "Tạo phiên bản thiết kế mới",
+      "body": "Mỗi lần lưu là một phiên bản mới. Phiên bản cũ được giữ nguyên làm lịch sử.",
+      "sourceLabel": "Nguồn tài liệu",
+      "sourceSubmitted": "Chép từ bản khách đã gửi",
+      "sourcePredecessor": "Chép từ v{version} ({statusLabel})",
+      "sourceWorking": "Dùng bản đang soạn trong trình số hoá",
+      "sourceAbsent": "Chưa có tài liệu nguồn. Hãy mở trình số hoá để soạn bản thiết kế trước khi tạo phiên bản.",
+      "branchLabel": "Loại yêu cầu",
+      "catalogNote": "Vị trí thêu của yêu cầu trong cửa hàng do máy chủ xác định và không thể chỉnh ở đây.",
+      "sideLabel": "Vị trí thêu (mặt)",
+      "areaLabel": "Vị trí thêu (vùng)",
+      "widthLabel": "Chiều rộng vùng thêu (mm)",
+      "heightLabel": "Chiều cao vùng thêu (mm)",
+      "copNote": "Đây là kích thước vùng thêu, không phải kích thước sản phẩm của khách.",
+      "submit": "Tạo bản nháp",
+      "cancel": "Huỷ",
+      "submitting": "Đang tạo…",
+      "errorRejected": "Máy chủ từ chối tài liệu hoặc thông tin vị trí thêu. Vui lòng kiểm tra lại các ô bên trên.",
+      "errorIneligible": "Yêu cầu không còn ở trạng thái cho phép tạo phiên bản. Màn hình đã đọc lại trạng thái mới.",
+      "errorMissing": "Không tìm thấy yêu cầu này, hoặc bạn không có quyền thao tác.",
+      "errorRetryable": "Không tạo được phiên bản. Vui lòng thử lại.",
+      "errorUnauthenticated": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+      "requiredField": "Vui lòng nhập thông tin này.",
+      "positiveNumber": "Vui lòng nhập số lớn hơn 0."
+    },
+    "send": {
+      "title": "Gửi phiên bản cho khách duyệt",
+      "body": "Gửi phiên bản {version} cho khách hàng duyệt. Tài liệu sẽ được cố định đúng như hiện tại.",
+      "note": "Sau khi gửi, phiên bản này không thể chỉnh sửa. Muốn sửa, hãy tạo một bản nháp mới.",
+      "confirm": "Gửi duyệt",
+      "cancel": "Huỷ",
+      "sending": "Đang gửi…",
+      "replayNote": "Phiên bản này đã được gửi trước đó. Không có gì thay đổi.",
+      "errorStale": "Phiên bản này không còn gửi được. Màn hình đã đọc lại trạng thái mới nhất.",
+      "errorRetryable": "Không gửi được. Vui lòng thử lại.",
+      "errorUnauthenticated": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
+    },
+    "reviewActive": {
+      "title": "Đã có phiên bản đang chờ khách duyệt",
+      "body": "Không có gì được gửi đi. Mỗi hồ sơ thiết kế chỉ có một phiên bản chờ duyệt tại một thời điểm.",
+      "guidance": "Màn hình đã đọc lại trạng thái mới nhất. Hãy chờ khách hàng quyết định phiên bản đang duyệt.",
+      "dismiss": "Đã hiểu"
+    },
+    "approval": {
+      "title": "Bằng chứng khách hàng đã duyệt",
+      "note": "Đây là bằng chứng cố định tại thời điểm duyệt, không phải thông tin hiện hành.",
+      "documentHash": "Mã băm tài liệu đã duyệt",
+      "approvedAt": "Thời điểm duyệt",
+      "customer": "Khách hàng đã duyệt",
+      "customerUnknown": "Khách hàng không cung cấp tên",
+      "contacts": "Liên hệ (đã che)",
+      "contactsNone": "Không có liên hệ được lưu",
+      "reverified": "Đã xác minh lại danh tính",
+      "reverifiedYes": "Có",
+      "reverifiedNo": "Không",
+      "product": "Sản phẩm",
+      "variant": "Phân loại",
+      "variantNone": "Không có phân loại",
+      "side": "Mặt thêu",
+      "area": "Vùng thêu",
+      "dimensions": "Kích thước vùng thêu",
+      "quantity": "Tổng số lượng",
+      "agreements": "Điều khoản khách đã chấp nhận",
+      "agreementsNone": "Không có điều khoản nào được lưu.",
+      "agreementHash": "Mã băm nội dung",
+      "scopeNote": "Bản duyệt này chưa tạo đơn hàng, chưa thu cọc và chưa sinh lệnh sản xuất."
+    },
+    "authoring": {
+      "title": "Trình số hoá",
+      "hint": "Chỉnh sửa bản đang soạn. Chưa có gì được lưu cho tới khi bạn tạo phiên bản mới.",
+      "scopeNote": "Trình này soạn tài liệu thiết kế. Hệ thống không tạo tệp thêu máy, không mô phỏng mũi chỉ và không sinh lệnh sản xuất.",
+      "unsaved": "Bản đang soạn chưa được lưu thành phiên bản.",
+      "close": "Đóng trình số hoá",
+      "reset": "Khôi phục về tài liệu gốc",
+      "elements": "Các lớp",
+      "elementsEmpty": "Tài liệu chưa có lớp nào.",
+      "addText": "Thêm chữ",
+      "addTextValue": "Chữ thêu",
+      "remove": "Xoá lớp",
+      "limitReached": "Đã đạt giới hạn số lớp của tài liệu.",
+      "selectElement": "Chọn lớp",
+      "moveX": "Toạ độ X",
+      "moveY": "Toạ độ Y",
+      "invalidTitle": "Tài liệu đang soạn chưa hợp lệ",
+      "invalidBody": "Vui lòng sửa lại trước khi tạo phiên bản mới.",
+      "saveAsVersion": "Lưu thành phiên bản mới"
+    }
+  },
+  "requestQuotation": {
+    "page": {
+      "title": "Báo giá cho yêu cầu {code}",
+      "backToRequest": "Quay lại chi tiết yêu cầu",
+      "subtitle": "Lập và gửi báo giá cho khách hàng."
+    },
+    "sections": {
+      "context": "Thông tin yêu cầu",
+      "draft": "Soạn báo giá",
+      "lines": "Các dòng báo giá",
+      "totals": "Tổng tiền",
+      "history": "Lịch sử phiên bản",
+      "versionDetail": "Chi tiết phiên bản",
+      "validity": "Hiệu lực"
+    },
+    "context": {
+      "status": "Trạng thái yêu cầu",
+      "submittedAt": "Thời điểm gửi",
+      "totalQuantity": "Tổng số lượng",
+      "customerNote": "Lời nhắn của khách",
+      "noCustomerNote": "Khách không để lại lời nhắn.",
+      "catalogHeading": "Sản phẩm cửa hàng",
+      "copHeading": "Sản phẩm khách tự có",
+      "productName": "Sản phẩm",
+      "variant": "Phiên bản",
+      "copName": "Tên sản phẩm",
+      "copDescription": "Mô tả",
+      "copDimensions": "Kích thước (mm)",
+      "unnamedSubject": "Không xác định được đối tượng thêu.",
+      "copNotice": "Khách tự cung cấp sản phẩm, nên báo giá không có dòng sản phẩm."
+    },
+    "empty": {
+      "heading": "Yêu cầu này chưa có báo giá",
+      "body": "Tạo báo giá đầu tiên để bắt đầu. Bản nháp sẽ được lưu và có thể chỉnh sửa bằng cách thêm phiên bản mới.",
+      "action": "Tạo báo giá đầu tiên"
+    },
+    "loading": {
+      "label": "Đang tải báo giá…"
+    },
+    "error": {
+      "heading": "Không tải được báo giá",
+      "missing": "Không tìm thấy yêu cầu này, hoặc bạn không có quyền xem.",
+      "unauthenticated": "Phiên đăng nhập đã kết thúc. Hãy đăng nhập lại.",
+      "retryable": "Không kết nối được tới máy chủ. Hãy thử lại.",
+      "retry": "Thử lại",
+      "historyHeading": "Không tải được lịch sử phiên bản",
+      "versionHeading": "Không tải được phiên bản này"
+    },
+    "form": {
+      "quantityTotal": "Tổng số lượng",
+      "stitchCount": "Số mũi thêu",
+      "stitchCountHint": "Không bắt buộc.",
+      "shippingFee": "Phí vận chuyển",
+      "manualAdjustment": "Điều chỉnh thủ công",
+      "manualAdjustmentHint": "Có thể âm để giảm giá. Để trống nếu không điều chỉnh.",
+      "adjustmentReason": "Lý do điều chỉnh",
+      "adjustmentReasonHint": "Ghi chú nội bộ. Khách hàng không nhìn thấy nội dung này.",
+      "lineKind": "Loại dòng",
+      "lineDescription": "Diễn giải",
+      "lineQuantity": "Số lượng",
+      "lineUnitPrice": "Đơn giá",
+      "addLine": "Thêm dòng",
+      "removeLine": "Xoá dòng",
+      "submitCreate": "Tạo báo giá",
+      "submitVersion": "Tạo phiên bản mới",
+      "submitting": "Đang lưu…",
+      "pendingTotalsNotice": "Tổng tiền do máy chủ tính sau khi lưu."
+    },
+    "lineKinds": {
+      "PRODUCT": "Sản phẩm",
+      "EMBROIDERY": "Thêu",
+      "DIGITIZING_FEE": "Phí số hoá",
+      "OTHER": "Khác",
+      "SHIPPING": "Vận chuyển",
+      "ADJUSTMENT": "Điều chỉnh"
+    },
+    "validation": {
+      "heading": "Chưa lưu được báo giá",
+      "quantityTotal": "Tổng số lượng phải là số nguyên dương.",
+      "lineDescription": "Hãy nhập diễn giải cho dòng này.",
+      "lineQuantity": "Số lượng của dòng phải là số nguyên dương.",
+      "lineUnitPrice": "Đơn giá không đúng định dạng.",
+      "shippingFee": "Phí vận chuyển không đúng định dạng.",
+      "manualAdjustment": "Số tiền điều chỉnh không đúng định dạng.",
+      "stitchCount": "Số mũi thêu phải là số nguyên không âm.",
+      "adjustmentReasonRequired": "Điều chỉnh thủ công cần có lý do.",
+      "adjustmentReasonUnexpected": "Không có điều chỉnh nào để giải thích. Hãy xoá lý do.",
+      "rejected": "Máy chủ từ chối báo giá này. Hãy kiểm tra lại các số tiền.",
+      "conflictExists": "Yêu cầu này đã có báo giá. Màn hình vừa được tải lại.",
+      "stale": "Yêu cầu đã thay đổi. Màn hình vừa được tải lại.",
+      "unauthenticated": "Phiên đăng nhập đã kết thúc. Hãy đăng nhập lại.",
+      "retryable": "Không lưu được. Hãy thử lại."
+    },
+    "totals": {
+      "subtotal": "Tạm tính",
+      "manualAdjustment": "Điều chỉnh",
+      "shipping": "Vận chuyển",
+      "total": "Tổng cộng",
+      "depositPercent": "Tỷ lệ đặt cọc",
+      "deposit": "Tiền đặt cọc",
+      "remaining": "Còn lại",
+      "quantityTotal": "Số lượng",
+      "stitchCount": "Số mũi thêu",
+      "adjustmentReason": "Lý do điều chỉnh (nội bộ)",
+      "serverComputed": "Các số tiền dưới đây do máy chủ tính và lưu."
+    },
+    "lines": {
+      "position": "#",
+      "kind": "Loại",
+      "description": "Diễn giải",
+      "quantity": "SL",
+      "unitPrice": "Đơn giá",
+      "lineTotal": "Thành tiền",
+      "empty": "Phiên bản này không có dòng nào."
+    },
+    "version": {
+      "label": "Phiên bản {version}",
+      "createdAt": "Tạo lúc",
+      "sentAt": "Gửi lúc",
+      "acceptedAt": "Khách chấp nhận lúc",
+      "supersededAt": "Bị thay thế lúc",
+      "expiredAt": "Hết hiệu lực lúc",
+      "validFrom": "Hiệu lực từ",
+      "validUntil": "Hiệu lực đến",
+      "current": "Khách đang xem",
+      "selected": "Đang chọn",
+      "readOnlyNotice": "Phiên bản đã gửi là bất biến. Muốn đổi giá, hãy tạo phiên bản mới.",
+      "selectLabel": "Xem phiên bản này"
+    },
+    "versionStatus": {
+      "column": "Trạng thái",
+      "DRAFT": "Bản nháp",
+      "SENT": "Đã gửi",
+      "ACCEPTED": "Đã chấp nhận",
+      "REJECTED": "Khách từ chối",
+      "SUPERSEDED": "Đã thay thế",
+      "EXPIRED": "Hết hiệu lực",
+      "unknown": "Không xác định"
+    },
+    "send": {
+      "action": "Gửi cho khách",
+      "dialogTitle": "Gửi báo giá cho khách?",
+      "dialogBody": "Phiên bản {version} sẽ được gửi cho khách và không thể sửa sau khi gửi.",
+      "dialogHint": "Hệ thống sẽ ghi lại thời điểm gửi và thời hạn hiệu lực.",
+      "confirm": "Gửi báo giá",
+      "cancel": "Huỷ",
+      "pending": "Đang gửi…",
+      "successHeading": "Đã gửi báo giá",
+      "successBody": "Khách hàng có thể xem phiên bản này.",
+      "replayHeading": "Phiên bản này đã được gửi trước đó",
+      "replayBody": "Không có lần gửi thứ hai nào được thực hiện.",
+      "staleHeading": "Không gửi được phiên bản này",
+      "staleBody": "Trạng thái đã thay đổi. Màn hình vừa được tải lại — hãy xem lại rồi quyết định.",
+      "failureHeading": "Không gửi được báo giá",
+      "failureBody": "Chưa có gì được gửi đi. Hãy thử lại.",
+      "unauthenticated": "Phiên đăng nhập đã kết thúc. Hãy đăng nhập lại."
+    },
+    "accepted": {
+      "heading": "Khách đã chấp nhận báo giá",
+      "body": "Báo giá này đã chốt. Không tạo thêm phiên bản mới ở đây.",
+      "nextStepHeading": "Bước tiếp theo",
+      "nextStepBody": "Chuyển yêu cầu sang số hoá ở màn hình chi tiết yêu cầu.",
+      "nextStepLink": "Mở chi tiết yêu cầu"
+    }
+  },
+  "requestStatusLabels": {
+    "NEW": "Mới",
+    "UNDER_REVIEW": "Đang xem xét",
+    "NEEDS_CLARIFICATION": "Cần làm rõ",
+    "QUOTED": "Đã báo giá",
+    "QUOTE_ACCEPTED": "Đã nhận báo giá",
+    "DIGITIZING": "Đang số hoá",
+    "DESIGN_REVIEW": "Duyệt thiết kế",
+    "APPROVED": "Đã duyệt",
+    "REJECTED": "Đã từ chối",
+    "CANCELLED": "Đã huỷ"
+  },
+  "productionStatusLabels": {
+    "PLANNED": {
+      "label": "Đã lên lệnh"
+    },
+    "STARTED": {
+      "label": "Đang sản xuất"
+    },
+    "COMPLETED": {
+      "label": "Hoàn tất"
+    },
+    "CANCELLED": {
+      "label": "Đã huỷ"
+    }
+  }
+}

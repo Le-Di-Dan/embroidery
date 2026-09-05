@@ -16,66 +16,85 @@
  * bản`, `Xuất bản`, `Gỡ xuất bản`, `Lưu trữ`, `Xoá`. Those capabilities do not
  * exist in `APP2-B02`, so the words for them must not exist here either.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
 import type { ProductSaveFailure } from './product-conflict';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin.json`, under `productSaveFailure`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const productSaveFailureMessage = messageView(VI_MESSAGES.admin, 'productSaveFailure');
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin.json`, under `productForm`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const productFormMessage = messageView(VI_MESSAGES.admin, 'productForm');
 
 export const PRODUCT_FORM_COPY = {
   create: {
-    title: 'Sản phẩm mới',
-    subtitle: 'Tạo bản nháp với thông tin cơ bản. Giá và ảnh được thêm ở bước chỉnh sửa.',
-    submit: 'Tạo bản nháp',
-    cancel: 'Huỷ',
-    submitting: 'Đang tạo…',
-    created: 'Đã tạo bản nháp sản phẩm.',
-    failedTitle: 'Chưa thể tạo bản nháp',
-    failedBody: 'Bản nháp chưa được tạo. Hãy kiểm tra thông tin và thử lại.',
+    title: productFormMessage.text('create.title'),
+    subtitle: productFormMessage.text('create.subtitle'),
+    submit: productFormMessage.text('create.submit'),
+    cancel: productFormMessage.text('create.cancel'),
+    submitting: productFormMessage.text('create.submitting'),
+    created: productFormMessage.text('create.created'),
+    failedTitle: productFormMessage.text('create.failedTitle'),
+    failedBody: productFormMessage.text('create.failedBody'),
   },
 
   edit: {
-    subtitle:
-      'Bản nháp chưa hiển thị công khai. Thay đổi chỉ được lưu khi bạn chọn “Lưu thay đổi”.',
-    subtitleNarrow: 'Bản nháp chưa hiển thị công khai.',
-    save: 'Lưu thay đổi',
-    cancel: 'Huỷ thay đổi',
-    saving: 'Đang lưu…',
-    savingTitle: 'Đang lưu thay đổi…',
-    savingHelp: 'Vui lòng không đóng trang cho tới khi lưu xong.',
-    saveFailedTitle: 'Chưa thể lưu thay đổi',
-    saveFailedBody: 'Thay đổi chưa được lưu. Hãy thử lại sau giây lát.',
+    subtitle: productFormMessage.text('edit.subtitle'),
+    subtitleNarrow: productFormMessage.text('edit.subtitleNarrow'),
+    save: productFormMessage.text('edit.save'),
+    cancel: productFormMessage.text('edit.cancel'),
+    saving: productFormMessage.text('edit.saving'),
+    savingTitle: productFormMessage.text('edit.savingTitle'),
+    savingHelp: productFormMessage.text('edit.savingHelp'),
+    saveFailedTitle: productFormMessage.text('edit.saveFailedTitle'),
+    saveFailedBody: productFormMessage.text('edit.saveFailedBody'),
     /** The mobile frame's closing note; a boundary statement, not a control. */
-    savePublishNote:
-      'Lưu thay đổi và Xuất bản là hai hành động tách biệt. Xuất bản thuộc bước sau.',
+    savePublishNote: productFormMessage.text('edit.savePublishNote'),
   },
 
   detail: {
-    loading: 'Đang tải sản phẩm…',
-    notFoundTitle: 'Không tìm thấy sản phẩm',
-    notFoundBody: 'Sản phẩm này không tồn tại hoặc đã bị gỡ khỏi danh sách.',
-    notEditableTitle: 'Sản phẩm không thể chỉnh sửa',
-    notEditableBody: 'Chỉ bản nháp mới có thể chỉnh sửa tại màn hình này.',
-    unavailableTitle: 'Không thể tải sản phẩm',
-    unavailableBody: 'Sản phẩm hiện chưa tải được. Hãy thử lại sau giây lát.',
-    retry: 'Thử lại',
-    backToList: 'Về danh sách sản phẩm',
+    loading: productFormMessage.text('detail.loading'),
+    notFoundTitle: productFormMessage.text('detail.notFoundTitle'),
+    notFoundBody: productFormMessage.text('detail.notFoundBody'),
+    notEditableTitle: productFormMessage.text('detail.notEditableTitle'),
+    notEditableBody: productFormMessage.text('detail.notEditableBody'),
+    unavailableTitle: productFormMessage.text('detail.unavailableTitle'),
+    unavailableBody: productFormMessage.text('detail.unavailableBody'),
+    retry: productFormMessage.text('detail.retry'),
+    backToList: productFormMessage.text('detail.backToList'),
   },
 
   groups: {
-    basic: 'Thông tin cơ bản',
-    category: 'Danh mục',
-    price: 'Giá',
-    media: 'Ảnh sản phẩm',
+    basic: productFormMessage.text('groups.basic'),
+    category: productFormMessage.text('groups.category'),
+    price: productFormMessage.text('groups.price'),
+    media: productFormMessage.text('groups.media'),
     /** The mobile frame merges the last three groups into one card. */
-    categoryPriceMedia: 'Danh mục, Giá & Ảnh',
+    categoryPriceMedia: productFormMessage.text('groups.categoryPriceMedia'),
   },
 
   fields: {
-    nameLabel: 'Tên sản phẩm',
-    nameHelp: 'Tên hiển thị công khai khi sản phẩm được xuất bản.',
-    namePlaceholder: 'Nhập tên sản phẩm',
-    descriptionLabel: 'Mô tả',
-    descriptionHelp: 'Mô tả ngắn hiển thị trên trang sản phẩm công khai.',
-    categoryLabel: 'Danh mục sản phẩm',
-    categoryHelp: 'Chọn một danh mục để sản phẩm xuất hiện đúng nhóm.',
-    categoryPlaceholder: 'Chọn danh mục',
+    nameLabel: productFormMessage.text('fields.nameLabel'),
+    nameHelp: productFormMessage.text('fields.nameHelp'),
+    namePlaceholder: productFormMessage.text('fields.namePlaceholder'),
+    descriptionLabel: productFormMessage.text('fields.descriptionLabel'),
+    descriptionHelp: productFormMessage.text('fields.descriptionHelp'),
+    categoryLabel: productFormMessage.text('fields.categoryLabel'),
+    categoryHelp: productFormMessage.text('fields.categoryHelp'),
+    categoryPlaceholder: productFormMessage.text('fields.categoryPlaceholder'),
     /**
      * The product's category is no longer assignable (`APP12-A01`).
      *
@@ -86,98 +105,95 @@ export const PRODUCT_FORM_COPY = {
      * both be lies. Reassignment is the operator's, through this same select.
      */
     categoryUnassignable: (name: string): string =>
-      'Danh mục hiện tại "' +
-      name +
-      '" không còn nhận sản phẩm mới. Chọn danh mục khác trước khi lưu.',
+      productFormMessage.text('fields.categoryUnassignable', { name }),
     /** The same situation when the inventory has no row for the stored slug at all. */
-    categoryMissing: 'Danh mục hiện tại không còn tồn tại. Chọn danh mục khác trước khi lưu.',
-    priceLabel: 'Giá cơ bản',
-    priceHelp: 'Số nguyên đồng, không dấu phân cách. Để trống nếu chưa xác định giá.',
+    categoryMissing: productFormMessage.text('fields.categoryMissing'),
+    priceLabel: productFormMessage.text('fields.priceLabel'),
+    priceHelp: productFormMessage.text('fields.priceHelp'),
   },
 
   validation: {
-    summaryTitle: 'Chưa thể lưu thay đổi',
-    createSummaryTitle: 'Chưa thể tạo bản nháp',
-    nameRequired: 'Tên sản phẩm không được để trống.',
-    categoryRequired: 'Hãy chọn một danh mục cho sản phẩm.',
-    priceInvalid: 'Giá cơ bản phải là số nguyên đồng, không âm.',
+    summaryTitle: productFormMessage.text('validation.summaryTitle'),
+    createSummaryTitle: productFormMessage.text('validation.createSummaryTitle'),
+    nameRequired: productFormMessage.text('validation.nameRequired'),
+    categoryRequired: productFormMessage.text('validation.categoryRequired'),
+    priceInvalid: productFormMessage.text('validation.priceInvalid'),
   },
 
   status: {
-    cardTitle: 'Trạng thái',
-    draftNote:
-      'Bản nháp không hiển thị với khách truy cập. Sản phẩm chỉ công khai sau khi được xuất bản.',
+    cardTitle: productFormMessage.text('status.cardTitle'),
+    draftNote: productFormMessage.text('status.draftNote'),
   },
 
   slug: {
-    cardTitle: 'Đường dẫn',
-    note: 'Do hệ thống tạo và không thay đổi, kể cả khi đổi tên sản phẩm.',
+    cardTitle: productFormMessage.text('slug.cardTitle'),
+    note: productFormMessage.text('slug.note'),
     /** The mobile frame states path and immutability on one line. */
-    inlinePrefix: 'Đường dẫn: ',
-    inlineSuffix: ' · do hệ thống tạo, không thay đổi.',
+    inlinePrefix: productFormMessage.text('slug.inlinePrefix'),
+    inlineSuffix: productFormMessage.text('slug.inlineSuffix'),
   },
 
   media: {
-    pick: 'Chọn ảnh',
-    help: 'Chỉ ảnh ở trạng thái “Sẵn sàng” mới có thể chọn. Ảnh đầu tiên là ảnh đại diện; dùng “Di chuyển trước/sau” để đổi thứ tự.',
-    helpNarrow: 'Chỉ ảnh “Sẵn sàng” mới chọn được. Ảnh đầu tiên là ảnh đại diện.',
-    roleThumbnail: 'Ảnh đại diện',
-    roleGallery: 'Ảnh thư viện',
-    moveEarlier: 'Di chuyển trước',
-    moveLater: 'Di chuyển sau',
-    remove: 'Gỡ ảnh',
-    empty: 'Chưa chọn ảnh nào cho sản phẩm này.',
-    listLabel: 'Ảnh đã chọn',
+    pick: productFormMessage.text('media.pick'),
+    help: productFormMessage.text('media.help'),
+    helpNarrow: productFormMessage.text('media.helpNarrow'),
+    roleThumbnail: productFormMessage.text('media.roleThumbnail'),
+    roleGallery: productFormMessage.text('media.roleGallery'),
+    moveEarlier: productFormMessage.text('media.moveEarlier'),
+    moveLater: productFormMessage.text('media.moveLater'),
+    remove: productFormMessage.text('media.remove'),
+    empty: productFormMessage.text('media.empty'),
+    listLabel: productFormMessage.text('media.listLabel'),
     /** Announced after a keyboard reorder so the new position is perceivable. */
-    reordered: 'Đã đổi thứ tự ảnh.',
-    removed: 'Đã gỡ ảnh khỏi sản phẩm.',
+    reordered: productFormMessage.text('media.reordered'),
+    removed: productFormMessage.text('media.removed'),
   },
 
   picker: {
-    title: 'Chọn ảnh cho sản phẩm',
-    help: 'Chỉ hiển thị ảnh ở trạng thái “Sẵn sàng”. Ảnh đang xử lý hoặc không thể sử dụng sẽ không xuất hiện ở đây. Danh sách tải theo từng trang.',
-    close: 'Đóng',
-    confirm: 'Dùng ảnh đã chọn',
-    cancel: 'Huỷ',
-    statusReady: 'Sẵn sàng',
-    loading: 'Đang tải danh sách ảnh…',
-    emptyTitle: 'Chưa có ảnh nào sẵn sàng',
-    emptyBody: 'Hãy tải ảnh lên ở màn hình Tài sản hình ảnh trước khi chọn.',
-    unavailableTitle: 'Không thể tải danh sách ảnh',
-    unavailableBody: 'Danh sách ảnh hiện chưa tải được. Hãy thử lại sau giây lát.',
-    retry: 'Thử lại',
-    loadMore: 'Tải thêm tài sản',
-    loadingMore: 'Đang tải thêm…',
-    loadMoreFailed: 'Không thể tải thêm tài sản.',
+    title: productFormMessage.text('picker.title'),
+    help: productFormMessage.text('picker.help'),
+    close: productFormMessage.text('picker.close'),
+    confirm: productFormMessage.text('picker.confirm'),
+    cancel: productFormMessage.text('picker.cancel'),
+    statusReady: productFormMessage.text('picker.statusReady'),
+    loading: productFormMessage.text('picker.loading'),
+    emptyTitle: productFormMessage.text('picker.emptyTitle'),
+    emptyBody: productFormMessage.text('picker.emptyBody'),
+    unavailableTitle: productFormMessage.text('picker.unavailableTitle'),
+    unavailableBody: productFormMessage.text('picker.unavailableBody'),
+    retry: productFormMessage.text('picker.retry'),
+    loadMore: productFormMessage.text('picker.loadMore'),
+    loadingMore: productFormMessage.text('picker.loadingMore'),
+    loadMoreFailed: productFormMessage.text('picker.loadMoreFailed'),
     /** Rendered with the selected count; the contract exposes no total. */
-    selectionCount: (count: number) => `Đã chọn ${count} ảnh`,
+    selectionCount: (count: number) => productFormMessage.text('picker.selectionCount', { count }),
   },
 
   conflict: {
-    title: 'Sản phẩm đã được cập nhật ở nơi khác',
-    body: 'Dữ liệu trên máy chủ đã thay đổi kể từ lần bạn mở sản phẩm này. Hãy tải lại để xem phiên bản mới nhất trước khi tiếp tục chỉnh sửa.',
-    reload: 'Tải lại dữ liệu',
-    close: 'Đóng',
+    title: productFormMessage.text('conflict.title'),
+    body: productFormMessage.text('conflict.body'),
+    reload: productFormMessage.text('conflict.reload'),
+    close: productFormMessage.text('conflict.close'),
   },
 
   unsaved: {
-    title: 'Bỏ các thay đổi chưa lưu?',
-    body: 'Những thay đổi trên màn hình này sẽ không được lưu.',
-    leave: 'Rời khỏi trang',
-    stay: 'Tiếp tục chỉnh sửa',
+    title: productFormMessage.text('unsaved.title'),
+    body: productFormMessage.text('unsaved.body'),
+    leave: productFormMessage.text('unsaved.leave'),
+    stay: productFormMessage.text('unsaved.stay'),
   },
 
   identity: {
-    titlePng: 'Ảnh PNG',
-    titleJpeg: 'Ảnh JPEG',
-    titleWebp: 'Ảnh WebP',
-    titleUnknown: 'Tài sản hình ảnh',
-    unitBytes: 'B',
-    unitKilobytes: 'KB',
-    unitMegabytes: 'MB',
-    metaUnavailable: 'Chưa có thông tin chi tiết',
+    titlePng: productFormMessage.text('identity.titlePng'),
+    titleJpeg: productFormMessage.text('identity.titleJpeg'),
+    titleWebp: productFormMessage.text('identity.titleWebp'),
+    titleUnknown: productFormMessage.text('identity.titleUnknown'),
+    unitBytes: productFormMessage.text('identity.unitBytes'),
+    unitKilobytes: productFormMessage.text('identity.unitKilobytes'),
+    unitMegabytes: productFormMessage.text('identity.unitMegabytes'),
+    metaUnavailable: productFormMessage.text('identity.metaUnavailable'),
     /** There is no media-delivery contract, so no tile ever shows real pixels. */
-    placeholder: 'Chưa có ảnh xem trước',
+    placeholder: productFormMessage.text('identity.placeholder'),
   },
 } as const;
 
@@ -206,8 +222,8 @@ export const PRODUCT_SAVE_FAILURE_COPY: Readonly<
     body: PRODUCT_FORM_COPY.detail.notEditableBody,
   },
   'media-unavailable': {
-    title: 'Chưa thể lưu ảnh đã chọn',
-    body: 'Một ảnh trong lựa chọn không còn ở trạng thái “Sẵn sàng”. Hãy chọn lại ảnh rồi lưu thay đổi.',
+    title: productSaveFailureMessage.text('media-unavailable.title'),
+    body: productSaveFailureMessage.text('media-unavailable.body'),
   },
   generic: {
     title: PRODUCT_FORM_COPY.edit.saveFailedTitle,

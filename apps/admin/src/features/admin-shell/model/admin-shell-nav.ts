@@ -1,3 +1,4 @@
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
 import { AUTHENTICATED_HOME_ROUTE } from '../../../config/routes';
 import { ADMIN_ASSETS_ROUTE, ASSET_COPY } from '../../assets';
 import { ADMIN_CATEGORIES_ROUTE, CATEGORY_COPY } from '../../categories';
@@ -8,6 +9,13 @@ import { ADMIN_GALLERY_ROUTE, GALLERY_LIST_COPY } from '../../gallery-list';
 import { ADMIN_ORDERS_ROUTE, ORDER_QUEUE_COPY } from '../../order-queue';
 import { ADMIN_PRODUCTION_ROUTE, PRODUCTION_QUEUE_COPY } from '../../production-queue';
 import { ADMIN_PRODUCTS_ROUTE, PRODUCT_COPY } from '../../products';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin.json`), not in this file
+ * (`APP12-V02` §5A).
+ */
+const navMessage = messageView(VI_MESSAGES.admin, 'nav');
 
 /**
  * A primary-navigation entry. Every item points at a route that exists — the
@@ -56,7 +64,11 @@ export interface AdminNavItem {
  * production may join and inventory may not. `FU-APP8-A01-04` stays open.
  */
 export const ADMIN_PRIMARY_NAV: readonly AdminNavItem[] = [
-  { id: 'overview', label: 'Tổng quan', href: AUTHENTICATED_HOME_ROUTE },
+  {
+    id: 'overview',
+    label: navMessage.text('adminPrimaryNav.label'),
+    href: AUTHENTICATED_HOME_ROUTE,
+  },
   { id: 'assets', label: ASSET_COPY.page.title, href: ADMIN_ASSETS_ROUTE },
   { id: 'products', label: PRODUCT_COPY.page.title, href: ADMIN_PRODUCTS_ROUTE },
   { id: 'categories', label: CATEGORY_COPY.page.title, href: ADMIN_CATEGORIES_ROUTE },

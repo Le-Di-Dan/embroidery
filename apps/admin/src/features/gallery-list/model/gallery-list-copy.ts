@@ -21,24 +21,36 @@
  * The error sentences are chosen by failure *classification* alone. A server
  * `message`, `code`, HTTP status or `requestId` is never rendered.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin.json`, under `galleryList`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const galleryListMessage = messageView(VI_MESSAGES.admin, 'galleryList');
+
 export const GALLERY_LIST_COPY = {
   page: {
-    breadcrumb: 'Quản trị / Bộ sưu tập',
-    title: 'Bộ sưu tập',
+    breadcrumb: galleryListMessage.text('page.breadcrumb'),
+    title: galleryListMessage.text('page.title'),
     /** The sidenav entry (`866:905`) — the same words as the page title. */
-    navLabel: 'Bộ sưu tập',
+    navLabel: galleryListMessage.text('page.navLabel'),
     /** The table's accessible name. Not drawn, but announced. */
-    tableLabel: 'Danh sách mục bộ sưu tập',
+    tableLabel: galleryListMessage.text('page.tableLabel'),
   },
   columns: {
-    entry: 'Mục',
-    displayOrder: 'Thứ tự',
-    linkedProduct: 'Sản phẩm liên kết',
-    status: 'Trạng thái',
+    entry: galleryListMessage.text('columns.entry'),
+    displayOrder: galleryListMessage.text('columns.displayOrder'),
+    linkedProduct: galleryListMessage.text('columns.linkedProduct'),
+    status: galleryListMessage.text('columns.status'),
   },
   entry: {
     /** Prefixes the slug in the row so it reads as an address, not a title. */
-    slugPrefix: '/',
+    slugPrefix: galleryListMessage.text('entry.slugPrefix'),
     /**
      * The accessible name of a row link.
      *
@@ -47,8 +59,8 @@ export const GALLERY_LIST_COPY = {
      * title does not say what following it does, so the name states the action
      * and the subject together.
      */
-    openLabel: (title: string) => `Mở mục “${title}”`,
-    assetCount: (count: number) => `${String(count)} ảnh`,
+    openLabel: (title: string) => galleryListMessage.text('entry.openLabel', { title }),
+    assetCount: (count: number) => galleryListMessage.text('entry.assetCount', { count }),
   },
   linkedProduct: {
     /**
@@ -57,45 +69,46 @@ export const GALLERY_LIST_COPY = {
      * be an N+1 Catalog read this screen has no reason to open. `APP11-A02`
      * owns the actual product selector and label.
      */
-    linked: 'Đã liên kết',
-    unlinked: 'Chưa liên kết',
+    linked: galleryListMessage.text('linkedProduct.linked'),
+    unlinked: galleryListMessage.text('linkedProduct.unlinked'),
   },
   cover: {
     /** The neutral tile for an entry with no cover, or a cover that failed. */
-    placeholder: 'Chưa có ảnh bìa',
-    failed: 'Không tải được ảnh bìa',
+    placeholder: galleryListMessage.text('cover.placeholder'),
+    failed: galleryListMessage.text('cover.failed'),
     /** Alt text is DERIVED, never persisted: the API publishes no `altText`. */
-    alt: (title: string) => `Ảnh bìa của mục “${title}”`,
+    alt: (title: string) => galleryListMessage.text('cover.alt', { title }),
   },
   filters: {
-    statusLabel: 'Trạng thái',
+    statusLabel: galleryListMessage.text('filters.statusLabel'),
     /** Omits the parameter entirely — never an invented `ALL` token. */
-    all: 'Tất cả trạng thái',
-    reset: 'Xoá bộ lọc',
+    all: galleryListMessage.text('filters.all'),
+    reset: galleryListMessage.text('filters.reset'),
   },
   actions: {
-    loadMore: 'Tải thêm mục',
-    loadingMore: 'Đang tải thêm…',
-    retry: 'Thử lại',
-    signIn: 'Đăng nhập lại',
+    loadMore: galleryListMessage.text('actions.loadMore'),
+    loadingMore: galleryListMessage.text('actions.loadingMore'),
+    retry: galleryListMessage.text('actions.retry'),
+    signIn: galleryListMessage.text('actions.signIn'),
   },
   states: {
-    loading: 'Đang tải danh sách bộ sưu tập…',
-    appended: 'Đã tải thêm mục bộ sưu tập.',
-    emptyTitle: 'Chưa có mục bộ sưu tập',
+    loading: galleryListMessage.text('states.loading'),
+    appended: galleryListMessage.text('states.appended'),
+    emptyTitle: galleryListMessage.text('states.emptyTitle'),
     /**
      * The create action now exists beside this text, so the body invites the
      * operator to use it rather than explaining an absence.
      */
-    emptyBody: 'Tạo mục đầu tiên để bắt đầu bộ sưu tập.',
-    filteredEmptyTitle: 'Không có mục phù hợp với trạng thái đã chọn',
-    filteredEmptyActive: (label: string) => `Đang lọc: ${label}.`,
-    filteredEmptyBody: 'Bỏ bộ lọc để xem toàn bộ mục.',
-    errorTitle: 'Không thể tải danh sách bộ sưu tập',
-    errorBody: 'Đã xảy ra lỗi khi tải danh sách. Không có mục nào bị thay đổi.',
-    unauthenticatedTitle: 'Phiên đăng nhập đã hết hạn',
-    unauthenticatedBody: 'Đăng nhập lại để tiếp tục.',
-    loadMoreFailed: 'Không thể tải thêm mục. Các mục đã tải vẫn còn nguyên.',
-    exhausted: 'Đã hiển thị toàn bộ mục.',
+    emptyBody: galleryListMessage.text('states.emptyBody'),
+    filteredEmptyTitle: galleryListMessage.text('states.filteredEmptyTitle'),
+    filteredEmptyActive: (label: string) =>
+      galleryListMessage.text('states.filteredEmptyActive', { label }),
+    filteredEmptyBody: galleryListMessage.text('states.filteredEmptyBody'),
+    errorTitle: galleryListMessage.text('states.errorTitle'),
+    errorBody: galleryListMessage.text('states.errorBody'),
+    unauthenticatedTitle: galleryListMessage.text('states.unauthenticatedTitle'),
+    unauthenticatedBody: galleryListMessage.text('states.unauthenticatedBody'),
+    loadMoreFailed: galleryListMessage.text('states.loadMoreFailed'),
+    exhausted: galleryListMessage.text('states.exhausted'),
   },
 } as const;

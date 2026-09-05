@@ -36,10 +36,24 @@
  * caller landed (CLAUDE.md §5). The product screens name a category by its
  * **name**, never by its lifecycle state.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
 import { AdminCategoryResponseStatus } from '@embroidery/api-client';
 
 import type { AdminStatusTone } from '../../../shared/status/admin-status-badge';
 import { STATUS_SYMBOLS } from '../../../shared/presentation/order-status';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin.json`, under `categoryStatusLabels`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const categoryStatusLabelsMessage = messageView(VI_MESSAGES.admin, 'categoryStatusLabels');
+
+/** The label both applications use for a value the server did not classify. */
+const commonMessage = messageView(VI_MESSAGES.common);
 
 export interface CategoryStatusPresentation {
   /** The stored value when this build has a label for it, else `UNKNOWN`. */
@@ -59,26 +73,26 @@ interface StatusStyle {
 const CATEGORY_STATUS_STYLES: Readonly<Record<string, StatusStyle>> = {
   /** `915:413` / `915:414` */
   [AdminCategoryResponseStatus.DRAFT]: {
-    label: 'Nháp',
+    label: categoryStatusLabelsMessage.text('DRAFT.label'),
     tone: 'neutral',
     symbol: STATUS_SYMBOLS.idle,
   },
   /** `915:386` / `915:387` */
   [AdminCategoryResponseStatus.PUBLISHED]: {
-    label: 'Đang hiển thị',
+    label: categoryStatusLabelsMessage.text('PUBLISHED.label'),
     tone: 'success',
     symbol: STATUS_SYMBOLS.succeeded,
   },
   /** `915:422` / `915:423` */
   [AdminCategoryResponseStatus.ARCHIVED]: {
-    label: 'Đã lưu trữ',
+    label: categoryStatusLabelsMessage.text('ARCHIVED.label'),
     tone: 'muted',
     symbol: STATUS_SYMBOLS.ended,
   },
 };
 
 /** The neutral fallback, for a state this build has no approved label for. */
-export const UNKNOWN_CATEGORY_STATUS_LABEL = 'Không xác định';
+export const UNKNOWN_CATEGORY_STATUS_LABEL = commonMessage.text('value.unknown');
 
 /**
  * Total by construction: accepts `unknown` and always returns a presentation.

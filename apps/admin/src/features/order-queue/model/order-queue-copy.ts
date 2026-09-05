@@ -9,53 +9,64 @@
  * The error sentences are chosen by failure *classification* alone. A server
  * `message`, `code` or `requestId` is never rendered.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/admin-orders.json`, under `queue`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const queueMessage = messageView(VI_MESSAGES.adminOrders, 'queue');
+
 export const ORDER_QUEUE_COPY = {
   page: {
-    breadcrumb: 'Quản trị / Đơn hàng',
-    title: 'Đơn hàng',
-    subtitle: 'Đơn hàng đã tạo từ thiết kế được duyệt, mới nhất trước.',
-    tableLabel: 'Danh sách đơn hàng',
+    breadcrumb: queueMessage.text('page.breadcrumb'),
+    title: queueMessage.text('page.title'),
+    subtitle: queueMessage.text('page.subtitle'),
+    tableLabel: queueMessage.text('page.tableLabel'),
   },
   columns: {
-    code: 'Mã đơn hàng',
-    origin: 'Nguồn',
-    status: 'Trạng thái',
-    total: 'Tổng tiền',
-    currency: 'Tiền tệ',
-    createdAt: 'Ngày tạo',
-    request: 'Yêu cầu',
-    customer: 'Khách hàng',
+    code: queueMessage.text('columns.code'),
+    origin: queueMessage.text('columns.origin'),
+    status: queueMessage.text('columns.status'),
+    total: queueMessage.text('columns.total'),
+    currency: queueMessage.text('columns.currency'),
+    createdAt: queueMessage.text('columns.createdAt'),
+    request: queueMessage.text('columns.request'),
+    customer: queueMessage.text('columns.customer'),
   },
   filters: {
-    legend: 'Trạng thái',
-    originLegend: 'Nguồn đơn',
-    all: 'Tất cả',
-    selected: (count: number) => `${String(count)} đã chọn`,
-    reset: 'Bỏ lọc',
-    scope:
-      'Bộ lọc khả dụng: trạng thái và nguồn đơn. Không có tìm kiếm, khoảng ngày hay bộ lọc bằng chứng.',
+    legend: queueMessage.text('filters.legend'),
+    originLegend: queueMessage.text('filters.originLegend'),
+    all: queueMessage.text('filters.all'),
+    selected: (count: number) => queueMessage.text('filters.selected', { count }),
+    reset: queueMessage.text('filters.reset'),
+    scope: queueMessage.text('filters.scope'),
   },
   actions: {
-    openOrder: 'Mở đơn hàng',
-    openRequest: 'Mở yêu cầu',
+    openOrder: queueMessage.text('actions.openOrder'),
+    openRequest: queueMessage.text('actions.openRequest'),
     /** A Ready-Made order has no custom request behind it (`BR-031`). */
-    noRequest: '—',
-    loadMore: 'Tải thêm đơn hàng',
-    loadingMore: 'Đang tải…',
-    retry: 'Thử lại',
+    noRequest: queueMessage.text('actions.noRequest'),
+    loadMore: queueMessage.text('actions.loadMore'),
+    loadingMore: queueMessage.text('actions.loadingMore'),
+    retry: queueMessage.text('actions.retry'),
   },
   states: {
-    loading: 'Đang tải danh sách đơn hàng…',
-    appended: 'Đã tải thêm đơn hàng.',
-    emptyTitle: 'Chưa có đơn hàng nào',
-    emptyBody: 'Đơn hàng xuất hiện ở đây sau khi khách duyệt thiết kế và báo giá được chấp nhận.',
-    filteredEmptyTitle: 'Không có đơn hàng nào khớp bộ lọc',
-    filteredEmptyBody: 'Thử bỏ bớt trạng thái hoặc nguồn đơn đã chọn.',
-    errorTitle: 'Không tải được danh sách đơn hàng',
-    errorBody: 'Kết nối tới máy chủ đang gặp sự cố. Thử lại sau ít phút.',
-    cursorErrorTitle: 'Không tải tiếp được trang này',
-    cursorErrorBody: 'Danh sách cần được tải lại từ đầu.',
-    loadMoreFailed: 'Không tải thêm được. Các đơn hàng đã tải vẫn còn nguyên.',
-    pagination: 'Phân trang bằng con trỏ — không có số trang và không có tổng số bản ghi.',
+    loading: queueMessage.text('states.loading'),
+    appended: queueMessage.text('states.appended'),
+    emptyTitle: queueMessage.text('states.emptyTitle'),
+    emptyBody: queueMessage.text('states.emptyBody'),
+    filteredEmptyTitle: queueMessage.text('states.filteredEmptyTitle'),
+    filteredEmptyBody: queueMessage.text('states.filteredEmptyBody'),
+    errorTitle: queueMessage.text('states.errorTitle'),
+    errorBody: queueMessage.text('states.errorBody'),
+    cursorErrorTitle: queueMessage.text('states.cursorErrorTitle'),
+    cursorErrorBody: queueMessage.text('states.cursorErrorBody'),
+    loadMoreFailed: queueMessage.text('states.loadMoreFailed'),
+    pagination: queueMessage.text('states.pagination'),
   },
 } as const;

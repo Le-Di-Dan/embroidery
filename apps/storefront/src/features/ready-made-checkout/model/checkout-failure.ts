@@ -1,4 +1,15 @@
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
 import type { NormalizedApiError } from '@embroidery/api-client';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/checkout.json`, under `failure`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const failureMessage = messageView(VI_MESSAGES.checkout, 'failure');
 
 /**
  * Turning an `APP12-B02` refusal into the approved `909:274` frame
@@ -96,38 +107,38 @@ interface RefusalCopy {
 const REFUSAL: Readonly<Record<CheckoutFailure, RefusalCopy>> = {
   INSUFFICIENT_STOCK: {
     // `909:279` / `909:280`, verbatim.
-    title: 'Sản phẩm vừa hết hàng',
-    body: 'Rất tiếc, kích thước bạn chọn vừa được đặt hết. Bạn có thể chọn kích thước khác.',
+    title: failureMessage.text('INSUFFICIENT_STOCK.title'),
+    body: failureMessage.text('INSUFFICIENT_STOCK.body'),
     returnToProduct: true,
   },
   SKU_UNAVAILABLE: {
-    title: 'Sản phẩm này hiện không bán được',
-    body: 'Lựa chọn của bạn không còn được bán. Vui lòng chọn lại trên trang sản phẩm.',
+    title: failureMessage.text('SKU_UNAVAILABLE.title'),
+    body: failureMessage.text('SKU_UNAVAILABLE.body'),
     returnToProduct: true,
   },
   VERIFICATION_REQUIRED: {
-    title: 'Cần xác minh lại liên hệ',
-    body: 'Xác minh của bạn không còn hiệu lực. Vui lòng xác minh lại rồi đặt hàng.',
+    title: failureMessage.text('VERIFICATION_REQUIRED.title'),
+    body: failureMessage.text('VERIFICATION_REQUIRED.body'),
     returnToProduct: false,
   },
   ALREADY_ORDERED: {
-    title: 'Liên hệ này đã đặt một đơn khác',
-    body: 'Vui lòng xác minh lại liên hệ để đặt đơn hàng mới.',
+    title: failureMessage.text('ALREADY_ORDERED.title'),
+    body: failureMessage.text('ALREADY_ORDERED.body'),
     returnToProduct: false,
   },
   IN_FLIGHT: {
-    title: 'Đơn hàng đang được tạo',
-    body: 'Vui lòng đợi một lát rồi thử lại. Đừng đặt lại để tránh tạo hai đơn.',
+    title: failureMessage.text('IN_FLIGHT.title'),
+    body: failureMessage.text('IN_FLIGHT.body'),
     returnToProduct: false,
   },
   INVALID_DELIVERY: {
-    title: 'Thông tin giao hàng chưa hợp lệ',
-    body: 'Vui lòng kiểm tra lại thông tin người nhận và địa chỉ rồi thử lại.',
+    title: failureMessage.text('INVALID_DELIVERY.title'),
+    body: failureMessage.text('INVALID_DELIVERY.body'),
     returnToProduct: false,
   },
   UNEXPECTED: {
-    title: 'Không tạo được đơn',
-    body: 'Đã có lỗi khi gửi đơn hàng. Vui lòng thử lại sau ít phút.',
+    title: failureMessage.text('UNEXPECTED.title'),
+    body: failureMessage.text('UNEXPECTED.body'),
     returnToProduct: false,
   },
 };

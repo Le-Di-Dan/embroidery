@@ -1,3 +1,5 @@
+import { VI_MESSAGES, hydrateMessages, messageView } from '@embroidery/i18n';
+import { BRAND_NAME } from '@embroidery/ui';
 import {
   STOREFRONT_CUSTOM_REQUEST_ROUTE,
   STOREFRONT_DISCOVER_ROUTE,
@@ -7,6 +9,19 @@ import {
   STOREFRONT_STORE_ROUTE,
 } from '../../storefront-shell/model/storefront-navigation';
 import type { ContentPage } from './content-page';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/content.json`, under `service`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const serviceMessage = messageView(
+  hydrateMessages(VI_MESSAGES.content, { brand: BRAND_NAME }),
+  'service',
+);
 
 /**
  * `/dich-vu` — the Service page (`APP11-S05`).
@@ -47,92 +62,67 @@ import type { ContentPage } from './content-page';
 export const SERVICE_PAGE: ContentPage = {
   id: 'service',
   path: STOREFRONT_SERVICE_ROUTE,
-  eyebrow: 'Dịch vụ',
-  heading: 'Dịch vụ thêu theo yêu cầu',
-  lead: 'Nét Thêu là xưởng thêu cá nhân hóa: mỗi bản thêu được dựng riêng theo ý tưởng của bạn, trên sản phẩm của xưởng hoặc trên sản phẩm bạn tự mang tới.',
-  metaTitle: 'Dịch vụ thêu theo yêu cầu — Nét Thêu',
-  metaDescription:
-    'Thêu cá nhân hóa theo yêu cầu tại Nét Thêu: gửi yêu cầu, nhận báo giá, duyệt thiết kế, đặt cọc và nhận thành phẩm. Xem quy trình và những gì xưởng nhận làm.',
+  eyebrow: serviceMessage.text('eyebrow'),
+  heading: serviceMessage.text('heading'),
+  lead: serviceMessage.text('lead'),
+  metaTitle: serviceMessage.text('metaTitle'),
+  metaDescription: serviceMessage.text('metaDescription'),
   sections: [
     {
       kind: 'prose',
       id: 'what-we-do',
-      heading: 'Xưởng nhận làm gì',
-      paragraphs: [
-        'Nét Thêu thêu tên, chữ, hình và logo lên sản phẩm cá nhân hóa. Bạn có thể chọn một sản phẩm nền có sẵn của xưởng, hoặc gửi tới sản phẩm của riêng bạn để xưởng thêu lên.',
-        'Mỗi bản thêu được dựng thủ công. Xưởng làm việc theo từng yêu cầu riêng, kể cả với số lượng nhỏ.',
-      ],
-      bullets: [
-        'Thêu tên và chữ theo phông chữ, kích thước và màu chỉ bạn chọn.',
-        'Thêu hình hoặc logo do bạn cung cấp, được dựng lại thành bản thêu.',
-        'Thêu lên sản phẩm nền của xưởng, hoặc lên sản phẩm bạn tự mang tới.',
-        'Nhận cả đơn lẻ và đơn số lượng ít.',
-      ],
+      heading: serviceMessage.text('sections.0.heading'),
+      paragraphs: serviceMessage.list('sections.0.paragraphs'),
+      bullets: serviceMessage.list('sections.0.bullets'),
     },
     {
       kind: 'prose',
       id: 'journey',
-      heading: 'Quy trình làm việc',
-      paragraphs: [
-        'Từ lúc bạn gửi yêu cầu tới lúc nhận thành phẩm, mọi bước đều có xác nhận của bạn trước khi xưởng đi tiếp. Bạn theo dõi toàn bộ tiến trình qua đường liên kết riêng mà xưởng gửi sau khi bạn xác minh email hoặc số điện thoại.',
-      ],
-      bullets: [
-        'Gửi yêu cầu: bạn mô tả sản phẩm, vùng thêu, kích thước mong muốn và gửi kèm hình ảnh thiết kế.',
-        'Báo giá: xưởng báo giá thủ công theo kích thước, số màu, số lượng và các chi phí liên quan, kèm bảng chi tiết và thời hạn hiệu lực.',
-        'Duyệt thiết kế: xưởng dựng bản thêu và gửi bạn xem. Bạn có thể yêu cầu chỉnh sửa; mỗi lần chỉnh sửa tạo một phiên bản mới để bạn đối chiếu.',
-        'Đặt cọc: sau khi bạn duyệt thiết kế, xưởng nhận đặt cọc 40% giá trị đơn hàng để vào sản xuất.',
-        'Sản xuất: xưởng thêu theo đúng bản thiết kế bạn đã duyệt.',
-        'Hoàn tất: bạn thanh toán 60% còn lại trước khi nhận hàng, rồi nhận thành phẩm.',
-      ],
+      heading: serviceMessage.text('sections.1.heading'),
+      paragraphs: serviceMessage.list('sections.1.paragraphs'),
+      bullets: serviceMessage.list('sections.1.bullets'),
     },
     {
       kind: 'prose',
       id: 'before-you-start',
-      heading: 'Chuẩn bị trước khi gửi yêu cầu',
-      paragraphs: [
-        'Yêu cầu càng rõ thì báo giá càng sát và số vòng chỉnh sửa càng ít. Bạn không cần chuẩn bị file kỹ thuật — xưởng lo phần dựng bản thêu.',
-      ],
-      bullets: [
-        'Sản phẩm bạn muốn thêu lên: chọn từ sản phẩm nền của xưởng, hoặc mô tả sản phẩm của bạn kèm kích thước.',
-        'Nội dung cần thêu: tên, chữ, hình hoặc logo, ở chất lượng hình ảnh tốt nhất bạn có.',
-        'Vùng thêu và kích thước mong muốn trên sản phẩm.',
-        'Số lượng, và bất kỳ ghi chú nào về màu chỉ hay thời điểm bạn cần dùng.',
-      ],
+      heading: serviceMessage.text('sections.2.heading'),
+      paragraphs: serviceMessage.list('sections.2.paragraphs'),
+      bullets: serviceMessage.list('sections.2.bullets'),
     },
     {
       kind: 'links',
       id: 'service-next',
-      heading: 'Bắt đầu từ đâu',
+      heading: serviceMessage.text('sections.3.heading'),
       links: [
         {
           id: 'discover',
-          label: 'Khám phá sản phẩm nền',
+          label: serviceMessage.text('sections.3.links.0.label'),
           href: STOREFRONT_DISCOVER_ROUTE,
-          hint: 'Xem các sản phẩm xưởng có sẵn để thêu lên.',
+          hint: serviceMessage.text('sections.3.links.0.hint'),
         },
         {
           id: 'gallery',
-          label: 'Xem bộ sưu tập',
+          label: serviceMessage.text('sections.3.links.1.label'),
           href: STOREFRONT_GALLERY_ROUTE,
-          hint: 'Những tác phẩm xưởng đã hoàn thiện.',
+          hint: serviceMessage.text('sections.3.links.1.hint'),
         },
         {
           id: 'commission',
-          label: 'Gửi yêu cầu thêu',
+          label: serviceMessage.text('sections.3.links.2.label'),
           href: STOREFRONT_CUSTOM_REQUEST_ROUTE,
-          hint: 'Mô tả ý tưởng của bạn để xưởng báo giá.',
+          hint: serviceMessage.text('sections.3.links.2.hint'),
         },
         {
           id: 'faq',
-          label: 'Câu hỏi thường gặp',
+          label: serviceMessage.text('sections.3.links.3.label'),
           href: STOREFRONT_FAQ_ROUTE,
-          hint: 'Giải đáp về quy trình, thanh toán và nhận hàng.',
+          hint: serviceMessage.text('sections.3.links.3.hint'),
         },
         {
           id: 'store',
-          label: 'Ghé xưởng',
+          label: serviceMessage.text('sections.3.links.4.label'),
           href: STOREFRONT_STORE_ROUTE,
-          hint: 'Thông tin liên hệ và cách tới xưởng.',
+          hint: serviceMessage.text('sections.3.links.4.hint'),
         },
       ],
     },

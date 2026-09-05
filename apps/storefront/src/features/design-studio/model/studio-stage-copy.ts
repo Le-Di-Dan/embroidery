@@ -13,31 +13,43 @@
  * "đã lưu", because moving, undoing and saving belong to `APP3-S03`, `S08` and
  * `S10` and a label is a promise.
  */
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
+
+/**
+ * Every sentence below lives in the canonical Vietnamese message repository
+ * (`packages/i18n/messages/vi/studio.json`, under `stage`), not in this
+ * file (`APP12-V02` §5A). What stays here is the *shape* of the catalog and the
+ * reasoning for each key — neither of which JSON can hold — so a Product Owner
+ * changes wording by editing one JSON file and a reviewer still reads why the
+ * key exists at the point of use.
+ */
+const stageMessage = messageView(VI_MESSAGES.studio, 'stage');
+
 export const STUDIO_STAGE_COPY = {
-  stageLabel: 'Khung thiết kế',
+  stageLabel: stageMessage.text('stageLabel'),
   /** The stage's accessible description. Dimensions are the document's own. */
   canvasLabel: (widthPx: number, heightPx: number) =>
-    `Khung thiết kế ${String(widthPx)}×${String(heightPx)} điểm ảnh`,
+    stageMessage.text('canvasLabel', { widthPx, heightPx }),
 
-  empty: 'Thiết kế của bạn đang trống.',
-  emptyHint: 'Các công cụ thêm chữ và hình sẽ có ở bước tiếp theo.',
+  empty: stageMessage.text('empty'),
+  emptyHint: stageMessage.text('emptyHint'),
 
   // Three separate refusals, because they are three different facts. None of
   // them shows the document, a path or an element id.
-  unreadableDocument: 'Chưa thể mở bản thiết kế của phiên này.',
-  unresolvableGeometry: 'Bản thiết kế của phiên này có lỗi bố cục nên chưa thể hiển thị.',
-  uncontrolledFont: 'Bản thiết kế dùng phông chữ không được hỗ trợ nên chưa thể hiển thị.',
-  failureHint: 'Vui lòng thử lại sau hoặc bắt đầu một phiên mới.',
+  unreadableDocument: stageMessage.text('unreadableDocument'),
+  unresolvableGeometry: stageMessage.text('unresolvableGeometry'),
+  uncontrolledFont: stageMessage.text('uncontrolledFont'),
+  failureHint: stageMessage.text('failureHint'),
 
-  backgroundLoading: 'Đang tải hình sản phẩm…',
-  backgroundUnavailable: 'Chưa có hình sản phẩm cho mặt thêu này.',
-  backgroundFailed: 'Chưa thể tải hình sản phẩm.',
-  backgroundRetry: 'Tải lại hình sản phẩm',
+  backgroundLoading: stageMessage.text('backgroundLoading'),
+  backgroundUnavailable: stageMessage.text('backgroundUnavailable'),
+  backgroundFailed: stageMessage.text('backgroundFailed'),
+  backgroundRetry: stageMessage.text('backgroundRetry'),
 
-  areaLabel: 'Vùng thêu cho phép',
+  areaLabel: stageMessage.text('areaLabel'),
 
-  selectionNone: 'Chưa chọn đối tượng nào.',
-  selectionPrefix: 'Đang chọn',
+  selectionNone: stageMessage.text('selectionNone'),
+  selectionPrefix: stageMessage.text('selectionPrefix'),
 
   /*
    * An image element whose bytes this checkpoint cannot lawfully deliver.
@@ -50,13 +62,13 @@ export const STUDIO_STAGE_COPY = {
    * putting one on screen would leak the very reference the contextual routes
    * exist to avoid handing out.
    */
-  imagePlaceholder: 'Hình ảnh',
-  imagePlaceholderHint: 'Sẽ hiển thị ở bước tiếp theo',
+  imagePlaceholder: stageMessage.text('imagePlaceholder'),
+  imagePlaceholderHint: stageMessage.text('imagePlaceholderHint'),
 
   // Element names for the accessibility layer, used when the document carries
   // nothing better. A text element names itself with its own text.
-  unnamedText: 'Chữ thêu',
-  typeImage: 'Hình ảnh',
-  typeShape: 'Hình khối',
-  typeFreehand: 'Nét vẽ tay',
+  unnamedText: stageMessage.text('unnamedText'),
+  typeImage: stageMessage.text('typeImage'),
+  typeShape: stageMessage.text('typeShape'),
+  typeFreehand: stageMessage.text('typeFreehand'),
 } as const;

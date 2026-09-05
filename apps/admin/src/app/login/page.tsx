@@ -1,3 +1,4 @@
+import { VI_MESSAGES, messageView } from '@embroidery/i18n';
 import type { Metadata } from 'next';
 import { BRAND_NAME } from '@embroidery/ui';
 
@@ -6,9 +7,15 @@ import { redirectAuthenticatedStaffFromLogin } from '../../server/staff-session-
 
 // The Admin console is not for public indexing; the login route is explicitly
 // non-indexable in addition to the app-wide robots policy.
+/**
+ * The browser title and description, from the canonical Vietnamese message
+ * repository (`packages/i18n/messages/vi/seo.json`, under `admin.login`).
+ */
+const seoMessage = messageView(VI_MESSAGES.seo, 'admin');
+
 export const metadata: Metadata = {
-  title: 'Đăng nhập · Bảng quản trị',
-  description: `Đăng nhập dành cho quản trị viên ${BRAND_NAME}.`,
+  title: seoMessage.text('login.title'),
+  description: seoMessage.text('login.description', { brand: BRAND_NAME }),
   robots: { index: false, follow: false },
 };
 
