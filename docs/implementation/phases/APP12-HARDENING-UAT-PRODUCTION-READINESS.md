@@ -6,8 +6,8 @@
 ROADMAP_STATUS         = LOCKED
 ROADMAP_LOCK           = LOCKED
 IMPLEMENTATION_STARTED = true
-CHECKPOINTS            = 38
-NEXT                   = APP12-G03
+CHECKPOINTS            = 39
+NEXT                   = APP12-M01 (stage B in progress; internal package M01.DB1)
 CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
                          APP12-G02-C1 (2026-09-01, 1/1 — no C2)
                          APP12-C01-C1 (2026-09-01, 1/1 — no C2)
@@ -22,11 +22,25 @@ CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
                          APP12-V02-C1 (2026-09-05, 1/2 — Human-PO exception)
                          APP12-V02-C2 (2026-09-05, 2/2 — no C3)
 LOCKED_AT              = APP12-P01 entry, 2026-09-01, Product Owner authority
+OVERRIDE               = APP12-M01 inserted 2026-09-05 by explicit Human Product
+                         Owner override of the 38-checkpoint lock (38 → 39).
+                         Sequence: … V01 → V02 → M01 → G03 → U01 → E01 → R01 …
+                         Exactly one checkpoint id was created. `APP12-M01.A`
+                         (audit) is COMPLETE — PO PASS; `APP12-M01.B`
+                         (implementation) is AUTHORIZED and runs as internal work
+                         packages, not as new checkpoint ids:
+                           M01.B1  rendition / dimensions / effective primary  COMPLETE
+                           M01.DB1 invariants and the 20 cap                   NEXT
+                           M01.A1  Admin media management UI                   not authorized
+                           M01.S1  Product Detail visible counter              not authorized
+                           M01.E1  cross-boundary acceptance                   not authorized
+                         `APP12-G03` remains NOT_AUTHORIZED.
 ```
 
-The 38 checkpoints of the accepted C1 roadmap are **immutable**. After this
-lock no APP12 checkpoint ID may be invented, and the 38 may not be reordered,
-merged, split or renamed without explicit Product Owner re-planning authority.
+The 39 checkpoints of the accepted C1 roadmap **as amended by the 2026-09-05
+Product Owner override** are immutable. Except through such an explicit
+re-planning authority, no APP12 checkpoint ID may be invented, and they may not
+be reordered, merged, split or renamed.
 Work discovered later is handled only by (1) a correction of the current
 checkpoint or (2) a later checkpoint already present in the locked roadmap.
 Correction policy is unchanged: **maximum one correction per checkpoint, no
@@ -262,7 +276,7 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | 7 | `APP12-C02` | Admin category management authority (**MANDATORY**) | `COMPLETE` |
 | 8 | `APP12-A01` | Admin category management UI (**MANDATORY**) | `COMPLETE` |
 | 9 | `APP12-C03` | Storefront dynamic category discovery, breadcrumb, CTA, sitemap, gate reconciliation | `COMPLETE` |
-| 10 | `APP12-G03` | Representative UAT dataset | **`NEXT`** |
+| 10 | `APP12-G03` | Representative UAT dataset | `NOT_AUTHORIZED` — deferred behind `APP12-M01` by the 2026-09-05 PO override |
 | 11 | `APP12-B01` | Public purchasable SKU projection | `COMPLETE_AFTER_C1` |
 | 11·C1 | `APP12-B01-C1` | Dev data provenance cleanup | `COMPLETE` |
 | 12 | `APP12-B02` | Ready-Made order creation and reservation | `COMPLETE` |
@@ -292,6 +306,7 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | 29 | `APP12-V02` | Runtime Visual & Content corrections and live re-verification | `COMPLETE_AFTER_C2` |
 | 29·C1 | `APP12-V02-C1` | i18n copy authority and Admin login reflow correction | `COMPLETE` |
 | 29·C2 | `APP12-V02-C2` | Media upload, processing and image delivery reliability correction | `COMPLETE` |
+| 29·M | `APP12-M01` | Product multi-image gallery (PO override, 2026-09-05) — stage A audit / stage B implementation | **`IMPLEMENTATION_IN_PROGRESS`** — `M01.A` AUDIT_COMPLETE (PO PASS); `M01.B1` COMPLETE; internal next `M01.DB1` |
 | 30 | `APP12-U01` | Wave 1 Ready-Made business UAT | `NOT_STARTED` |
 | 31 | `APP12-E01` | Wave 1 commerce regression, positive and negative | `NOT_STARTED` |
 | 32 | `APP12-R01` | **WAVE 1 RELEASE GATE** — Ready-Made GO / NO-GO | `NOT_STARTED` |
