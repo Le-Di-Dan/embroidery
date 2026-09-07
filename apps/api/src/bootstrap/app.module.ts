@@ -13,6 +13,7 @@ import { CatalogSkuModule } from '../modules/catalog/catalog-sku.module';
 import { CatalogPublicMediaModule } from '../modules/catalog/catalog-public-media.module';
 import { CatalogPublicSideBackgroundModule } from '../modules/catalog/catalog-public-side-background.module';
 import { CatalogPublicModule } from '../modules/catalog/catalog-public.module';
+import { CatalogProductMediaModule } from '../modules/catalog/catalog-product-media.module';
 import { CatalogPublicationModule } from '../modules/catalog/catalog-publication.module';
 import { CustomerModule } from '../modules/customer/customer.module';
 import { CustomerAdminSupportModule } from '../modules/customer/customer-admin-support.module';
@@ -88,6 +89,12 @@ import { ValidationModule } from '../platform/validation/validation.module';
     CatalogDraftModule,
     CatalogAdminCategoryModule,
     CatalogPublicationModule,
+    // `APP12-M01.B2` — the one bounded media-only write, registered beside the
+    // draft and publication modules it sits between. Its route is
+    // `admin/products/:productId/media`, which differs from every other Admin
+    // product route in its trailing segment, so registration order cannot make
+    // one shadow another.
+    CatalogProductMediaModule,
     CatalogPlacementModule,
     // `APP7-B01` — Admin SKU authoring, the inherited APP2 Catalog gap that leaves
     // the Catalog order-item branch unreachable. Registered beside the other

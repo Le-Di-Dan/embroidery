@@ -5814,6 +5814,16 @@ export interface ReplacePlacementSideBody {
   supersedesId?: string;
 }
 
+export interface ReplaceProductMediaBody {
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$ */
+  expectedUpdatedAt: string;
+  /**
+   * @maxItems 20
+   * @items.pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+   */
+  mediaAssetIds: string[];
+}
+
 export interface ReplaceProductPlacementBody {
   /**
    * The Product concurrency token, exactly as the Admin placement read returned it in `updatedAt`. Required. A stale value is rejected as a conflict and no side or area is written; a successful replace returns the fresh token in the response `updatedAt`.
@@ -6950,6 +6960,10 @@ export type AdminProductUpdate200 = ApiSuccessResponse & {
 };
 
 export type AdminProductArchive200 = ApiSuccessResponse & {
+  data: AdminProductDetailResponse;
+};
+
+export type AdminProductMediaReplace200 = ApiSuccessResponse & {
   data: AdminProductDetailResponse;
 };
 

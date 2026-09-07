@@ -47,6 +47,10 @@ export const PRODUCT_DRAFT_ERROR_CODES = [
   'PRODUCT_PUBLICATION_NOT_READY',
   'PRODUCT_PUBLISH_NOT_ALLOWED',
   'PRODUCT_UNPUBLISH_NOT_ALLOWED',
+  // `APP12-M01.B2` — the requested selection cannot stand on a PUBLISHED
+  // product. Carries the unsatisfied media requirement codes as details, so a
+  // client learns which of the three failed without a second request.
+  'PRODUCT_MEDIA_NOT_PUBLISHABLE',
 ] as const;
 
 export type ProductDraftErrorCode = (typeof PRODUCT_DRAFT_ERROR_CODES)[number];
@@ -67,6 +71,8 @@ const MESSAGES: Record<ProductDraftErrorCode, string> = {
   PRODUCT_PUBLICATION_NOT_READY: 'This product is not ready to be published yet.',
   PRODUCT_PUBLISH_NOT_ALLOWED: 'This product cannot be published from its current state.',
   PRODUCT_UNPUBLISH_NOT_ALLOWED: 'This product cannot be unpublished from its current state.',
+  PRODUCT_MEDIA_NOT_PUBLISHABLE:
+    'These images cannot be used while this product is published. The product was not changed.',
 };
 
 /**
@@ -129,6 +135,9 @@ const STATUS_BY_CODE: Record<ProductDraftErrorCode, (payload: ErrorPayload) => H
   PRODUCT_PUBLICATION_NOT_READY: (payload) => new ConflictException(payload),
   PRODUCT_PUBLISH_NOT_ALLOWED: (payload) => new ConflictException(payload),
   PRODUCT_UNPUBLISH_NOT_ALLOWED: (payload) => new ConflictException(payload),
+  // The same treatment publication refusal gets: the request is well formed and
+  // the images exist — they conflict with the product's published state.
+  PRODUCT_MEDIA_NOT_PUBLISHABLE: (payload) => new ConflictException(payload),
 };
 
 /**

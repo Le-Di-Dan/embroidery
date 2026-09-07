@@ -17,6 +17,7 @@ import {
   PRODUCT_MEDIA_ASSET_KIND,
   PRODUCT_MEDIA_ASSET_STATUS,
   PRODUCT_MEDIA_PRIMARY_ROLE,
+  PRODUCT_MEDIA_PUBLICATION_REQUIREMENT_CODES,
   PRODUCT_MEDIA_SECONDARY_ROLE,
   PRODUCT_PUBLICATION_DERIVATIVE_KINDS,
   PRODUCT_PUBLICATION_DERIVATIVE_STATE,
@@ -228,6 +229,23 @@ export function evaluatePublicationReadiness(
   }));
 
   return { eligible: requirements.every((entry) => entry.satisfied), requirements };
+}
+
+/**
+ * The unsatisfied **media** codes, in the same locked order (`APP12-M01.B2`).
+ *
+ * The media-only curation write evaluates the whole requirement set — one
+ * evaluator, one set of facts — and then refuses on this subset alone. Writing
+ * it as a filter over the same verdict, rather than as a second evaluator over
+ * the same facts, is what makes "publish and media curation agree about an
+ * image" a structural property instead of two functions that must be kept in
+ * step by inspection.
+ */
+export function unsatisfiedMediaRequirements(
+  readiness: ProductPublicationReadiness,
+): ProductPublicationRequirementCode[] {
+  const media = PRODUCT_MEDIA_PUBLICATION_REQUIREMENT_CODES as readonly string[];
+  return unsatisfiedRequirements(readiness).filter((code) => media.includes(code));
 }
 
 /** The unsatisfied codes, in the same locked order. */

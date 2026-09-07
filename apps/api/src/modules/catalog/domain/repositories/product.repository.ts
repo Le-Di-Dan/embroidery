@@ -178,8 +178,6 @@ export interface ProductRepository {
   /** @requiresTransaction — the area's side must belong to the same product. */
   addArea(input: AddAreaInput): Promise<EmbroideryArea>;
   /** @requiresTransaction */
-  attachMedia(input: { productId: ProductId; assetId: string; role: string }): Promise<void>;
-  /** @requiresTransaction */
   changeStatus(id: ProductId, status: ProductState): Promise<Product>;
 
   findById(id: ProductId): Promise<Product | undefined>;

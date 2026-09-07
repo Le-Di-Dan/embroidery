@@ -75,6 +75,7 @@ import type {
   AdminProductDetail200,
   AdminProductList200,
   AdminProductListParams,
+  AdminProductMediaReplace200,
   AdminProductPlacementGet200,
   AdminProductPlacementReplace200,
   AdminProductPublicationReadiness200,
@@ -185,6 +186,7 @@ import type {
   RejectCustomerMergeBody,
   RejectQuotationBody,
   ReplaceGalleryEntryAssetsBody,
+  ReplaceProductMediaBody,
   ReplaceProductPlacementBody,
   RequestDesignRevisionBody,
   ResolveCustomerByContactBody,
@@ -1440,6 +1442,26 @@ export const adminProductArchive = (
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       data: archiveProductBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Replaces the whole ordered image selection of a DRAFT or PUBLISHED product, and changes nothing else about it. The array is the entire write model: the first id becomes the primary image, array order becomes display order, and an id left out is removed. There is no separate add, remove, reorder or set-primary operation. A DRAFT may hold none; a PUBLISHED product must keep at least one, and every image in the requested set must still satisfy the publication image rules — otherwise the request is refused whole and the product keeps its previous images, its published status and every commercial field. Requires `expectedUpdatedAt`; a stale value is a conflict rather than an overwrite. Generic product fields stay locked while published.
+ * @summary Replace a product image selection
+ */
+export const adminProductMediaReplace = (
+  productId: unknown,
+  replaceProductMediaBody: ReplaceProductMediaBody,
+  options?: SecondParameter<typeof apiRequest<AdminProductMediaReplace200>>,
+) => {
+  return apiRequest<AdminProductMediaReplace200>(
+    {
+      url: `/api/admin/products/${productId}/media`,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      data: replaceProductMediaBody,
     },
     options,
   );
@@ -2871,6 +2893,9 @@ export type AdminProductDetailResult = NonNullable<Awaited<ReturnType<typeof adm
 export type AdminProductUpdateResult = NonNullable<Awaited<ReturnType<typeof adminProductUpdate>>>;
 export type AdminProductArchiveResult = NonNullable<
   Awaited<ReturnType<typeof adminProductArchive>>
+>;
+export type AdminProductMediaReplaceResult = NonNullable<
+  Awaited<ReturnType<typeof adminProductMediaReplace>>
 >;
 export type AdminProductPlacementGetResult = NonNullable<
   Awaited<ReturnType<typeof adminProductPlacementGet>>

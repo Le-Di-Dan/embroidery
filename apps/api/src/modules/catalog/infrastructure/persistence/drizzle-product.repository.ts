@@ -3,7 +3,7 @@
  */
 import { Injectable } from '@nestjs/common';
 import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
-import { guardViolationError, newId, notFoundError, schema } from '@embroidery/database';
+import { guardViolationError, notFoundError, schema } from '@embroidery/database';
 import type { ProductState } from '@embroidery/database';
 import { asc, eq, inArray } from 'drizzle-orm';
 
@@ -24,7 +24,7 @@ import type {
 import type { ProductId, SkuId } from '../../domain/repositories/placement-hierarchy.port';
 import { toArea, toProduct, toSide, toSku, toVariant } from './product-row.mapper';
 
-const { products, productVariants, skus, productSides, embroideryAreas, productMedia } = schema;
+const { products, productVariants, skus, productSides, embroideryAreas } = schema;
 
 /** VND, the only currency DB6 permits (`ck_products__currency_allowed`). */
 const CURRENCY = 'VND';
@@ -134,18 +134,6 @@ export class DrizzleProductRepository extends DrizzleRepository implements Produ
         .returning();
 
       return toArea(expect(row, 'addArea', 'area'));
-    });
-  }
-
-  async attachMedia(input: { productId: ProductId; assetId: string; role: string }): Promise<void> {
-    return this.run('attachMedia', async () => {
-      await this.db.insert(productMedia).values({
-        id: newId(),
-        productId: input.productId,
-        assetId: input.assetId,
-        role: input.role,
-        displayOrder: 0,
-      });
     });
   }
 

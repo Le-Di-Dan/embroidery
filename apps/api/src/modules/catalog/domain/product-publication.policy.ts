@@ -112,6 +112,48 @@ export const PRODUCT_PUBLICATION_DERIVATIVE_STATE = 'READY' as const satisfies A
 /** The base price sentinel meaning "not set yet" (IMP-D032). */
 export const PRODUCT_UNSET_BASE_PRICE = 0n;
 
+/**
+ * The states a **media-only** curation write may act on (`APP12-M01.B2`).
+ *
+ * `PUBLISHED` is here and nowhere else. A live Product's images must be
+ * correctable without withdrawing it from the storefront first — unpublishing to
+ * swap a photograph takes the product off Discover, drops its address out of the
+ * catalog, and is visible to every customer browsing at that moment. So exactly
+ * one bounded operation may write `product_media` while a Product is published,
+ * and it may write nothing else: `PRODUCT_EDITABLE_STATES` is untouched, so
+ * every generic Product field stays locked in `PUBLISHED` exactly as `APP2-B02`
+ * left it.
+ *
+ * `ARCHIVED` is deliberately absent. An archived Product has no public surface
+ * to curate and its own lifecycle is still deferred
+ * (`FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01`); a media write there would be an edit
+ * to a retired row no reader can see.
+ */
+export const PRODUCT_MEDIA_CURATION_STATES = [
+  PRODUCT_DRAFT_STATE,
+  PRODUCT_PUBLISHED_STATE,
+] as const;
+
+/**
+ * The requirements a **published** Product's media selection must satisfy.
+ *
+ * A strict subset of the publication requirement set, not a second readiness
+ * model: the same `evaluatePublicationReadiness` runs over the requested
+ * selection, and only these three codes are allowed to refuse it.
+ *
+ * The other four are excluded on purpose. Name, description, price and category
+ * are already true of a published Product, and none is a fact a media write can
+ * change — but a *category* can be archived after publication, and such a
+ * Product is exactly the one an operator most needs to be able to fix an image
+ * on. Blocking a media correction on it would turn an unrelated lifecycle
+ * problem into an image problem.
+ */
+export const PRODUCT_MEDIA_PUBLICATION_REQUIREMENT_CODES = [
+  'PRODUCT_MEDIA_READY',
+  'PRODUCT_MEDIA_ASSETS_READY',
+  'PRODUCT_MEDIA_DERIVATIVES_READY',
+] as const satisfies readonly ProductPublicationRequirementCode[];
+
 export function isPublishableState(status: string): boolean {
   return (PRODUCT_PUBLISHABLE_STATES as readonly string[]).includes(status);
 }
