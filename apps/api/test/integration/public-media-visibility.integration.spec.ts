@@ -222,15 +222,32 @@ describe('public catalog-media visibility (integration)', () => {
       await expectSafeNotFound(path(product.slug, product.galleryMediaId, 'catalog-preview'));
     });
 
-    it('does not serve the card rendition from a gallery association', async () => {
+    it('serves a gallery association at both renditions (APP12-M01-B1)', async () => {
       const product = await publish();
 
-      // The gallery image is deliverable as a preview but is not the card image.
-      await ctx.api.http
-        .get(path(product.slug, product.galleryMediaId, 'catalog-preview'))
-        .responseType('blob')
-        .expect(200);
-      await expectSafeNotFound(path(product.slug, product.galleryMediaId, 'thumbnail'));
+      // Until `APP12-M01-B1` the small rendition was refused here, on the
+      // reasoning that it existed only to serve the product card. That was an
+      // **editorial** narrowing, not a visibility boundary — as this test itself
+      // shows, the very same image is served at `catalog-preview` on the line
+      // above, so its bytes were already public and refusing them at 480 px
+      // protected nothing.
+      //
+      // Two things retired the reasoning: the card now picks its image by
+      // `PUBLIC_EFFECTIVE_PRIMARY_ORDER` rather than by that role, and the
+      // Product Detail thumbnail strip needs the small rendition of exactly
+      // these gallery associations — with the restriction in place, every
+      // address the detail contract published for them answered 404.
+      //
+      // Every real visibility guarantee is unchanged and is asserted by this
+      // suite's neighbouring cases: another product's association, a detached
+      // association, an unpublished product, a withdrawn category, and each
+      // asset-lane and derivative-state rule all still refuse.
+      for (const rendition of ['catalog-preview', 'thumbnail'] as const) {
+        await ctx.api.http
+          .get(path(product.slug, product.galleryMediaId, rendition))
+          .responseType('blob')
+          .expect(200);
+      }
     });
   });
 

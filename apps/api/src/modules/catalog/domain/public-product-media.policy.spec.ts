@@ -54,11 +54,16 @@ describe('public catalog-media rendition mapping', () => {
     expect(reachable).not.toContain('PREVIEW_WATERMARKED');
   });
 
-  it('restricts the card rendition to the single THUMBNAIL association', () => {
-    expect(resolveRequiredMediaRole('thumbnail')).toBe('THUMBNAIL');
-  });
-
-  it('lets any ordered association produce a gallery preview', () => {
+  it('lets any ordered association produce either rendition (APP12-M01-B1)', () => {
+    // The `thumbnail` rendition used to be restricted to the stored `THUMBNAIL`
+    // association, back when it existed only to serve the product card. It now
+    // also backs the Product Detail thumbnail strip, where every control
+    // addresses a `GALLERY` association — with the restriction in place those
+    // published addresses all answered 404. The card no longer depends on the
+    // predicate either: `PUBLIC_EFFECTIVE_PRIMARY_ORDER` chooses its image by
+    // ordering, so a Product whose stored primary went undeliverable still has
+    // one. Role is editorial, never an authorization boundary.
+    expect(resolveRequiredMediaRole('thumbnail')).toBeUndefined();
     expect(resolveRequiredMediaRole('catalog-preview')).toBeUndefined();
   });
 

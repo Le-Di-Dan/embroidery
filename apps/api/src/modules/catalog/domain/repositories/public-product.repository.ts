@@ -55,9 +55,14 @@ export interface PublicProductDetailRow {
   readonly categoryName: string;
 }
 
-/** One deliverable image of the public detail, in persisted display order. */
+/**
+ * One deliverable image of the public detail, in effective-primary order
+ * (`PUBLIC_EFFECTIVE_PRIMARY_ORDER`) — so `media[0]` **is** the effective
+ * primary and agrees with the card's thumbnail by construction.
+ */
 export interface PublicProductDetailMediaRow {
   readonly productMediaId: string;
+  /** The **stored** role, exactly as persisted. The projection publishes the effective one. */
   readonly role: string;
   readonly displayOrder: number;
   /**
@@ -66,6 +71,18 @@ export interface PublicProductDetailMediaRow {
    * INNER JOINs that derivative, so the size and the URL share one source row.
    */
   readonly size: PublicMediaIntrinsicSize | undefined;
+  /**
+   * Whether this association's **list-rendition** derivative is itself
+   * deliverable (`APP12-M01-B1`).
+   *
+   * Separate from {@link thumbnailSize} on purpose: a derivative may legitimately
+   * carry no dimensions, so an absent size is not evidence of an absent
+   * derivative, and conflating them would withhold a usable small rendition
+   * from every historical image.
+   */
+  readonly thumbnailAvailable: boolean;
+  /** Intrinsic size of that list-rendition derivative, or `undefined`. */
+  readonly thumbnailSize: PublicMediaIntrinsicSize | undefined;
 }
 
 export interface PublicProductDetail {

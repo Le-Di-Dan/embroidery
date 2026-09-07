@@ -5024,6 +5024,12 @@ export interface PublicMediaReferenceResponse {
   /** Intrinsic pixel height of that same derivative. See `width`. */
   height?: number;
   role: PublicMediaReferenceResponseRole;
+  /** Intrinsic pixel height of that same derivative. See `thumbnailWidth`. */
+  thumbnailHeight?: number;
+  /** The same association at the small `thumbnail` rendition, served by the same publication-gated route. Present on Product **detail** media, where `url` addresses the large `catalog-preview` derivative and a thumbnail strip needs the small one. Absent when that derivative is not itself deliverable — fall back to `url` for that item rather than dropping the image. */
+  thumbnailUrl?: string;
+  /** Intrinsic pixel width of the derivative `thumbnailUrl` addresses. Present together with `thumbnailHeight` or absent together with it, and never a guess. Describes a different derivative from `width` and must not be substituted for it. */
+  thumbnailWidth?: number;
   /** Relative application path served by the publication-gated delivery route. Never a storage or CDN address, never signed, and it expires with nothing — the route re-checks publication on every request. */
   url: string;
   /** Intrinsic pixel width of the derivative `url` addresses, so a client can reserve the correct box before the bytes arrive. Present together with `height` or absent together with it. Absent means the stored derivative carries no dimensions, which is a legitimate historical state — it is never a guess and must not be replaced by one. */

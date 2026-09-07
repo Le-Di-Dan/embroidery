@@ -31,8 +31,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
 import { schema } from '@embroidery/database';
-import { and, asc, eq, gt, isNotNull, isNull, or, sql } from 'drizzle-orm';
-import type { SQL } from 'drizzle-orm';
+import { and, asc, eq, gt, isNull, or } from 'drizzle-orm';
 
 import type {
   PublicIndexableProductRow,
@@ -45,10 +44,6 @@ import type {
 } from '../../domain/repositories/public-product.repository';
 import {
   APP2_CATEGORY_STATUS,
-  PRODUCT_MEDIA_ASSET_CLASSIFICATION,
-  PRODUCT_MEDIA_ASSET_KIND,
-  PRODUCT_MEDIA_ASSET_STATUS,
-  PRODUCT_PUBLICATION_DERIVATIVE_STATE,
   PUBLIC_DETAIL_RENDITION,
   PUBLIC_LIST_MEDIA_ROLE,
   PUBLIC_LIST_RENDITION,
@@ -56,22 +51,19 @@ import {
 } from '../../domain/public-product-catalog.policy';
 import { DERIVATIVE_KIND_BY_RENDITION } from '../../domain/public-product-media.policy';
 import { toIntrinsicSize } from '../../domain/public-media-dimensions';
+import {
+  assetEligibility,
+  DERIVATIVE_HEIGHT_SELECTION,
+  DERIVATIVE_WIDTH_SELECTION,
+  deliverableMediaColumn,
+  derivativeEligibility,
+  effectivePrimaryDetailOrder,
+  MEDIA_ID_SELECTION,
+  thumbnailDerivative,
+  thumbnailDerivativeJoin,
+} from './public-product-media.sql';
 
 const { products, categories, productMedia, assets, assetDerivatives } = schema;
-
-/**
- * Explicitly qualified select-list references for the correlated subqueries.
- *
- * Not `productMedia.id` / `assetDerivatives.widthPx`: Drizzle strips table
- * qualification from a *select-list* position, and the subquery joins three
- * tables that each carry an `id`, so an unqualified reference is ambiguous and
- * PostgreSQL refuses it. `APP11-B03` hit exactly this and its gallery twin
- * carries the same note; the dimension columns are spelled out for the same
- * reason even though only one table declares them today.
- */
-const MEDIA_ID_SELECTION = sql`${sql.identifier('product_media')}.${sql.identifier('id')}`;
-const DERIVATIVE_WIDTH_SELECTION = sql`${sql.identifier('asset_derivatives')}.${sql.identifier('width_px')}`;
-const DERIVATIVE_HEIGHT_SELECTION = sql`${sql.identifier('asset_derivatives')}.${sql.identifier('height_px')}`;
 
 @Injectable()
 export class DrizzlePublicProductRepository
@@ -115,17 +107,17 @@ export class DrizzlePublicProductRepository
         isDisplayOutOfStock: products.isDisplayOutOfStock,
         categorySlug: categories.slug,
         categoryName: categories.name,
-        thumbnailProductMediaId: this.deliverableMediaColumn<string>(
+        thumbnailProductMediaId: deliverableMediaColumn<string>(
           DERIVATIVE_KIND_BY_RENDITION[PUBLIC_LIST_RENDITION],
           PUBLIC_LIST_MEDIA_ROLE,
           MEDIA_ID_SELECTION,
         ),
-        thumbnailWidth: this.deliverableMediaColumn<number>(
+        thumbnailWidth: deliverableMediaColumn<number>(
           DERIVATIVE_KIND_BY_RENDITION[PUBLIC_LIST_RENDITION],
           PUBLIC_LIST_MEDIA_ROLE,
           DERIVATIVE_WIDTH_SELECTION,
         ),
-        thumbnailHeight: this.deliverableMediaColumn<number>(
+        thumbnailHeight: deliverableMediaColumn<number>(
           DERIVATIVE_KIND_BY_RENDITION[PUBLIC_LIST_RENDITION],
           PUBLIC_LIST_MEDIA_ROLE,
           DERIVATIVE_HEIGHT_SELECTION,
@@ -201,17 +193,17 @@ export class DrizzlePublicProductRepository
       .select({
         slug: products.slug,
         name: products.name,
-        thumbnailProductMediaId: this.deliverableMediaColumn<string>(
+        thumbnailProductMediaId: deliverableMediaColumn<string>(
           DERIVATIVE_KIND_BY_RENDITION[PUBLIC_LIST_RENDITION],
           PUBLIC_LIST_MEDIA_ROLE,
           MEDIA_ID_SELECTION,
         ),
-        thumbnailWidth: this.deliverableMediaColumn<number>(
+        thumbnailWidth: deliverableMediaColumn<number>(
           DERIVATIVE_KIND_BY_RENDITION[PUBLIC_LIST_RENDITION],
           PUBLIC_LIST_MEDIA_ROLE,
           DERIVATIVE_WIDTH_SELECTION,
         ),
-        thumbnailHeight: this.deliverableMediaColumn<number>(
+        thumbnailHeight: deliverableMediaColumn<number>(
           DERIVATIVE_KIND_BY_RENDITION[PUBLIC_LIST_RENDITION],
           PUBLIC_LIST_MEDIA_ROLE,
           DERIVATIVE_HEIGHT_SELECTION,
@@ -274,91 +266,59 @@ export class DrizzlePublicProductRepository
   private async deliverableMedia(
     productId: string,
   ): Promise<readonly PublicProductDetailMediaRow[]> {
-    return this.db
-      .select({
-        productMediaId: productMedia.id,
-        role: productMedia.role,
-        displayOrder: productMedia.displayOrder,
-        // Direct columns, not a subquery: this statement already INNER JOINs the
-        // exact derivative the detail URL addresses, so the dimensions cannot
-        // describe a different one.
-        width: assetDerivatives.widthPx,
-        height: assetDerivatives.heightPx,
-      })
-      .from(productMedia)
-      .innerJoin(assets, eq(assets.id, productMedia.assetId))
-      .innerJoin(assetDerivatives, eq(assetDerivatives.assetId, assets.id))
-      .where(
-        and(
-          eq(productMedia.productId, productId),
-          ...assetEligibility(),
-          eq(assetDerivatives.kind, DERIVATIVE_KIND_BY_RENDITION[PUBLIC_DETAIL_RENDITION]),
-          ...derivativeEligibility(),
-        ),
-      )
-      .orderBy(asc(productMedia.displayOrder), asc(productMedia.id))
-      .then((rows) =>
-        rows.map(({ width, height, ...media }) => ({
-          ...media,
-          size: toIntrinsicSize(width, height),
-        })),
-      );
+    return (
+      this.db
+        .select({
+          productMediaId: productMedia.id,
+          role: productMedia.role,
+          displayOrder: productMedia.displayOrder,
+          // Direct columns, not a subquery: this statement already INNER JOINs the
+          // exact derivative the detail URL addresses, so the dimensions cannot
+          // describe a different one.
+          width: assetDerivatives.widthPx,
+          height: assetDerivatives.heightPx,
+          // The same association's small rendition, from the second alias. Its id
+          // is the presence flag: dimensions are legitimately absent on historical
+          // derivatives (`APP12-H05-C1`), so "has no size" must not be read as
+          // "has no thumbnail".
+          thumbnailDerivativeId: thumbnailDerivative.id,
+          thumbnailWidth: thumbnailDerivative.widthPx,
+          thumbnailHeight: thumbnailDerivative.heightPx,
+        })
+        .from(productMedia)
+        .innerJoin(assets, eq(assets.id, productMedia.assetId))
+        .innerJoin(assetDerivatives, eq(assetDerivatives.assetId, assets.id))
+        .leftJoin(thumbnailDerivative, and(...thumbnailDerivativeJoin()))
+        .where(
+          and(
+            eq(productMedia.productId, productId),
+            ...assetEligibility(),
+            eq(assetDerivatives.kind, DERIVATIVE_KIND_BY_RENDITION[PUBLIC_DETAIL_RENDITION]),
+            ...derivativeEligibility(),
+          ),
+        )
+        // `PUBLIC_EFFECTIVE_PRIMARY_ORDER` — the same four keys the card's
+        // correlated subquery uses, so `media[0]` here and the card's thumbnail
+        // there are the same association by construction rather than by
+        // coincidence.
+        .orderBy(...effectivePrimaryDetailOrder(PUBLIC_LIST_MEDIA_ROLE))
+        .then((rows) =>
+          rows.map(
+            ({
+              width,
+              height,
+              thumbnailDerivativeId,
+              thumbnailWidth,
+              thumbnailHeight,
+              ...media
+            }) => ({
+              ...media,
+              size: toIntrinsicSize(width, height),
+              thumbnailAvailable: thumbnailDerivativeId !== null,
+              thumbnailSize: toIntrinsicSize(thumbnailWidth, thumbnailHeight),
+            }),
+          ),
+        )
+    );
   }
-
-  /**
-   * Correlated scalar subquery for one column of a card's thumbnail row.
-   *
-   * `limit 1` with an explicit order makes the choice deterministic even though
-   * `APP2-B02` writes exactly one `THUMBNAIL` per product: relying on "there can
-   * only be one" would make this query's result depend on a rule enforced
-   * somewhere else.
-   *
-   * `APP12-H05-C1` parameterised the selection so the association id and the
-   * intrinsic dimensions of the derivative behind it come from **the same
-   * subquery text** — identical predicate, identical total order, identical
-   * `limit 1` — differing only in the column projected. That is what makes
-   * "the URL and the dimensions describe the same derivative" a property of the
-   * SQL rather than an argument about it. `public-media-dimensions.integration`
-   * proves it behaviourally against a product whose two associations carry
-   * deliberately different sizes.
-   */
-  private deliverableMediaColumn<T>(derivativeKind: string, role: string, selection: SQL) {
-    return sql<T | null>`(
-      select ${selection}
-      from ${productMedia}
-      join ${assets} on ${assets.id} = ${productMedia.assetId}
-      join ${assetDerivatives} on ${assetDerivatives.assetId} = ${assets.id}
-      where ${productMedia.productId} = ${products.id}
-        and ${productMedia.role} = ${role}
-        and ${assets.kind} = ${PRODUCT_MEDIA_ASSET_KIND}
-        and ${assets.classification} = ${PRODUCT_MEDIA_ASSET_CLASSIFICATION}
-        and ${assets.status} = ${PRODUCT_MEDIA_ASSET_STATUS}
-        and ${assets.deletedAt} is null
-        and ${assetDerivatives.kind} = ${derivativeKind}
-        and ${assetDerivatives.status} = ${PRODUCT_PUBLICATION_DERIVATIVE_STATE}
-        and ${assetDerivatives.isWatermarked} = false
-        and ${assetDerivatives.storageKey} is not null
-      order by ${productMedia.displayOrder} asc, ${productMedia.id} asc
-      limit 1
-    )`;
-  }
-}
-
-/** The asset lane a public catalogue image must belong to. */
-function assetEligibility() {
-  return [
-    eq(assets.kind, PRODUCT_MEDIA_ASSET_KIND),
-    eq(assets.classification, PRODUCT_MEDIA_ASSET_CLASSIFICATION),
-    eq(assets.status, PRODUCT_MEDIA_ASSET_STATUS),
-    isNull(assets.deletedAt),
-  ];
-}
-
-/** What makes a derivative servable: ready, unwatermarked, actually stored. */
-function derivativeEligibility() {
-  return [
-    eq(assetDerivatives.status, PRODUCT_PUBLICATION_DERIVATIVE_STATE),
-    eq(assetDerivatives.isWatermarked, false),
-    isNotNull(assetDerivatives.storageKey),
-  ];
 }

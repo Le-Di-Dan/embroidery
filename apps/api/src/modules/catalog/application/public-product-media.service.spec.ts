@@ -81,7 +81,7 @@ function createService(
 }
 
 describe('PublicProductMediaService', () => {
-  it('translates the rendition into the derivative kind and required role', async () => {
+  it('translates the rendition into the derivative kind, with no role restriction', async () => {
     const repository = new RecordingRepository({ storageKey: STORAGE_KEY });
     const storage = createStorage({ result: streamResult() });
 
@@ -92,7 +92,10 @@ describe('PublicProductMediaService', () => {
         slug: REQUEST.slug,
         productMediaId: REQUEST.productMediaId,
         derivativeKind: 'THUMBNAIL',
-        requiredRole: 'THUMBNAIL',
+        // `APP12-M01-B1`: the small rendition now also backs the Product Detail
+        // thumbnail strip, whose controls are all `GALLERY` associations. The
+        // derivative kind still narrows to exactly one row; the role does not.
+        requiredRole: undefined,
       },
     ]);
   });

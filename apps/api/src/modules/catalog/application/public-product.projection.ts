@@ -43,6 +43,26 @@ export interface PublicMediaReference {
   readonly width?: number;
   /** Intrinsic pixel height of that same derivative. See {@link width}. */
   readonly height?: number;
+  /**
+   * The **same association** at the small rendition (`APP12-M01-B1` §5).
+   *
+   * `url` above addresses the `catalog-preview` derivative, which is right for
+   * a large preview and wrong for a 64 px control: `APP12-H05` measured the
+   * Product Detail strip pulling 1 600 px sources into it, and `M01.A` measured
+   * what that costs once a product may own twenty images — 6.63 MB of first
+   * render against 1.76 MB. Both renditions have always been servable for any
+   * association id by the one `APP2-T01` route; this publishes the address that
+   * was already resolvable and never stated.
+   *
+   * Absent only when the `THUMBNAIL` derivative is not itself deliverable. A
+   * consumer then falls back to {@link url} for that one item rather than
+   * losing the image.
+   */
+  readonly thumbnailUrl?: string;
+  /** Intrinsic width of the derivative {@link thumbnailUrl} addresses. Pairs with {@link thumbnailHeight}. */
+  readonly thumbnailWidth?: number;
+  /** Intrinsic height of that same derivative. See {@link thumbnailWidth}. */
+  readonly thumbnailHeight?: number;
 }
 
 export interface PublicProductSummary {
@@ -90,18 +110,6 @@ export interface PublicProductSeo {
   readonly isIndexable: boolean;
 }
 
-/**
- * Narrows a persisted role to the public vocabulary.
- *
- * `DETAIL` exists in the database's closed role set but nothing writes it
- * (`APP2-B02` uses `THUMBNAIL` + `GALLERY`). Mapping an unexpected role to
- * `GALLERY` rather than leaking the literal keeps the wire contract closed if a
- * later checkpoint starts writing one.
- */
-export function toPublicMediaRole(role: string): PublicMediaRole {
-  return role === 'THUMBNAIL' ? 'THUMBNAIL' : 'GALLERY';
-}
-
 export function toPublicPrice(amount: string, currency: string): PublicPrice {
   return { amount: toWholeDong(amount), currency };
 }
@@ -132,9 +140,21 @@ export function toPublicProductSummary(row: PublicProductListRow): PublicProduct
   };
 }
 
+/**
+ * One media item of the detail payload.
+ *
+ * `position` decides the published `role`, not the stored column
+ * (`APP12-M01-B1` §6). The repository hands these rows back in
+ * `PUBLIC_EFFECTIVE_PRIMARY_ORDER`, so index 0 *is* the effective primary — and
+ * saying `THUMBNAIL` there is what makes the detail array agree with the card,
+ * `og:image` and the JSON-LD list on a product whose stored primary has become
+ * undeliverable. In the healthy case the two derivations produce the same
+ * answer, because the stored `THUMBNAIL` is also the row that sorts first.
+ */
 export function toPublicMediaReference(
   slug: string,
   media: PublicProductDetailMediaRow,
+  position: number,
 ): PublicMediaReference {
   return {
     url: publicProductMediaPath({
@@ -142,9 +162,36 @@ export function toPublicMediaReference(
       productMediaId: media.productMediaId,
       rendition: PUBLIC_DETAIL_RENDITION,
     }),
-    role: toPublicMediaRole(media.role),
+    role: position === 0 ? 'THUMBNAIL' : 'GALLERY',
     ...toPublicMediaSize(media.size),
+    // Omitted whole rather than nulled, exactly as the size pair is: an address
+    // that is known not to resolve is worse than no address at all.
+    ...(media.thumbnailAvailable
+      ? {
+          thumbnailUrl: publicProductMediaPath({
+            slug,
+            productMediaId: media.productMediaId,
+            rendition: PUBLIC_LIST_RENDITION,
+          }),
+          ...toPublicThumbnailSize(media.thumbnailSize),
+        }
+      : {}),
   };
+}
+
+/**
+ * The thumbnail size pair, under its own field names.
+ *
+ * A separate helper from {@link toPublicMediaSize} because the two describe
+ * different derivatives and must never be spread from the same value — the
+ * whole point of publishing both is that a client can reserve the right box for
+ * each, and one substituted for the other would reserve a 1 250 px box for a
+ * 480 px image.
+ */
+export function toPublicThumbnailSize(
+  size: PublicMediaIntrinsicSize | undefined,
+): { thumbnailWidth: number; thumbnailHeight: number } | Record<string, never> {
+  return size === undefined ? {} : { thumbnailWidth: size.width, thumbnailHeight: size.height };
 }
 
 /**
@@ -170,9 +217,10 @@ export function toPublicProductDetail(detail: PublicProductDetail): PublicProduc
     category: { slug: product.categorySlug, name: product.categoryName },
     price: toPublicPrice(product.basePriceAmount, product.currencyCode),
     isDisplayOutOfStock: product.isDisplayOutOfStock,
-    // Repository order is the persisted display order; the projection preserves
-    // it rather than re-sorting on anything the client can see.
-    media: detail.media.map((row) => toPublicMediaReference(product.slug, row)),
+    // Repository order is `PUBLIC_EFFECTIVE_PRIMARY_ORDER`; the projection
+    // preserves it rather than re-sorting on anything the client can see, which
+    // is what lets index 0 carry the effective-primary designation.
+    media: detail.media.map((row, position) => toPublicMediaReference(product.slug, row, position)),
     seo: {
       ...(product.seoTitle === undefined ? {} : { title: product.seoTitle }),
       ...(product.seoDescription === undefined ? {} : { description: product.seoDescription }),

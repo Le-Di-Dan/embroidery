@@ -8912,6 +8912,21 @@
             "example": "THUMBNAIL",
             "type": "string"
           },
+          "thumbnailHeight": {
+            "description": "Intrinsic pixel height of that same derivative. See `thumbnailWidth`.",
+            "example": 400,
+            "type": "number"
+          },
+          "thumbnailUrl": {
+            "description": "The same association at the small `thumbnail` rendition, served by the same publication-gated route. Present on Product **detail** media, where `url` addresses the large `catalog-preview` derivative and a thumbnail strip needs the small one. Absent when that derivative is not itself deliverable — fall back to `url` for that item rather than dropping the image.",
+            "example": "/api/public/products/khan-theu-hoa-sen/media/019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071/thumbnail",
+            "type": "string"
+          },
+          "thumbnailWidth": {
+            "description": "Intrinsic pixel width of the derivative `thumbnailUrl` addresses. Present together with `thumbnailHeight` or absent together with it, and never a guess. Describes a different derivative from `width` and must not be substituted for it.",
+            "example": 400,
+            "type": "number"
+          },
           "url": {
             "description": "Relative application path served by the publication-gated delivery route. Never a storage or CDN address, never signed, and it expires with nothing — the route re-checks publication on every request.",
             "example": "/api/public/products/khan-theu-hoa-sen/media/019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071/thumbnail",

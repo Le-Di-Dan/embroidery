@@ -90,6 +90,32 @@ export class PublicMediaReferenceResponse {
     example: 800,
   })
   height?: number;
+
+  @ApiPropertyOptional({
+    description:
+      'The same association at the small `thumbnail` rendition, served by the same ' +
+      'publication-gated route. Present on Product **detail** media, where `url` ' +
+      'addresses the large `catalog-preview` derivative and a thumbnail strip needs ' +
+      'the small one. Absent when that derivative is not itself deliverable — fall ' +
+      'back to `url` for that item rather than dropping the image.',
+    example: MEDIA_PATH_EXAMPLE,
+  })
+  thumbnailUrl?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Intrinsic pixel width of the derivative `thumbnailUrl` addresses. Present ' +
+      'together with `thumbnailHeight` or absent together with it, and never a guess. ' +
+      'Describes a different derivative from `width` and must not be substituted for it.',
+    example: 400,
+  })
+  thumbnailWidth?: number;
+
+  @ApiPropertyOptional({
+    description: 'Intrinsic pixel height of that same derivative. See `thumbnailWidth`.',
+    example: 400,
+  })
+  thumbnailHeight?: number;
 }
 
 export class PublicProductSummaryResponse {

@@ -14,11 +14,7 @@
  * would let an unpublished product keep being served to anyone holding a URL
  * (`ADR-APP2-001` §4.7).
  */
-import {
-  PRODUCT_MEDIA_PRIMARY_ROLE,
-  type AssetDerivativeKind,
-  type ProductMediaRole,
-} from '@embroidery/database';
+import { type AssetDerivativeKind, type ProductMediaRole } from '@embroidery/database';
 
 import {
   APP2_CATEGORY_STATUS,
@@ -77,17 +73,34 @@ export const DERIVATIVE_KIND_BY_RENDITION: Readonly<
  * The Product-media role a rendition additionally requires, or `undefined` when
  * any published association qualifies.
  *
- * `thumbnail` is the product-card image of Q-01, and `APP2-B02` writes exactly
- * one `THUMBNAIL` association per product — the first of the operator's ordered
- * selection (IMP-D032). Restricting the rendition to that role keeps the card
- * image a single well-defined thing rather than "whichever association the
- * caller names". `catalog-preview` is the gallery projection of Q-02, so every
- * ordered association may produce one.
+ * **Both are `undefined` since `APP12-M01-B1`.** The `thumbnail` rendition used
+ * to be restricted to the stored `THUMBNAIL` association, on the reasoning that
+ * it existed only to serve the Q-01 product card and should therefore be "a
+ * single well-defined thing rather than whichever association the caller names".
+ * Two things retired that reasoning:
+ *
+ * 1. **The card no longer selects by this role.** `PUBLIC_EFFECTIVE_PRIMARY_ORDER`
+ *    picks the card's image by an ordering, precisely so a Product whose stored
+ *    primary became undeliverable still shows a picture. The delivery-side role
+ *    predicate therefore guards nothing the read side still relies on.
+ * 2. **The gallery legitimately needs the small rendition.** `M01-B1` publishes a
+ *    `thumbnailUrl` for every detail media item so a 64 px strip control stops
+ *    downloading a 1 250 px preview. Every one of those is a `GALLERY`
+ *    association, and with the restriction in place all of them answered 404 —
+ *    the contract advertising addresses that do not resolve, which is the single
+ *    media defect a JSON payload can create on its own.
+ *
+ * Nothing about visibility changes. The route still requires the Product to be
+ * `PUBLISHED` under a published category, the association to belong to *that*
+ * Product, the asset to be in the catalog lane and `ACCEPTED` and untombstoned,
+ * and the derivative to be `READY`, unwatermarked and stored. `role` is an
+ * editorial designation, never an authorization boundary: an image already
+ * served at 1 250 px is not made more private by being refused at 480 px.
  */
 export const REQUIRED_MEDIA_ROLE_BY_RENDITION: Readonly<
   Record<PublicProductMediaRendition, ProductMediaRole | undefined>
 > = Object.freeze({
-  thumbnail: PRODUCT_MEDIA_PRIMARY_ROLE,
+  thumbnail: undefined,
   'catalog-preview': undefined,
 });
 
