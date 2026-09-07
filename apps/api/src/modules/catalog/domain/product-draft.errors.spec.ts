@@ -37,6 +37,10 @@ const EXPECTED_STATUS: Record<ProductDraftErrorCode, number> = {
   PRODUCT_PUBLICATION_NOT_READY: 409,
   PRODUCT_PUBLISH_NOT_ALLOWED: 409,
   PRODUCT_UNPUBLISH_NOT_ALLOWED: 409,
+  // `APP12-M01.B2` — a well-formed request naming images that exist; the
+  // conflict is with the product being published, so it joins the 409 family
+  // rather than being reported as a malformed body.
+  PRODUCT_MEDIA_NOT_PUBLISHABLE: 409,
 };
 
 describe('product draft error taxonomy', () => {
