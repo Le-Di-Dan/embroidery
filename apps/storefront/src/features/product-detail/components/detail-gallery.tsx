@@ -52,6 +52,12 @@ export function DetailGallery({ media, name }: DetailGalleryProps) {
           total={media.length}
           failed={failed || current === undefined}
           onError={() => markFailed(selectedIndex)}
+          // The selected image's own intrinsic size, so the stage reserves the
+          // right box before the bytes land and switching images does not shift
+          // the page (`APP12-M01-B1` §9).
+          {...(current?.width === undefined || current.height === undefined
+            ? {}
+            : { width: current.width, height: current.height })}
         />
       </button>
 

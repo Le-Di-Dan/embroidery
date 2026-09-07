@@ -20,10 +20,38 @@ export function makePublicDetail(
     category: { slug: 'thu-bong', name: 'Thú bông' },
     price: { amount: '450000', currency: 'VND' },
     isDisplayOutOfStock: false,
+    // Both renditions and both sizes, as `APP12-M01-B1` publishes them. The
+    // first item carries the effective-primary role the server assigns by
+    // position; the sizes differ between the two renditions on purpose, so a
+    // consumer that spread one for the other fails here rather than in a browser.
     media: [
-      { role: 'GALLERY', url: '/api/public/products/gau-bong-theu-tay/media/m-1/catalog-preview' },
-      { role: 'GALLERY', url: '/api/public/products/gau-bong-theu-tay/media/m-2/catalog-preview' },
-      { role: 'GALLERY', url: '/api/public/products/gau-bong-theu-tay/media/m-3/catalog-preview' },
+      {
+        role: 'THUMBNAIL',
+        url: '/api/public/products/gau-bong-theu-tay/media/m-1/catalog-preview',
+        width: 1250,
+        height: 1250,
+        thumbnailUrl: '/api/public/products/gau-bong-theu-tay/media/m-1/thumbnail',
+        thumbnailWidth: 480,
+        thumbnailHeight: 480,
+      },
+      {
+        role: 'GALLERY',
+        url: '/api/public/products/gau-bong-theu-tay/media/m-2/catalog-preview',
+        width: 1250,
+        height: 1250,
+        thumbnailUrl: '/api/public/products/gau-bong-theu-tay/media/m-2/thumbnail',
+        thumbnailWidth: 480,
+        thumbnailHeight: 480,
+      },
+      {
+        role: 'GALLERY',
+        url: '/api/public/products/gau-bong-theu-tay/media/m-3/catalog-preview',
+        width: 1250,
+        height: 1250,
+        thumbnailUrl: '/api/public/products/gau-bong-theu-tay/media/m-3/thumbnail',
+        thumbnailWidth: 480,
+        thumbnailHeight: 480,
+      },
     ],
     seo: { isIndexable: true },
     ...overrides,

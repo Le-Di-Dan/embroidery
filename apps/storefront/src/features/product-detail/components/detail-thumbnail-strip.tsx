@@ -85,12 +85,19 @@ export function DetailThumbnailStrip({
                   {PRODUCT_DETAIL_COPY.thumbnailUnavailable}
                 </span>
               ) : (
-                // No intrinsic dimensions are published; see DetailMediaStage.
-                // eslint-disable-next-line @next/next/no-img-element
+                // eslint-disable-next-line @next/next/no-img-element -- see DetailMediaStage.
                 <img
                   className="product-detail__thumbnail-image"
-                  src={item.url}
+                  // The small rendition (`APP12-M01-B1`, closing `FU-APP12-H05-03`).
+                  // This box is 64 px; it used to be handed the same
+                  // `catalog-preview` derivative as the stage, which `APP12-H05`
+                  // measured at 44 % of the page's image weight for three
+                  // images, and `APP12-M01.A` projected at 6.63 MB for twenty.
+                  src={item.thumbnailUrl}
                   alt=""
+                  {...(item.thumbnailWidth === undefined || item.thumbnailHeight === undefined
+                    ? {}
+                    : { width: item.thumbnailWidth, height: item.thumbnailHeight })}
                   loading="lazy"
                   decoding="async"
                   onError={() => onFailed(index)}

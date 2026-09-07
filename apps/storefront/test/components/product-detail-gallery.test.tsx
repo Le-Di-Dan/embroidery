@@ -8,6 +8,15 @@ const NAME = 'Gấu bông thêu tay';
 function media(count: number): ProductDetailMedia[] {
   return Array.from({ length: count }, (_, index) => ({
     url: `/api/public/products/x/media/m-${index + 1}/catalog-preview`,
+    width: 1250,
+    height: 1250,
+    // Deliberately a different address and a different size from the preview
+    // above: the whole point of `APP12-M01-B1` is that the strip must not be
+    // served the stage's derivative, and a fixture that reused one value could
+    // not tell the two apart.
+    thumbnailUrl: `/api/public/products/x/media/m-${index + 1}/thumbnail`,
+    thumbnailWidth: 480,
+    thumbnailHeight: 480,
   }));
 }
 
@@ -205,5 +214,101 @@ describe('lightbox', () => {
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Đóng' }));
     expect(document.body.style.overflow).not.toBe('hidden');
+  });
+});
+
+/**
+ * `APP12-M01-B1` — the rendition policy, which is the whole reason the package
+ * exists. The gallery renders one image at two very different scales, and
+ * before B1 it asked for the large derivative both times.
+ */
+describe('gallery rendition policy', () => {
+  it('serves the stage the preview and every strip control the thumbnail', () => {
+    renderWithProviders(<DetailGallery media={media(3)} name={NAME} />);
+
+    expect(screen.getByAltText(`${NAME} — ảnh 1 trên 3`)).toHaveAttribute(
+      'src',
+      '/api/public/products/x/media/m-1/catalog-preview',
+    );
+
+    const stripImages = thumbnails().map((button) => button.querySelector('img'));
+    expect(stripImages).toHaveLength(3);
+    for (const [index, image] of stripImages.entries()) {
+      expect(image).toHaveAttribute('src', `/api/public/products/x/media/m-${index + 1}/thumbnail`);
+    }
+    // The defect stated as an absence: not one strip control may address the
+    // derivative the stage uses.
+    for (const image of stripImages) {
+      expect(image?.getAttribute('src')).not.toContain('catalog-preview');
+    }
+  });
+
+  it('gives each image the intrinsic size of the derivative it actually loads', () => {
+    renderWithProviders(<DetailGallery media={media(2)} name={NAME} />);
+
+    const stage = screen.getByAltText(`${NAME} — ảnh 1 trên 2`);
+    expect(stage).toHaveAttribute('width', '1250');
+    expect(stage).toHaveAttribute('height', '1250');
+
+    const thumbnail = thumbnails()[0]?.querySelector('img');
+    expect(thumbnail).toHaveAttribute('width', '480');
+    expect(thumbnail).toHaveAttribute('height', '480');
+  });
+
+  it('loads the stage eagerly at high priority and defers every thumbnail', () => {
+    renderWithProviders(<DetailGallery media={media(3)} name={NAME} />);
+
+    const stage = screen.getByAltText(`${NAME} — ảnh 1 trên 3`);
+    // The measured LCP element of this page (`APP12-H05` §G).
+    expect(stage).toHaveAttribute('loading', 'eager');
+    expect(stage.getAttribute('fetchpriority')).toBe('high');
+
+    for (const button of thumbnails()) {
+      expect(button.querySelector('img')).toHaveAttribute('loading', 'lazy');
+    }
+  });
+
+  it('switches only the stage when a thumbnail is chosen, and never eagerly loads the rest', () => {
+    renderWithProviders(<DetailGallery media={media(4)} name={NAME} />);
+
+    fireEvent.click(thumbnails()[2] as HTMLElement);
+
+    // The stage follows the selection to that image's *preview* derivative.
+    expect(screen.getByAltText(`${NAME} — ảnh 3 trên 4`)).toHaveAttribute(
+      'src',
+      '/api/public/products/x/media/m-3/catalog-preview',
+    );
+    // And exactly one preview is in the document: the non-selected images are
+    // present only as deferred thumbnails, which is what keeps a twenty-image
+    // Product from fetching twenty full previews at first render.
+    const previews = screen
+      .getAllByRole('img', { hidden: true })
+      .filter((image) => image.getAttribute('src')?.includes('catalog-preview'));
+    expect(previews).toHaveLength(1);
+  });
+
+  it('falls back to the preview address when the server publishes no thumbnail', () => {
+    // The legitimate state where the small derivative is not deliverable: the
+    // control must still render an image rather than leaving a hole.
+    const degraded: ProductDetailMedia[] = [
+      {
+        url: '/api/public/products/x/media/m-1/catalog-preview',
+        thumbnailUrl: '/api/public/products/x/media/m-1/catalog-preview',
+      },
+      {
+        url: '/api/public/products/x/media/m-2/catalog-preview',
+        thumbnailUrl: '/api/public/products/x/media/m-2/thumbnail',
+      },
+    ];
+    renderWithProviders(<DetailGallery media={degraded} name={NAME} />);
+
+    const stripImages = thumbnails().map((button) => button.querySelector('img'));
+    expect(stripImages[0]).toHaveAttribute(
+      'src',
+      '/api/public/products/x/media/m-1/catalog-preview',
+    );
+    expect(stripImages[1]).toHaveAttribute('src', '/api/public/products/x/media/m-2/thumbnail');
+    // No size is claimed for a derivative that was never described.
+    expect(stripImages[0]).not.toHaveAttribute('width');
   });
 });

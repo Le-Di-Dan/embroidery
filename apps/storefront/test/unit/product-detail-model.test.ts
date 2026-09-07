@@ -94,6 +94,58 @@ describe('toProductDetailView', () => {
   it('keeps an empty media list empty', () => {
     expect(toProductDetailView(makePublicDetail({ media: [] })).media).toEqual([]);
   });
+
+  it('carries both renditions and both intrinsic sizes (APP12-M01-B1)', () => {
+    const [first] = toProductDetailView(makePublicDetail()).media;
+
+    expect(first).toEqual({
+      url: '/api/public/products/gau-bong-theu-tay/media/m-1/catalog-preview',
+      width: 1250,
+      height: 1250,
+      thumbnailUrl: '/api/public/products/gau-bong-theu-tay/media/m-1/thumbnail',
+      thumbnailWidth: 480,
+      thumbnailHeight: 480,
+    });
+    // The two sizes describe different derivatives and must never be equal by
+    // construction — that would mean one was spread for the other.
+    expect(first?.width).not.toBe(first?.thumbnailWidth);
+  });
+
+  it('falls back to the preview address when no thumbnail rendition is published', () => {
+    const view = toProductDetailView(
+      makePublicDetail({
+        media: [{ role: 'THUMBNAIL', url: '/api/public/products/x/media/m-1/catalog-preview' }],
+      }),
+    );
+
+    // A control still has something to render...
+    expect(view.media[0]?.thumbnailUrl).toBe('/api/public/products/x/media/m-1/catalog-preview');
+    // ...but no size is claimed for a derivative the server never described.
+    expect(view.media[0]).not.toHaveProperty('thumbnailWidth');
+    expect(view.media[0]).not.toHaveProperty('width');
+  });
+
+  it('never applies half a size pair', () => {
+    const view = toProductDetailView(
+      makePublicDetail({
+        media: [
+          {
+            role: 'THUMBNAIL',
+            url: '/api/public/products/x/media/m-1/catalog-preview',
+            width: 1250,
+            thumbnailUrl: '/api/public/products/x/media/m-1/thumbnail',
+            thumbnailHeight: 480,
+          },
+        ],
+      }),
+    );
+
+    // A lone width would reserve a wrong box rather than no box.
+    expect(view.media[0]).not.toHaveProperty('width');
+    expect(view.media[0]).not.toHaveProperty('height');
+    expect(view.media[0]).not.toHaveProperty('thumbnailWidth');
+    expect(view.media[0]).not.toHaveProperty('thumbnailHeight');
+  });
 });
 
 describe('accessible labels', () => {
