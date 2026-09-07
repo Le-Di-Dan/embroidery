@@ -51,11 +51,12 @@ const POST_BASELINE_TAGS = [
   '0036_add_app6_cop_design_context',
   '0037_add_app7_transfer_evidence_association',
   '0038_add_app12_ready_made_persistence',
+  '0039_add_app12_product_media_invariants',
 ] as const;
 
 /** Chain length before 0032, and after the full committed chain. */
 const BASELINE_MIGRATION_COUNT = 31;
-const FULL_MIGRATION_COUNT = 38;
+const FULL_MIGRATION_COUNT = 39;
 
 /** One row per kind that existed before APP2-DB01, with its watermark reality. */
 const LEGACY_ROWS = [

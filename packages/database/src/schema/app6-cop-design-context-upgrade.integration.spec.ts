@@ -50,6 +50,7 @@ const POST_BASELINE_TAGS = [NEW_MIGRATION_TAG] as const;
 const TRAILING_TAGS = [
   '0037_add_app7_transfer_evidence_association',
   '0038_add_app12_ready_made_persistence',
+  '0039_add_app12_product_media_invariants',
 ] as const;
 
 const BASELINE_MIGRATION_COUNT = 35;

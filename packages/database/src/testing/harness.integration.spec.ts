@@ -52,23 +52,23 @@ describe('integration harness', () => {
       expect(failures).toEqual([]);
       expect(result.passed).toBe(true);
       expect(result.stages).toHaveLength(7);
-      // Last moved by APP12-DB01 (migration 0038 — `orders.origin`, the
-      // origin-aware CHECKs, `ORDER_ACCESS` and the origin guard triggers).
+      // Last moved by APP12-M01.DB1 (migration 0039 — the four Product-media
+      // gallery invariants; no table, column, index or trigger).
       // The literal is repeated here rather than read from the canonical file
       // on purpose: a test that reads the same file it verifies would keep
       // passing through an unreviewed baseline edit. It had gone stale at
       // 0035/0036/0037, which added no counterpart update here; APP12-DB01
       // repaired it along with the two counts below.
       expect(result.stages.at(-1)?.summary).toContain(
-        '0bb3a11c0b48128192674f085b57bc5eca4cc12f40ef14dcacfc70f848f7b626',
+        '48133df3fec5a81010170c38707169589662e4eda2ce93dfbd687d5aecb726be',
       );
     }, 120_000);
 
-    it('applied all 38 migrations', async () => {
+    it('applied all 39 migrations', async () => {
       const result = await disposable.client.db.execute<{ count: string }>(
         sql`select count(*)::text as count from drizzle.__drizzle_migrations`,
       );
-      expect(Number(result.rows[0]?.count)).toBe(38);
+      expect(Number(result.rows[0]?.count)).toBe(39);
     });
 
     it('resets state between tests without disabling the S24 triggers', async () => {
@@ -99,7 +99,7 @@ describe('integration harness', () => {
       const result = await disposable.client.db.execute<{ count: string }>(
         sql`select count(*)::text as count from drizzle.__drizzle_migrations`,
       );
-      expect(Number(result.rows[0]?.count)).toBe(38);
+      expect(Number(result.rows[0]?.count)).toBe(39);
     });
   });
 

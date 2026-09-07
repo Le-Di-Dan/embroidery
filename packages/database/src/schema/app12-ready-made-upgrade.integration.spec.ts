@@ -43,6 +43,17 @@ import type { ReadyMadeSubject } from './app12-ready-made-fixture';
 const NEW_MIGRATION_TAG = '0038_add_app12_ready_made_persistence';
 const POST_BASELINE_TAGS = [NEW_MIGRATION_TAG] as const;
 
+/**
+ * Migrations committed after the one under test.
+ *
+ * They are stripped from *both* folders: from the baseline because the baseline
+ * is the chain as it stood before 0038, and from the target because this suite
+ * asserts that applying it adds exactly one migration. A later migration left
+ * in the target folder would be applied alongside 0038 and the assertion would
+ * be measuring two changes at once.
+ */
+const TRAILING_TAGS = ['0039_add_app12_product_media_invariants'] as const;
+
 const BASELINE_MIGRATION_COUNT = 37;
 const FULL_MIGRATION_COUNT = 38;
 
@@ -53,6 +64,7 @@ describe('APP12 Ready-Made upgrade path (integration)', () => {
   let baseUrl: string;
   let url: string;
   let baselineFolder: string;
+  let targetFolder: string;
   let client: DatabaseClient | undefined;
   let chain: PaymentAttemptChain;
   let subject: ReadyMadeSubject;
@@ -75,11 +87,11 @@ describe('APP12 Ready-Made upgrade path (integration)', () => {
     }
   }
 
-  async function buildBaselineFolder(): Promise<string> {
+  async function buildFolder(label: string, excluded: readonly string[]): Promise<string> {
     const source = migrationsFolder();
-    const folder = await mkdtemp(join(tmpdir(), 'app12db01-baseline-'));
+    const folder = await mkdtemp(join(tmpdir(), `app12db01-${label}-`));
     await cp(source, folder, { recursive: true });
-    for (const tag of POST_BASELINE_TAGS) {
+    for (const tag of excluded) {
       await rm(join(folder, `${tag}.sql`));
     }
 
@@ -87,9 +99,7 @@ describe('APP12 Ready-Made upgrade path (integration)', () => {
     const journal = JSON.parse(await readFile(journalPath, 'utf8')) as {
       entries: { tag: string }[];
     };
-    journal.entries = journal.entries.filter(
-      (entry) => !POST_BASELINE_TAGS.includes(entry.tag as (typeof POST_BASELINE_TAGS)[number]),
-    );
+    journal.entries = journal.entries.filter((entry) => !excluded.includes(entry.tag));
     await writeFile(journalPath, JSON.stringify(journal, null, 2));
     return folder;
   }
@@ -122,7 +132,8 @@ describe('APP12 Ready-Made upgrade path (integration)', () => {
     baseUrl = resolveDatabaseUrl();
     url = urlFor(name);
     await maintenance(`CREATE DATABASE "${name}"`);
-    baselineFolder = await buildBaselineFolder();
+    baselineFolder = await buildFolder('baseline', [...POST_BASELINE_TAGS, ...TRAILING_TAGS]);
+    targetFolder = await buildFolder('target', TRAILING_TAGS);
 
     // Baseline: everything up to and including 0037, and nothing after.
     await runMigrations(configFor(url), baselineFolder);
@@ -154,8 +165,10 @@ describe('APP12 Ready-Made upgrade path (integration)', () => {
     if (baseUrl !== undefined && name !== undefined) {
       await maintenance(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`);
     }
-    if (baselineFolder !== undefined) {
-      await rm(baselineFolder, { recursive: true, force: true });
+    for (const folder of [baselineFolder, targetFolder]) {
+      if (folder !== undefined) {
+        await rm(folder, { recursive: true, force: true });
+      }
     }
   });
 
@@ -167,7 +180,7 @@ describe('APP12 Ready-Made upgrade path (integration)', () => {
 
   describe('after applying 0038', () => {
     beforeAll(async () => {
-      await runMigrations(configFor(url), migrationsFolder());
+      await runMigrations(configFor(url), targetFolder);
     }, 300_000);
 
     it('applied exactly one further migration', async () => {

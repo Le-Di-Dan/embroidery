@@ -50,7 +50,10 @@ const POST_BASELINE_TAGS = [NEW_MIGRATION_TAG] as const;
  * change. So the target folder is trimmed too, and each later migration is
  * added here as it ships.
  */
-const TRAILING_TAGS = ['0038_add_app12_ready_made_persistence'] as const;
+const TRAILING_TAGS = [
+  '0038_add_app12_ready_made_persistence',
+  '0039_add_app12_product_media_invariants',
+] as const;
 
 const BASELINE_MIGRATION_COUNT = 36;
 const FULL_MIGRATION_COUNT = 37;
