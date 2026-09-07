@@ -14,10 +14,15 @@
  *   between validation and the media write. A plain read at `READ COMMITTED`
  *   would let exactly that happen and commit a link to an asset the store had
  *   already rejected.
- * - **No item-count limit of its own.** An earlier version capped the selection
- *   at twelve purely to bound a per-item loop; that was an invented product
- *   rule with no authority behind it. The batch query removes the reason, and
- *   the platform's JSON body limit remains the real transport bound.
+ * - **A count bound that is a product rule, not a loop bound.** An earlier
+ *   version capped the selection at twelve purely to bound a per-item loop;
+ *   that was an invented rule with no authority behind it, and the batch query
+ *   removed its reason. The cap that stands here is a different thing:
+ *   `MAX_PRODUCT_MEDIA_ITEMS` is approved product authority (`APP12-M01.DB1`),
+ *   it is the same constant migration 0039 renders into the `display_order`
+ *   bound, and it is checked here — at the one boundary every Admin media write
+ *   passes through — so a 21-image selection is refused before the first row is
+ *   written rather than by the twenty-first insert failing halfway.
  *
  * Validation is all-or-nothing and completes before a single link is written,
  * so one bad item leaves the previous selection exactly as it was.
@@ -31,6 +36,7 @@ import {
 } from '../../asset/domain/repositories/asset.repository';
 import { productDraftError } from '../domain/product-draft.errors';
 import {
+  MAX_PRODUCT_MEDIA_ITEMS,
   PRODUCT_MEDIA_ASSET_CLASSIFICATION,
   PRODUCT_MEDIA_ASSET_KIND,
   PRODUCT_MEDIA_ASSET_STATUS,
@@ -55,9 +61,19 @@ export class ProductMediaSelection {
    * `THUMBNAIL`, the rest are `GALLERY` at their zero-based request position.
    * `DETAIL` is never written by APP2-B02.
    *
+   * The positions this returns are contiguous `0..N-1` and contain 0 whenever
+   * the selection is non-empty, by construction — the two set-level rules the
+   * database cannot state as constraints and therefore expects from here
+   * (`APP12-M01.DB1`).
+   *
    * Must run inside the caller's transaction — the repository asserts it.
    */
   async resolve(assetIds: readonly string[]): Promise<ProductDraftMediaLink[]> {
+    // The count first: it is the coarsest structural bound, and it is decided
+    // without reading a single Asset.
+    if (assetIds.length > MAX_PRODUCT_MEDIA_ITEMS) {
+      throw productDraftError('PRODUCT_MEDIA_TOO_MANY');
+    }
     if (new Set(assetIds).size !== assetIds.length) {
       throw productDraftError('PRODUCT_MEDIA_DUPLICATE');
     }

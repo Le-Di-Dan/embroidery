@@ -11,6 +11,10 @@
  * Every message here is the only free text that reaches a browser, so it is
  * written once and never interpolated at a call site. None names a table, a
  * column, a constraint, a category id, an actor or a storage fact.
+ *
+ * The one message built from a value — the image cap — reads that value from
+ * the canonical constant rather than repeating the number, so the sentence and
+ * the bound it describes cannot drift apart. It is still written once, here.
  */
 import {
   BadRequestException,
@@ -18,6 +22,8 @@ import {
   NotFoundException,
   type HttpException,
 } from '@nestjs/common';
+
+import { MAX_PRODUCT_MEDIA_ITEMS } from './product-draft.policy';
 
 export const PRODUCT_DRAFT_ERROR_CODES = [
   'PRODUCT_NOT_FOUND',
@@ -27,6 +33,9 @@ export const PRODUCT_DRAFT_ERROR_CODES = [
   'PRODUCT_CATEGORY_INVALID',
   'PRODUCT_SLUG_CONFLICT',
   'PRODUCT_MEDIA_DUPLICATE',
+  // `APP12-M01.DB1` — the selection exceeds MAX_PRODUCT_MEDIA_ITEMS. A count
+  // bound, so a bad request rather than a conflict with the product's state.
+  'PRODUCT_MEDIA_TOO_MANY',
   'PRODUCT_MEDIA_ASSET_NOT_FOUND',
   'PRODUCT_MEDIA_ASSET_UNAVAILABLE',
   'PRODUCT_ARCHIVE_NOT_ALLOWED',
@@ -50,6 +59,7 @@ const MESSAGES: Record<ProductDraftErrorCode, string> = {
   PRODUCT_CATEGORY_INVALID: 'That product category is not available.',
   PRODUCT_SLUG_CONFLICT: 'A product address could not be reserved for this name.',
   PRODUCT_MEDIA_DUPLICATE: 'The same image was selected more than once.',
+  PRODUCT_MEDIA_TOO_MANY: `A product may have at most ${MAX_PRODUCT_MEDIA_ITEMS} images.`,
   PRODUCT_MEDIA_ASSET_NOT_FOUND: 'One of the selected images does not exist.',
   PRODUCT_MEDIA_ASSET_UNAVAILABLE: 'One of the selected images is not ready to be used.',
   PRODUCT_ARCHIVE_NOT_ALLOWED: 'This product cannot be archived from its current state.',
@@ -109,6 +119,7 @@ const STATUS_BY_CODE: Record<ProductDraftErrorCode, (payload: ErrorPayload) => H
   PRODUCT_CATEGORY_INVALID: (payload) => new BadRequestException(payload),
   PRODUCT_SLUG_CONFLICT: (payload) => new ConflictException(payload),
   PRODUCT_MEDIA_DUPLICATE: (payload) => new BadRequestException(payload),
+  PRODUCT_MEDIA_TOO_MANY: (payload) => new BadRequestException(payload),
   PRODUCT_MEDIA_ASSET_NOT_FOUND: (payload) => new BadRequestException(payload),
   PRODUCT_MEDIA_ASSET_UNAVAILABLE: (payload) => new ConflictException(payload),
   PRODUCT_ARCHIVE_NOT_ALLOWED: (payload) => new ConflictException(payload),

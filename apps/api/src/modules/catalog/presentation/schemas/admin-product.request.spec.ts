@@ -5,6 +5,7 @@
  * rather than dropped: a caller that misspells `basePrice` must learn it did
  * not set a price, not discover it later in the catalog.
  */
+import { MAX_PRODUCT_MEDIA_ITEMS } from '../../domain/product-draft.policy';
 import {
   archiveProductBodySchema,
   createProductBodySchema,
@@ -16,6 +17,10 @@ import {
 const UPDATED_AT = '2026-07-31T10:00:00.000Z';
 const ASSET_A = '019826f0-1c3d-7a41-9b6e-2f5a8c4d1e07';
 const ASSET_B = '019826f0-1c3d-7a41-9b6e-2f5a8c4d1e08';
+
+/** A distinct, well-formed Asset id per index — only distinctness matters. */
+const assetId = (index: number): string =>
+  `019826f0-1c3d-7a41-9b6e-${String(index).padStart(12, '0')}`;
 
 describe('create product body', () => {
   it('accepts a locked category slug with a name', () => {
@@ -121,6 +126,24 @@ describe('update product body', () => {
       updateProductBodySchema.parse({ expectedUpdatedAt: UPDATED_AT, mediaAssetIds: [] })
         .mediaAssetIds,
     ).toEqual([]);
+  });
+
+  it(`accepts exactly ${MAX_PRODUCT_MEDIA_ITEMS} images and refuses one more`, () => {
+    // `APP12-M01.DB1`. The boundary is published as `maxItems`, so a client
+    // that reads the schema learns the limit before it sends; the domain refuses
+    // the same count independently for callers that never see this DTO.
+    const atCap = Array.from({ length: MAX_PRODUCT_MEDIA_ITEMS }, (_, index) => assetId(index));
+    expect(
+      updateProductBodySchema.parse({ expectedUpdatedAt: UPDATED_AT, mediaAssetIds: atCap })
+        .mediaAssetIds,
+    ).toHaveLength(MAX_PRODUCT_MEDIA_ITEMS);
+
+    const overCap = [...atCap, assetId(MAX_PRODUCT_MEDIA_ITEMS)];
+    const result = updateProductBodySchema.safeParse({
+      expectedUpdatedAt: UPDATED_AT,
+      mediaAssetIds: overCap,
+    });
+    expect(result.success).toBe(false);
   });
 
   it('never accepts a client-chosen slug, status or media role', () => {

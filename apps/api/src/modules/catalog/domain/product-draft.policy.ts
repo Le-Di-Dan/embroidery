@@ -5,9 +5,12 @@
  * so the service, the repository, the DTOs and the tests all read the same
  * value — a second copy is how a draft sentinel silently becomes two sentinels.
  *
- * The draft sentinels and the media roles are re-exported from
+ * The draft sentinels, the media roles and the image cap are re-exported from
  * `@embroidery/database`, which is where the gate put the canonical values;
  * re-declaring them here would fork the source the migration itself used.
+ * `MAX_PRODUCT_MEDIA_ITEMS` is the same number that becomes the
+ * `display_order` bound in migration 0039 (`APP12-M01.DB1`), which is exactly
+ * why it is re-exported and not restated.
  *
  * **No category taxonomy is here, and none may return** (`APP12-C01-C1`,
  * `IMP-D062`). This module used to re-export `APP2_CATEGORY_SLUGS` and
@@ -19,6 +22,7 @@
  */
 import {
   APP2_PRODUCT_MEDIA_ROLES,
+  MAX_PRODUCT_MEDIA_ITEMS,
   PRODUCT_DRAFT_BASE_PRICE_AMOUNT,
   PRODUCT_DRAFT_DISPLAY_ORDER,
   PRODUCT_MEDIA_PRIMARY_ROLE,
@@ -28,6 +32,7 @@ import {
 
 export {
   APP2_PRODUCT_MEDIA_ROLES,
+  MAX_PRODUCT_MEDIA_ITEMS,
   PRODUCT_DRAFT_BASE_PRICE_AMOUNT,
   PRODUCT_DRAFT_DISPLAY_ORDER,
   PRODUCT_MEDIA_PRIMARY_ROLE,

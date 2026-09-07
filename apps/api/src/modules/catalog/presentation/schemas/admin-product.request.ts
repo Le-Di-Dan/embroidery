@@ -14,6 +14,7 @@ import { createZodDto, registerZodDtos } from '../../../../platform/validation';
 import { CATEGORY_SLUG_MAX_LENGTH, CATEGORY_SLUG_PATTERN } from '../../domain/category-slug';
 import {
   MAX_BASE_PRICE_AMOUNT,
+  MAX_PRODUCT_MEDIA_ITEMS,
   PRODUCT_DESCRIPTION_MAX_LENGTH,
   PRODUCT_NAME_MAX_LENGTH,
 } from '../../domain/product-draft.policy';
@@ -71,8 +72,16 @@ const productNameSchema = z.string().trim().min(1).max(PRODUCT_NAME_MAX_LENGTH);
  * Order is the contract — position 0 becomes the `THUMBNAIL` — so the array is
  * never reordered or de-duplicated silently; a repeat is rejected in the
  * service as `PRODUCT_MEDIA_DUPLICATE`.
+ *
+ * The shape is unchanged by `APP12-M01.DB1`; only the published bound is new.
+ * `maxItems` here is the contract's statement of the same cap the domain
+ * enforces and migration 0039 installs — read from the one constant, so a
+ * client that reads the schema and a service that refuses the request cannot
+ * disagree about the number. The domain check is not redundant: it is the one
+ * that holds for every caller, including a future write that does not pass
+ * through this DTO.
  */
-const mediaAssetIdsSchema = z.array(z.string().uuid());
+const mediaAssetIdsSchema = z.array(z.string().uuid()).max(MAX_PRODUCT_MEDIA_ITEMS);
 
 /**
  * The category slug an Admin request may name (`APP12-C01`).
