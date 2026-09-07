@@ -29,7 +29,13 @@ import { connect, report } from './live-db.mjs';
 // (`ck_orders__status_allowed`, both `ck_order_transitions__*_status_allowed`,
 // `ck_payment_obligations__kind_allowed`, `ck_secure_access_grants__scope_kind_allowed`)
 // are replaced in place and add nothing to the count.
-const EXPECTED = { p: 79, f: 168, u: 53, c: 209 };
+// APP12-M01.DB1 adds no table, no column and no FK. UNIQUE moves 53 -> 54:
+// `uq_product_media__product_asset_role` is replaced by
+// `uq_product_media__product_asset` (one out, one in) and
+// `uq_product_media__product_display_order` is new. CHECK moves 209 -> 211:
+// `ck_product_media__display_order_bounded` and
+// `ck_product_media__primary_role_at_zero`.
+const EXPECTED = { p: 79, f: 168, u: 54, c: 211 };
 const NAMES = { p: 'PK', f: 'FK', u: 'UNIQUE', c: 'CHECK' };
 
 const client = await connect(process.argv[2]);

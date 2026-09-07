@@ -22,8 +22,14 @@ const { rows: total } = await client.query(`
 // APP12-DB01 adds exactly two: `uq_secure_access_grants__customer_order__active`
 // (partial unique, the ORDER_ACCESS half of CST-009) and
 // `ix_secure_access_grants__order_id` (the IDX-106 counterpart for orders).
-note(`total physical indexes: ${total[0].n} / 219`);
-if (total[0].n !== 219) fail(`total physical index count is ${total[0].n}, expected 219`);
+// APP12-M01.DB1 adds one net index: the replacement of the three-column
+// `uq_product_media__product_asset_role` by the two-column
+// `uq_product_media__product_asset` is index-neutral, and
+// `uq_product_media__product_display_order` is the one addition. No
+// performance index is added — the tightened key keeps the `product_id`
+// prefix IDX-015 has always served.
+note(`total physical indexes: ${total[0].n} / 220`);
+if (total[0].n !== 220) fail(`total physical index count is ${total[0].n}, expected 220`);
 
 const classify = async (label, expected, where) => {
   const { rows } = await client.query(`
@@ -39,7 +45,7 @@ const classify = async (label, expected, where) => {
 await classify('PK backing', 79, `i.indisprimary`);
 await classify(
   'UNIQUE backing (non-partial)',
-  53,
+  54,
   `i.indisunique AND NOT i.indisprimary AND i.indpred IS NULL`,
 );
 await classify(

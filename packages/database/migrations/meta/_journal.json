@@ -267,6 +267,13 @@
       "when": 1788244576595,
       "tag": "0038_add_app12_ready_made_persistence",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1788745382188,
+      "tag": "0039_add_app12_product_media_invariants",
+      "breakpoints": true
     }
   ]
 }

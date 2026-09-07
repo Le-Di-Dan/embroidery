@@ -101,6 +101,7 @@ export {
 } from './schema/catalog/products';
 export {
   APP2_PRODUCT_MEDIA_ROLES,
+  MAX_PRODUCT_MEDIA_ITEMS,
   PRODUCT_MEDIA_PRIMARY_ROLE,
   PRODUCT_MEDIA_SECONDARY_ROLE,
 } from './schema/catalog/product-media';
