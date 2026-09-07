@@ -7,7 +7,7 @@ ROADMAP_STATUS         = LOCKED
 ROADMAP_LOCK           = LOCKED
 IMPLEMENTATION_STARTED = true
 CHECKPOINTS            = 39
-NEXT                   = APP12-M01 (stage B in progress; internal package M01.B2)
+NEXT                   = APP12-M01 (stage B in progress; internal package M01.D1)
 CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
                          APP12-G02-C1 (2026-09-01, 1/1 — no C2)
                          APP12-C01-C1 (2026-09-01, 1/1 — no C2)
@@ -31,7 +31,8 @@ OVERRIDE               = APP12-M01 inserted 2026-09-05 by explicit Human Product
                          packages, not as new checkpoint ids:
                            M01.B1  rendition / dimensions / effective primary  COMPLETE
                            M01.DB1 invariants and the 20 cap                   COMPLETE
-                           M01.B2  (scope set by PO)                           NEXT
+                           M01.B2  published media curation authority          COMPLETE
+                           M01.D1  (scope set by PO)                           NEXT
                            M01.A1  Admin media management UI                   not authorized
                            M01.S1  Product Detail visible counter              not authorized
                            M01.E1  cross-boundary acceptance                   not authorized
@@ -307,7 +308,7 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | 29 | `APP12-V02` | Runtime Visual & Content corrections and live re-verification | `COMPLETE_AFTER_C2` |
 | 29·C1 | `APP12-V02-C1` | i18n copy authority and Admin login reflow correction | `COMPLETE` |
 | 29·C2 | `APP12-V02-C2` | Media upload, processing and image delivery reliability correction | `COMPLETE` |
-| 29·M | `APP12-M01` | Product multi-image gallery (PO override, 2026-09-05) — stage A audit / stage B implementation | **`IMPLEMENTATION_IN_PROGRESS`** — `M01.A` AUDIT_COMPLETE (PO PASS); `M01.B1` COMPLETE; `M01.DB1` COMPLETE (migration `0039`, four `product_media` invariants, `MAX_PRODUCT_MEDIA_ITEMS = 20`); internal next `M01.B2` |
+| 29·M | `APP12-M01` | Product multi-image gallery (PO override, 2026-09-05) — stage A audit / stage B implementation | **`IMPLEMENTATION_IN_PROGRESS`** — `M01.A` AUDIT_COMPLETE (PO PASS); `M01.B1` COMPLETE; `M01.DB1` COMPLETE (migration `0039`, four `product_media` invariants, `MAX_PRODUCT_MEDIA_ITEMS = 20`); `M01.B2` COMPLETE (one bounded Admin media-only write, `adminProductMedia_replace`, published-Product curation without unpublishing); internal next `M01.D1` |
 | 30 | `APP12-U01` | Wave 1 Ready-Made business UAT | `NOT_STARTED` |
 | 31 | `APP12-E01` | Wave 1 commerce regression, positive and negative | `NOT_STARTED` |
 | 32 | `APP12-R01` | **WAVE 1 RELEASE GATE** — Ready-Made GO / NO-GO | `NOT_STARTED` |

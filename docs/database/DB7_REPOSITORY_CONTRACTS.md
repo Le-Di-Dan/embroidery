@@ -87,7 +87,7 @@ type or raw SQLSTATE strings.
 | Repository | Owned tables | Command methods | Query methods | Guards | Errors |
 |---|---|---|---|---|---|
 | `CategoryRepository` | TBL-011 | `create` (R), `rename` (R), `publish` (R), `archive` (R) | `findBySlug`, `listPublished` (keyset) | — | `Conflict` (slug) |
-| `ProductRepository` | TBL-012..TBL-017 | `create` (R), `updateDetails` (R), `replaceStructure` (R), `attachMedia` (R), `publish` (R), `archive` (R) | `findBySlug`, `loadStructure` (single round trip per child table) | G-DB7-10/11/12 source data | `Conflict` (slug, sku code), `InvalidReference` |
+| `ProductRepository` | TBL-012..TBL-017 | `create` (R), `updateDetails` (R), `replaceStructure` (R), ~~`attachMedia`~~ (R, retired — see below), `publish` (R), `archive` (R) | `findBySlug`, `loadStructure` (single round trip per child table) | G-DB7-10/11/12 source data | `Conflict` (slug, sku code), `InvalidReference` |
 | `PlacementHierarchyGuard` (port) | reads TBL-012..016 | — | `resolvePlacement(productId, variantId?, sideId?, areaId?)` | G-DB7-10..13 | `InvalidReference` |
 | `CatalogQueryRepository` | reads TBL-011..017 | — | `listProducts` (keyset), `findSkuByCode`, `listVariantsForProducts` | — | — |
 
@@ -180,6 +180,29 @@ type or raw SQLSTATE strings.
 | `OutboxEventStore` | TBL-073 | `append` (R, joins the domain transaction), `claimBatch` (R), `markDispatched` (R), `scheduleRetry` (R), `markFailed` (R) | G-DB7-47, G-DB7-54, G-DB7-55, G-DB7-56 | `ImmutableEvidence`, `InvalidReference` |
 | `BackgroundJobAttemptStore` | TBL-075 | `record` (R) — append only, no update path | G-DB7-51, G-DB7-57 | `InvalidReference` |
 | `PolicyConfigurationRepository` | TBL-076, TBL-077 | `ensureKey` (R), `publishVersion` (R), `setCurrentVersion` (R); `currentValue(key)` | G-DB7-08 | `Conflict`, `InvariantViolation` |
+
+---
+
+### Retired: `ProductRepository.attachMedia` (`APP12-M01.B2`)
+
+The DB7 seam sketched Product media as a **per-row append**: one call, one
+Asset, one role. It never acquired a caller — `APP2-B02` delivered the real
+write as `ProductDraftRepository.replaceMedia`, a whole-selection replacement,
+because the request carries the intended final order and applying it as adds and
+removes leaves a window in which the stored order is neither the old one nor the
+new one.
+
+`APP12-M01.DB1` then made the append structurally unusable. It wrote
+`display_order = 0` unconditionally, so under
+`uq_product_media__product_display_order` a second call for the same Product
+always fails, and under `ck_product_media__primary_role_at_zero` a first call
+with any role but `THUMBNAIL` also fails. The method could only ever have
+succeeded once per Product, for the primary image.
+
+It is therefore removed — port and adapter — rather than left as a shape a
+future caller might reach for. The ordered whole-selection replacement is the
+single media-write authority, used by the `APP2-B02` draft patch and by
+`APP12-M01.B2`'s `adminProductMedia_replace`. No other DB7 method changed.
 
 ---
 
