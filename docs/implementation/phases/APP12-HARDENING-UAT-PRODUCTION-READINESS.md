@@ -32,7 +32,8 @@ OVERRIDE               = APP12-M01 inserted 2026-09-05 by explicit Human Product
                            M01.B1  rendition / dimensions / effective primary  COMPLETE
                            M01.DB1 invariants and the 20 cap                   COMPLETE
                            M01.B2  published media curation authority          COMPLETE
-                           M01.D1  bounded Figma amendment                     COMPLETE
+                           M01.D1  bounded Figma amendment                     COMPLETE_AFTER_C1
+                           M01.D1-C1 Admin mobile media management (1/1)       COMPLETE
                            M01.A1  Admin media management UI                   NEXT (not authorized)
                            M01.S1  Product Detail visible counter              not authorized
                            M01.E1  cross-boundary acceptance                   not authorized
@@ -308,7 +309,7 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | 29 | `APP12-V02` | Runtime Visual & Content corrections and live re-verification | `COMPLETE_AFTER_C2` |
 | 29·C1 | `APP12-V02-C1` | i18n copy authority and Admin login reflow correction | `COMPLETE` |
 | 29·C2 | `APP12-V02-C2` | Media upload, processing and image delivery reliability correction | `COMPLETE` |
-| 29·M | `APP12-M01` | Product multi-image gallery (PO override, 2026-09-05) — stage A audit / stage B implementation | **`IMPLEMENTATION_IN_PROGRESS`** — `M01.A` AUDIT_COMPLETE (PO PASS); `M01.B1` COMPLETE; `M01.DB1` COMPLETE (migration `0039`, four `product_media` invariants, `MAX_PRODUCT_MEDIA_ITEMS = 20`); `M01.B2` COMPLETE (one bounded Admin media-only write, `adminProductMedia_replace`, published-Product curation without unpublishing); `M01.D1` COMPLETE (18 frames on Figma page `APP_12` section `933:187`, 18 registry rows `REVIEW_REQUIRED`, awaiting PO review; primary anchored at position 0, no stage arrows, multi-select picker kept); internal next `M01.A1` |
+| 29·M | `APP12-M01` | Product multi-image gallery (PO override, 2026-09-05) — stage A audit / stage B implementation | **`IMPLEMENTATION_IN_PROGRESS`** — `M01.A` AUDIT_COMPLETE (PO PASS); `M01.B1` COMPLETE; `M01.DB1` COMPLETE (migration `0039`, four `product_media` invariants, `MAX_PRODUCT_MEDIA_ITEMS = 20`); `M01.B2` COMPLETE (one bounded Admin media-only write, `adminProductMedia_replace`, published-Product curation without unpublishing); `M01.D1` COMPLETE_AFTER_C1 (18 frames on Figma page `APP_12` section `933:187`; primary anchored at position 0, no stage arrows, multi-select picker kept) + `M01.D1-C1` COMPLETE (correction 1/1 — Admin 390 media management, 7 frames, 20-image grid 1,938 px against 3,748 px in approved `438:90`; 25 registry rows `REVIEW_REQUIRED`, awaiting PO review); internal next `M01.A1` |
 | 30 | `APP12-U01` | Wave 1 Ready-Made business UAT | `NOT_STARTED` |
 | 31 | `APP12-E01` | Wave 1 commerce regression, positive and negative | `NOT_STARTED` |
 | 32 | `APP12-R01` | **WAVE 1 RELEASE GATE** — Ready-Made GO / NO-GO | `NOT_STARTED` |

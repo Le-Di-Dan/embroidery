@@ -1478,6 +1478,25 @@ not of a re-resolution. `APP12-D01` did not self-approve.
 | FIG-APP12-M01-D1-OVERVIEW | Shared | APP12-M01 handoff | M01.D1 Overview — authority, gap & frozen decisions | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 933:188 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=933-188) | APP12-M01.D1 | — | — | 2026-09-07 |
 | FIG-APP12-M01-D1-HANDOFF | Shared | APP12-M01 handoff | M01.D1 Accessibility Intent & i18n Copy Inventory | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 945:187 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=945-187) | APP12-M01.D1 | — | — | 2026-09-07 |
 
+
+> **`APP12-M01.D1-C1` — Admin mobile media management (2026-09-08).**
+> The single authorised correction to `APP12-M01.D1`. D1 left Admin 390 unamended; the
+> approved mobile Product form `438:90` exists and the runtime carries a dedicated narrow
+> treatment (`productForm.media.helpNarrow`), so the viewport is supported and `M01.A1`
+> would otherwise have had to invent responsive behaviour. These rows amend `438:90` and the
+> `437:73` picker at 390 only; every other D1 row is untouched. `REVIEW_REQUIRED`, approval
+> evidence empty — no self-approval.
+
+| Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| FIG-APP12-M01-D1-C1-ADMIN-MEDIA-MOBILE-EMPTY | Admin | /products/{productId} | Product Media — Ảnh sản phẩm | DRAFT · chưa có ảnh | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 946:187 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=946-187) | APP12-M01.D1-C1 | Amends 438:90 | — | 2026-09-08 |
+| FIG-APP12-M01-D1-C1-ADMIN-MEDIA-MOBILE-6 | Admin | /products/{productId} | Product Media — Ảnh sản phẩm | DRAFT · 6 ảnh · ảnh 4 đang chọn | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 946:248 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=946-248) | APP12-M01.D1-C1 | Amends 438:90 | — | 2026-09-08 |
+| FIG-APP12-M01-D1-C1-ADMIN-MEDIA-MOBILE-20 | Admin | /products/{productId} | Product Media — Ảnh sản phẩm | DRAFT · 20 ảnh · đã đạt giới hạn | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 948:311 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=948-311) | APP12-M01.D1-C1 | Amends 438:90 | — | 2026-09-08 |
+| FIG-APP12-M01-D1-C1-ADMIN-PUBLISHED-MOBILE | Admin | /products/{productId} | Product Editor | PUBLISHED · field lõi khoá, ảnh sửa được | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 948:355 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=948-355) | APP12-M01.D1-C1 | Amends 438:90 | — | 2026-09-08 |
+| FIG-APP12-M01-D1-C1-ADMIN-PICKER-MOBILE | Admin | /products/{productId} | Media Select Sheet | Multi-select · còn sức chứa | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 949:187 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=949-187) | APP12-M01.D1-C1 | Amends 437:73 | — | 2026-09-08 |
+| FIG-APP12-M01-D1-C1-ADMIN-PICKER-MOBILE-FULL | Admin | /products/{productId} | Media Select Sheet | Đã đạt giới hạn 20 ảnh | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 949:238 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=949-238) | APP12-M01.D1-C1 | Amends 437:73 | — | 2026-09-08 |
+| FIG-APP12-M01-D1-C1-HANDOFF | Shared | APP12-M01 handoff | M01.D1-C1 Mobile Geometry, Density & Rejected Alternative | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 950:187 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=950-187) | APP12-M01.D1-C1 | — | — | 2026-09-08 |
+
 ## 5. IA and user-flow registry
 
 Flow/IA/wireframe nodes are indexed as `REFERENCE_ONLY` — they inform, but do not
