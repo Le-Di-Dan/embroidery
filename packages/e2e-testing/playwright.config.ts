@@ -283,6 +283,29 @@ export default defineConfig({
         viewport: { width: 1440, height: 900 },
       },
     },
+    // APP12-M01.S1 — the Storefront Product Detail gallery.
+    //
+    // The Storefront origin, because the surface under test is the page a
+    // visitor sees; no operator logs in anywhere in this suite. Serial for the
+    // same reason the A1 project is: the journeys read one seeded world and the
+    // performance journey measures a cold load, which a parallel worker sharing
+    // the gateway would make meaningless. 1440 is the project default and the
+    // other two viewports are asserted inside the suite by resizing, so the
+    // three states are proved in one browser rather than three.
+    //
+    // The timeout is generous because the 20-image states load twenty real
+    // derivative images through the gateway on every navigation.
+    {
+      name: 'app12-m01s1-chromium',
+      testMatch: '**/app12/m01s1-*.acceptance.spec.ts',
+      timeout: 180_000,
+      use: {
+        ...devices['Desktop Chrome'],
+        ...chromiumLaunch,
+        baseURL: STOREFRONT_URL,
+        viewport: { width: 1440, height: 900 },
+      },
+    },
     // APP12-A02-C1 — the Admin Ready-Made order branch.
     //
     // The Admin origin is the baseURL because the operator's screen is what is

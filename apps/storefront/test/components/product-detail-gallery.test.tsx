@@ -79,6 +79,66 @@ describe('gallery selection', () => {
   });
 });
 
+describe('gallery counter', () => {
+  // The visible readout and the sentence beside it are asserted separately on
+  // purpose. They are two different strings for two different audiences, and a
+  // test that only looked for one of them would pass while the other was
+  // missing — which is precisely the state the page was in before `M01.S1`.
+  function counter(): HTMLElement {
+    return screen.getByText('1 / 20').closest('p') as HTMLElement;
+  }
+
+  it('states the position visually and in words, from the first render', () => {
+    renderWithProviders(<DetailGallery media={media(20)} name={NAME} />);
+
+    expect(screen.getByText('1 / 20')).toBeInTheDocument();
+    expect(within(counter()).getByText('Ảnh 1 trên 20')).toBeInTheDocument();
+  });
+
+  it('hides the numerals from assistive technology, which would read them badly', () => {
+    renderWithProviders(<DetailGallery media={media(20)} name={NAME} />);
+
+    expect(screen.getByText('1 / 20')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('updates both readouts the moment another image is chosen', () => {
+    renderWithProviders(<DetailGallery media={media(20)} name={NAME} />);
+
+    fireEvent.click(thumbnails()[6] as HTMLElement);
+
+    expect(screen.getByText('7 / 20')).toBeInTheDocument();
+    expect(screen.getByText('Ảnh 7 trên 20')).toBeInTheDocument();
+    expect(screen.queryByText('1 / 20')).not.toBeInTheDocument();
+  });
+
+  it('follows keyboard selection as well as clicks', () => {
+    renderWithProviders(<DetailGallery media={media(20)} name={NAME} />);
+    const strip = screen.getByRole('list', { name: 'Ảnh tác phẩm' });
+
+    fireEvent.keyDown(strip, { key: 'End' });
+
+    expect(screen.getByText('20 / 20')).toBeInTheDocument();
+  });
+
+  it('omits the counter entirely for a single image', () => {
+    renderWithProviders(<DetailGallery media={media(1)} name={NAME} />);
+
+    expect(screen.queryByText('1 / 1')).not.toBeInTheDocument();
+    expect(screen.queryByText('Ảnh 1 trên 1')).not.toBeInTheDocument();
+  });
+
+  it('reuses the lightbox position string rather than introducing a second one', () => {
+    // Opening the large view must not produce two differently-worded statements
+    // of the same position. `D1` §M made this one string; this is the assertion
+    // that keeps it one.
+    renderWithProviders(<DetailGallery media={media(20)} name={NAME} />);
+    fireEvent.click(thumbnails()[2] as HTMLElement);
+    fireEvent.click(screen.getByRole('button', { name: /^Mở ảnh 3 /u }));
+
+    expect(screen.getAllByText('Ảnh 3 trên 20')).toHaveLength(2);
+  });
+});
+
 describe('media states', () => {
   it('states the empty case and offers no zoom, thumbnails or lightbox', () => {
     renderWithProviders(<DetailGallery media={[]} name={NAME} />);
