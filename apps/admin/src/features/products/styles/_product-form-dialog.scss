@@ -33,7 +33,13 @@
   padding: styles.spacing(24);
   border-radius: styles.$radius-card;
   background: styles.$color-surface-primary;
-  overflow-y: auto;
+  // The panel itself no longer scrolls. It used to, and with a short asset
+  // library nobody noticed; a real one is 24 options, and the body then
+  // overflowed *over* the footer — the live `APP12-M01.A1` run found
+  // "Dùng 2 ảnh đã chọn" unclickable. Scrolling the body instead makes the
+  // title and footer fixed rows, which is what the approved picker draws
+  // (`938:187`, and the sticky footer of the 390 sheet `949:187`).
+  overflow: hidden;
 }
 
 .product-dialog--wide {
@@ -51,13 +57,23 @@
   display: flex;
   flex-direction: column;
   gap: styles.spacing(12);
+  // `min-height: 0` lets a flex item shrink below its content; without it the
+  // body pushes the footer out of the panel instead of scrolling.
   min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
 }
 
 .product-dialog__body-text {
   margin: 0;
   font-size: styles.$font-size-body-s;
   color: styles.$color-text-secondary;
+}
+
+// Title and footer are fixed rows, so confirm stays reachable at any scroll.
+.product-dialog__title,
+.product-dialog__footer {
+  flex: 0 0 auto;
 }
 
 .product-dialog__footer {
@@ -221,4 +237,64 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+// -------------------------------------------- picker capacity (M01.A1) ------
+//
+// `938:187` / `938:255` at 1440 and `949:187` / `949:238` at 390. What the
+// amendment adds is capacity, not a new picker: the multi-select session is the
+// one `437:73` already approved.
+
+.product-picker__capacity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: styles.spacing(8);
+}
+
+// Remaining capacity, beside the title. Accent at zero — and the notice below
+// says the same thing in words, so the state is never carried by colour alone.
+.product-picker__remaining {
+  margin: 0;
+  padding: styles.spacing(4) styles.spacing(8);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-secondary;
+  white-space: nowrap;
+
+  &[data-full='true'] {
+    border-color: styles.$color-action-fill;
+    color: styles.$color-action-fill;
+  }
+}
+
+.product-picker__full-notice {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-action-fill;
+}
+
+// An option the product already carries, or one the cap has closed. Dimmed and
+// clearly labelled — the badge and the state line both say why, so the reason
+// survives greyscale.
+.product-picker__option[data-blocked='true'] .product-picker__thumb,
+.product-picker__option[data-blocked='true'] .product-picker__info {
+  opacity: 0.55;
+}
+
+// The already-added marker stands where the checkbox would be, so the operator
+// sees at a glance that there is nothing to tick rather than hunting for a
+// disabled control.
+.product-picker__added {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  padding: styles.spacing(4) styles.spacing(8);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-secondary;
+  white-space: nowrap;
 }

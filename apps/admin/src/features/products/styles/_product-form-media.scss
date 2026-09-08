@@ -1,12 +1,16 @@
-// Admin product form — media editor and media rows.
+// Admin product form — the media grid, its tiles and the mobile action bar.
 //
-// The ordered media list and its per-row controls: a different editing surface from the scalar fields above, with its own tile geometry.
+// `APP12-M01.A1` replaced the one-row-per-image list this file used to style.
+// That list cost ≈ 3 120 px of stacked cards at 1440 for twenty images and
+// ≈ 3 748 px at 390, where each row's three text buttons wrapped onto a second
+// line (`APP12-M01.D1-C1` §D). The grid is the approved replacement:
+// `934:231`, `935:255`, `935:398`, `941:187` and the 390 frames `946:248` /
+// `948:311`, under `FIG-APPROVAL-APP12-M01-D1-PO-001`.
 //
-// Split out of `product-form.scss` by `APP12-H01` (FU-APP12-A01-04), which
-// found the single file at 753 lines against the 400-line hard
-// limit (CLAUDE.md §6). The split is by responsibility, and the compiled CSS is
-// byte-identical to what the one file emitted: the entry stylesheet `@use`s the
-// parts in their original order, so no declaration changed place in the cascade.
+// Mobile-first, like the rest of this feature. The base is the approved
+// two-column 390 composition; wider viewports fill with more columns of the
+// same tile rather than growing the tile, which is what keeps twenty images
+// practical at every width.
 @use '@embroidery/styles' as styles;
 @use 'product-form-tokens' as tokens;
 @use 'product-form-shell';
@@ -15,26 +19,68 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
   gap: styles.spacing(12);
+}
+
+// The capacity pill answers "how many, out of how many" without a click. It
+// turns accent at the cap — never colour alone: the notice below states the
+// same fact in words, and the add button is genuinely disabled.
+.product-media-editor__capacity {
+  margin: 0;
+  padding: styles.spacing(4) styles.spacing(8);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-secondary;
+
+  &[data-full='true'] {
+    border-color: styles.$color-action-fill;
+    color: styles.$color-action-fill;
+  }
 }
 
 .product-media-editor__pick {
   @extend %product-form-button;
 
+  margin-left: auto;
   border: 1px solid styles.$color-border-primary;
   background: styles.$color-surface-primary;
   color: styles.$color-text-primary;
 
   @media (max-width: #{tokens.$form-breakpoint - 1px}) {
     width: 100%;
+    margin-left: 0;
   }
 }
 
-.product-media-editor__help {
+.product-media-editor__help,
+.product-media-editor__note,
+.product-media-editor__capacity-notice {
   margin: 0;
   font-size: styles.$font-size-caption;
   color: styles.$color-text-tertiary;
+}
+
+.product-media-editor__capacity-notice {
+  color: styles.$color-action-fill;
+}
+
+// The narrow help is one sentence shorter; only one of the two is ever shown.
+.product-media-editor__help--wide {
+  display: none;
+
+  @media (min-width: tokens.$media-grid-breakpoint) {
+    display: block;
+  }
+}
+
+.product-media-editor__help--narrow {
+  display: block;
+
+  @media (min-width: tokens.$media-grid-breakpoint) {
+    display: none;
+  }
 }
 
 .product-media-editor__empty {
@@ -43,103 +89,202 @@
   color: styles.$color-text-secondary;
 }
 
-.product-media-editor__list {
+// The media card is the one live region on a PUBLISHED product, so it keeps the
+// white surface and gains an accent edge while the commercial groups go grey
+// (`936:187`). On a DRAFT nothing is emphasised — everything is editable.
+.product-media-editor[data-emphasised='true'] {
+  border: 1px solid styles.$color-action-fill;
+  background: styles.$color-surface-primary;
+}
+
+// ---------------------------------------------------------------- grid ------
+
+.product-media-grid {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: styles.spacing(12);
-}
+  display: grid;
+  gap: tokens.$media-grid-gap;
+  // 390: 16px page gutters and 16px card padding leave 326px, which two 157px
+  // tiles and one 12px gap fill exactly (`APP12-M01.D1-C1` §F).
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 
-.product-media-row {
-  display: flex;
-  flex-direction: column;
-  gap: styles.spacing(8);
-  padding: styles.spacing(12);
-  border: 1px solid styles.$color-border-primary;
-  border-radius: styles.$radius-md;
-  background: styles.$color-surface-secondary;
-  min-width: 0;
-}
-
-.product-media-row__top {
-  display: flex;
-  align-items: flex-start;
-  gap: styles.spacing(12);
-  min-width: 0;
-}
-
-// An honest placeholder: there is no media-delivery contract, so no tile ever
-// renders real pixels and none is announced as an image.
-.product-media-row__placeholder {
-  flex: 0 0 auto;
-  width: tokens.$media-tile;
-  height: tokens.$media-tile;
-  border: 1px dashed styles.$color-border-secondary;
-  border-radius: styles.$radius-sm;
-  background: styles.$color-background-secondary;
-
-  @media (min-width: tokens.$form-breakpoint) {
-    width: tokens.$media-tile-wide;
-    height: tokens.$media-tile-wide;
+  // Above the tile-action breakpoint the grid fills with more columns of the
+  // same size rather than a fixed count, so one rule serves the approved four
+  // columns at 1440 and five at 1024 without either being hard-coded to a
+  // frame width that the runtime box model will not reproduce exactly.
+  @media (min-width: tokens.$media-grid-breakpoint) {
+    grid-template-columns: repeat(auto-fill, minmax(tokens.$media-grid-tile-min, 1fr));
   }
 }
 
-.product-media-row__info {
+.product-media-tile {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: styles.spacing(4);
   min-width: 0;
-  flex: 1 1 auto;
 }
 
-.product-media-row__title {
-  font-size: styles.$font-size-body-s;
-  color: styles.$color-text-primary;
-}
-
-.product-media-row__meta,
-// The image variant keeps the placeholder's exact box, so nothing reflows when
-// the picture arrives. The dashed border becomes solid: a dashed edge reads as
-// "empty slot", which is the opposite of what a filled tile means.
-.product-media-row__placeholder--image {
+.product-media-tile__select {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
   overflow: hidden;
-  border-style: solid;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
 }
 
-.product-media-row__placeholder__image {
+// Selection is a ring **and** a check mark (below), never colour alone, and it
+// is exposed with `aria-pressed` besides.
+.product-media-tile[data-selected='true'] .product-media-tile__select {
+  border-color: styles.$color-action-fill;
+  box-shadow: 0 0 0 2px styles.$color-action-fill;
+}
+
+.product-media-tile[data-selected='true']::after {
+  content: '✓';
+  position: absolute;
+  top: styles.spacing(4);
+  right: styles.spacing(4);
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: styles.$color-action-fill;
+  color: styles.$color-surface-primary;
+  font-size: styles.$font-size-caption;
+  pointer-events: none;
+}
+
+.product-media-tile__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.product-media-tile__image--image {
+  overflow: hidden;
+}
+
+.product-media-tile__image__image {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
 
-.product-media-row__role {
-  flex: 0 0 auto;
-  padding: styles.spacing(4) styles.spacing(12);
-  border: 1px solid styles.$color-border-secondary;
-  border-radius: styles.$radius-xs;
-  font-size: styles.$font-size-caption;
-  font-weight: styles.$font-weight-medium;
-  color: styles.$color-text-secondary;
-  white-space: nowrap;
-}
-
-.product-media-row__actions {
+.product-media-tile__image__glyph {
   display: flex;
-  flex-wrap: wrap;
-  gap: styles.spacing(8);
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: styles.$color-text-tertiary;
 }
 
-.product-media-row__action {
+.product-media-tile__position {
+  position: absolute;
+  top: styles.spacing(4);
+  left: styles.spacing(4);
+  min-width: 22px;
+  padding: 0 styles.spacing(4);
+  border-radius: styles.$radius-xs;
+  background: rgba(0, 0, 0, 0.62);
+  color: styles.$color-surface-primary;
+  font-size: styles.$font-size-caption;
+  text-align: center;
+}
+
+.product-media-tile__badge {
+  position: absolute;
+  left: styles.spacing(4);
+  right: styles.spacing(4);
+  bottom: styles.spacing(4);
+  padding: styles.spacing(4);
+  border-radius: styles.$radius-xs;
+  background: styles.$color-action-fill;
+  color: styles.$color-surface-primary;
+  font-size: styles.$font-size-caption;
+  text-align: center;
+}
+
+.product-media-tile__role {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-tertiary;
+}
+
+.product-media-tile[data-primary='true'] .product-media-tile__role {
+  color: styles.$color-action-fill;
+  font-weight: styles.$font-weight-medium;
+}
+
+// ------------------------------------------------- desktop tile actions -----
+
+// Below the grid breakpoint the in-tile bar is not shrunk, it is **absent**:
+// four 44px targets need 176px and the 390 tile is 157px, so the mobile
+// treatment is the selected-image bar instead (`APP12-M01.D1-C1` §I).
+// `display: none` also removes it from the accessibility tree, so the two
+// treatments never both answer for the same image.
+.product-media-tile__actions {
+  display: none;
+}
+
+@media (min-width: tokens.$media-grid-breakpoint) {
+  .product-media-tile__actions {
+    position: absolute;
+    left: styles.spacing(4);
+    right: styles.spacing(4);
+    top: styles.spacing(4);
+    display: flex;
+    justify-content: flex-end;
+    gap: styles.spacing(4);
+    // Revealed on hover and on focus-within, so no action is keyboard-invisible
+    // while a tile at rest still shows only its picture, position and role.
+    opacity: 0;
+    transition: opacity 120ms ease-in-out;
+  }
+
+  .product-media-tile:hover .product-media-tile__actions,
+  .product-media-tile:focus-within .product-media-tile__actions,
+  .product-media-tile[data-selected='true'] .product-media-tile__actions {
+    opacity: 1;
+  }
+}
+
+.product-media-tile__action {
   @extend %product-form-button;
 
-  padding: styles.spacing(12) styles.spacing(16);
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0 styles.spacing(4);
   border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-xs;
   background: styles.$color-surface-primary;
   color: styles.$color-text-primary;
-  font-size: styles.$font-size-body-s;
+  font-size: styles.$font-size-caption;
+  line-height: 1;
 }
+
+.product-media-tile__action--remove:not(:disabled) {
+  color: styles.$color-action-fill;
+}
+
+// The mobile selected-image action bar lives in `_product-media-actionbar.scss`,
+// next in the entry stylesheet's `@use` order. It is a separate component, not a
+// media query over the bar above (`APP12-M01.D1-C1` §P), and splitting the file
+// on that seam keeps each part under the review threshold.
 
 // -------------------------------------------------------------- dialog ------

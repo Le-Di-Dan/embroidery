@@ -6,6 +6,18 @@ import { ProductDialog } from './product-dialog';
 interface ConflictDialogProps {
   readonly onReload: () => void;
   readonly onClose: () => void;
+  /**
+   * What the conflict is *about*, when the generic wording would be wrong.
+   *
+   * A published product's media save has its own approved sentences
+   * (`APP12-M01.D1` §Q — "Ảnh sản phẩm đã thay đổi ở nơi khác"): the operator
+   * changed no field, so telling them "dữ liệu trên máy chủ đã thay đổi kể từ
+   * lần bạn mở sản phẩm này" names the wrong thing and points at the wrong
+   * next step. The mechanism is identical, so the dialog is shared and only the
+   * words differ.
+   */
+  readonly title?: string;
+  readonly body?: string;
 }
 
 /**
@@ -20,10 +32,10 @@ interface ConflictDialogProps {
  * The explanation never contains a timestamp, a token value or a request id.
  * Those are transport facts; the operator needs to know someone else edited it.
  */
-export function ProductConflictDialog({ onReload, onClose }: ConflictDialogProps) {
+export function ProductConflictDialog({ onReload, onClose, title, body }: ConflictDialogProps) {
   return (
     <ProductDialog
-      title={PRODUCT_FORM_COPY.conflict.title}
+      title={title ?? PRODUCT_FORM_COPY.conflict.title}
       describedBy="product-conflict-body"
       onClose={onClose}
       footer={
@@ -38,7 +50,7 @@ export function ProductConflictDialog({ onReload, onClose }: ConflictDialogProps
       }
     >
       <p className="product-dialog__body-text" id="product-conflict-body">
-        {PRODUCT_FORM_COPY.conflict.body}
+        {body ?? PRODUCT_FORM_COPY.conflict.body}
       </p>
     </ProductDialog>
   );

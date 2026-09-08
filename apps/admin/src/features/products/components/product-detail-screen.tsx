@@ -12,6 +12,7 @@ import { useProductDetailQuery } from '../hooks/use-product-detail-query';
 import { ProductEditForm } from './product-edit-form';
 import { ProductPlacementEntry } from './product-placement-entry';
 import { ProductPublicationEntry } from './product-publication-entry';
+import { ProductPublishedMediaForm } from './product-published-media-form';
 
 interface ProductDetailScreenProps {
   readonly productId: string;
@@ -26,9 +27,12 @@ interface ProductDetailScreenProps {
  * because the two need different actions — one is a dead link, the other is
  * worth retrying.
  *
- * A non-DRAFT product renders read-only rather than 404: it exists, the
- * operator may legitimately have followed a link to it, and `APP2-A03` simply
- * does not own editing a published or archived record.
+ * A PUBLISHED product renders `ProductPublishedMediaForm`: `APP12-M01.B2`
+ * gives it exactly one write — the ordered image selection — so the screen that
+ * used to refuse it entirely now offers that and only that. An ARCHIVED product
+ * still renders read-only rather than 404: it exists, the operator may
+ * legitimately have followed a link to it, and no contract lets this screen
+ * change it.
  *
  * The form is keyed on `updatedAt` so a reload after a conflict remounts it
  * against the new record. Without the key, the seed the diff is computed from
@@ -85,6 +89,33 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
 
   const product = query.data;
 
+  if (product.status === AdminProductDetailResponseStatus.PUBLISHED) {
+    return (
+      <>
+        {/*
+          Publication and placement stay reachable beside the media editor.
+          Unpublishing is a lifecycle decision the operator may still want, and
+          curating images is explicitly not one — nothing on the media form
+          touches the status.
+        */}
+        <div className="product-form__publication-entry">
+          <ProductPublicationEntry
+            productId={product.productId}
+            status={parseProductStatus(product.status)}
+          />
+          <ProductPlacementEntry productId={product.productId} />
+        </div>
+        <ProductPublishedMediaForm
+          key={product.updatedAt}
+          product={product}
+          onReload={() => {
+            void query.refetch();
+          }}
+        />
+      </>
+    );
+  }
+
   if (product.status !== AdminProductDetailResponseStatus.DRAFT) {
     return (
       <section className="product-form">
@@ -95,9 +126,9 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
             {PRODUCT_FORM_COPY.detail.backToList}
           </Link>
           {/*
-            A PUBLISHED product is not editable here, but its publication is
-            still manageable — that is the one action this screen can honestly
-            offer for it. ARCHIVED renders nothing.
+            ARCHIVED is what reaches this branch now, and its publication entry
+            renders nothing — there is no transition out of it this screen owns
+            (`FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01`).
           */}
           <ProductPublicationEntry
             productId={product.productId}

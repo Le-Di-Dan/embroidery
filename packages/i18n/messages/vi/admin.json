@@ -752,24 +752,43 @@
       "draftNote": "Bản nháp không hiển thị với khách truy cập. Sản phẩm chỉ công khai sau khi được xuất bản."
     },
     "media": {
-      "pick": "Chọn ảnh",
-      "help": "Chỉ ảnh ở trạng thái “Sẵn sàng” mới có thể chọn. Ảnh đầu tiên là ảnh đại diện; dùng “Di chuyển trước/sau” để đổi thứ tự.",
-      "helpNarrow": "Chỉ ảnh “Sẵn sàng” mới chọn được. Ảnh đầu tiên là ảnh đại diện.",
+      "pick": "Thêm ảnh",
+      "help": "Ảnh đầu tiên là ảnh đại diện — ảnh dùng cho danh sách, trang khám phá và liên kết chia sẻ. Di chuột hoặc chọn một ảnh để đặt ảnh đại diện, đổi thứ tự hoặc gỡ ảnh.",
+      "helpNarrow": "Ảnh đầu tiên là ảnh đại diện. Chạm vào một ảnh để đặt ảnh đại diện, đổi thứ tự hoặc gỡ ảnh.",
       "roleThumbnail": "Ảnh đại diện",
       "roleGallery": "Ảnh thư viện",
       "moveEarlier": "Di chuyển trước",
       "moveLater": "Di chuyển sau",
       "remove": "Gỡ ảnh",
       "empty": "Chưa chọn ảnh nào cho sản phẩm này.",
-      "listLabel": "Ảnh đã chọn",
-      "reordered": "Đã đổi thứ tự ảnh.",
-      "removed": "Đã gỡ ảnh khỏi sản phẩm."
+      "reordered": "Đã chuyển ảnh tới vị trí {position} trên {total}.",
+      "removed": "Đã gỡ ảnh khỏi sản phẩm. Còn {count} ảnh.",
+      "gridLabel": "Lưới ảnh sản phẩm",
+      "capacity": "{count}/{max}",
+      "capacityLabel": "Đã chọn {count} trên tối đa {max} ảnh.",
+      "capacityFull": "Đã đạt giới hạn {max} ảnh. Gỡ bớt một ảnh để thêm ảnh mới.",
+      "positionLabel": "Ảnh {position} trên {total}",
+      "setPrimary": "Đặt làm ảnh đại diện",
+      "setPrimaryShort": "Đại diện",
+      "setPrimaryAction": "Đặt ảnh {position} trên {total} làm ảnh đại diện",
+      "moveEarlierShort": "Trước",
+      "moveLaterShort": "Sau",
+      "moveEarlierAction": "Di chuyển trước: ảnh {position} trên {total}",
+      "moveLaterAction": "Di chuyển sau: ảnh {position} trên {total}",
+      "removeShort": "Gỡ",
+      "removeAction": "Gỡ ảnh {position} trên {total}",
+      "selectAction": "Chọn ảnh {position} trên {total}",
+      "deselect": "Bỏ chọn ảnh",
+      "actionBarLabel": "Thao tác với ảnh {position} trên {total}",
+      "primaryAnchorNote": "Ảnh đại diện neo ở vị trí 1: nút đại diện và hai mũi tên đều tắt. Chọn một ảnh khác rồi dùng “Đại diện” để đổi.",
+      "publishedMinimum": "Sản phẩm đang xuất bản cần ít nhất một ảnh.",
+      "primarySet": "Đã đặt ảnh {position} làm ảnh đại diện; ảnh chuyển về vị trí 1.",
+      "selected": "Đã chọn ảnh {position} trên {total}."
     },
     "picker": {
       "title": "Chọn ảnh cho sản phẩm",
       "help": "Chỉ hiển thị ảnh ở trạng thái “Sẵn sàng”. Ảnh đang xử lý hoặc không thể sử dụng sẽ không xuất hiện ở đây. Danh sách tải theo từng trang.",
       "close": "Đóng",
-      "confirm": "Dùng ảnh đã chọn",
       "cancel": "Huỷ",
       "statusReady": "Sẵn sàng",
       "loading": "Đang tải danh sách ảnh…",
@@ -781,7 +800,12 @@
       "loadMore": "Tải thêm tài sản",
       "loadingMore": "Đang tải thêm…",
       "loadMoreFailed": "Không thể tải thêm tài sản.",
-      "selectionCount": "Đã chọn {count} ảnh"
+      "remaining": "Còn {count} chỗ",
+      "footerCount": "Đã chọn {selected} · còn {remaining} chỗ",
+      "alreadyAdded": "Đã thêm",
+      "full": "Đã đủ {max} ảnh",
+      "fullNotice": "Sản phẩm đã đạt giới hạn {max} ảnh. Hãy gỡ bớt ảnh ở phần “Ảnh sản phẩm” trước khi thêm ảnh mới.",
+      "confirmCount": "Dùng {count} ảnh đã chọn"
     },
     "conflict": {
       "title": "Sản phẩm đã được cập nhật ở nơi khác",
@@ -810,6 +834,25 @@
       "note": "Do hệ thống tạo và không thay đổi, kể cả khi đổi tên sản phẩm.",
       "inlinePrefix": "Đường dẫn: ",
       "inlineSuffix": " · do hệ thống tạo, không thay đổi."
+    },
+    "mediaRemovePrimary": {
+      "title": "Gỡ ảnh đại diện?",
+      "body": "Ảnh ở vị trí 2 sẽ trở thành ảnh đại diện mới của sản phẩm.",
+      "confirm": "Gỡ ảnh đại diện",
+      "cancel": "Giữ lại ảnh"
+    },
+    "published": {
+      "subtitle": "Sản phẩm đang hiển thị công khai. Tại màn hình này chỉ ảnh sản phẩm sửa được.",
+      "subtitleNarrow": "Đang xuất bản — chỉ ảnh sản phẩm sửa được.",
+      "bannerTitle": "Sản phẩm đang xuất bản",
+      "bannerBody": "Thông tin, danh mục và giá đã khoá. Bạn vẫn có thể cập nhật ảnh sản phẩm.",
+      "readOnlyBadge": "Chỉ đọc",
+      "mediaNote": "Thay đổi ảnh không làm sản phẩm ngừng xuất bản.",
+      "statusNote": "Sản phẩm đang hiển thị công khai. Ảnh cập nhật sẽ xuất hiện ngay trên trang sản phẩm.",
+      "save": "Lưu ảnh sản phẩm",
+      "saving": "Đang lưu ảnh…",
+      "savingTitle": "Đang lưu ảnh sản phẩm…",
+      "cancel": "Huỷ thay đổi ảnh"
     }
   },
   "productSaveFailure": {
@@ -1114,6 +1157,36 @@
       "gallery": "Đăng tác phẩm đã hoàn thiện lên bộ sưu tập.",
       "assets": "Tải và duyệt ảnh dùng cho sản phẩm và bộ sưu tập.",
       "customerSupport": "Tra cứu liên hệ đã xác minh và xử lý yêu cầu gộp khách hàng."
+    }
+  },
+  "productMediaFailure": {
+    "notPublishable": {
+      "title": "Không thể lưu bộ ảnh này",
+      "body": "Sản phẩm đang xuất bản cần ít nhất một ảnh sẵn sàng. Hãy giữ lại hoặc thêm một ảnh trước khi lưu."
+    },
+    "assetUnavailable": {
+      "title": "Một ảnh chưa sẵn sàng",
+      "body": "Có ảnh vừa chuyển sang trạng thái không dùng được. Bộ ảnh chưa được lưu — hãy gỡ ảnh đó rồi thử lại."
+    },
+    "duplicate": {
+      "title": "Ảnh bị trùng",
+      "body": "Một ảnh xuất hiện hai lần trong danh sách. Hãy gỡ bớt một bản rồi lưu lại."
+    },
+    "assetNotFound": {
+      "title": "Không tìm thấy ảnh",
+      "body": "Một ảnh đã bị xoá khỏi thư viện tài sản. Bộ ảnh chưa được lưu — hãy tải lại trang để xem danh sách mới nhất."
+    },
+    "versionConflict": {
+      "title": "Sản phẩm vừa được người khác cập nhật",
+      "body": "Ảnh sản phẩm đã thay đổi ở nơi khác. Hãy tải lại để xem bộ ảnh mới nhất trước khi sửa tiếp."
+    },
+    "notEditable": {
+      "title": "Không thể sửa ảnh sản phẩm này",
+      "body": "Sản phẩm không còn ở trạng thái cho phép cập nhật ảnh. Hãy tải lại để xem trạng thái mới nhất."
+    },
+    "generic": {
+      "title": "Chưa thể lưu ảnh sản phẩm",
+      "body": "Bộ ảnh chưa được lưu. Hãy thử lại sau giây lát."
     }
   }
 }

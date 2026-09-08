@@ -133,41 +133,13 @@ export const PRODUCT_FORM_COPY = {
     inlineSuffix: productFormMessage.text('slug.inlineSuffix'),
   },
 
-  media: {
-    pick: productFormMessage.text('media.pick'),
-    help: productFormMessage.text('media.help'),
-    helpNarrow: productFormMessage.text('media.helpNarrow'),
-    roleThumbnail: productFormMessage.text('media.roleThumbnail'),
-    roleGallery: productFormMessage.text('media.roleGallery'),
-    moveEarlier: productFormMessage.text('media.moveEarlier'),
-    moveLater: productFormMessage.text('media.moveLater'),
-    remove: productFormMessage.text('media.remove'),
-    empty: productFormMessage.text('media.empty'),
-    listLabel: productFormMessage.text('media.listLabel'),
-    /** Announced after a keyboard reorder so the new position is perceivable. */
-    reordered: productFormMessage.text('media.reordered'),
-    removed: productFormMessage.text('media.removed'),
-  },
-
-  picker: {
-    title: productFormMessage.text('picker.title'),
-    help: productFormMessage.text('picker.help'),
-    close: productFormMessage.text('picker.close'),
-    confirm: productFormMessage.text('picker.confirm'),
-    cancel: productFormMessage.text('picker.cancel'),
-    statusReady: productFormMessage.text('picker.statusReady'),
-    loading: productFormMessage.text('picker.loading'),
-    emptyTitle: productFormMessage.text('picker.emptyTitle'),
-    emptyBody: productFormMessage.text('picker.emptyBody'),
-    unavailableTitle: productFormMessage.text('picker.unavailableTitle'),
-    unavailableBody: productFormMessage.text('picker.unavailableBody'),
-    retry: productFormMessage.text('picker.retry'),
-    loadMore: productFormMessage.text('picker.loadMore'),
-    loadingMore: productFormMessage.text('picker.loadingMore'),
-    loadMoreFailed: productFormMessage.text('picker.loadMoreFailed'),
-    /** Rendered with the selected count; the contract exposes no total. */
-    selectionCount: (count: number) => productFormMessage.text('picker.selectionCount', { count }),
-  },
+  /*
+   * `media` and `picker` used to live here. `APP12-M01.A1` moved them to
+   * `product-media-copy`, which owns the whole media-management region — the
+   * capacity header, the grid, two action treatments, the picker and the five
+   * B2 refusals. One catalog for a screen region, rather than a growing island
+   * inside the form's own copy.
+   */
 
   conflict: {
     title: productFormMessage.text('conflict.title'),

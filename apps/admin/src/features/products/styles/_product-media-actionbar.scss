@@ -1,0 +1,104 @@
+// Admin product form — the mobile selected-image action bar.
+//
+// One bar for the image the operator selected, not four controls on each of
+// twenty tiles. It is its own file because it is its own component: four 44px
+// targets need 176px and the approved 390 tile is 157px, so the desktop in-tile
+// bar cannot be shrunk into this and `APP12-M01.D1-C1` §P ruled out collapsing
+// the two into one responsive implementation.
+//
+// Loaded immediately after `_product-form-media.scss`, so the cascade is the
+// same as when both lived in one file.
+@use '@embroidery/styles' as styles;
+@use 'product-form-tokens' as tokens;
+@use 'product-form-shell';
+
+// ----------------------------------------------- mobile action bar ----------
+
+// One bar for the selected image, not four controls on each of twenty tiles.
+// Sticky rather than fixed: it follows the operator down a ten-row grid while
+// staying inside its own section, so it can never sit on top of the page's save
+// action or the metadata rail.
+.product-media-actionbar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  margin-top: styles.spacing(8);
+  padding: styles.spacing(12);
+  padding-bottom: calc(#{styles.spacing(12)} + env(safe-area-inset-bottom, 0px));
+  border: 1px solid styles.$color-action-fill;
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-primary;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.12);
+
+  // The desktop treatment is the in-tile bar; showing both would put two live
+  // controls on one image.
+  @media (min-width: tokens.$media-grid-breakpoint) {
+    display: none;
+  }
+}
+
+.product-media-actionbar__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: styles.spacing(8);
+}
+
+.product-media-actionbar__title {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+}
+
+.product-media-actionbar__dismiss {
+  @extend %product-form-button;
+
+  min-width: tokens.$touch-target;
+  min-height: tokens.$touch-target;
+  border: 1px solid styles.$color-border-primary;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-secondary;
+}
+
+.product-media-actionbar__note {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-tertiary;
+}
+
+.product-media-actionbar__buttons {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: styles.spacing(8);
+}
+
+// 77 × 52 in the approved frame; expressed as a minimum so the four buttons
+// share the content width at any 390-class viewport without overflowing it.
+.product-media-actionbar__button {
+  @extend %product-form-button;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: styles.spacing(4);
+  min-height: 52px;
+  padding: styles.spacing(4);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-caption;
+}
+
+.product-media-actionbar__button--remove:not(:disabled) {
+  color: styles.$color-action-fill;
+}
+
+.product-media-actionbar__label {
+  font-size: styles.$font-size-caption;
+}

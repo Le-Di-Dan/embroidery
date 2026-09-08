@@ -17,6 +17,22 @@
 // (FU-A16).
 $form-breakpoint: 1024px;
 
+// The width at which the read-only metadata rail may sit *beside* the form.
+//
+// Deliberately not `$form-breakpoint`. Those are two different questions, and
+// answering them with one number is what produced the 1024 defect
+// `APP12-M01.A1` §Q.4 records: at 1024 the Admin's 264px nav and the page
+// padding leave ≈ 649px of content, and putting a 320px rail beside the form
+// left the form column narrower than the rail — a **191px** media grid,
+// measured in the browser, which no tile size can make into a usable gallery.
+//
+// Below this width the rail stacks under the form, which is ordinary responsive
+// behaviour for read-only metadata and gives the media grid the full content
+// width. Everything else — group padding, the wide/narrow subtitle, the mobile
+// help text — still switches at `$form-breakpoint`, because those are about
+// type and spacing rather than about whether two columns fit.
+$form-rail-breakpoint: 1280px;
+
 // Screen-specific composition constants (no shared token; not a token system).
 $rail-width: 320px;
 $media-tile: 48px;
@@ -26,3 +42,26 @@ $picker-column: 190px;
 $picker-thumb: 120px;
 $dialog-max: 880px;
 $dialog-narrow: 480px;
+
+// APP12-M01.A1 — media-grid geometry.
+//
+// The grid switches from the approved two-column 390 composition to a filled
+// multi-column one at the same width where the in-tile action bar becomes
+// viable: four 32px controls plus gaps need more than a 157px tile, and below
+// this the mobile selected-image bar owns the actions instead
+// (`APP12-M01.D1-C1` §I). It is deliberately *not* `$form-breakpoint` — the
+// page layout and the tile-action treatment change for different reasons and
+// at different widths.
+$media-grid-breakpoint: 640px;
+$media-grid-gap: 12px;
+// The floor a tile may shrink to before the four in-tile actions stop fitting.
+// Wider viewports therefore gain columns rather than a larger photograph, which
+// is what keeps twenty images practical at 1024 and 1440 alike.
+//
+// It stays 140px. Lowering it was the first — wrong — answer to the 1024
+// collapse: the grid there measured **191px**, so no floor large enough to show
+// a product photograph could ever have fitted two columns. The cause was the
+// rail beside the form, and `$form-rail-breakpoint` above is the fix.
+$media-grid-tile-min: 140px;
+// The minimum touch target this repository applies to every control.
+$touch-target: 44px;

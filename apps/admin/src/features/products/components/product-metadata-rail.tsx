@@ -7,6 +7,15 @@ import { ProductStatusBadge } from './product-status-badge';
 
 interface ProductMetadataRailProps {
   readonly product: AdminProductDetailResponse;
+  /**
+   * What the status card says about visibility.
+   *
+   * The draft sentence — "Bản nháp không hiển thị với khách truy cập" — is
+   * false of a PUBLISHED product, which `APP12-M01.A1` now renders here too. It
+   * is passed in rather than derived from `product.status` so this component
+   * keeps rendering what it is told and owns no lifecycle vocabulary of its own.
+   */
+  readonly statusNote?: string;
 }
 
 /**
@@ -25,13 +34,13 @@ interface ProductMetadataRailProps {
  * The category UUID is not in the contract and is never rendered; the rail
  * shows no storage key, checksum or worker detail either.
  */
-export function ProductMetadataRail({ product }: ProductMetadataRailProps) {
+export function ProductMetadataRail({ product, statusNote }: ProductMetadataRailProps) {
   return (
     <aside className="product-rail">
       <section className="product-rail__card">
         <h2 className="product-rail__title">{PRODUCT_FORM_COPY.status.cardTitle}</h2>
         <ProductStatusBadge status={product.status} />
-        <p className="product-rail__note">{PRODUCT_FORM_COPY.status.draftNote}</p>
+        <p className="product-rail__note">{statusNote ?? PRODUCT_FORM_COPY.status.draftNote}</p>
       </section>
 
       <section className="product-rail__card">

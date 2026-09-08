@@ -1,9 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
-import { AdminProductDetailResponseStatus } from '@embroidery/api-client';
 import type { AdminProductDetailResponse } from '@embroidery/api-client';
 
 import { classifySaveFailure, isVersionConflict } from '../model/product-conflict';
@@ -24,7 +23,6 @@ import { useCategoryInventoryQuery } from '../hooks/use-category-inventory-query
 import { ProductFormFields } from './product-form-fields';
 import { ProductMediaEditor } from './product-media-editor';
 import { ProductMetadataRail } from './product-metadata-rail';
-import type { ProductMediaRowData } from './product-media-row';
 import { ProductSavingBanner, ProductValidationSummary } from './product-validation-summary';
 
 interface ProductEditFormProps {
@@ -48,6 +46,13 @@ interface ProductEditFormProps {
  * Remounting on `updatedAt` (see the parent) is what makes the seed
  * authoritative after a reload without this component tracking two versions of
  * the truth.
+ *
+ * **DRAFT only.** This component used to render for any status and disable
+ * itself when the product was not a draft, which after `APP12-M01.B2` became
+ * wrong in both directions: it locked a media section the contract now accepts,
+ * and it kept a save button wired to a PATCH the server refuses. A published
+ * product is now `ProductPublishedMediaForm`'s, and the choice is the detail
+ * screen's, so neither component carries a branch for the other's contract.
  */
 export function ProductEditForm({ product, onReload }: ProductEditFormProps) {
   const router = useRouter();
@@ -61,41 +66,10 @@ export function ProductEditForm({ product, onReload }: ProductEditFormProps) {
   // select then offers its placeholder alone rather than a remembered list.
   const categories = useCategoryInventoryQuery();
 
-  // Identity for every media id the screen can render: the product's own media
-  // plus whatever the picker has loaded this session.
-  const [learned, setLearned] = useState<ReadonlyMap<string, ProductMediaRowData>>(new Map());
-  const knownMedia = useMemo(() => {
-    const map = new Map<string, ProductMediaRowData>(learned);
-    for (const item of product.media) {
-      map.set(item.assetId, {
-        assetId: item.assetId,
-        mediaType: item.mediaType,
-        byteSize: item.byteSize,
-        createdAt: item.createdAt,
-      });
-    }
-    return map;
-  }, [learned, product.media]);
-
-  const onLearnMedia = useCallback((media: readonly ProductMediaRowData[]) => {
-    setLearned((current) => {
-      const next = new Map(current);
-      let changed = false;
-      for (const item of media) {
-        if (!next.has(item.assetId)) {
-          next.set(item.assetId, item);
-          changed = true;
-        }
-      }
-      return changed ? next : current;
-    });
-  }, []);
-
   const mutation = useProductUpdateMutation();
   const dirty = isFormDirty(initial, values);
   const guard = useUnsavedChanges(dirty);
   const saving = mutation.isPending;
-  const editable = product.status === AdminProductDetailResponseStatus.DRAFT;
 
   const errors = validateProductForm(
     values,
@@ -174,7 +148,7 @@ export function ProductEditForm({ product, onReload }: ProductEditFormProps) {
               type="submit"
               form="product-edit-form"
               className="product-form__primary"
-              disabled={saving || !editable}
+              disabled={saving}
               aria-busy={saving}
             >
               {saving ? PRODUCT_FORM_COPY.edit.saving : PRODUCT_FORM_COPY.edit.save}
@@ -204,18 +178,29 @@ export function ProductEditForm({ product, onReload }: ProductEditFormProps) {
           <ProductFormFields
             values={values}
             errors={submitted ? errors : {}}
-            disabled={saving || !editable}
+            disabled={saving}
             showPrice
             categories={categories.data ?? []}
             onChange={(patch) => setValues((current) => ({ ...current, ...patch }))}
           />
 
+          {/*
+            One save, not two. The draft PATCH already carries `mediaAssetIds`
+            as one of the fields it diffs, so the media grid feeds the same form
+            state every other field does and `Lưu thay đổi` commits all of it
+            atomically. Routing media through `adminProductMedia_replace` here
+            would split one operator action into two independent HTTP writes and
+            make a half-saved product reachable (`APP12-M01.A1` §3).
+
+            `requiresAtLeastOne` is false: a draft with no images is a legal
+            state, and the publication gate — not this screen — is where an
+            empty gallery is refused.
+          */}
           <ProductMediaEditor
             selection={values.mediaAssetIds}
-            knownMedia={knownMedia}
-            disabled={saving || !editable}
+            disabled={saving}
+            requiresAtLeastOne={false}
             onChange={(mediaAssetIds) => setValues((current) => ({ ...current, mediaAssetIds }))}
-            onLearnMedia={onLearnMedia}
           />
 
           <p className="product-form__note">{PRODUCT_FORM_COPY.edit.savePublishNote}</p>

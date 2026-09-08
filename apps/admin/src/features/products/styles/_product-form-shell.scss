@@ -91,9 +91,16 @@
   flex-direction: column;
   gap: styles.spacing(16);
 
-  @media (min-width: tokens.$form-breakpoint) {
+  // The rail sits beside the form only where both actually fit. See
+  // `$form-rail-breakpoint` — at 1024 this used to leave the form column
+  // narrower than the read-only rail next to it.
+  @media (min-width: tokens.$form-rail-breakpoint) {
     flex-direction: row;
     align-items: flex-start;
+    gap: styles.spacing(24);
+  }
+
+  @media (min-width: tokens.$form-breakpoint) and (max-width: #{tokens.$form-rail-breakpoint - 1px}) {
     gap: styles.spacing(24);
   }
 }
@@ -209,3 +216,52 @@
 }
 
 // ---------------------------------------------------------------- fields ----
+
+// ------------------------------------------ PUBLISHED media state (A1) ------
+//
+// `936:187` at 1440 and `948:355` at 390. The screen must not read as disabled,
+// because most of it still works: the commercial groups take the secondary
+// ground and a `Chỉ đọc` badge, while the media card keeps the white surface
+// and the one primary-weight action on the page.
+
+.product-form__published-banner {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-background-secondary;
+}
+
+.product-form__published-title {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+}
+
+.product-form__published-body {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+// A locked group is grey and badged. It is also a real `<fieldset disabled>`,
+// so the lock is programmatic — this only makes it visible.
+.product-form__group[data-locked='true'] {
+  background: styles.$color-background-secondary;
+  border-color: styles.$color-border-secondary;
+}
+
+.product-form__locked-badge {
+  margin-left: styles.spacing(8);
+  padding: styles.spacing(4) styles.spacing(8);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-secondary;
+  vertical-align: middle;
+  white-space: nowrap;
+}

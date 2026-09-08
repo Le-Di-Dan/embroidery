@@ -8,6 +8,7 @@ import {
   toProductCategoryOptions,
 } from '../model/product-category-options';
 import { PRODUCT_FORM_COPY } from '../model/product-form-copy';
+import { PRODUCT_MEDIA_COPY } from '../model/product-media-copy';
 import type { ProductFormValues, ProductValidationErrors } from '../model/product-form-values';
 import type { ProductCategory } from '../services/category-inventory.service';
 
@@ -28,6 +29,18 @@ interface ProductFormFieldsProps {
    * category can be chosen right now" rather than a remembered list of four.
    */
   readonly categories: readonly ProductCategory[];
+  /**
+   * The fields are locked by the product's *lifecycle*, not by a transient
+   * saving state (`APP12-M01.D1` §I).
+   *
+   * A PUBLISHED product's commercial facts cannot be edited here at all —
+   * `PRODUCT_EDITABLE_STATES` is still `[DRAFT]` and `APP12-M01.B2` widened
+   * nothing — while its images can. `disabled` alone would say the same thing
+   * as "a save is in flight", so the screen would read as dead when most of it
+   * simply is not this screen's to change. This adds the badge and the
+   * secondary ground that distinguish the two.
+   */
+  readonly locked?: boolean;
   readonly onChange: (patch: Partial<ProductFormValues>) => void;
 }
 
@@ -51,6 +64,7 @@ export function ProductFormFields({
   disabled,
   showPrice,
   categories,
+  locked = false,
   onChange,
 }: ProductFormFieldsProps) {
   const nameId = useId();
@@ -61,8 +75,19 @@ export function ProductFormFields({
 
   return (
     <>
-      <fieldset className="product-form__group" disabled={disabled}>
-        <legend className="product-form__group-title">{PRODUCT_FORM_COPY.groups.basic}</legend>
+      <fieldset
+        className="product-form__group"
+        data-locked={locked ? 'true' : undefined}
+        disabled={disabled}
+      >
+        <legend className="product-form__group-title">
+          {PRODUCT_FORM_COPY.groups.basic}
+          {locked ? (
+            <span className="product-form__locked-badge">
+              {PRODUCT_MEDIA_COPY.published.readOnlyBadge}
+            </span>
+          ) : null}
+        </legend>
 
         <div className="product-field">
           <label className="product-field__label" htmlFor={nameId}>
@@ -104,8 +129,19 @@ export function ProductFormFields({
         </div>
       </fieldset>
 
-      <fieldset className="product-form__group" disabled={disabled}>
-        <legend className="product-form__group-title">{PRODUCT_FORM_COPY.groups.category}</legend>
+      <fieldset
+        className="product-form__group"
+        data-locked={locked ? 'true' : undefined}
+        disabled={disabled}
+      >
+        <legend className="product-form__group-title">
+          {PRODUCT_FORM_COPY.groups.category}
+          {locked ? (
+            <span className="product-form__locked-badge">
+              {PRODUCT_MEDIA_COPY.published.readOnlyBadge}
+            </span>
+          ) : null}
+        </legend>
 
         <div className="product-field">
           <label className="product-field__label" htmlFor={categoryId}>
@@ -143,8 +179,19 @@ export function ProductFormFields({
       </fieldset>
 
       {showPrice ? (
-        <fieldset className="product-form__group" disabled={disabled}>
-          <legend className="product-form__group-title">{PRODUCT_FORM_COPY.groups.price}</legend>
+        <fieldset
+          className="product-form__group"
+          data-locked={locked ? 'true' : undefined}
+          disabled={disabled}
+        >
+          <legend className="product-form__group-title">
+            {PRODUCT_FORM_COPY.groups.price}
+            {locked ? (
+              <span className="product-form__locked-badge">
+                {PRODUCT_MEDIA_COPY.published.readOnlyBadge}
+              </span>
+            ) : null}
+          </legend>
 
           <div className="product-field">
             <label className="product-field__label" htmlFor={priceId}>

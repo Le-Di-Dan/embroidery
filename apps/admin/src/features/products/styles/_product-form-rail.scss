@@ -17,9 +17,15 @@
   min-width: 0;
 
   @media (min-width: tokens.$form-breakpoint) {
+    gap: styles.spacing(24);
+  }
+
+  // A fixed 320px column only where the rail is a column at all. Stacked under
+  // the form below `$form-rail-breakpoint`, it is full width like any other
+  // block, which is what gives the media grid the whole content width at 1024.
+  @media (min-width: tokens.$form-rail-breakpoint) {
     flex: 0 0 tokens.$rail-width;
     width: tokens.$rail-width;
-    gap: styles.spacing(24);
   }
 }
 

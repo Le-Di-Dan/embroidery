@@ -73,6 +73,24 @@ export {
   adminProductDetail,
   adminProductUpdate,
 } from './generated/embroidery-api';
+
+// The one bounded write a PUBLISHED product accepts (`APP12-M01.B2`).
+//
+// It crosses the boundary separately from the four above because it is not one
+// of them: `adminProductUpdate` is DRAFT-only and edits any generic field,
+// while this replaces the whole ordered image selection of a DRAFT **or** a
+// PUBLISHED product and can change nothing else. Keeping the two names apart on
+// this boundary is what stops a screen from reaching for the generic patch to
+// curate a published gallery — the route `PRODUCT_EDITABLE_STATES` still
+// refuses, and would refuse as `PRODUCT_NOT_EDITABLE` rather than as anything
+// an operator could act on.
+//
+// `ReplaceProductMediaBody` travels with it: the body *is* the write model —
+// `mediaAssetIds[0]` is the primary, array order is display order, an omitted
+// id is removed — so a consumer that could call the operation without being
+// able to name its body would have to build one untyped.
+export { adminProductMediaReplace } from './generated/embroidery-api';
+export type { ReplaceProductMediaBody } from './generated/embroidery-api.schemas';
 export {
   AdminProductListStatus,
   AdminProductDetailResponseStatus,

@@ -7,8 +7,20 @@
  * (`521:284` — Ảnh sản phẩm). `DETAIL` exists in the wider domain but is not
  * part of this contract and is never produced here.
  *
- * There is no arbitrary maximum. An empty selection is legal and means the
- * draft has no images.
+ * An empty selection is legal on a DRAFT and means it has no images. A
+ * PUBLISHED product may not reach one — `APP12-M01.B2` refuses it as
+ * `PRODUCT_MEDIA_NOT_PUBLISHABLE` — and the cap is
+ * `MAX_PRODUCT_MEDIA_ITEMS`, which lives in `product-media-capacity` rather
+ * than here so one module owns the number.
+ *
+ * ## The primary is anchored (`APP12-M01.D1` §H.1 — Option B)
+ *
+ * Position 0 is the primary, and no arrow may move an image into or out of it.
+ * The alternative — letting `Di chuyển sau` on the primary promote whatever
+ * was second — makes one arrow press silently rewrite the product's canonical
+ * thumbnail, its `og:image` and every non-detail storefront surface. Demotion
+ * is therefore reachable only through the explicit `setPrimary` below, which
+ * is the action that exists to say exactly that.
  */
 import { AdminProductMediaResponseRole } from '@embroidery/api-client';
 import type { AdminProductMediaResponse } from '@embroidery/api-client';
@@ -110,4 +122,72 @@ export function hasSelectionChanged(
     return true;
   }
   return initial.some((id, index) => id !== current[index]);
+}
+
+/**
+ * True when the arrow controls on the tile at `index` are operable.
+ *
+ * Two rules compose. The universal one — the first cannot move earlier, the
+ * last cannot move later — and the anchor: the primary at position 0 offers
+ * neither arrow, and position 1 may not move earlier, because doing so would
+ * put it at 0 and make it the primary without the operator ever saying so.
+ *
+ * The result is that arrows shuffle the *gallery* and only `setPrimary`
+ * changes the *primary*. Nothing here is disabled-with-a-tooltip: the primary
+ * tile renders no set-primary action at all, and its arrows are programmatically
+ * disabled so a keyboard operator is told rather than shown a control that
+ * does nothing.
+ */
+export function canMoveEarlier(selection: readonly string[], index: number): boolean {
+  return index >= 2 && index < selection.length;
+}
+
+export function canMoveLater(selection: readonly string[], index: number): boolean {
+  return index >= 1 && index < selection.length - 1;
+}
+
+/**
+ * Promotes one image to primary, preserving the relative order of every other.
+ *
+ * `[A,B,C,D]` with `C` chosen becomes `[C,A,B,D]` — the previous primary is
+ * not swapped to where `C` was, it is pushed to position 1, because the
+ * gallery's reading order is what the operator arranged and a set-primary is
+ * not a request to rearrange it.
+ *
+ * An index that is already primary, or out of range, returns the input
+ * unchanged: the caller renders no action for the primary tile, and a no-op is
+ * the honest answer for a stale click rather than a thrown error.
+ */
+export function setPrimary(selection: readonly string[], index: number): readonly string[] {
+  if (index <= 0 || index >= selection.length) {
+    return selection;
+  }
+  const chosen = selection[index] as string;
+  return [chosen, ...selection.filter((_, position) => position !== index)];
+}
+
+/**
+ * Whether removing the image at `index` is allowed *before* a request exists.
+ *
+ * A DRAFT may be emptied; a PUBLISHED product may not, because
+ * `PRODUCT_MEDIA_NOT_PUBLISHABLE` is what the server would answer and the
+ * operator would learn it only after losing the round trip. The refusal is
+ * therefore stated on the control (`media.publishedMinimum`) rather than
+ * discovered on save — the one place this client anticipates a server rule, and
+ * it anticipates it by *disabling*, never by narrowing the request it sends.
+ */
+export function canRemoveAt(
+  selection: readonly string[],
+  index: number,
+  options: { readonly requiresAtLeastOne: boolean },
+): boolean {
+  if (index < 0 || index >= selection.length) {
+    return false;
+  }
+  return !(options.requiresAtLeastOne && selection.length === 1);
+}
+
+/** Removes by position rather than by id, which is what a tile action knows. */
+export function removeAt(selection: readonly string[], index: number): readonly string[] {
+  return selection.filter((_, position) => position !== index);
 }
