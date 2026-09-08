@@ -98,8 +98,16 @@ describe('detail loading states', () => {
     expect(await screen.findByLabelText(PRODUCT_FORM_COPY.fields.nameLabel)).toBeInTheDocument();
   });
 
-  it('renders a non-draft product read-only instead of pretending it is missing', async () => {
-    detailMock.mockResolvedValue(productDetailEnvelope(makeProductDetail({ status: 'PUBLISHED' })));
+  /**
+   * This asserted that a PUBLISHED product rendered the "not editable" panel,
+   * and it was right while `APP2-B02` was the only Product write there was.
+   * `APP12-M01.B2` added one bounded operation for exactly this state, so a
+   * published product now renders its media editor with the commercial fields
+   * locked — proved in `product-published-media.test.tsx`. ARCHIVED is what
+   * still reaches the read-only panel, and it is asserted here instead.
+   */
+  it('renders an archived product read-only instead of pretending it is missing', async () => {
+    detailMock.mockResolvedValue(productDetailEnvelope(makeProductDetail({ status: 'ARCHIVED' })));
     renderDetail();
 
     expect(await screen.findByText(PRODUCT_FORM_COPY.detail.notEditableTitle)).toBeInTheDocument();

@@ -16,6 +16,7 @@ import { adminProductCreate, adminProductUpdate, adminCategoryList } from '@embr
 
 import { ProductCreateScreen } from '../../src/features/products/components/product-create-screen';
 import { PRODUCT_FORM_COPY } from '../../src/features/products/model/product-form-copy';
+import { PRODUCT_MEDIA_COPY } from '../../src/features/products/model/product-media-copy';
 import { makeApiClientError } from '../support/api-error';
 import {
   categoryEnvelope,
@@ -85,7 +86,7 @@ describe('create mode fields', () => {
     // rather than present-and-disabled, which would imply they are captured.
     expect(screen.queryByLabelText(PRODUCT_FORM_COPY.fields.priceLabel)).not.toBeInTheDocument();
     expect(screen.queryByText(PRODUCT_FORM_COPY.groups.media)).not.toBeInTheDocument();
-    expect(screen.queryByText(PRODUCT_FORM_COPY.media.pick)).not.toBeInTheDocument();
+    expect(screen.queryByText(PRODUCT_MEDIA_COPY.header.add)).not.toBeInTheDocument();
   });
 
   it('shows no slug, status, variant, SKU or publication control', () => {

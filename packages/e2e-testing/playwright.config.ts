@@ -256,6 +256,33 @@ export default defineConfig({
         viewport: { width: 1440, height: 900 },
       },
     },
+    // APP12-M01.A1 — Admin product multi-image management.
+    //
+    // One project, three viewports. The 1440 default is where the approved
+    // desktop frames were drawn; 1024 and 390 are reached by resizing inside the
+    // journeys rather than by duplicating the project, because the *same*
+    // operator session has to be shown at all three — the approved mobile
+    // treatment is a different component, not a different run, and a second
+    // project would prove only that two sessions render two pages.
+    //
+    // Serial and single-worker: every journey curates media on Products in one
+    // shared fixture, and `expectedUpdatedAt` makes a second writer's save a
+    // conflict — which is exactly what journey D asserts deliberately and what
+    // parallel workers would inflict accidentally.
+    //
+    // The timeout is generous because the 20-image states load twenty real
+    // derivative images through the gateway on every navigation.
+    {
+      name: 'app12-m01a1-chromium',
+      testMatch: '**/app12/m01a1-*.acceptance.spec.ts',
+      timeout: 180_000,
+      use: {
+        ...devices['Desktop Chrome'],
+        ...chromiumLaunch,
+        baseURL: ADMIN_URL,
+        viewport: { width: 1440, height: 900 },
+      },
+    },
     // APP12-A02-C1 — the Admin Ready-Made order branch.
     //
     // The Admin origin is the baseURL because the operator's screen is what is
