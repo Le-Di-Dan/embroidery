@@ -7,7 +7,7 @@ ROADMAP_STATUS         = LOCKED
 ROADMAP_LOCK           = LOCKED
 IMPLEMENTATION_STARTED = true
 CHECKPOINTS            = 39
-NEXT                   = APP12-M01 (stage B in progress; internal package M01.A1)
+NEXT                   = APP12-M01 (stage B in progress; internal package M01.S1)
 CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
                          APP12-G02-C1 (2026-09-01, 1/1 — no C2)
                          APP12-C01-C1 (2026-09-01, 1/1 — no C2)
@@ -34,8 +34,8 @@ OVERRIDE               = APP12-M01 inserted 2026-09-05 by explicit Human Product
                            M01.B2  published media curation authority          COMPLETE
                            M01.D1  bounded Figma amendment                     COMPLETE_AFTER_C1
                            M01.D1-C1 Admin mobile media management (1/1)       COMPLETE
-                           M01.A1  Admin media management UI                   NEXT (not authorized)
-                           M01.S1  Product Detail visible counter              not authorized
+                           M01.A1  Admin media management UI                   COMPLETE
+                           M01.S1  Product Detail visible counter              NEXT (not authorized)
                            M01.E1  cross-boundary acceptance                   not authorized
                          `APP12-G03` remains NOT_AUTHORIZED.
 ```
@@ -309,7 +309,7 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | 29 | `APP12-V02` | Runtime Visual & Content corrections and live re-verification | `COMPLETE_AFTER_C2` |
 | 29·C1 | `APP12-V02-C1` | i18n copy authority and Admin login reflow correction | `COMPLETE` |
 | 29·C2 | `APP12-V02-C2` | Media upload, processing and image delivery reliability correction | `COMPLETE` |
-| 29·M | `APP12-M01` | Product multi-image gallery (PO override, 2026-09-05) — stage A audit / stage B implementation | **`IMPLEMENTATION_IN_PROGRESS`** — `M01.A` AUDIT_COMPLETE (PO PASS); `M01.B1` COMPLETE; `M01.DB1` COMPLETE (migration `0039`, four `product_media` invariants, `MAX_PRODUCT_MEDIA_ITEMS = 20`); `M01.B2` COMPLETE (one bounded Admin media-only write, `adminProductMedia_replace`, published-Product curation without unpublishing); `M01.D1` COMPLETE_AFTER_C1 (18 frames on Figma page `APP_12` section `933:187`; primary anchored at position 0, no stage arrows, multi-select picker kept) + `M01.D1-C1` COMPLETE (correction 1/1 — Admin 390 media management, 7 frames, 20-image grid 1,938 px against 3,748 px in approved `438:90`; 25 registry rows `REVIEW_REQUIRED`, awaiting PO review); internal next `M01.A1` |
+| 29·M | `APP12-M01` | Product multi-image gallery (PO override, 2026-09-05) — stage A audit / stage B implementation | **`IMPLEMENTATION_IN_PROGRESS`** — `M01.A` AUDIT_COMPLETE (PO PASS); `M01.B1` COMPLETE; `M01.DB1` COMPLETE (migration `0039`, four `product_media` invariants, `MAX_PRODUCT_MEDIA_ITEMS = 20`); `M01.B2` COMPLETE (one bounded Admin media-only write, `adminProductMedia_replace`, published-Product curation without unpublishing); `M01.D1` COMPLETE_AFTER_C1 (18 frames on Figma page `APP_12` section `933:187`; primary anchored at position 0, no stage arrows, multi-select picker kept) + `M01.D1-C1` COMPLETE (correction 1/1 — Admin 390 media management, 7 frames, 20-image grid 1,938 px against 3,748 px in approved `438:90`; 25 registry rows now `APPROVED_FOR_IMPLEMENTATION` under `FIG-APPROVAL-APP12-M01-D1-PO-001`); `M01.A1` COMPLETE (Admin media grid at 1440/1024/390, primary anchored at position 0 with an explicit set-primary, the 20 cap enforced in the section and the picker, the whole-form PUBLISHED lock narrowed so commercial fields stay read-only while media curates through `adminProductMedia_replace`, five B2 refusals mapped to approved Vietnamese; eight live headed journeys against a disposable database carrying real WebP derivatives); internal next `M01.S1` |
 | 30 | `APP12-U01` | Wave 1 Ready-Made business UAT | `NOT_STARTED` |
 | 31 | `APP12-E01` | Wave 1 commerce regression, positive and negative | `NOT_STARTED` |
 | 32 | `APP12-R01` | **WAVE 1 RELEASE GATE** — Ready-Made GO / NO-GO | `NOT_STARTED` |
