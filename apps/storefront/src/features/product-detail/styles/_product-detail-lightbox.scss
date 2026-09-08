@@ -12,10 +12,14 @@
 
 // --- Lightbox ---------------------------------------------------------------
 
+// Rendered into `document.body` by `DetailLightbox` (`APP12-M01.S1-C1`), so
+// these rules style a child of the root stacking context rather than a
+// descendant of the sticky gallery column. `inset: 0` and `$scrim-layer` only
+// describe the viewport truthfully because of that.
 .product-detail__scrim {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: tokens.$scrim-layer;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -42,6 +46,62 @@
   margin: 0;
   font-size: styles.$font-size-body-m;
   color: tokens.$scrim-foreground;
+}
+
+// Previous/next: a circular outline button with the chevron centred in it.
+//
+// Outline rather than the filled `$scrim-control-surface` the close button uses.
+// On the scrim these sit directly beside the artwork, and a filled pill there
+// reads as a second object competing with the image; a ring states "control"
+// and gets out of the way. The close button keeps the fill because it sits in
+// the header, against nothing.
+//
+// Sized from the shared touch-target token in both axes, so the circle is
+// exactly the minimum target rather than a decorative size that happens to be
+// near it — an icon button has no text to grow it back if the number shrinks.
+.product-detail__dialog-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: styles.$size-touch-target-min;
+  height: styles.$size-touch-target-min;
+  padding: 0;
+  border: 1px solid tokens.$scrim-foreground-muted;
+  border-radius: 50%;
+  background: transparent;
+  color: tokens.$scrim-foreground;
+  cursor: pointer;
+
+  @include styles.motion-safe {
+    transition:
+      background-color styles.$motion-duration-fast styles.$motion-easing-standard,
+      border-color styles.$motion-duration-fast styles.$motion-easing-standard;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: tokens.$scrim-foreground;
+    background: tokens.$scrim-control-surface;
+  }
+
+  &:focus-visible {
+    outline: 2px solid tokens.$scrim-foreground;
+    outline-offset: 2px;
+  }
+
+  // Never colour-only: the ring fades with the icon, so "you are at the last
+  // image" survives greyscale and a forced-colours mode.
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+.product-detail__chevron {
+  display: block;
+  // The path is drawn in `currentColor`, so the icon needs no colour of its own
+  // and inherits every state the button already declares.
+  pointer-events: none;
 }
 
 .product-detail__dialog-control {

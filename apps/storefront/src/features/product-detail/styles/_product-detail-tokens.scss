@@ -62,6 +62,25 @@ $stage-max-height-stacked: 420px;
 $line-height-snug: 1.35;
 $line-height-body: 1.6;
 $stage-min-height: 320px;
+// The layer the lightbox occupies, now that `APP12-M01.S1-C1` portals it to
+// `document.body` and it genuinely sits in the root stacking context.
+//
+// Before the portal this number meant nothing: the scrim was sealed inside the
+// sticky gallery's stacking context, so it was only ever compared against its
+// own siblings and no value here could have raised it above the shell. Now the
+// comparison is real, which is the only condition under which choosing a number
+// is engineering rather than guesswork.
+//
+// It must clear the shell's own top layer. The shell owns `$z-drawer: 100`
+// (`storefront-shell/styles/_shell-tokens.scss`) and draws its header at
+// `$z-drawer - 1`; those are another feature's internals, so the value is
+// mirrored here rather than imported — the same concession `$bp-shell-wide`
+// above records — and a boundary test fails the moment the original moves.
+// 200 rather than 101: a modal that opens over the whole application should not
+// be one off the thing beneath it, because the next shell layer to be added
+// would land in the gap.
+$scrim-layer: 200;
+
 // The lightbox scrim and its on-scrim control surface. GAP-D02: the design
 // system defines no scrim token, so these mirror the values the approved
 // UI03/S02 frames themselves use rather than inventing a new palette entry.

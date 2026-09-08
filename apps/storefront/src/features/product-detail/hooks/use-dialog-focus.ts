@@ -46,8 +46,21 @@ export function useDialogFocus(
     const initial = focusableElements(container);
     (initial[0] ?? container).focus();
 
+    // Locking the page also takes its scrollbar away, and the width that
+    // scrollbar occupied is given back to the layout — so every element beneath
+    // the overlay shifts sideways by ~15px the moment the dialog opens, and
+    // shifts back when it closes. `APP12-M01.S1-C1` measured that live: 1425
+    // becoming 1440. Reserving the freed width as padding holds the page
+    // exactly where the visitor left it. The scrim is `position: fixed` and so
+    // is measured against the viewport, not the body, which is why it still
+    // covers the full width while the page underneath keeps its own.
     const previousOverflow = document.body.style.overflow;
+    const previousPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
     document.body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${String(scrollbarWidth)}px`;
+    }
 
     function handleKeyDown(event: KeyboardEvent): void {
       if (event.key === 'Escape') {
@@ -69,6 +82,7 @@ export function useDialogFocus(
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = previousOverflow;
+      document.body.style.paddingRight = previousPaddingRight;
       previouslyFocused?.focus?.();
     };
   }, [active]);
