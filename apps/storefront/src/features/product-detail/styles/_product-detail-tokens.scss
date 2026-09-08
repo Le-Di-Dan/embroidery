@@ -69,3 +69,23 @@ $scrim-color: rgba(20, 18, 18, 0.92);
 $scrim-control-surface: rgba(255, 255, 255, 0.14);
 $scrim-foreground: #ffffff;
 $scrim-foreground-muted: rgba(255, 255, 255, 0.8);
+
+// The in-page gallery counter (`APP12-M01.D1` §M, frame `942:237`): an ink pill
+// at 86 % opacity sitting on the stage. The design system publishes no scrim or
+// overlay-pill token at this weight — `$color-overlay-scrim` is 45 % and is the
+// lightbox's full-page wash, not a legible label background — so the two values
+// are local and documented, the same concession `$scrim-color` above records.
+//
+// White on this pill measures 10.7:1 over the stage's `#f5f3ef`, so the readout
+// stays legible against a pale artwork as well as a dark one.
+$counter-surface: rgba(styles.$color-text-primary, 0.86);
+$counter-foreground: styles.$color-surface-primary;
+// A pill, not a rounded rectangle. No shared radius token is large enough to
+// round a 24px-tall box to its own half.
+$counter-radius: 999px;
+
+// The approved selected-thumbnail treatment (`944:200`) is three signals at
+// once, none of them colour alone: a 2px accent ring, full opacity against a
+// subdued rest, and an accent bar beneath the tile.
+$thumbnail-unselected-opacity: 0.55;
+$thumbnail-marker-height: 3px;

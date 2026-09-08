@@ -19,6 +19,15 @@
   align-items: center;
 }
 
+// The positioned frame the counter overlays. It exists so the readout can sit
+// *on* the stage without being inside the button that opens the large view, and
+// so it costs the composition no height at all — the constraint that keeps the
+// price and `Mua ngay` where `APP12-V02` placed them (`APP12-M01.S1` §4).
+.product-detail__stage-frame {
+  position: relative;
+  width: 100%;
+}
+
 .product-detail__stage-trigger {
   display: block;
   width: 100%;
@@ -64,6 +73,39 @@
   color: styles.$color-text-secondary;
 }
 
+// --- Counter ----------------------------------------------------------------
+
+.product-detail__counter {
+  position: absolute;
+  right: styles.spacing(12);
+  bottom: styles.spacing(12);
+  margin: 0;
+  padding: styles.spacing(4) styles.spacing(12);
+  border-radius: tokens.$counter-radius;
+  background: tokens.$counter-surface;
+  font-size: styles.$font-size-body-s;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: tokens.$counter-foreground;
+  // The stage is a button; the readout drawn over it is not, and must not eat
+  // the press that opens the large view.
+  pointer-events: none;
+}
+
+// The sentence a screen reader reads instead of the numerals ("Ảnh 3 trên 20").
+// Clipped rather than `display: none`, which would take it out of the
+// accessibility tree along with the pixels.
+.product-detail__counter-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .product-detail__zoom-hint {
   margin: 0;
   font-size: styles.$font-size-body-s;
@@ -87,6 +129,28 @@
 
 .product-detail__thumbnail-item {
   flex: 0 0 auto;
+  // The tile plus the marker rail beneath it. The rail is always laid out and
+  // only ever changes colour, so selecting a thumbnail cannot change the
+  // strip's height and shift the page.
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+
+  &::after {
+    content: '';
+    height: tokens.$thumbnail-marker-height;
+    border-radius: tokens.$thumbnail-marker-height;
+    background: transparent;
+  }
+
+  // Signal three of the approved three (`944:200`). Driven off `aria-current`
+  // rather than a second class, so the visual state and the announced state
+  // cannot disagree — there is only one of them. Where `:has()` is unsupported
+  // the ring and the opacity step still carry the selection, which is the reason
+  // the design specifies three signals rather than one.
+  &:has([aria-current='true'])::after {
+    background: styles.$color-action-primary;
+  }
 }
 
 .product-detail__thumbnail {
@@ -101,15 +165,26 @@
   border-radius: styles.$radius-sm;
   background: styles.$color-background-secondary;
   cursor: pointer;
+  // Signal two: the unselected tiles recede. Opacity, not a colour swap, so the
+  // step survives greyscale and a forced-colours mode that discards the ring.
+  opacity: tokens.$thumbnail-unselected-opacity;
+
+  &:hover {
+    opacity: 1;
+  }
 
   &:focus-visible {
     outline: 2px solid styles.$color-focus-ring;
     outline-offset: 2px;
+    opacity: 1;
   }
 
-  // Selection is a border plus `aria-current`, never colour alone.
+  // Signal one. The ring is the accent rather than ink (`944:200`): against
+  // subdued neighbours it is what reads as "this one". It stays 2px, the width
+  // the transparent border on every tile already reserved, so nothing reflows.
   &[aria-current='true'] {
-    border-color: styles.$color-text-primary;
+    border-color: styles.$color-action-primary;
+    opacity: 1;
   }
 }
 
