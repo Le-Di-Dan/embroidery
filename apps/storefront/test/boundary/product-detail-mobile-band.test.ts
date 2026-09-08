@@ -82,6 +82,18 @@ describe('mobile content band', () => {
     expect(shell).toMatch(/\$bp-footer:\s*768px;/);
   });
 
+  it('keeps the lightbox above every shell layer, and mirrors the one it clears', () => {
+    // `APP12-M01.S1-C1`. The scrim is portalled into `document.body`, so it now
+    // shares the root stacking context with the shell's own layers and the two
+    // numbers are finally comparable — which is the only reason picking one is
+    // meaningful at all. The shell owns `$z-drawer` and draws its header one
+    // below it; this pair fails the moment either side moves.
+    expect(shell).toMatch(/\$z-drawer:\s*100;/);
+    const layer = /\$scrim-layer:\s*(\d+);/.exec(detail)?.[1];
+    expect(layer).toBeDefined();
+    expect(Number(layer)).toBeGreaterThan(100);
+  });
+
   it('gives the thumbnail scroll viewport the whole band on mobile', () => {
     expect(mobileBlock(detail)).toMatch(/\.product-detail__thumbnails\s*\{\s*width:\s*100%;/);
   });

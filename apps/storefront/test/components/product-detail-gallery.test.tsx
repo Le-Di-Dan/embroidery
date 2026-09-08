@@ -251,6 +251,25 @@ describe('lightbox', () => {
     expect(within(dialog).getByText('Ảnh 1 trên 3')).toBeInTheDocument();
   });
 
+  it('navigates with icon buttons that are still named in words', () => {
+    // The visible words became an `aria-label`; they did not disappear. This is
+    // the assertion that keeps an icon-only control from becoming an unnamed
+    // one, which is how icon buttons usually fail.
+    const dialog = openLightbox();
+    const previous = within(dialog).getByRole('button', { name: 'Ảnh trước' });
+    const next = within(dialog).getByRole('button', { name: 'Ảnh sau' });
+
+    expect(previous).toHaveTextContent('');
+    expect(next).toHaveTextContent('');
+    // The chevron itself must never be announced: the button already is.
+    expect(previous.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    expect(next.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    // Two different glyphs, so "back" and "forward" are not the same picture.
+    expect(previous.querySelector('polyline')?.getAttribute('points')).not.toBe(
+      next.querySelector('polyline')?.getAttribute('points'),
+    );
+  });
+
   it('offers no previous/next for a single image', () => {
     const dialog = openLightbox(1);
 
