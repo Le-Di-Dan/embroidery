@@ -9,6 +9,20 @@ import { StorefrontPrimaryNav } from './storefront-primary-nav';
  * collapses the navigation behind the mobile trigger. Only the trigger + drawer
  * (`StorefrontMobileNav`) is a Client Component; the rest is server-rendered.
  *
+ * ## The compact trigger takes the trailing edge, opposite the brand
+ *
+ * The trigger used to sit *inside* `bar-lead`, ahead of the brand, so a compact
+ * header opened with two marks crowded against the left edge and an empty right
+ * half — the arrangement `APP12-V02` had already corrected on the Admin bar. It
+ * is now the header's last child and is pushed to the trailing edge by the
+ * stylesheet, so both shells read the same way: brand at the leading edge,
+ * navigation trigger at the trailing one.
+ *
+ * DOM order is brand → inline nav → trigger, and it is the reading order of both
+ * tiers rather than a compromise between them: on the Full layout the trigger is
+ * hidden and the inline nav carries navigation; on the Compact layout the inline
+ * nav is hidden and the trigger takes the edge it left free.
+ *
  * ## The search affordance is gone (`V01-UX-008`, `APP12-V02` §9)
  *
  * The approved header composes a search bar, and `APP1-S01A` built the most
@@ -27,12 +41,12 @@ export function StorefrontHeader() {
   return (
     <header className="storefront-shell__bar">
       <div className="storefront-shell__bar-lead">
-        <StorefrontMobileNav />
         <StorefrontBrand />
       </div>
       <div className="storefront-shell__bar-nav">
         <StorefrontPrimaryNav variant="bar" />
       </div>
+      <StorefrontMobileNav />
     </header>
   );
 }

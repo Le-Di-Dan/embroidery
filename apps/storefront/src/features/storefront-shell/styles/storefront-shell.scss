@@ -114,7 +114,12 @@ $scrim-drawer: rgba(styles.$color-text-primary, 0.45);
   margin-left: auto;
 }
 
+// Trailing edge of the compact header, opposite the brand — the same rule the
+// Admin bar carries. `margin-inline-start: auto` rather than a wrapper: the
+// inline nav beside it is `display: none` here, so the trigger is the last
+// laid-out child and absorbs the free space.
 .storefront-shell__nav-trigger {
+  margin-inline-start: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
