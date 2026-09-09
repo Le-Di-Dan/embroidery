@@ -306,6 +306,74 @@ export default defineConfig({
         viewport: { width: 1440, height: 900 },
       },
     },
+    // APP12-M01.E1 — the final cross-boundary acceptance run.
+    //
+    // Four projects rather than one, in this order, because the run spans three
+    // origins and one API and Playwright resolves `baseURL` per project:
+    //
+    // ```text
+    // domain  Admin origin, but every assertion is an HTTP call to the API —
+    //         §7's application half, which the Admin UI cannot compose (no
+    //         screen can request twenty-one images or a duplicate Asset)
+    // admin   Admin origin — §8, §9, §10, §13, §20 and §21's Admin half
+    // cross   Admin origin, Storefront read by absolute URL — §11 and §12 are
+    //         claims about an operator's write reaching a visitor's page, so
+    //         one journey has to hold both
+    // sf      Storefront origin — §14 through §19 and §21's Storefront half
+    // ```
+    //
+    // The order matters for one reason only: `cross` mutates the two E1
+    // Products, and running it before `sf` keeps the degradation journey's
+    // window as short as possible. The datasets are otherwise disjoint by
+    // fixture prefix, so no project can observe another's writes.
+    //
+    // The timeout is generous for the same reason the A1 and S1 projects give:
+    // the 20-image states load twenty real derivative images through the gateway
+    // on every navigation.
+    {
+      name: 'app12-m01e1-domain-chromium',
+      testMatch: '**/app12/m01e1-domain.acceptance.spec.ts',
+      timeout: 180_000,
+      use: {
+        ...devices['Desktop Chrome'],
+        ...chromiumLaunch,
+        baseURL: ADMIN_URL,
+        viewport: { width: 1440, height: 900 },
+      },
+    },
+    {
+      name: 'app12-m01e1-admin-chromium',
+      testMatch: '**/app12/m01e1-admin-*.acceptance.spec.ts',
+      timeout: 180_000,
+      use: {
+        ...devices['Desktop Chrome'],
+        ...chromiumLaunch,
+        baseURL: ADMIN_URL,
+        viewport: { width: 1440, height: 900 },
+      },
+    },
+    {
+      name: 'app12-m01e1-cross-chromium',
+      testMatch: '**/app12/m01e1-cross-*.acceptance.spec.ts',
+      timeout: 180_000,
+      use: {
+        ...devices['Desktop Chrome'],
+        ...chromiumLaunch,
+        baseURL: ADMIN_URL,
+        viewport: { width: 1440, height: 900 },
+      },
+    },
+    {
+      name: 'app12-m01e1-sf-chromium',
+      testMatch: '**/app12/m01e1-sf-*.acceptance.spec.ts',
+      timeout: 180_000,
+      use: {
+        ...devices['Desktop Chrome'],
+        ...chromiumLaunch,
+        baseURL: STOREFRONT_URL,
+        viewport: { width: 1440, height: 900 },
+      },
+    },
     // APP12-A02-C1 — the Admin Ready-Made order branch.
     //
     // The Admin origin is the baseURL because the operator's screen is what is

@@ -94,6 +94,20 @@ const APP12_A01 = ['app12-a01-chromium'];
 // process is started — `M01.S1` owns that surface and is not authorised here.
 const APP12_M01A1 = ['app12-m01a1-chromium'];
 const APP12_M01S1 = ['app12-m01s1-chromium'];
+// APP12-M01.E1 — the final cross-boundary acceptance world, and the first mode
+// that starts the Admin **and** the Storefront over one catalog. That union is
+// the whole point: §11 and §12 are claims about an operator's write reaching a
+// visitor's page, and neither the A1 topology (no Storefront) nor the S1 one
+// (no operator) can carry them. Three ordered projects rather than one, because
+// the three surfaces have three different base origins and Playwright resolves
+// `baseURL` per project; they run in declaration order under the config's
+// single worker, and their datasets are disjoint by fixture prefix.
+const APP12_M01E1 = [
+  'app12-m01e1-domain-chromium',
+  'app12-m01e1-admin-chromium',
+  'app12-m01e1-cross-chromium',
+  'app12-m01e1-sf-chromium',
+];
 // APP12-A02-C1 — the Admin Ready-Made order branch. The S03 topology exactly:
 // a Storefront to place a **real** order through the real checkout, the APP4
 // verification lane that order cannot exist without, an authenticated Admin,
@@ -288,6 +302,10 @@ function parseArgs(argv) {
   // APP12-M01.S1: the Storefront gallery. The same storage topology as A1, but
   // the Storefront process instead of the Admin one — no operator ever logs in.
   const app12M01S1 = flags.has('--app12-m01s1');
+  // APP12-M01.E1: the final cross-boundary acceptance world — the A1 Admin
+  // topology and the S1 Storefront topology at once, over one catalog holding
+  // all three fixtures.
+  const app12M01E1 = flags.has('--app12-m01e1');
   // APP12-H08: the accessibility and compatibility gate, on the A02 topology.
   const app12H08 = flags.has('--app12-h08');
   // APP12-V01: the UI/UX live audit, on the H08 topology plus density content.
@@ -298,87 +316,92 @@ function parseArgs(argv) {
   // APP4-E01-H02: the browser tier, which IS a Playwright mode.
   const app4Browser = flags.has('--app4-browser') || app4R01 || app4R01C1 || app5E01 || app7E01;
   const full = flags.has('--full');
-  const mode = app12M01S1
-    ? 'app12-m01s1'
-    : app12M01A1
-      ? 'app12-m01a1'
-      : app12V01
-        ? 'app12-v01'
-        : app4
-          ? 'app4'
-          : app12H08
-            ? 'app12-h08'
-            : app12H06
-              ? 'app12-h06'
-              : app12H01Wave2
-                ? 'app12-h01-wave2'
-                : app12H01
-                  ? 'app12-h01'
-                  : app12A02
-                    ? 'app12-a02'
-                    : app12A01
-                      ? 'app12-a01'
-                      : app12S03
-                        ? 'app12-s03'
-                        : app12S02
-                          ? 'app12-s02'
-                          : app12S01
-                            ? 'app12-s01'
-                            : app7E01
-                              ? 'app7-e01'
-                              : app5E01
-                                ? 'app5-e01'
-                                : app4Browser
-                                  ? 'app4-browser'
-                                  : app1
-                                    ? 'app1'
-                                    : full
-                                      ? 'full'
-                                      : 'smoke';
-  const projects = app12M01S1
-    ? APP12_M01S1
-    : app12M01A1
-      ? APP12_M01A1
-      : app12V01
-        ? APP12_V01
-        : app12H08
-          ? APP12_H08
-          : app12H06
-            ? APP12_H06
-            : app12H01Wave2
-              ? APP12_H01_WAVE2
-              : app12H01
-                ? APP12_H01
-                : app12A02
-                  ? APP12_A02
-                  : app12A01
-                    ? APP12_A01
-                    : app12S03
-                      ? APP12_S03
-                      : app12S02
-                        ? APP12_S02
-                        : app12S01
-                          ? APP12_S01
-                          : app7E01
-                            ? APP7_E01
-                            : app5E01
-                              ? APP5_E01
-                              : app4R01C1
-                                ? APP4_R01_C1
-                                : app4R01
-                                  ? APP4_R01
+  const mode = app12M01E1
+    ? 'app12-m01e1'
+    : app12M01S1
+      ? 'app12-m01s1'
+      : app12M01A1
+        ? 'app12-m01a1'
+        : app12V01
+          ? 'app12-v01'
+          : app4
+            ? 'app4'
+            : app12H08
+              ? 'app12-h08'
+              : app12H06
+                ? 'app12-h06'
+                : app12H01Wave2
+                  ? 'app12-h01-wave2'
+                  : app12H01
+                    ? 'app12-h01'
+                    : app12A02
+                      ? 'app12-a02'
+                      : app12A01
+                        ? 'app12-a01'
+                        : app12S03
+                          ? 'app12-s03'
+                          : app12S02
+                            ? 'app12-s02'
+                            : app12S01
+                              ? 'app12-s01'
+                              : app7E01
+                                ? 'app7-e01'
+                                : app5E01
+                                  ? 'app5-e01'
                                   : app4Browser
-                                    ? APP4
+                                    ? 'app4-browser'
                                     : app1
-                                      ? APP1
+                                      ? 'app1'
                                       : full
-                                        ? FULL
-                                        : SMOKE;
+                                        ? 'full'
+                                        : 'smoke';
+  const projects = app12M01E1
+    ? APP12_M01E1
+    : app12M01S1
+      ? APP12_M01S1
+      : app12M01A1
+        ? APP12_M01A1
+        : app12V01
+          ? APP12_V01
+          : app12H08
+            ? APP12_H08
+            : app12H06
+              ? APP12_H06
+              : app12H01Wave2
+                ? APP12_H01_WAVE2
+                : app12H01
+                  ? APP12_H01
+                  : app12A02
+                    ? APP12_A02
+                    : app12A01
+                      ? APP12_A01
+                      : app12S03
+                        ? APP12_S03
+                        : app12S02
+                          ? APP12_S02
+                          : app12S01
+                            ? APP12_S01
+                            : app7E01
+                              ? APP7_E01
+                              : app5E01
+                                ? APP5_E01
+                                : app4R01C1
+                                  ? APP4_R01_C1
+                                  : app4R01
+                                    ? APP4_R01
+                                    : app4Browser
+                                      ? APP4
+                                      : app1
+                                        ? APP1
+                                        : full
+                                          ? FULL
+                                          : SMOKE;
   // The E01 suite is always host/Chromium; it cannot run in the container.
   const runner =
     app1 ||
     app12M01A1 ||
     app12M01S1 ||
+    app12M01E1 ||
     app4Browser ||
     app12S01 ||
     app12S02 ||
@@ -421,6 +444,7 @@ function parseArgs(argv) {
     app12V01,
     app12M01A1,
     app12M01S1,
+    app12M01E1,
   };
 }
 
@@ -462,6 +486,7 @@ async function main() {
     app12V01,
     app12M01A1,
     app12M01S1,
+    app12M01E1,
   } = parseArgs(process.argv.slice(2));
 
   // APP7-E01-U01 owns its own lean topology and teardown and starts no browser
@@ -519,7 +544,8 @@ async function main() {
     app12H01 ||
     app12H08 ||
     app12V01 ||
-    app12M01A1
+    app12M01A1 ||
+    app12M01E1
       ? createAdminCredentials(runId)
       : undefined;
   // The browser tier overrides one non-secret value: the canonical origin the
@@ -559,7 +585,8 @@ async function main() {
     app12H08 ||
     app12V01 ||
     app12M01A1 ||
-    app12M01S1
+    app12M01S1 ||
+    app12M01E1
       ? { ...createApp4SecretConfig(runId), storefrontOrigin: config.baseUrls.storefront }
       : undefined;
   // `APP7-B03`'s merchant bank configuration is a module-scoped fail-fast
@@ -634,7 +661,8 @@ async function main() {
       app12H06 ||
       app12H08 ||
       app12V01 ||
-      app12M01S1
+      app12M01S1 ||
+      app12M01E1
         ? {
             withStorefront: {
               INTERNAL_API_BASE_URL: `http://localhost:${config.ports.api}/api`,
@@ -763,7 +791,7 @@ async function main() {
     // recorded there — pnpm's isolated node_modules provides no hoist, and a
     // native image dependency does not belong in a test harness.
     let app12M01A1Fixture;
-    if (app12M01A1) {
+    if (app12M01A1 || app12M01E1) {
       const { seedM01A1Media } = await import('../support/app12/m01a1-media-fixture.mjs');
       const workerRequire = createRequire(join(config.repoRoot, 'apps/worker/package.json'));
       const storageRequire = createRequire(
@@ -802,7 +830,7 @@ async function main() {
     // them, exactly as the H06, V01 and M01.A1 modes do and for the reason
     // recorded there — pnpm's isolated node_modules provides no hoist.
     let app12M01S1Fixture;
-    if (app12M01S1) {
+    if (app12M01S1 || app12M01E1) {
       const { seedM01S1Gallery } = await import('../support/app12/m01s1-gallery-fixture.mjs');
       const workerRequire = createRequire(join(config.repoRoot, 'apps/worker/package.json'));
       const storageRequire = createRequire(
@@ -820,6 +848,44 @@ async function main() {
         },
       });
       app12M01S1Fixture = await seedM01S1Gallery({
+        databaseUrl: env.database.url,
+        sharp,
+        putObject: async ({ storageKey, body, contentType }) => {
+          await s3.send(
+            new PutObjectCommand({
+              Bucket: config.storage.derivativesBucket,
+              Key: storageKey,
+              Body: body,
+              ContentType: contentType,
+            }),
+          );
+        },
+        log,
+      });
+    }
+    // APP12-M01.E1: the two PUBLISHED Products the A1 and S1 fixtures do not
+    // hold — the stored-primary propagation subject and the degradation one.
+    // Seeded third so the whole M01 catalog exists in one database; the three
+    // fixtures use disjoint slug prefixes and share no Asset.
+    let app12M01E1Fixture;
+    if (app12M01E1) {
+      const { seedM01E1Acceptance } = await import('../support/app12/m01e1-acceptance-fixture.mjs');
+      const workerRequire = createRequire(join(config.repoRoot, 'apps/worker/package.json'));
+      const storageRequire = createRequire(
+        join(config.repoRoot, 'packages/object-storage/package.json'),
+      );
+      const sharp = workerRequire('sharp');
+      const { S3Client, PutObjectCommand } = storageRequire('@aws-sdk/client-s3');
+      const s3 = new S3Client({
+        endpoint: config.storage.endpoint,
+        region: 'us-east-1',
+        forcePathStyle: true,
+        credentials: {
+          accessKeyId: config.storage.accessKeyId,
+          secretAccessKey: config.storage.secretAccessKey,
+        },
+      });
+      app12M01E1Fixture = await seedM01E1Acceptance({
         databaseUrl: env.database.url,
         sharp,
         putObject: async ({ storageKey, body, contentType }) => {
@@ -947,120 +1013,177 @@ async function main() {
                 E2E_APP12_S01_UNBUYABLE_SLUG: app12S01Fixture.unbuyableSlug,
                 E2E_APP12_S01_CATEGORY_SLUG: app12S01Fixture.categorySlug,
               }
-            : app12M01S1
+            : app12M01E1
               ? {
-                  // The seeded slugs, so every journey asserts against what this
-                  // run actually created rather than against a literal that would
-                  // rot the moment the fixture changed.
+                  // The whole M01 catalog this run seeded, so every journey
+                  // asserts against what actually exists rather than against
+                  // literals that would rot the moment a fixture changed.
+                  //
+                  // Three fixtures, three prefixes: the Admin journeys read the
+                  // A1 Products, the Storefront journeys read the S1 ones, and
+                  // the cross-boundary journeys read the two E1 Products that
+                  // exist for no other purpose.
+                  E2E_APP12_M01A1_DRAFT0: app12M01A1Fixture.draft0.productId,
+                  E2E_APP12_M01A1_DRAFT8: app12M01A1Fixture.draft8.productId,
+                  E2E_APP12_M01A1_DRAFT20: app12M01A1Fixture.draft20.productId,
+                  E2E_APP12_M01A1_PUBLISHED: app12M01A1Fixture.published.productId,
+                  E2E_APP12_M01A1_PUBLISHED_SINGLE: app12M01A1Fixture.publishedSingle.productId,
+                  E2E_APP12_M01A1_PUBLISHED_RACE: app12M01A1Fixture.publishedRace.productId,
+                  E2E_APP12_M01A1_REVOCABLE_ASSET: app12M01A1Fixture.publishedRace.revocableAssetId,
+                  E2E_APP12_M01A1_FREE_ASSETS: app12M01A1Fixture.freeAssetIds.join(','),
                   E2E_APP12_M01S1_ONE: app12M01S1Fixture.oneSlug,
                   E2E_APP12_M01S1_EIGHT: app12M01S1Fixture.eightSlug,
                   E2E_APP12_M01S1_TWENTY: app12M01S1Fixture.twentySlug,
                   E2E_APP12_M01S1_CATEGORY: app12M01S1Fixture.categorySlug,
+                  E2E_APP12_M01E1_CATEGORY: app12M01E1Fixture.categorySlug,
+                  E2E_APP12_M01E1_PROPAGATE_ID: app12M01E1Fixture.propagate.productId,
+                  E2E_APP12_M01E1_PROPAGATE_SLUG: app12M01E1Fixture.propagate.slug,
+                  E2E_APP12_M01E1_PROPAGATE_ASSETS: app12M01E1Fixture.propagate.assetIds.join(','),
+                  E2E_APP12_M01E1_DEGRADE_ID: app12M01E1Fixture.degrade.productId,
+                  E2E_APP12_M01E1_DEGRADE_SLUG: app12M01E1Fixture.degrade.slug,
+                  E2E_APP12_M01E1_DEGRADE_ASSETS: app12M01E1Fixture.degrade.assetIds.join(','),
+                  E2E_APP12_M01E1_STORED_PRIMARY: app12M01E1Fixture.degrade.storedPrimaryAssetId,
+                  E2E_APP12_M01E1_DOMAIN_ID: app12M01E1Fixture.domain.productId,
+                  E2E_APP12_M01E1_DOMAIN_SLUG: app12M01E1Fixture.domain.slug,
+                  E2E_APP12_M01E1_DOMAIN_POOL: app12M01E1Fixture.domain.poolAssetIds.join(','),
+                  E2E_APP12_M01E1_PUBLISHED_ID: app12M01E1Fixture.published.productId,
+                  E2E_APP12_M01E1_PUBLISHED_SLUG: app12M01E1Fixture.published.slug,
+                  E2E_APP12_M01E1_PUBLISHED_ASSETS: app12M01E1Fixture.published.assetIds.join(','),
+                  E2E_APP12_M01E1_REFUSAL_ID: app12M01E1Fixture.refusal.productId,
+                  E2E_APP12_M01E1_REFUSAL_SLUG: app12M01E1Fixture.refusal.slug,
+                  E2E_APP12_M01E1_REFUSAL_ASSETS: app12M01E1Fixture.refusal.assetIds.join(','),
+                  E2E_APP12_M01E1_REFUSAL_REVOCABLE: app12M01E1Fixture.refusal.revocableAssetId,
+                  E2E_APP12_M01E1_SIGNAL_ID: app12M01E1Fixture.signal.productId,
+                  E2E_APP12_M01E1_SIGNAL_SLUG: app12M01E1Fixture.signal.slug,
+                  E2E_APP12_M01E1_SIGNAL_ASSETS: app12M01E1Fixture.signal.assetIds.join(','),
+                  E2E_APP12_M01E1_SIGNAL_PRIMARY: app12M01E1Fixture.signal.storedPrimaryAssetId,
+                  // §12 makes an Asset ineligible and restores it, and §7 reads
+                  // stored rows back; no application path does either, so the
+                  // specs write and read this run's disposable database.
+                  E2E_DATABASE_URL: env.database.url,
                   // Where the visual evidence lands, resolved from the repository
                   // root rather than from the spec's own cwd.
                   E2E_REPO_ROOT: config.repoRoot,
                   E2E_RUN_ID: runId,
+                  E2E_BASE_ADMIN: config.baseUrls.admin,
                   E2E_BASE_STOREFRONT: config.baseUrls.storefront,
+                  E2E_ADMIN_EMAIL: adminCredentials.email,
+                  E2E_ADMIN_PASSWORD: adminCredentials.password,
                 }
-              : app12M01A1
+              : app12M01S1
                 ? {
-                    // The seeded Product ids and slugs, so every journey asserts
-                    // against what this run actually created rather than against a
-                    // literal that would rot the moment the fixture changed.
-                    E2E_APP12_M01A1_DRAFT0: app12M01A1Fixture.draft0.productId,
-                    E2E_APP12_M01A1_DRAFT8: app12M01A1Fixture.draft8.productId,
-                    E2E_APP12_M01A1_DRAFT20: app12M01A1Fixture.draft20.productId,
-                    E2E_APP12_M01A1_PUBLISHED: app12M01A1Fixture.published.productId,
-                    E2E_APP12_M01A1_PUBLISHED_SINGLE: app12M01A1Fixture.publishedSingle.productId,
-                    E2E_APP12_M01A1_PUBLISHED_RACE: app12M01A1Fixture.publishedRace.productId,
-                    E2E_APP12_M01A1_REVOCABLE_ASSET:
-                      app12M01A1Fixture.publishedRace.revocableAssetId,
-                    // Journey E makes an Asset unavailable between staging and
-                    // saving; no application path produces that on demand, so the
-                    // spec writes it into this run's disposable database.
-                    E2E_DATABASE_URL: env.database.url,
+                    // The seeded slugs, so every journey asserts against what this
+                    // run actually created rather than against a literal that would
+                    // rot the moment the fixture changed.
+                    E2E_APP12_M01S1_ONE: app12M01S1Fixture.oneSlug,
+                    E2E_APP12_M01S1_EIGHT: app12M01S1Fixture.eightSlug,
+                    E2E_APP12_M01S1_TWENTY: app12M01S1Fixture.twentySlug,
+                    E2E_APP12_M01S1_CATEGORY: app12M01S1Fixture.categorySlug,
                     // Where the visual evidence lands, resolved from the repository
                     // root rather than from the spec's own cwd.
                     E2E_REPO_ROOT: config.repoRoot,
                     E2E_RUN_ID: runId,
-                    E2E_BASE_ADMIN: config.baseUrls.admin,
-                    E2E_ADMIN_EMAIL: adminCredentials.email,
-                    E2E_ADMIN_PASSWORD: adminCredentials.password,
+                    E2E_BASE_STOREFRONT: config.baseUrls.storefront,
                   }
-                : app12A01
+                : app12M01A1
                   ? {
-                      // The seeded dependency category, so the refusal journey asserts
-                      // against what this run actually created. The Admin origin and
-                      // credentials, because every A01 journey is an authenticated
-                      // operator writing taxonomy — logged in through the real form.
-                      // The password travels the child environment only.
-                      E2E_APP12_A01_DEPENDENCY_CATEGORY_SLUG: app12A01Fixture.categorySlug,
+                      // The seeded Product ids and slugs, so every journey asserts
+                      // against what this run actually created rather than against a
+                      // literal that would rot the moment the fixture changed.
+                      E2E_APP12_M01A1_DRAFT0: app12M01A1Fixture.draft0.productId,
+                      E2E_APP12_M01A1_DRAFT8: app12M01A1Fixture.draft8.productId,
+                      E2E_APP12_M01A1_DRAFT20: app12M01A1Fixture.draft20.productId,
+                      E2E_APP12_M01A1_PUBLISHED: app12M01A1Fixture.published.productId,
+                      E2E_APP12_M01A1_PUBLISHED_SINGLE: app12M01A1Fixture.publishedSingle.productId,
+                      E2E_APP12_M01A1_PUBLISHED_RACE: app12M01A1Fixture.publishedRace.productId,
+                      E2E_APP12_M01A1_REVOCABLE_ASSET:
+                        app12M01A1Fixture.publishedRace.revocableAssetId,
+                      // Journey E makes an Asset unavailable between staging and
+                      // saving; no application path produces that on demand, so the
+                      // spec writes it into this run's disposable database.
+                      E2E_DATABASE_URL: env.database.url,
+                      // Where the visual evidence lands, resolved from the repository
+                      // root rather than from the spec's own cwd.
+                      E2E_REPO_ROOT: config.repoRoot,
                       E2E_RUN_ID: runId,
                       E2E_BASE_ADMIN: config.baseUrls.admin,
                       E2E_ADMIN_EMAIL: adminCredentials.email,
                       E2E_ADMIN_PASSWORD: adminCredentials.password,
                     }
-                  : app12S02 || app12S03 || app12A02 || app12H01 || app12H08 || app12V01
+                  : app12A01
                     ? {
-                        // The seeded slugs and SKU ids, for the same reason. The SKU ids
-                        // matter more here than in S01: the spec composes checkout
-                        // addresses from them exactly as `APP12-S01`'s panel does, so a
-                        // literal would be asserting against a URL nobody could reach.
-                        E2E_APP12_S02_PRODUCT_SLUG: app12S02Fixture.productSlug,
-                        E2E_APP12_S02_MAIN_SKU: app12S02Fixture.mainSkuId,
-                        E2E_APP12_S02_SCARCE_SKU: app12S02Fixture.scarceSkuId,
-                        E2E_APP12_S02_AMBIGUOUS_SKU: app12S02Fixture.ambiguousSkuIds[0],
-                        // The run's universe, so the spec's in-process API and worker
-                        // contexts join the same database and secret material the API
-                        // HTTP process was started with — which is what lets it read a
-                        // real verification code. Child environment only.
+                        // The seeded dependency category, so the refusal journey asserts
+                        // against what this run actually created. The Admin origin and
+                        // credentials, because every A01 journey is an authenticated
+                        // operator writing taxonomy — logged in through the real form.
+                        // The password travels the child environment only.
+                        E2E_APP12_A01_DEPENDENCY_CATEGORY_SLUG: app12A01Fixture.categorySlug,
                         E2E_RUN_ID: runId,
-                        E2E_REPO_ROOT: config.repoRoot,
-                        E2E_DATABASE_URL: env.database.url,
-                        // Which `evidences/<dir>` this run writes into. `APP12-V02` §35
-                        // re-runs the V01 harness for the after-state and must not
-                        // overwrite the before-state it is being compared against.
-                        ...(process.env['E2E_EVIDENCE_DIR'] === undefined
-                          ? {}
-                          : { E2E_EVIDENCE_DIR: process.env['E2E_EVIDENCE_DIR'] }),
-                        ...app4SecretEnv(app4Secrets),
-                        // The in-process `AppModule` composes the deposit module, so it
-                        // needs the same four merchant values the API HTTP process got.
-                        ...merchantBankEnv(merchant),
-                        // APP12-S03 only, and all three for reasons S02 does not have:
-                        //
-                        // - the Admin origin and credentials, because the customer's
-                        //   screen only moves when an operator writes, and the run has
-                        //   to log in as one through the real form;
-                        // - this run's object storage, because the evidence journey
-                        //   uploads a real image and the in-process worker inspects it.
-                        //
-                        // The password travels the child environment only — never an
-                        // argument, never a log line.
-                        ...(app12S03 || app12A02 || app12H01 || app12H08 || app12V01
-                          ? {
-                              E2E_BASE_ADMIN: config.baseUrls.admin,
-                              E2E_ADMIN_EMAIL: adminCredentials.email,
-                              E2E_ADMIN_PASSWORD: adminCredentials.password,
-                              ...objectStorageEnv(config.storage),
-                            }
-                          : {}),
-                        // APP12-V01 only: the density fixture's own slugs, plus the
-                        // Storefront origin the public tour navigates. Every value is
-                        // a public catalog slug — nothing secret travels here.
-                        ...(app12V01
-                          ? {
-                              E2E_BASE_STOREFRONT: config.baseUrls.storefront,
-                              E2E_APP12_V01_CATEGORIES: app12V01Fixture.categorySlugs.join(','),
-                              E2E_APP12_V01_PRODUCTS: app12V01Fixture.productSlugs.join(','),
-                              E2E_APP12_V01_GALLERY: app12V01Fixture.gallerySlugs.join(','),
-                              E2E_APP12_V01_IN_STOCK: app12V01Fixture.inStockSlug,
-                              E2E_APP12_V01_OUT_OF_STOCK: app12V01Fixture.outOfStockSlug,
-                              E2E_APP12_V01_MULTI_VARIANT: app12V01Fixture.multiVariantSlug,
-                            }
-                          : {}),
+                        E2E_BASE_ADMIN: config.baseUrls.admin,
+                        E2E_ADMIN_EMAIL: adminCredentials.email,
+                        E2E_ADMIN_PASSWORD: adminCredentials.password,
                       }
-                    : {};
+                    : app12S02 || app12S03 || app12A02 || app12H01 || app12H08 || app12V01
+                      ? {
+                          // The seeded slugs and SKU ids, for the same reason. The SKU ids
+                          // matter more here than in S01: the spec composes checkout
+                          // addresses from them exactly as `APP12-S01`'s panel does, so a
+                          // literal would be asserting against a URL nobody could reach.
+                          E2E_APP12_S02_PRODUCT_SLUG: app12S02Fixture.productSlug,
+                          E2E_APP12_S02_MAIN_SKU: app12S02Fixture.mainSkuId,
+                          E2E_APP12_S02_SCARCE_SKU: app12S02Fixture.scarceSkuId,
+                          E2E_APP12_S02_AMBIGUOUS_SKU: app12S02Fixture.ambiguousSkuIds[0],
+                          // The run's universe, so the spec's in-process API and worker
+                          // contexts join the same database and secret material the API
+                          // HTTP process was started with — which is what lets it read a
+                          // real verification code. Child environment only.
+                          E2E_RUN_ID: runId,
+                          E2E_REPO_ROOT: config.repoRoot,
+                          E2E_DATABASE_URL: env.database.url,
+                          // Which `evidences/<dir>` this run writes into. `APP12-V02` §35
+                          // re-runs the V01 harness for the after-state and must not
+                          // overwrite the before-state it is being compared against.
+                          ...(process.env['E2E_EVIDENCE_DIR'] === undefined
+                            ? {}
+                            : { E2E_EVIDENCE_DIR: process.env['E2E_EVIDENCE_DIR'] }),
+                          ...app4SecretEnv(app4Secrets),
+                          // The in-process `AppModule` composes the deposit module, so it
+                          // needs the same four merchant values the API HTTP process got.
+                          ...merchantBankEnv(merchant),
+                          // APP12-S03 only, and all three for reasons S02 does not have:
+                          //
+                          // - the Admin origin and credentials, because the customer's
+                          //   screen only moves when an operator writes, and the run has
+                          //   to log in as one through the real form;
+                          // - this run's object storage, because the evidence journey
+                          //   uploads a real image and the in-process worker inspects it.
+                          //
+                          // The password travels the child environment only — never an
+                          // argument, never a log line.
+                          ...(app12S03 || app12A02 || app12H01 || app12H08 || app12V01
+                            ? {
+                                E2E_BASE_ADMIN: config.baseUrls.admin,
+                                E2E_ADMIN_EMAIL: adminCredentials.email,
+                                E2E_ADMIN_PASSWORD: adminCredentials.password,
+                                ...objectStorageEnv(config.storage),
+                              }
+                            : {}),
+                          // APP12-V01 only: the density fixture's own slugs, plus the
+                          // Storefront origin the public tour navigates. Every value is
+                          // a public catalog slug — nothing secret travels here.
+                          ...(app12V01
+                            ? {
+                                E2E_BASE_STOREFRONT: config.baseUrls.storefront,
+                                E2E_APP12_V01_CATEGORIES: app12V01Fixture.categorySlugs.join(','),
+                                E2E_APP12_V01_PRODUCTS: app12V01Fixture.productSlugs.join(','),
+                                E2E_APP12_V01_GALLERY: app12V01Fixture.gallerySlugs.join(','),
+                                E2E_APP12_V01_IN_STOCK: app12V01Fixture.inStockSlug,
+                                E2E_APP12_V01_OUT_OF_STOCK: app12V01Fixture.outOfStockSlug,
+                                E2E_APP12_V01_MULTI_VARIANT: app12V01Fixture.multiVariantSlug,
+                              }
+                            : {}),
+                        }
+                      : {};
     exitCode =
       runner === 'container'
         ? await runContainer({
