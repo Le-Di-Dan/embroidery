@@ -31,7 +31,7 @@ export const APP5_S01 = {
   customerOwned: { nameLabel: 'Tên món đồ' },
   quantity: { quantityLabel: 'Số lượng' },
   steps: { continueToVerify: 'Tiếp tục để xác minh liên hệ' },
-  verification: { verified: 'Đã xác minh liên hệ. Bạn có thể tiếp tục bước 3.' },
+  verification: { verified: 'Đã xác minh email. Bạn có thể tiếp tục bước 3.' },
   upload: {
     chooseCopImage: 'Chọn ảnh món đồ',
     accepted: 'Đã duyệt',
@@ -158,7 +158,7 @@ export function createRequestDriver(page: Page) {
      * appears.
      *
      * `APP5-S01` retains the verified challenge id and the rail advances by
-     * itself, so the *"Đã xác minh liên hệ"* line — which the step-2 card shows
+     * itself, so the *"Đã xác minh email"* line — which the step-2 card shows
      * a customer who navigates back — is never rendered on the forward path.
      * Waiting for it would be waiting for a state the happy path skips.
      */

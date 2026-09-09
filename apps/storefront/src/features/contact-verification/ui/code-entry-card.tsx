@@ -93,6 +93,7 @@ export function CodeEntryCard({
       <p className="contact-verification__body">{VERIFICATION_COPY.codeEntry.body}</p>
       {/* Rendered from the server's mask, never from the contact typed. */}
       <p className="contact-verification__destination">{challenge.recipientMasked}</p>
+      <p className="contact-verification__caption">{VERIFICATION_COPY.codeEntry.inboxHint}</p>
 
       <CodeInput
         value={code}

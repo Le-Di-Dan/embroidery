@@ -31,7 +31,7 @@ import {
   resendVerificationChallenge,
   submitVerificationAttempt,
 } from '../api/verification.client';
-import { isPlausibleContact, type ContactKind } from '../model/contact-draft';
+import { isPlausibleEmail } from '../model/contact-draft';
 import {
   DEFAULT_VERIFICATION_PURPOSE,
   type VerificationPurpose,
@@ -65,7 +65,6 @@ function toChallenge(response: {
 
 export interface ContactVerification {
   readonly state: ReturnType<typeof verificationReducer>;
-  readonly setContactKind: (kind: ContactKind) => void;
   readonly setContact: (contact: string) => void;
   readonly requestCode: () => void;
   readonly submitCode: (code: string) => void;
@@ -130,7 +129,7 @@ export function useContactVerification(options?: ContactVerificationOptions): Co
   );
 
   const issue = useMutation({
-    mutationFn: () => issueVerificationChallenge(state.contactKind, state.contact, purpose),
+    mutationFn: () => issueVerificationChallenge(state.contact, purpose),
     onSuccess: (response) => {
       clearCode();
       dispatch({ type: 'CHALLENGE_OPENED', challenge: toChallenge(response) });
@@ -138,6 +137,7 @@ export function useContactVerification(options?: ContactVerificationOptions): Co
     onError: (error: unknown) => {
       const outcome = issueOutcomeOf(normalizeApiClientError(error));
       if (outcome === 'INVALID_CONTACT') dispatch({ type: 'CONTACT_REJECTED' });
+      else if (outcome === 'CHANNEL_UNSUPPORTED') dispatch({ type: 'CHANNEL_UNSUPPORTED' });
       else if (outcome === 'RATE_LIMITED') dispatch({ type: 'RATE_LIMITED' });
       else dispatch({ type: 'REQUEST_FAILED' });
     },
@@ -160,6 +160,14 @@ export function useContactVerification(options?: ContactVerificationOptions): Co
       const outcome = resendOutcomeOf(normalizeApiClientError(error));
       if (outcome === 'RATE_LIMITED') {
         dispatch({ type: 'RATE_LIMITED' });
+        return;
+      }
+      if (outcome === 'CHANNEL_UNSUPPORTED') {
+        // The challenge being resent cannot carry a code at all, so the flow
+        // leaves code entry for good: clear the ref on the way out, exactly as
+        // every other exit from that phase does.
+        clearCode();
+        dispatch({ type: 'CHANNEL_UNSUPPORTED' });
         return;
       }
       if (outcome === 'RECOVERABLE_ERROR') {
@@ -222,13 +230,13 @@ export function useContactVerification(options?: ContactVerificationOptions): Co
   });
 
   const requestCode = useCallback(() => {
-    if (!isPlausibleContact(state.contactKind, state.contact)) {
+    if (!isPlausibleEmail(state.contact)) {
       dispatch({ type: 'CONTACT_REJECTED' });
       return;
     }
     dispatch({ type: 'ISSUE_STARTED' });
     issue.mutate();
-  }, [issue, state.contact, state.contactKind]);
+  }, [issue, state.contact]);
 
   const submitCode = useCallback(
     (code: string) => {
@@ -252,9 +260,6 @@ export function useContactVerification(options?: ContactVerificationOptions): Co
 
   return {
     state,
-    setContactKind: useCallback((kind: ContactKind) => {
-      dispatch({ type: 'CONTACT_KIND_CHANGED', contactKind: kind });
-    }, []),
     setContact: useCallback((contact: string) => {
       dispatch({ type: 'CONTACT_CHANGED', contact });
     }, []),

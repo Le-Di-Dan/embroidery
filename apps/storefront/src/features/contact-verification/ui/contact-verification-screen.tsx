@@ -5,7 +5,7 @@ import { useNow } from '../hooks/use-now';
 import { VERIFICATION_COPY } from '../model/verification-copy';
 import { isResendAvailable, verificationUiState } from '../model/verification-state';
 import { CodeEntryCard } from './code-entry-card';
-import { ContactEntryCard } from './contact-entry-card';
+import { ContactEntryCard, contactEntryAlertOf } from './contact-entry-card';
 import { VerificationOutcomeCard } from './verification-outcome-card';
 
 /**
@@ -86,12 +86,10 @@ export function ContactVerificationScreen() {
       default:
         return (
           <ContactEntryCard
-            contactKind={state.contactKind}
             contact={state.contact}
             invalid={uiState === 'INVALID_CONTACT'}
             submitting={uiState === 'REQUESTING'}
-            rateLimited={uiState === 'RATE_LIMITED'}
-            onContactKindChange={verification.setContactKind}
+            alert={contactEntryAlertOf(uiState)}
             onContactChange={verification.setContact}
             onSubmit={verification.requestCode}
           />

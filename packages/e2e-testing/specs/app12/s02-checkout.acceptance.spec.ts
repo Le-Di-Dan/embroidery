@@ -252,7 +252,7 @@ test.describe('verification is required, and is bound to the contact', () => {
     // Back at contact entry: the verified affordance is gone.
     await expect(page.getByText(COPY.verified)).toHaveCount(0);
     const driver = createS01Driver(page);
-    await driver.enterContact('EMAIL', 'app12-s02-swapped@vidu.test');
+    await driver.enterContact('app12-s02-swapped@vidu.test');
 
     await fillDelivery(page);
     await page.getByRole('button', { name: COPY.submit }).click();

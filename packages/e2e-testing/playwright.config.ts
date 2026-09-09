@@ -295,6 +295,19 @@ export default defineConfig({
     //
     // The timeout is generous because the 20-image states load twenty real
     // derivative images through the gateway on every navigation.
+    // APP12-N01.S01 — the email-only verification UX, proved against a real
+    // SMTP boundary. Serial and single-worker: the spec owns one loopback
+    // capture listener and counts the messages each journey produced, so a
+    // second worker would deliver into the same listener and the counts would
+    // stop meaning anything. Storefront-only — the run drives the checkout's
+    // verification card and the standalone verification route, and touches no
+    // Admin surface. The suite resizes itself between 390 and 1440, so the
+    // project fixes neither.
+    {
+      name: 'app12-n01s1-chromium',
+      testMatch: '**/app12/n01s1-*.acceptance.spec.ts',
+      use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: STOREFRONT_URL },
+    },
     {
       name: 'app12-m01s1-chromium',
       testMatch: '**/app12/m01s1-*.acceptance.spec.ts',

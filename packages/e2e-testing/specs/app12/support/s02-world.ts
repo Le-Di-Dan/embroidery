@@ -46,8 +46,8 @@ const AMBIGUOUS_SKU = requiredEnv.bind(null, 'E2E_APP12_S02_AMBIGUOUS_SKU');
 const COPY = {
   heading: 'Xác nhận đơn hàng',
   contactHeading: 'Liên hệ',
-  verified: 'Đã xác minh',
-  changeContact: 'Đổi liên hệ',
+  verified: 'Email đã được xác minh',
+  changeContact: 'Đổi email',
   deliveryHeading: 'Giao hàng',
   recipientName: 'Người nhận',
   recipientPhone: 'Số điện thoại người nhận',
@@ -117,8 +117,7 @@ async function verifyContact(page: Page): Promise<string> {
   // be filled, so the value may not have landed on the first attempt.
   await expect(async () => {
     if (new URL(page.url()).searchParams.get('sku') === null) await page.goto(url);
-    await driver.chooseContactKind('EMAIL');
-    await driver.enterContact('EMAIL', address);
+    await driver.enterContact(address);
     await driver.submitContact();
     await expect(page.getByRole('heading', { name: 'Nhập mã xác minh' })).toBeVisible({
       timeout: 2_000,

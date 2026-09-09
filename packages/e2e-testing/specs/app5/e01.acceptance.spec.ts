@@ -174,8 +174,7 @@ test.describe('APP5-E01 cross-layer acceptance', () => {
     await request.continueToVerification();
 
     // --- APP4 verification, through APP5's embedded step ---------------------
-    await verification.chooseContactKind('EMAIL');
-    await verification.enterContact('EMAIL', contactA.email);
+    await verification.enterContact(contactA.email);
     await verification.submitContact();
     await verification.waitForCodeEntry();
 
@@ -421,8 +420,7 @@ test.describe('APP5-E01 cross-layer acceptance', () => {
     await request.fillQuantity('3');
     await request.continueToVerification();
 
-    await verification.chooseContactKind('EMAIL');
-    await verification.enterContact('EMAIL', contactB.email);
+    await verification.enterContact(contactB.email);
     await verification.submitContact();
     await verification.waitForCodeEntry();
 

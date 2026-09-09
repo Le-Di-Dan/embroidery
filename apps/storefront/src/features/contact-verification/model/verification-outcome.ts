@@ -27,12 +27,14 @@ import { VerificationChallengeStatusResponseState } from '@embroidery/api-client
 import type { NormalizedApiError } from '@embroidery/api-client';
 
 /** What the screen should do next, in the vocabulary of the approved frames. */
-export type IssueOutcome = 'INVALID_CONTACT' | 'RATE_LIMITED' | 'RECOVERABLE_ERROR';
+export type IssueOutcome =
+  'INVALID_CONTACT' | 'CHANNEL_UNSUPPORTED' | 'RATE_LIMITED' | 'RECOVERABLE_ERROR';
 
 export type AttemptOutcome =
   'MISMATCH' | 'EXPIRED' | 'LOCKED' | 'SUCCESS' | 'RATE_LIMITED' | 'RECOVERABLE_ERROR';
 
-export type ResendOutcome = 'CHALLENGE_DEAD' | 'RATE_LIMITED' | 'RECOVERABLE_ERROR';
+export type ResendOutcome =
+  'CHALLENGE_DEAD' | 'CHANNEL_UNSUPPORTED' | 'RATE_LIMITED' | 'RECOVERABLE_ERROR';
 
 const UNPROCESSABLE = 422;
 const TOO_MANY_REQUESTS = 429;
@@ -49,8 +51,34 @@ function isBackOff(status: number | undefined): boolean {
   return status === TOO_MANY_REQUESTS || status === SERVICE_UNAVAILABLE;
 }
 
+/**
+ * The one refusal on this path that *is* separated by a business code.
+ *
+ * `APP12-N01` locked customer verification to email. A contact kind that is not
+ * a verification channel is refused with 422 and this classification — the same
+ * 422 an unusable email gets, which is why the code and not the status is what
+ * tells them apart. Reading it is the difference between telling the customer
+ * "that address is malformed" and telling them the truth: codes are sent by
+ * email.
+ *
+ * **This branch is defence in depth, and is expected never to fire from this
+ * UI.** `N01.S01` removed every control capable of naming a non-email channel,
+ * and the generated request type now admits one member, so the Storefront
+ * cannot construct such a request. It is retained because a refusal that
+ * *does* arrive — a legacy `PHONE` challenge resent by an old open tab, a
+ * future caller — must not be rendered as a spelling mistake.
+ *
+ * A second limitation, stated rather than hidden: the API attaches this code to
+ * the failure it raises internally but publishes the envelope with the
+ * status-derived default, so today the branch is unreachable *by code* as well
+ * as by construction. Making the envelope carry it is a backend change `S01`
+ * is not authorized to make — recorded as `FU-APP12-N01-S01-01`.
+ */
+const CHANNEL_UNSUPPORTED_CODE = 'VERIFICATION_CHANNEL_UNSUPPORTED';
+
 /** `POST /public/verification/challenges` refused. */
 export function issueOutcomeOf(error: NormalizedApiError): IssueOutcome {
+  if (error.code === CHANNEL_UNSUPPORTED_CODE) return 'CHANNEL_UNSUPPORTED';
   if (error.httpStatus === UNPROCESSABLE) return 'INVALID_CONTACT';
   if (isBackOff(error.httpStatus)) return 'RATE_LIMITED';
   return 'RECOVERABLE_ERROR';
@@ -65,6 +93,12 @@ export function issueOutcomeOf(error: NormalizedApiError): IssueOutcome {
  * read; `CHALLENGE_DEAD` is that instruction, not a rendered state.
  */
 export function resendOutcomeOf(error: NormalizedApiError): ResendOutcome {
+  // The resend path is the one place a *legacy* `PHONE` challenge could still
+  // be named — the id already exists, so nothing about the request states a
+  // channel. `N01.B01` put the refusal in the domain precisely so this call is
+  // refused too; classifying it here keeps the answer honest instead of
+  // resolving it as an ordinary dead challenge.
+  if (error.code === CHANNEL_UNSUPPORTED_CODE) return 'CHANNEL_UNSUPPORTED';
   if (error.httpStatus === UNPROCESSABLE) return 'CHALLENGE_DEAD';
   if (isBackOff(error.httpStatus)) return 'RATE_LIMITED';
   return 'RECOVERABLE_ERROR';

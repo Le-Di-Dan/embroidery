@@ -110,42 +110,10 @@ $line-height-body: 1.5;
     overflow-wrap: anywhere;
   }
 
-  // Contact-kind tabs (623:11), a radio group wearing the drawn pill shape.
-  &__tabs {
-    display: flex;
-    gap: styles.spacing(8);
-    margin: 0;
-    padding: 0;
-    border: 0;
-  }
-
-  &__tab {
-    flex: 1 0 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: styles.$size-touch-target-min;
-    padding: styles.spacing(8) styles.spacing(16);
-    background: styles.$color-background-secondary;
-    border: 1px solid styles.$color-border-primary;
-    border-radius: 999px;
-    font-size: styles.$font-size-body-s;
-    font-weight: styles.$font-weight-medium;
-    color: styles.$color-text-secondary;
-    cursor: pointer;
-
-    &--active {
-      background: styles.$color-surface-primary;
-      border: 2px solid styles.$color-action-primary;
-      color: styles.$color-text-primary;
-    }
-
-    // The radio is visually hidden, so the label carries its focus ring.
-    &:focus-within {
-      outline: 2px solid styles.$color-focus-ring;
-      outline-offset: 2px;
-    }
-  }
+  // The contact-kind tabs (`623:11`) were removed with the chooser they styled
+  // (`APP12-N01.S01` §12). Nothing renders `__tabs` or `__tab` any more, and a
+  // rule kept for a class no markup emits is the fastest route back to the
+  // affordance: it makes restoring the chooser a one-line change nobody reviews.
 
   &__field {
     display: flex;

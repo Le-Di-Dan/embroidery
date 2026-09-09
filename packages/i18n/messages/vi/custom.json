@@ -66,7 +66,7 @@
     "verification": {
       "heading": "Xác minh liên hệ",
       "intro": "Chúng tôi gửi mã 6 chữ số để xác nhận bạn là chủ của liên hệ này.",
-      "verified": "Đã xác minh liên hệ. Bạn có thể tiếp tục bước 3.",
+      "verified": "Đã xác minh email. Bạn có thể tiếp tục bước 3.",
       "required": "Hoàn tất xác minh liên hệ trước khi tải ảnh và gửi yêu cầu."
     },
     "upload": {

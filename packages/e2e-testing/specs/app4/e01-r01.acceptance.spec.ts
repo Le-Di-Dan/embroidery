@@ -151,8 +151,7 @@ test.describe('APP4-E01-R01 canonical acceptance', () => {
     test.setTimeout(180_000);
     const s01 = createS01Driver(page);
     await s01.openVerification();
-    await s01.chooseContactKind('EMAIL');
-    await s01.enterContact('EMAIL', state.contact.email);
+    await s01.enterContact(state.contact.email);
     await s01.submitContact();
     await s01.waitForCodeEntry();
 
@@ -207,8 +206,7 @@ test.describe('APP4-E01-R01 canonical acceptance', () => {
     const s01 = createS01Driver(page);
 
     await s01.openVerification();
-    await s01.chooseContactKind('EMAIL');
-    await s01.enterContact('EMAIL', state.contact.email);
+    await s01.enterContact(state.contact.email);
     await s01.submitContact();
     await s01.waitForCodeEntry();
     await s01.enterCode(code);
@@ -696,8 +694,7 @@ test.describe('APP4-E01-R01 canonical acceptance', () => {
 
     const s01 = createS01Driver(page);
     await s01.openVerification();
-    await s01.chooseContactKind('EMAIL');
-    await s01.enterContact('EMAIL', second.email);
+    await s01.enterContact(second.email);
     await s01.submitContact();
     await s01.waitForCodeEntry();
 

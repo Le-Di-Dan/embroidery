@@ -290,6 +290,10 @@ describe('verification is reused, not rebuilt', () => {
     const code = codeOnly(hook?.text ?? '');
     // The §16 comparison, present as code rather than as a promise.
     expect(code).toContain('verified.contact === contact');
-    expect(code).toContain('verified.contactKind === contactKind');
+    // And the half that is gone: `APP12-N01.S01` locked verification to email
+    // and removed `contactKind` from the flow's state, so the binding compares
+    // the value alone. A comparison against a one-member constant would assert
+    // nothing, and leaving the field behind would suggest a choice still exists.
+    expect(code).not.toContain('contactKind');
   });
 });

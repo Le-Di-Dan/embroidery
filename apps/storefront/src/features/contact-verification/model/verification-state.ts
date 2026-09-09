@@ -19,8 +19,23 @@
  * component's own input state and is passed to the mutation through a ref, so
  * there is no reducer action carrying it and no snapshot of this object that
  * could contain it.
+ *
+ * ## The contact is an email, and that is a property of the type
+ *
+ * `APP12-N01.S01` removed `contactKind` from this model rather than pinning it
+ * to `'EMAIL'`. `CUSTOMER_OTP_CHANNEL = EMAIL_ONLY`, so a field that can only
+ * hold one value is a field whose every read is already answered, and the
+ * `CONTACT_KIND_CHANGED` action it existed for described a choice the product
+ * no longer offers.
+ *
+ * That is also what closes stale `PHONE` state (`S01` §14) at its root. This
+ * reducer is in-memory and reachable only through the actions below: it is
+ * never written to `localStorage`, `sessionStorage`, a cookie or the URL, so it
+ * cannot outlive a reload — and after `S01` there is no longer a *shape* in
+ * which a `PHONE` draft could be expressed even if something tried to restore
+ * one. Nothing has to detect and reset such a draft, because nothing can hold
+ * one.
  */
-import type { ContactKind } from './contact-draft';
 
 /** The challenge facts the server publishes. Nothing here is derived locally. */
 export interface VerificationChallenge {
@@ -45,6 +60,9 @@ export interface VerificationChallenge {
  * are functions of time and the third is a notice on the code-entry phase.
  * Modelling them as phases would make "in cooldown" and "showed a mismatch"
  * mutually exclusive, which they are not.
+ *
+ * `CHANNEL_UNSUPPORTED` is the defensive terminal for a refusal this UI can no
+ * longer provoke — see {@link VerificationAction}.
  */
 export type VerificationStatus =
   | 'CONTACT_ENTRY'
@@ -54,6 +72,7 @@ export type VerificationStatus =
   | 'EXPIRED'
   | 'LOCKED'
   | 'RATE_LIMITED'
+  | 'CHANNEL_UNSUPPORTED'
   | 'SUCCESS'
   | 'RECOVERABLE_ERROR';
 
@@ -62,8 +81,7 @@ export type CodeNotice = 'MISMATCH' | 'RESENT';
 
 export interface VerificationState {
   readonly status: VerificationStatus;
-  readonly contactKind: ContactKind;
-  /** As typed. Sent once; never rendered where the design requires the mask. */
+  /** The email as typed. Sent once; never rendered where the design requires the mask. */
   readonly contact: string;
   /** Set only by client-side shape validation, for the `623:27` state. */
   readonly contactInvalid: boolean;
@@ -82,7 +100,6 @@ export interface VerificationState {
 
 export const initialVerificationState: VerificationState = {
   status: 'CONTACT_ENTRY',
-  contactKind: 'EMAIL',
   contact: '',
   contactInvalid: false,
   challenge: undefined,
@@ -90,8 +107,17 @@ export const initialVerificationState: VerificationState = {
   notice: undefined,
 };
 
+/**
+ * Everything that can move the flow.
+ *
+ * `CHANNEL_UNSUPPORTED` is dispatched only from the issue error path, when the
+ * server's envelope carries that business code. After `S01` no control in this
+ * feature can produce a non-email challenge, so the branch is defence in depth
+ * rather than a reachable state: it exists so that if the refusal ever does
+ * arrive it is answered with the truth — codes go to email — instead of being
+ * rendered as "that email is malformed", which is what a bare 422 maps to.
+ */
 export type VerificationAction =
-  | { type: 'CONTACT_KIND_CHANGED'; contactKind: ContactKind }
   | { type: 'CONTACT_CHANGED'; contact: string }
   | { type: 'CONTACT_REJECTED' }
   | { type: 'ISSUE_STARTED' }
@@ -102,6 +128,7 @@ export type VerificationAction =
   | { type: 'CHALLENGE_EXPIRED' }
   | { type: 'CHALLENGE_LOCKED' }
   | { type: 'RATE_LIMITED' }
+  | { type: 'CHANNEL_UNSUPPORTED' }
   | { type: 'VERIFIED' }
   | { type: 'REQUEST_FAILED' }
   | { type: 'RESTARTED' };
@@ -111,10 +138,6 @@ export function verificationReducer(
   action: VerificationAction,
 ): VerificationState {
   switch (action.type) {
-    case 'CONTACT_KIND_CHANGED':
-      // Switching kind clears the value: an email left in a phone field is
-      // never a number the customer meant to send.
-      return { ...state, contactKind: action.contactKind, contact: '', contactInvalid: false };
     case 'CONTACT_CHANGED':
       return { ...state, contact: action.contact, contactInvalid: false };
     case 'CONTACT_REJECTED':
@@ -149,6 +172,11 @@ export function verificationReducer(
       return { ...state, status: 'LOCKED', notice: undefined };
     case 'RATE_LIMITED':
       return { ...state, status: 'RATE_LIMITED', notice: undefined };
+    case 'CHANNEL_UNSUPPORTED':
+      // Keeps the customer on contact entry with the field populated: the
+      // remedy is an email address, and the card that takes one is the card
+      // this state renders.
+      return { ...state, status: 'CHANNEL_UNSUPPORTED', notice: undefined };
     case 'VERIFIED':
       // The challenge is dropped on success: nothing downstream may answer it
       // again, and its id has no purpose on the success frame.
@@ -159,11 +187,7 @@ export function verificationReducer(
       // Back to contact entry, keeping what the customer typed so a new code can
       // be requested without retyping — the approved expiry and lockout frames
       // both keep the field populated.
-      return {
-        ...initialVerificationState,
-        contactKind: state.contactKind,
-        contact: state.contact,
-      };
+      return { ...initialVerificationState, contact: state.contact };
     default:
       return state;
   }
@@ -182,6 +206,7 @@ export type VerificationUiState =
   | 'EXPIRED'
   | 'LOCKED'
   | 'RATE_LIMITED'
+  | 'CHANNEL_UNSUPPORTED'
   | 'SUCCESS'
   | 'RECOVERABLE_ERROR';
 

@@ -162,8 +162,7 @@ test.describe('APP4-E01-R01-C1 correction', () => {
     //    secure-grant notification cannot exist without.
     const s01 = createS01Driver(page);
     await s01.openVerification();
-    await s01.chooseContactKind('EMAIL');
-    await s01.enterContact('EMAIL', fixtures.contact.email);
+    await s01.enterContact(fixtures.contact.email);
     await s01.submitContact();
     await s01.waitForCodeEntry();
     await worker.runOnce();

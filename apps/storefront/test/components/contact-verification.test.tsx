@@ -23,13 +23,13 @@ import { fireEvent, renderWithProviders, screen, waitFor } from '@embroidery/fro
 import { ContactVerificationScreen } from '../../src/features/contact-verification/ui/contact-verification-screen';
 import { VERIFICATION_COPY } from '../../src/features/contact-verification/model/verification-copy';
 import {
+  apiCodedFailure,
   apiFailure,
   envelopeOf,
   makeChallenge,
   makeStatus,
   networkFailure,
   MASKED_EMAIL,
-  MASKED_PHONE,
   NOW_MS,
   REPLACEMENT_CHALLENGE_ID,
   TEST_CODE,
@@ -67,7 +67,6 @@ function renderScreen() {
   return renderWithProviders(<ContactVerificationScreen />);
 }
 
-// By role, not by label text: the contact-kind radio is also labelled 'Email'.
 const contactField = () =>
   screen.getByRole('textbox', { name: VERIFICATION_COPY.emailField.label });
 const codeField = () =>
@@ -86,17 +85,10 @@ function type(field: HTMLElement, value: string): void {
 }
 
 /** Contact entry → a live challenge, which most states start from. */
-async function reachCodeEntry(kind: 'EMAIL' | 'PHONE' = 'EMAIL'): Promise<void> {
-  issueMock.mockResolvedValue(
-    envelopeOf(makeChallenge(kind === 'PHONE' ? { recipientMasked: MASKED_PHONE } : {})),
-  );
+async function reachCodeEntry(): Promise<void> {
+  issueMock.mockResolvedValue(envelopeOf(makeChallenge()));
   renderScreen();
-  if (kind === 'PHONE') {
-    fireEvent.click(screen.getByRole('radio', { name: VERIFICATION_COPY.contactKind.PHONE }));
-    type(screen.getByRole('textbox', { name: VERIFICATION_COPY.phoneField.label }), TEST_PHONE);
-  } else {
-    type(contactField(), TEST_EMAIL);
-  }
+  type(contactField(), TEST_EMAIL);
   fireEvent.click(button(VERIFICATION_COPY.contactEntry.submit));
   await waitFor(() => expect(codeField()).toBeInTheDocument());
 }
@@ -145,35 +137,105 @@ describe('APP4-S01 — contact entry', () => {
     release?.(envelopeOf(makeChallenge()));
   });
 
-  it('supports EMAIL and sends the contact exactly as typed', async () => {
-    await reachCodeEntry('EMAIL');
+  it('sends the contact exactly as typed, always as EMAIL', async () => {
+    await reachCodeEntry();
 
     expect(issueMock).toHaveBeenCalledWith(
       expect.objectContaining({ contact: TEST_EMAIL, contactKind: 'EMAIL', purpose: 'SUBMISSION' }),
       expect.anything(),
     );
   });
+});
 
-  it('supports PHONE and renders the mask the server returned for it', async () => {
-    await reachCodeEntry('PHONE');
+/**
+ * `APP12-N01.S01` §19 — the negative half, proved mechanically rather than by
+ * reading the component.
+ *
+ * These assertions are about what the customer *cannot* reach. Each one would
+ * have passed before this checkpoint only by accident, and each fails the moment
+ * a phone-verification affordance comes back in any form: a chooser, a second
+ * field, a stray SMS sentence, or a request naming a channel.
+ */
+describe('APP12-N01.S01 — email is the only verification channel', () => {
+  it('offers no method chooser and no second contact field', () => {
+    renderScreen();
 
-    expect(issueMock).toHaveBeenCalledWith(
-      expect.objectContaining({ contact: TEST_PHONE, contactKind: 'PHONE' }),
-      expect.anything(),
-    );
-    expect(screen.getByText(MASKED_PHONE)).toBeInTheDocument();
+    // No radio, no checkbox, no select, and exactly one text input on the card.
+    expect(screen.queryAllByRole('radio')).toHaveLength(0);
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+    expect(screen.queryAllByRole('combobox')).toHaveLength(0);
+    expect(screen.queryAllByRole('group')).toHaveLength(0);
+    expect(screen.getAllByRole('textbox')).toHaveLength(1);
+
+    // The one field is an email field by type, mode and autofill hint — a `tel`
+    // input is what a phone affordance would have to become.
+    const field = contactField();
+    expect(field).toHaveAttribute('type', 'email');
+    expect(field).toHaveAttribute('inputmode', 'email');
+    expect(field).toHaveAttribute('autocomplete', 'email');
   });
 
-  it('clears the field when the contact kind changes', () => {
+  it('says nothing about a phone number, an SMS or a message', () => {
+    renderScreen();
+
+    const page = document.body.textContent ?? '';
+    for (const forbidden of ['điện thoại', 'SMS', 'tin nhắn', 'Zalo']) {
+      expect(page).not.toContain(forbidden);
+    }
+  });
+
+  it('never issues a challenge for a phone number, even when one is typed', async () => {
+    issueMock.mockResolvedValue(envelopeOf(makeChallenge()));
+    renderScreen();
+
+    // The field accepts the keystrokes — nothing filters input — but a phone
+    // number is not a plausible email, so the client refuses it and no request
+    // is made. There is no control that could have made it a PHONE request.
+    type(contactField(), TEST_PHONE);
+    fireEvent.click(button(VERIFICATION_COPY.contactEntry.submit));
+
+    expect(await screen.findByText(VERIFICATION_COPY.emailField.invalid)).toBeInTheDocument();
+    expect(issueMock).not.toHaveBeenCalled();
+  });
+
+  it('answers an unsupported-channel refusal with the email-only notice', async () => {
+    // Defence in depth: no control here can provoke this refusal, so the test
+    // supplies the envelope directly. What it proves is the mapping — that the
+    // refusal is not rendered as "that email is malformed", which is what the
+    // bare 422 beneath it maps to.
+    issueMock.mockRejectedValue(apiCodedFailure(422, 'VERIFICATION_CHANNEL_UNSUPPORTED'));
     renderScreen();
 
     type(contactField(), TEST_EMAIL);
-    fireEvent.click(screen.getByRole('radio', { name: VERIFICATION_COPY.contactKind.PHONE }));
+    fireEvent.click(button(VERIFICATION_COPY.contactEntry.submit));
 
-    // An email left in a phone field is never a number the customer meant.
-    expect(screen.getByRole('textbox', { name: VERIFICATION_COPY.phoneField.label })).toHaveValue(
-      '',
-    );
+    expect(
+      await screen.findByText(VERIFICATION_COPY.alerts.channelUnsupported.title),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(VERIFICATION_COPY.emailField.invalid)).not.toBeInTheDocument();
+    // The refusal is a notice on the card the remedy lives on, so the field is
+    // still there and still holds what the customer typed.
+    expect(contactField()).toHaveValue(TEST_EMAIL);
+  });
+
+  it('shows no raw backend or provider text when a refusal is rendered', async () => {
+    issueMock.mockRejectedValue(apiCodedFailure(422, 'VERIFICATION_CHANNEL_UNSUPPORTED'));
+    renderScreen();
+
+    type(contactField(), TEST_EMAIL);
+    fireEvent.click(button(VERIFICATION_COPY.contactEntry.submit));
+    await screen.findByText(VERIFICATION_COPY.alerts.channelUnsupported.title);
+
+    const page = document.body.textContent ?? '';
+    for (const leak of [
+      'VERIFICATION_CHANNEL_UNSUPPORTED',
+      'Refused.',
+      'SMTP',
+      '422',
+      'req-test',
+    ]) {
+      expect(page).not.toContain(leak);
+    }
   });
 });
 

@@ -88,7 +88,7 @@ beforeEach(() => {
 /** Drive the real `APP4` flow to a verified contact, as a customer would. */
 async function verifyContact(user: ReturnType<typeof createUser>, value = 'khach@vidu.com') {
   await user.type(screen.getByRole('textbox', { name: 'Email' }), value);
-  await user.click(screen.getByRole('button', { name: 'Gửi mã xác minh' }));
+  await user.click(screen.getByRole('button', { name: 'Gửi mã' }));
   await screen.findByLabelText('Mã xác minh (6 chữ số)');
   await user.type(screen.getByLabelText('Mã xác minh (6 chữ số)'), '123456');
   await user.click(screen.getByRole('button', { name: 'Xác minh' }));
@@ -225,7 +225,7 @@ describe('verification', () => {
     // The one outright runtime defect in the V01 audit. Pressing "Đặt hàng"
     // early set the refusal, and completing the verification did not clear it —
     // so the card rendered "Vui lòng xác minh liên hệ trước khi đặt hàng"
-    // directly above "✓ Đã xác minh", at all three viewports, at the exact
+    // directly above "✓ Email đã được xác minh", at all three viewports, at the exact
     // moment the customer decides whether it is safe to press the button.
     //
     // The refusal is derived now rather than stored, so it cannot outlive the
@@ -515,16 +515,16 @@ describe('the server-rendered checkout is not submittable before hydration', () 
       expect(form.getAttribute('method')).toBeNull();
     }
 
-    // The blast radius of that default, stated exactly: the **only** named
-    // control on the page is the contact-kind radio group, so a native GET
-    // could only ever have written `…-kind=EMAIL` into the query. The contact
-    // value, the verification code and all four delivery fields carry no
-    // `name`, so none of them could reach a URL, a referrer or an access log
-    // even if a submission happened. What the defect destroyed was the
-    // customer's `?sku=&quantity=`, not their privacy.
+    // The blast radius of that default, stated exactly: there is now **no**
+    // named control on the page at all, so a native GET could write nothing
+    // into the query. Until `APP12-N01.S01` there was one — the contact-kind
+    // radio group, which could have written `…-kind=EMAIL` — and removing the
+    // chooser removed the last `name` with it. The contact value, the
+    // verification code and all four delivery fields never carried one. What
+    // the defect destroyed was the customer's `?sku=&quantity=`, not their
+    // privacy; now it could not even carry that much.
     const named = [...parsed.querySelectorAll('input[name], textarea[name], select[name]')];
-    expect(named.every((control) => control.getAttribute('type') === 'radio')).toBe(true);
-    expect(named.every((control) => /-kind$/.test(control.getAttribute('name') ?? ''))).toBe(true);
+    expect(named.map((control) => control.outerHTML)).toEqual([]);
   });
 
   it('becomes interactive once React takes the markup over', async () => {

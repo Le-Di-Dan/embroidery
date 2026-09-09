@@ -23,10 +23,17 @@
  * defect here, where success is a credential the next screen spends.
  *
  * So the binding is recorded, not inferred: at the moment the flow reports
- * `SUCCESS` this captures `{ challengeId, contactKind, contact }` together, and
- * any later divergence in *either* half drops the whole thing. `APP4` is
- * untouched — same reducer, same actions, same moment of forgetting — and the
- * additional rule is visibly this checkpoint's.
+ * `SUCCESS` this captures `{ challengeId, contact }` together, and a later
+ * divergence drops the whole thing. `APP4` is untouched — same reducer, same
+ * actions, same moment of forgetting — and the additional rule is visibly this
+ * checkpoint's.
+ *
+ * The capture used to hold a `contactKind` beside the value, because the flow
+ * offered a choice of channel and a changed *kind* was as much a changed
+ * destination as a changed address. `APP12-N01.S01` locked verification to
+ * email and removed the field from `APP4`'s state, so that half of the
+ * comparison is gone: there is one channel, the value alone identifies the
+ * destination, and a comparison against a constant would assert nothing.
  *
  * ## What is never retained
  *
@@ -51,7 +58,6 @@ import type { ContactVerification } from '../../contact-verification';
 /** The verified contact, as one indivisible fact. */
 export interface VerifiedContact {
   readonly challengeId: string;
-  readonly contactKind: string;
   readonly contact: string;
 }
 
@@ -78,7 +84,7 @@ export function useVerifiedContact(verification: ContactVerification): UseVerifi
   const challengeId = state.challenge?.challengeId;
   if (challengeId !== undefined) liveChallengeRef.current = challengeId;
 
-  const { status, contact, contactKind } = state;
+  const { status, contact } = state;
 
   /**
    * The contact as it stands right now, read at the capture edge only.
@@ -91,8 +97,8 @@ export function useVerifiedContact(verification: ContactVerification): UseVerifi
    * happen at the transition into success, and the comparison below is what
    * notices a later edit.
    */
-  const liveContactRef = useRef({ contact, contactKind });
-  liveContactRef.current = { contact, contactKind };
+  const liveContactRef = useRef({ contact });
+  liveContactRef.current = { contact };
 
   useEffect(() => {
     if (status === 'SUCCESS') {
@@ -118,13 +124,10 @@ export function useVerifiedContact(verification: ContactVerification): UseVerifi
    * `CONTACT_CHANGED` keeps the status at `SUCCESS`, so the effect above would
    * happily re-capture the *new* contact against the *old* challenge. Comparing
    * the retained binding with what is on screen right now closes that: a
-   * divergence in the value or the kind means the retained authorization is no
-   * longer the one this form would be submitting.
+   * divergence means the retained authorization is no longer the one this form
+   * would be submitting.
    */
-  const bound =
-    verified !== undefined && verified.contact === contact && verified.contactKind === contactKind
-      ? verified
-      : undefined;
+  const bound = verified !== undefined && verified.contact === contact ? verified : undefined;
 
   const restart = useCallback(() => {
     setVerified(undefined);

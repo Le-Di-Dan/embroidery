@@ -169,8 +169,7 @@ test.describe('APP7-E01 — order, deposit, verification', () => {
     await depositDriver.startAttempt();
     await depositDriver.waitForStepUp();
     const verification = createS01Driver(page);
-    await verification.chooseContactKind('EMAIL');
-    await verification.enterContact('EMAIL', handoff.contactValue);
+    await verification.enterContact(handoff.contactValue);
     await verification.submitContact();
     await verification.waitForCodeEntry();
     // The code exists only in the in-process recording adapter, which is why

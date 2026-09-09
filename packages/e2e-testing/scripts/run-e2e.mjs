@@ -94,6 +94,16 @@ const APP12_A01 = ['app12-a01-chromium'];
 // process is started — `M01.S1` owns that surface and is not authorised here.
 const APP12_M01A1 = ['app12-m01a1-chromium'];
 const APP12_M01S1 = ['app12-m01s1-chromium'];
+// APP12-N01.S01 — the email-only verification UX. The S02 topology exactly, and
+// deliberately not a new one: the surface under test is the checkout's own
+// verification card, so it needs the same catalog, the same APP4 lane and the
+// same in-process worker. What differs is entirely inside the Playwright child
+// — the spec composes that worker with a delivering SMTP transport aimed at a
+// loopback capture listener it owns, because `S01` §18 forbids reading the code
+// out of the recording adapter. Nothing in the orchestrated topology changes,
+// which is why this rides `app12S02` everywhere below rather than duplicating
+// twelve conditions.
+const APP12_N01S1 = ['app12-n01s1-chromium'];
 // APP12-M01.E1 — the final cross-boundary acceptance world, and the first mode
 // that starts the Admin **and** the Storefront over one catalog. That union is
 // the whole point: §11 and §12 are claims about an operator's write reaching a
@@ -289,7 +299,9 @@ function parseArgs(argv) {
   const app12H06 = flags.has('--app12-h06');
   // APP12-S02: the same Playwright mode family, with the APP4 secret material
   // and the browser tier's in-process runtime the verification lane needs.
-  const app12S02 = flags.has('--app12-s02');
+  // APP12-N01.S01: the email-only verification UX, on the S02 topology.
+  const app12N01S1 = flags.has('--app12-n01s1');
+  const app12S02 = flags.has('--app12-s02') || app12N01S1;
   // APP12-S03: the same Playwright mode family as S02, plus the Admin origin and
   // this run's object storage.
   const app12S03 = flags.has('--app12-s03');
@@ -340,21 +352,23 @@ function parseArgs(argv) {
                         ? 'app12-a01'
                         : app12S03
                           ? 'app12-s03'
-                          : app12S02
-                            ? 'app12-s02'
-                            : app12S01
-                              ? 'app12-s01'
-                              : app7E01
-                                ? 'app7-e01'
-                                : app5E01
-                                  ? 'app5-e01'
-                                  : app4Browser
-                                    ? 'app4-browser'
-                                    : app1
-                                      ? 'app1'
-                                      : full
-                                        ? 'full'
-                                        : 'smoke';
+                          : app12N01S1
+                            ? 'app12-n01s1'
+                            : app12S02
+                              ? 'app12-s02'
+                              : app12S01
+                                ? 'app12-s01'
+                                : app7E01
+                                  ? 'app7-e01'
+                                  : app5E01
+                                    ? 'app5-e01'
+                                    : app4Browser
+                                      ? 'app4-browser'
+                                      : app1
+                                        ? 'app1'
+                                        : full
+                                          ? 'full'
+                                          : 'smoke';
   const projects = app12M01E1
     ? APP12_M01E1
     : app12M01S1
@@ -377,25 +391,27 @@ function parseArgs(argv) {
                       ? APP12_A01
                       : app12S03
                         ? APP12_S03
-                        : app12S02
-                          ? APP12_S02
-                          : app12S01
-                            ? APP12_S01
-                            : app7E01
-                              ? APP7_E01
-                              : app5E01
-                                ? APP5_E01
-                                : app4R01C1
-                                  ? APP4_R01_C1
-                                  : app4R01
-                                    ? APP4_R01
-                                    : app4Browser
-                                      ? APP4
-                                      : app1
-                                        ? APP1
-                                        : full
-                                          ? FULL
-                                          : SMOKE;
+                        : app12N01S1
+                          ? APP12_N01S1
+                          : app12S02
+                            ? APP12_S02
+                            : app12S01
+                              ? APP12_S01
+                              : app7E01
+                                ? APP7_E01
+                                : app5E01
+                                  ? APP5_E01
+                                  : app4R01C1
+                                    ? APP4_R01_C1
+                                    : app4R01
+                                      ? APP4_R01
+                                      : app4Browser
+                                        ? APP4
+                                        : app1
+                                          ? APP1
+                                          : full
+                                            ? FULL
+                                            : SMOKE;
   // The E01 suite is always host/Chromium; it cannot run in the container.
   const runner =
     app1 ||
@@ -668,6 +684,24 @@ async function main() {
               INTERNAL_API_BASE_URL: `http://localhost:${config.ports.api}/api`,
               STOREFRONT_PUBLIC_ORIGIN: config.baseUrls.storefront,
               CUSTOM_EMBROIDERY_RELEASE_ENABLED: app12H01Wave2 ? 'true' : 'false',
+            },
+          }
+        : {}),
+      // The APP4/APP5/APP7 browser tiers configure the Storefront process too,
+      // and until now did not — they predate `STOREFRONT_PUBLIC_ORIGIN` becoming
+      // required (`IMP-D050`), so their Storefront started without it and every
+      // route it renders answered 500 in a browser. `APP12-G02-C1` recorded that
+      // an unset origin is invisible to curl and fatal to a page; the H02 smoke
+      // has been failing on exactly that, at HEAD, on `/xac-minh-lien-he`.
+      //
+      // Deliberately **not** the Wave-2 release flag. Those modes drive the
+      // custom-request and deposit journeys, which need the Storefront's own
+      // default rather than a value this line would decide for them.
+      ...(app4Browser
+        ? {
+            withStorefront: {
+              INTERNAL_API_BASE_URL: `http://localhost:${config.ports.api}/api`,
+              STOREFRONT_PUBLIC_ORIGIN: config.baseUrls.storefront,
             },
           }
         : {}),

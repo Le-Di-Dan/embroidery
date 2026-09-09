@@ -21,6 +21,7 @@
 import {
   CodeEntryCard,
   ContactEntryCard,
+  contactEntryAlertOf,
   VerificationOutcomeCard,
   isResendAvailable,
   useNow,
@@ -128,12 +129,10 @@ export function CheckoutContactCard(props: CheckoutContactCardProps) {
       default:
         return (
           <ContactEntryCard
-            contactKind={state.contactKind}
             contact={state.contact}
             invalid={uiState === 'INVALID_CONTACT'}
             submitting={uiState === 'REQUESTING'}
-            rateLimited={uiState === 'RATE_LIMITED'}
-            onContactKindChange={verification.setContactKind}
+            alert={contactEntryAlertOf(uiState)}
             onContactChange={verification.setContact}
             onSubmit={verification.requestCode}
           />

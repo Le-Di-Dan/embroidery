@@ -5,9 +5,9 @@
       "heading": "Liên hệ",
       "hint": "Xưởng dùng thông tin này để gửi liên kết theo dõi đơn hàng.",
       "verifiedMark": "✓",
-      "verified": "Đã xác minh",
-      "change": "Đổi liên hệ",
-      "changeNotice": "Đổi liên hệ sẽ cần xác minh lại trước khi đặt hàng."
+      "verified": "Email đã được xác minh",
+      "change": "Đổi email",
+      "changeNotice": "Đổi email sẽ cần xác minh lại trước khi đặt hàng."
     },
     "delivery": {
       "heading": "Giao hàng",
@@ -65,16 +65,11 @@
   },
   "verification": {
     "contactEntry": {
-      "title": "Xác minh liên hệ của bạn",
-      "body": "Nhập email hoặc số điện thoại. Chúng tôi gửi một mã gồm 6 chữ số để xác nhận đó là bạn.",
+      "title": "Xác minh email của bạn",
+      "body": "Nhập email để nhận mã xác thực gồm 6 chữ số.",
       "caption": "Bạn không cần tạo tài khoản.",
-      "submit": "Gửi mã xác minh",
+      "submit": "Gửi mã",
       "submitting": "Đang gửi mã…"
-    },
-    "contactKind": {
-      "legend": "Bạn muốn nhận mã qua đâu?",
-      "EMAIL": "Email",
-      "PHONE": "Số điện thoại"
     },
     "emailField": {
       "label": "Email",
@@ -82,19 +77,14 @@
       "help": "Chỉ dùng để gửi mã xác minh và cập nhật về yêu cầu của bạn.",
       "invalid": "Email chưa đúng định dạng. Ví dụ: ban@vidu.com"
     },
-    "phoneField": {
-      "label": "Số điện thoại",
-      "placeholder": "0912 345 678",
-      "help": "Nhập số trong nước, hoặc số quốc tế bắt đầu bằng dấu +.",
-      "invalid": "Số điện thoại chưa đúng định dạng. Ví dụ: 0912 345 678"
-    },
     "codeEntry": {
       "title": "Nhập mã xác minh",
-      "body": "Chúng tôi đã gửi một mã gồm 6 chữ số tới:",
+      "body": "Yêu cầu gửi mã đã được tiếp nhận. Hãy kiểm tra hộp thư email của:",
       "fieldLabel": "Mã xác minh (6 chữ số)",
       "help": "Mã có hiệu lực trong 10 phút.",
       "submit": "Xác minh",
-      "submitting": "Đang xác minh…"
+      "submitting": "Đang xác minh…",
+      "inboxHint": "Nếu chưa thấy, hãy kiểm tra cả mục spam hoặc quảng cáo."
     },
     "resend": {
       "action": "Gửi lại mã",
@@ -102,10 +92,10 @@
       "sending": "Đang gửi lại…"
     },
     "alerts": {
-      "mismatch": "Mã không đúng. Hãy kiểm tra lại mã trong tin nhắn mới nhất.",
+      "mismatch": "Mã không đúng. Hãy kiểm tra lại mã trong email mới nhất.",
       "resent": {
         "title": "Đã gửi mã mới",
-        "body": "Mã cũ không còn dùng được. Hãy nhập mã trong tin nhắn mới nhất."
+        "body": "Mã cũ không còn dùng được. Hãy nhập mã trong email mới nhất."
       },
       "expired": {
         "title": "Mã không còn hiệu lực",
@@ -117,15 +107,19 @@
       },
       "rateLimited": {
         "title": "Bạn đã yêu cầu mã quá nhiều lần",
-        "body": "Để bảo vệ tài khoản, chúng tôi tạm dừng gửi mã cho liên hệ này. Hãy thử lại sau khoảng 15 phút."
+        "body": "Để bảo vệ tài khoản, chúng tôi tạm dừng gửi mã tới email này. Hãy thử lại sau khoảng 15 phút."
       },
       "success": {
         "title": "Xác minh thành công",
-        "body": "Liên hệ của bạn đã được xác nhận. Bạn có thể tiếp tục yêu cầu thêu của mình."
+        "body": "Email của bạn đã được xác minh. Bạn có thể tiếp tục yêu cầu thêu của mình."
       },
       "recoverableError": {
         "title": "Mất kết nối tới máy chủ",
         "body": "Yêu cầu chưa được gửi đi. Kiểm tra kết nối mạng rồi thử lại — bạn không bị mất lượt nào."
+      },
+      "channelUnsupported": {
+        "title": "Chỉ xác minh qua email",
+        "body": "Mã xác minh chỉ được gửi tới email. Hãy nhập địa chỉ email của bạn để nhận mã."
       }
     },
     "outcome": {
@@ -140,7 +134,7 @@
         "action": "Gửi mã mới"
       },
       "SUCCESS": {
-        "title": "Đã xác minh liên hệ",
+        "title": "Email đã được xác minh",
         "action": "Tiếp tục"
       },
       "RECOVERABLE_ERROR": {
@@ -148,8 +142,8 @@
         "action": "Thử lại"
       }
     },
-    "successCaption": "Chúng tôi chỉ dùng liên hệ này để gửi cập nhật về yêu cầu của bạn.",
-    "pageTitle": "Xác minh liên hệ",
+    "successCaption": "Chúng tôi chỉ dùng email này để gửi cập nhật về yêu cầu của bạn.",
+    "pageTitle": "Xác minh email",
     "live": {
       "requesting": "Đang gửi mã xác minh.",
       "verifying": "Đang xác minh mã."

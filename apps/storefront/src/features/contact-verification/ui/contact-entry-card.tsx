@@ -2,47 +2,80 @@
 
 import { useId } from 'react';
 
-import { CONTACT_KINDS, type ContactKind } from '../model/contact-draft';
-import { CONTACT_FIELD_COPY, VERIFICATION_COPY } from '../model/verification-copy';
+import { VERIFICATION_COPY } from '../model/verification-copy';
+import type { VerificationUiState } from '../model/verification-state';
 import { VerificationAlert } from './verification-alert';
 
 /**
  * Contact entry (`623:3`), its invalid state (`623:27`), its submitting state
  * (`623:51`) and the rate-limited state that keeps the same card (`625:173`).
  *
- * One card for four frames because that is how they are drawn: the tabs, field,
+ * One card for those frames because that is how they are drawn: the field,
  * button and caption are identical, and what changes is the field's error, the
  * button's label and whether an alert sits above the field.
  *
- * The contact-kind control is a **radio group**, not two buttons: it is a choice
- * between mutually exclusive options, so arrow-key navigation and the group
- * label come from the platform rather than from re-implemented key handling.
+ * ## There is no contact-kind control (`APP12-N01.S01`)
+ *
+ * The approved frames draw an EMAIL/PHONE radio group above the field, and this
+ * card used to render it. `CUSTOMER_OTP_CHANNEL = EMAIL_ONLY` retired it: the
+ * server refuses a phone challenge, so a chooser could only offer an option
+ * that fails. The group is gone rather than disabled or hidden — a hidden radio
+ * is still a control, still focusable in some assistive-technology modes, and
+ * still a `name` a native form submission could write into a URL.
+ *
+ * The departure from the approved design is deliberate and recorded as
+ * `FU-APP12-N01-S01-02`: the frames predate the locked channel decision, and
+ * `APP12-N01`'s product authority outranks them (`CLAUDE.md` §2).
+ *
+ * What removing it also removes: the group's `<legend>`, so nothing is left as
+ * an orphaned label, and the field's own `<label>` is now the only labelling
+ * relationship on the card.
  */
+
+/** The one-off notice above the field, when the server refused the request. */
+export type ContactEntryAlert = 'RATE_LIMITED' | 'CHANNEL_UNSUPPORTED';
+
+/**
+ * Which notice, if any, belongs above the field for the frame on screen.
+ *
+ * One mapping shared by all seven surfaces that mount this card, so a state
+ * that must raise an alert cannot be silently dropped by the one dialog whose
+ * author did not know about it — which is precisely how the previous
+ * `rateLimited` boolean would have absorbed `CHANNEL_UNSUPPORTED`.
+ */
+export function contactEntryAlertOf(uiState: VerificationUiState): ContactEntryAlert | undefined {
+  if (uiState === 'RATE_LIMITED') return 'RATE_LIMITED';
+  if (uiState === 'CHANNEL_UNSUPPORTED') return 'CHANNEL_UNSUPPORTED';
+  return undefined;
+}
+
 interface ContactEntryCardProps {
-  readonly contactKind: ContactKind;
   readonly contact: string;
   readonly invalid: boolean;
   readonly submitting: boolean;
-  readonly rateLimited: boolean;
-  readonly onContactKindChange: (kind: ContactKind) => void;
+  readonly alert: ContactEntryAlert | undefined;
   readonly onContactChange: (contact: string) => void;
   readonly onSubmit: () => void;
 }
 
+const ALERT_COPY = {
+  RATE_LIMITED: VERIFICATION_COPY.alerts.rateLimited,
+  CHANNEL_UNSUPPORTED: VERIFICATION_COPY.alerts.channelUnsupported,
+} as const;
+
 export function ContactEntryCard({
-  contactKind,
   contact,
   invalid,
   submitting,
-  rateLimited,
-  onContactKindChange,
+  alert,
   onContactChange,
   onSubmit,
 }: ContactEntryCardProps) {
   const fieldId = useId();
   const helpId = `${fieldId}-help`;
   const errorId = `${fieldId}-error`;
-  const field = CONTACT_FIELD_COPY[contactKind];
+  const field = VERIFICATION_COPY.emailField;
+  const alertCopy = alert === undefined ? undefined : ALERT_COPY[alert];
 
   return (
     <form
@@ -56,38 +89,9 @@ export function ContactEntryCard({
       <h2 className="contact-verification__title">{VERIFICATION_COPY.contactEntry.title}</h2>
       <p className="contact-verification__body">{VERIFICATION_COPY.contactEntry.body}</p>
 
-      {rateLimited ? (
-        <VerificationAlert
-          tone="warn"
-          title={VERIFICATION_COPY.alerts.rateLimited.title}
-          body={VERIFICATION_COPY.alerts.rateLimited.body}
-        />
-      ) : null}
-
-      <fieldset className="contact-verification__tabs">
-        <legend className="contact-verification__visually-hidden">
-          {VERIFICATION_COPY.contactKind.legend}
-        </legend>
-        {CONTACT_KINDS.map((kind) => (
-          <label
-            key={kind}
-            className={`contact-verification__tab${
-              kind === contactKind ? ' contact-verification__tab--active' : ''
-            }`}
-          >
-            <input
-              className="contact-verification__visually-hidden"
-              type="radio"
-              name={`${fieldId}-kind`}
-              value={kind}
-              checked={kind === contactKind}
-              disabled={submitting}
-              onChange={() => onContactKindChange(kind)}
-            />
-            {VERIFICATION_COPY.contactKind[kind]}
-          </label>
-        ))}
-      </fieldset>
+      {alertCopy === undefined ? null : (
+        <VerificationAlert tone="warn" title={alertCopy.title} body={alertCopy.body} />
+      )}
 
       <div className="contact-verification__field">
         <label className="contact-verification__label" htmlFor={fieldId}>
@@ -98,12 +102,12 @@ export function ContactEntryCard({
           className={`contact-verification__input${
             invalid ? ' contact-verification__input--invalid' : ''
           }`}
-          // `type="email"`/`type="tel"` give the right mobile keyboard; validation
-          // stays ours, because the browser's own bubble is neither the approved
-          // copy nor associated with the field the way `634:141` requires.
-          type={contactKind === 'EMAIL' ? 'email' : 'tel'}
-          inputMode={contactKind === 'EMAIL' ? 'email' : 'tel'}
-          autoComplete={contactKind === 'EMAIL' ? 'email' : 'tel'}
+          // `type="email"` gives the right mobile keyboard; validation stays
+          // ours, because the browser's own bubble is neither the approved copy
+          // nor associated with the field the way `634:141` requires.
+          type="email"
+          inputMode="email"
+          autoComplete="email"
           placeholder={field.placeholder}
           value={contact}
           disabled={submitting}

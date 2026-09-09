@@ -34,5 +34,9 @@ export { useNow } from './hooks/use-now';
 export { VERIFICATION_COPY } from './model/verification-copy';
 export { isResendAvailable, verificationUiState } from './model/verification-state';
 export { CodeEntryCard } from './ui/code-entry-card';
-export { ContactEntryCard } from './ui/contact-entry-card';
+export {
+  ContactEntryCard,
+  contactEntryAlertOf,
+  type ContactEntryAlert,
+} from './ui/contact-entry-card';
 export { VerificationOutcomeCard } from './ui/verification-outcome-card';

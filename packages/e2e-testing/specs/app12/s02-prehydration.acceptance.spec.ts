@@ -126,7 +126,7 @@ test.describe('pre-hydration safety (APP12-S02-C1)', () => {
 
     // Genuinely disabled by the ancestor fieldset — the browser's own rule,
     // with no script running to enforce it.
-    const submitContact = page.getByRole('button', { name: 'Gửi mã xác minh' });
+    const submitContact = page.getByRole('button', { name: 'Gửi mã' });
     await expect(submitContact).toBeDisabled();
     await expect(page.getByRole('button', { name: COPY.submit })).toBeDisabled();
     await expect(page.getByRole('textbox', { name: 'Email', exact: true })).toBeDisabled();

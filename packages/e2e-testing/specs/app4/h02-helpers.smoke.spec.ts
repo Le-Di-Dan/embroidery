@@ -41,11 +41,13 @@ test.describe('APP4-E01-H02 helper readiness', () => {
 
     // The driver's own state reader agrees with the screen it opened.
     expect(await s01.readVisibleVerificationState()).toBe('CONTACT_ENTRY');
-    // Both contact kinds are reachable through accessible selectors alone.
-    await s01.chooseContactKind('EMAIL');
-    await expect(s01.contactField('EMAIL')).toBeVisible();
-    await s01.chooseContactKind('PHONE');
-    await expect(s01.contactField('PHONE')).toBeVisible();
+    // The one contact field is reachable through accessible selectors alone.
+    // This case used to toggle an EMAIL/PHONE chooser; `APP12-N01.S01` locked
+    // verification to email and removed it, so what the driver must now find is
+    // a single email field — and the absence of any chooser is asserted here so
+    // a reinstated one fails the helper smoke before it reaches a journey.
+    await expect(s01.contactField()).toBeVisible();
+    await expect(page.getByRole('radio')).toHaveCount(0);
     // The submit control exists and is the approved copy — never clicked here,
     // because clicking it would issue a challenge.
     await expect(page.getByRole('button', { name: S01.submitContact })).toBeVisible();
@@ -66,7 +68,13 @@ test.describe('APP4-E01-H02 helper readiness', () => {
     // test would pass against a page that does not exist — which is exactly
     // what happened when the built app predated the route.
     expect(response?.status()).toBe(200);
-    await expect(page.getByRole('heading')).toBeVisible();
+    // The page's own `h1`, not "some heading". The loose matcher passed only
+    // while this mode's Storefront ran without `STOREFRONT_PUBLIC_ORIGIN` and
+    // rendered a stump; with the process configured (see `run-e2e.mjs`) the
+    // real page arrives complete, store-presentation footer and all, and five
+    // headings fail Playwright's strict mode. What this line is for is that the
+    // route answered with a page rather than an error, and the `h1` says that.
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
     // The recorder survived hydration and is readable — which is the mechanism
     // under test. No resolve request is expected: there is no fragment, so S02

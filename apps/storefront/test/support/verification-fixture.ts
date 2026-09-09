@@ -34,9 +34,13 @@ export const REPLACEMENT_CHALLENGE_ID = 'challenge-0002';
 
 /** What `APP4-P01` would produce for the synthetic contacts below. */
 export const MASKED_EMAIL = 'b***@vidu.com';
-export const MASKED_PHONE = '+84 ****** 5678';
 
 export const TEST_EMAIL = 'ban@vidu.com';
+
+/**
+ * A phone number, kept only so a test can prove the verification flow offers no
+ * way to send one (`APP12-N01.S01` §19). It is never a verification target.
+ */
 export const TEST_PHONE = '0912345678';
 
 /**
@@ -74,6 +78,33 @@ export function apiFailure(status: number): unknown {
     name: 'AxiosError',
     message: 'Request failed',
     response: { status, data: {} },
+    toJSON: () => ({}),
+  };
+}
+
+/**
+ * A refusal that carries a business code in the envelope, the way the platform
+ * error mapper publishes one when a feature attaches it.
+ *
+ * `apiFailure` sends `data: {}`, which normalizes to a status-only error — that
+ * is what most of APP4's refusals actually look like on the wire. This builds
+ * the other shape, for the one classification that is decided by code rather
+ * than by status.
+ */
+export function apiCodedFailure(status: number, code: string): unknown {
+  return {
+    isAxiosError: true,
+    name: 'AxiosError',
+    message: 'Request failed',
+    response: {
+      status,
+      data: {
+        success: false,
+        code,
+        message: 'Refused.',
+        meta: { requestId: 'req-test', timestamp: NOW_ISO },
+      },
+    },
     toJSON: () => ({}),
   };
 }

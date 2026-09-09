@@ -147,6 +147,22 @@ function currentDatabaseProbe(requireFromApp, moduleRef) {
  * waiting six minutes.
  */
 async function bootWorkerContext() {
+  // `APP12-N01.B01` made the notification transport a stated decision rather
+  // than a wiring default: `notificationChannelProvider` throws at composition
+  // when `NOTIFICATION_TRANSPORT` is unset, precisely so a deployment cannot
+  // start and quietly deliver to nobody. Every mode in this harness reads
+  // deliveries out of the recording adapter, so `RECORDING` is the honest
+  // answer for them — and it is stated here, once, instead of being inherited.
+  //
+  // Left as a default rather than an assignment: `APP12-N01.S01`'s own run sets
+  // `SMTP` before it calls this, because its whole subject is a message that
+  // actually leaves the process, and that choice must win.
+  //
+  // This surfaced only when the worker `dist` was rebuilt for `S01` — until
+  // then every mode ran a pre-B01 build that bound the recording adapter
+  // unconditionally and never consulted the environment at all.
+  process.env['NOTIFICATION_TRANSPORT'] ??= 'RECORDING';
+
   const requireFromWorker = createRequire(join(WORKER_ROOT, 'package.json'));
   requireFromWorker('reflect-metadata');
   const { Test } = requireFromWorker('@nestjs/testing');

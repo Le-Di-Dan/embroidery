@@ -43,14 +43,16 @@ export const VERIFICATION_COPY = {
     submitting: verificationMessage.text('contactEntry.submitting'),
   },
 
-  /** `623:12` / `623:14` — one control, both contact kinds. */
-  contactKind: {
-    legend: verificationMessage.text('contactKind.legend'),
-    EMAIL: verificationMessage.text('contactKind.EMAIL'),
-    PHONE: verificationMessage.text('contactKind.PHONE'),
-  },
-
-  /** `623:17` … `623:20`, and the error state `623:44`. */
+  /**
+   * `623:17` … `623:20`, and the error state `623:44`. The only field.
+   *
+   * `APP12-N01.S01` removed the `contactKind` control and the `phoneField`
+   * catalog beside this one. `CUSTOMER_OTP_CHANNEL = EMAIL_ONLY`, so there is
+   * no choice to label and no second field to describe — the approved frames'
+   * two-tab header is the one place this feature deliberately departs from
+   * `APP4-D01`, because the design predates the locked channel decision
+   * (`FU-APP12-N01-S01-02`).
+   */
   emailField: {
     label: verificationMessage.text('emailField.label'),
     placeholder: verificationMessage.text('emailField.placeholder'),
@@ -58,26 +60,21 @@ export const VERIFICATION_COPY = {
     invalid: verificationMessage.text('emailField.invalid'),
   },
 
-  /**
-   * The phone field, presented Vietnam-first per `APP4-D01` §D.1.
-   *
-   * The help text names the national form the customer is expected to type and
-   * says an international number is accepted. It deliberately describes nothing
-   * about normalization: the server is the canonical normalizer and the customer
-   * has no reason to know E.164 exists.
-   */
-  phoneField: {
-    label: verificationMessage.text('phoneField.label'),
-    placeholder: verificationMessage.text('phoneField.placeholder'),
-    help: verificationMessage.text('phoneField.help'),
-    invalid: verificationMessage.text('phoneField.invalid'),
-  },
-
   /** `623:81` … `623:104`. */
   codeEntry: {
     title: verificationMessage.text('codeEntry.title'),
-    /** `623:82`. Ends in a colon: the masked destination is its object. */
+    /**
+     * `623:82`. Ends in a colon: the masked destination is its object.
+     *
+     * Reworded by `S01` §6 to say what the contract actually supports. The
+     * issue call returns when the API has **accepted** the request and raised
+     * the notification intent; delivery is the worker's, over SMTP, afterwards.
+     * "We have sent a code to …" claims an outcome nothing on this path has
+     * observed, so the copy states the acceptance and asks the customer to look.
+     */
     body: verificationMessage.text('codeEntry.body'),
+    /** Where else to look before assuming nothing arrived. Email-specific. */
+    inboxHint: verificationMessage.text('codeEntry.inboxHint'),
     fieldLabel: verificationMessage.text('codeEntry.fieldLabel'),
     /** `623:100`. Display prose, never a timer source. */
     help: verificationMessage.text('codeEntry.help'),
@@ -138,6 +135,20 @@ export const VERIFICATION_COPY = {
       title: verificationMessage.text('alerts.recoverableError.title'),
       body: verificationMessage.text('alerts.recoverableError.body'),
     },
+    /**
+     * The email-only refusal (`APP12-N01.S01` §11). No approved frame draws it,
+     * because no approved frame anticipated a locked channel; it reuses the
+     * rate-limited alert's shape on the same card, which is where the remedy —
+     * typing an email address — lives.
+     *
+     * It names the supported channel and nothing else: no contact is echoed and
+     * no provider, transport or backend code appears, so the non-enumeration
+     * rule on `634:59` holds here as it does everywhere else in this catalog.
+     */
+    channelUnsupported: {
+      title: verificationMessage.text('alerts.channelUnsupported.title'),
+      body: verificationMessage.text('alerts.channelUnsupported.body'),
+    },
   },
 
   /**
@@ -179,10 +190,4 @@ export const VERIFICATION_COPY = {
     requesting: verificationMessage.text('live.requesting'),
     verifying: verificationMessage.text('live.verifying'),
   },
-} as const;
-
-/** Which field copy a contact kind uses. One lookup, no branching in the view. */
-export const CONTACT_FIELD_COPY = {
-  EMAIL: VERIFICATION_COPY.emailField,
-  PHONE: VERIFICATION_COPY.phoneField,
 } as const;

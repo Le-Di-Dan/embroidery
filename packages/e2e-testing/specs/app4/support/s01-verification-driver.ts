@@ -22,28 +22,21 @@ import { expect, type Page } from '@playwright/test';
 /** Approved S01 copy (source: storefront `verification-copy.ts`). */
 export const S01 = {
   path: '/xac-minh-lien-he',
-  contactTitle: 'Xác minh liên hệ của bạn',
-  kindEmail: 'Email',
-  kindPhone: 'Số điện thoại',
+  pageTitle: 'Xác minh email',
+  contactTitle: 'Xác minh email của bạn',
   emailLabel: 'Email',
-  phoneLabel: 'Số điện thoại',
-  submitContact: 'Gửi mã xác minh',
+  submitContact: 'Gửi mã',
   codeTitle: 'Nhập mã xác minh',
   codeLabel: 'Mã xác minh (6 chữ số)',
   submitCode: 'Xác minh',
   resend: 'Gửi lại mã',
-  successTitle: 'Đã xác minh liên hệ',
-  mismatchAlert: 'Mã không đúng. Hãy kiểm tra lại mã trong tin nhắn mới nhất.',
+  successTitle: 'Email đã được xác minh',
+  mismatchAlert: 'Mã không đúng. Hãy kiểm tra lại mã trong email mới nhất.',
   expiredTitle: 'Mã đã hết hạn',
   lockedTitle: 'Đã hết lượt thử cho mã này',
 } as const;
 
-export type ContactKind = 'EMAIL' | 'PHONE';
-
 export function createS01Driver(page: Page) {
-  const kindLabel = (kind: ContactKind): string =>
-    kind === 'EMAIL' ? S01.kindEmail : S01.kindPhone;
-
   return {
     openVerification: async (): Promise<void> => {
       await page.goto(S01.path);
@@ -51,31 +44,19 @@ export function createS01Driver(page: Page) {
     },
 
     /**
-     * The contact-kind control is one radio group covering both kinds.
+     * The email field, addressed by its `textbox` role.
      *
-     * `force` because the input itself is `visually-hidden` — the approved
-     * design styles its label as the visible control, which is the ordinary
-     * accessible pattern for a segmented choice. The radio is still addressed by
-     * its role and accessible name, so this selects the same element a screen
-     * reader would; only Playwright's visibility gate is bypassed, and the
-     * assertion that follows checks the field the choice reveals.
+     * There is no contact-kind chooser to select first: `APP12-N01.S01` locked
+     * customer verification to email and removed it, so the card opens on the
+     * one field it has ever needed. The role lookup is kept rather than
+     * simplified to `getByLabel` — it is what the removed radio's identical
+     * accessible name forced, and it still distinguishes this input from any
+     * label that happens to read "Email" elsewhere on a composed page.
      */
-    chooseContactKind: (kind: ContactKind) =>
-      page.getByRole('radio', { name: kindLabel(kind), exact: true }).check({ force: true }),
+    contactField: () => page.getByRole('textbox', { name: S01.emailLabel, exact: true }),
 
-    /**
-     * The contact field, addressed by its `textbox` role.
-     *
-     * Not `getByLabel`: the contact-kind radio for the same kind carries the
-     * same accessible name ("Email" / "Số điện thoại"), so a label lookup
-     * matches both the radio and the input and fails Playwright's strict mode.
-     * The role is what distinguishes them.
-     */
-    contactField: (kind: ContactKind) =>
-      page.getByRole('textbox', { name: kindLabel(kind), exact: true }),
-
-    enterContact: (kind: ContactKind, value: string) =>
-      page.getByRole('textbox', { name: kindLabel(kind), exact: true }).fill(value),
+    enterContact: (value: string) =>
+      page.getByRole('textbox', { name: S01.emailLabel, exact: true }).fill(value),
 
     submitContact: () => page.getByRole('button', { name: S01.submitContact }).click(),
 

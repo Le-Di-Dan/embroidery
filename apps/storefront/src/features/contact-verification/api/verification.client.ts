@@ -11,43 +11,42 @@
  * attempt response is the challenge's state, which is what the caller needs.
  */
 import {
+  IssueVerificationChallengeBodyContactKind,
   publicVerificationIssue,
   publicVerificationResend,
   publicVerificationSubmitAttempt,
   publicVerificationReadStatus,
-  type IssueVerificationChallengeBodyContactKind,
   type VerificationChallengeResponse,
   type VerificationChallengeStatusResponse,
 } from '@embroidery/api-client';
 
 import { getBrowserApiClient } from '../../../config/browser-api-client';
-import { CONTACT_KIND_VALUES, type ContactKind } from '../model/contact-draft';
 import type { VerificationPurpose } from '../model/verification-purpose';
 
 /**
- * Requests a code for a destination. The contact is sent exactly as typed.
+ * Requests a code for an email address. The contact is sent exactly as typed.
  *
  * `purpose` is required rather than defaulted here: a default at the transport
  * seam is the one place a step-up could silently become a submission, and the
  * server treats the two as different proofs — only a `STEP_UP` challenge
  * satisfies `APP6-B05`'s GRD-003. The controller fixes it once, from the
  * surface that mounted the flow.
+ *
+ * **There is no `contactKind` parameter** (`APP12-N01.S01`). `N01.B01` narrowed
+ * the contract to `EMAIL`, and this seam briefly carried a cast so the
+ * Storefront's remaining phone branch could still reach the wire and be refused
+ * with a 422. `S01` removed that branch, so the cast goes with it: the kind is
+ * read from the generated enum — which now has exactly one member — and a phone
+ * number has no expressible path through this function at all.
  */
 export async function issueVerificationChallenge(
-  contactKind: ContactKind,
   contact: string,
   purpose: VerificationPurpose,
 ): Promise<VerificationChallengeResponse> {
   const body = await publicVerificationIssue(
     {
       contact,
-      // `APP12-N01` narrowed the contract to `EMAIL`, and the generated type
-      // narrowed with it. The Storefront still renders a phone choice until
-      // `N01.S01` removes it, so this seam can still be handed `PHONE` — and
-      // when it is, the server refuses it with `422` rather than sending an SMS
-      // nothing could deliver. The cast states that interim honestly instead of
-      // widening the contract type or silently rewriting the customer's choice.
-      contactKind: CONTACT_KIND_VALUES[contactKind] as IssueVerificationChallengeBodyContactKind,
+      contactKind: IssueVerificationChallengeBodyContactKind.EMAIL,
       purpose,
     },
     { instance: getBrowserApiClient() },
@@ -61,7 +60,7 @@ export async function issueVerificationChallenge(
  * The resend operation, never the issue one (§13). Calling issue instead would
  * be a cooldown-free resend, which is exactly the bypass `APP4-B03` refuses —
  * and it takes no body, so there is no field through which this call could
- * redirect someone else's code.
+ * redirect someone else's code, and none through which it could name a channel.
  */
 export async function resendVerificationChallenge(
   challengeId: string,

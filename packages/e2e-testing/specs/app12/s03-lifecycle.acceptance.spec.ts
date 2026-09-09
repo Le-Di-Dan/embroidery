@@ -302,8 +302,7 @@ async function completeStepUp(page: Page, contact: string): Promise<void> {
   const driver = createS01Driver(page);
   const before = worker.deliveryCount() as number;
 
-  await driver.chooseContactKind('EMAIL');
-  await driver.enterContact('EMAIL', contact);
+  await driver.enterContact(contact);
   await driver.submitContact();
 
   await expect(page.getByRole('heading', { name: 'Nhập mã xác minh' })).toBeVisible({
