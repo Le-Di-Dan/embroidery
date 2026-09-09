@@ -1,6 +1,10 @@
 'use client';
 
 import { AssetThumbnail } from '../../../shared/media/asset-thumbnail';
+import {
+  assetThumbnailCaption,
+  toAssetThumbnailState,
+} from '../../../shared/media/asset-thumbnail-state';
 import { PRODUCT_MEDIA_COPY } from '../model/product-media-copy';
 import {
   ProductMediaTileActions,
@@ -9,6 +13,16 @@ import {
 
 export interface ProductMediaGridTileProps extends ProductMediaTileHandlers {
   readonly assetId: string;
+  /**
+   * The Asset's lifecycle status, from the Admin read.
+   *
+   * Absent for an image the operator has just picked: it is in the staged
+   * selection and has no server row yet, so the read has no opinion about it.
+   * The picker offers only deliverable Assets, so "no opinion yet" is rendered
+   * as healthy — the tile downgrades when the read says something worse, never
+   * because it has not been told anything.
+   */
+  readonly status?: string | undefined;
   /** 1-based, as the operator counts. */
   readonly position: number;
   readonly total: number;
@@ -43,6 +57,7 @@ export interface ProductMediaGridTileProps extends ProductMediaTileHandlers {
  */
 export function ProductMediaGridTile({
   assetId,
+  status,
   position,
   total,
   selected,
@@ -52,6 +67,22 @@ export function ProductMediaGridTile({
 }: ProductMediaGridTileProps) {
   const isPrimary = position === 1;
   const place = { position, total };
+  // See the `status` prop: no opinion from the read means a staged image, which
+  // is drawn as healthy. Anything the read *does* say is honoured, including
+  // the states this tile used to hide behind a hard-coded `READY`.
+  const mediaState = status === undefined ? 'READY' : toAssetThumbnailState(status);
+
+  // A rejected Asset keeps its picture. `adminAsset_preview` serves derivative
+  // bytes regardless of the Asset's lifecycle state — `APP12-M01.E1` proved
+  // that, and `E1-C1` §8 requires it to stay that way — and an operator
+  // curating twenty images finds them by their photograph. Replacing it with a
+  // glyph would make the grid harder to work in order to say something the
+  // state line below says in words.
+  //
+  // The states with no bytes to show still fall back: an Asset mid-inspection
+  // has no derivative yet, and one whose status this screen does not recognise
+  // gets no promise of an image.
+  const thumbnailState = mediaState === 'REJECTED' ? 'READY' : mediaState;
 
   return (
     <li
@@ -67,7 +98,11 @@ export function ProductMediaGridTile({
         disabled={disabled}
         onClick={onSelect}
       >
-        <AssetThumbnail assetId={assetId} state="READY" className="product-media-tile__image" />
+        <AssetThumbnail
+          assetId={assetId}
+          state={thumbnailState}
+          className="product-media-tile__image"
+        />
         {/*
           The number is decorative here: every action's accessible name already
           carries "ảnh {position} trên {total}", and the select button's own
@@ -86,6 +121,24 @@ export function ProductMediaGridTile({
       <p className="product-media-tile__role">
         {isPrimary ? PRODUCT_MEDIA_COPY.tile.rolePrimary : PRODUCT_MEDIA_COPY.tile.roleGallery}
       </p>
+
+      {/*
+        The state in words, beside the role rather than instead of it.
+
+        `AssetThumbnail` already states it — but only as the accessible name of
+        the placeholder it swaps in, which a sighted operator reads as "the
+        picture went away" without being told why. This line is the same
+        approved caption, visible.
+
+        Beside the role, because the two facts are independent and an operator
+        needs both at once: an image can be the stored primary *and* no longer
+        usable, which is exactly the state that leaves the public pages on a
+        fallback while this screen looks healthy. Replacing the role with the
+        state would hide the first fact to show the second.
+      */}
+      {mediaState === 'READY' ? null : (
+        <p className="product-media-tile__state">{assetThumbnailCaption(mediaState)}</p>
+      )}
 
       <ProductMediaTileActions
         position={position}

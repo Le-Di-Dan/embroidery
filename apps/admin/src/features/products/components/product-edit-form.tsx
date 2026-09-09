@@ -15,6 +15,7 @@ import {
   validateProductForm,
   type ProductFormValues,
 } from '../model/product-form-values';
+import { mediaStatusByAssetId } from '../model/product-media-selection';
 import { ADMIN_PRODUCTS_ROUTE } from '../model/product-route';
 import { useProductUpdateMutation } from '../hooks/use-product-mutations';
 import { useUnsavedChanges } from '../hooks/use-unsaved-changes';
@@ -57,6 +58,9 @@ interface ProductEditFormProps {
 export function ProductEditForm({ product, onReload }: ProductEditFormProps) {
   const router = useRouter();
   const initial = useMemo(() => formValuesFromDetail(product), [product]);
+  // Read-only, and never part of `values`: the form's state is what gets sent,
+  // and an Asset's health is not something the operator is writing.
+  const mediaStatus = useMemo(() => mediaStatusByAssetId(product.media), [product.media]);
   const [values, setValues] = useState<ProductFormValues>(initial);
   const [submitted, setSubmitted] = useState(false);
   const [conflict, setConflict] = useState(false);
@@ -198,6 +202,7 @@ export function ProductEditForm({ product, onReload }: ProductEditFormProps) {
           */}
           <ProductMediaEditor
             selection={values.mediaAssetIds}
+            statusByAssetId={mediaStatus}
             disabled={saving}
             requiresAtLeastOne={false}
             onChange={(mediaAssetIds) => setValues((current) => ({ ...current, mediaAssetIds }))}

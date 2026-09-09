@@ -231,6 +231,23 @@
   font-weight: styles.$font-weight-medium;
 }
 
+// The state line (`APP12-M01.E1-C1`): why this image is not showing a picture.
+//
+// A sibling of the role line, never a replacement for it. An image can be the
+// stored primary *and* no longer usable — the state that leaves every public
+// surface on a fallback while this screen looks healthy — and an operator has to
+// be able to read both facts at once.
+//
+// The danger colour carries emphasis, not meaning: the words are the signal, so
+// the line survives greyscale and a forced-colours mode. That is the same rule
+// the primary badge follows two rules above.
+.product-media-tile__state {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-status-error;
+}
+
 // ------------------------------------------------- desktop tile actions -----
 
 // Below the grid breakpoint the in-tile bar is not shrunk, it is **absent**:

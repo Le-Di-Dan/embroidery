@@ -48,6 +48,30 @@ export function selectionFromDetailMedia(
   return dedupe(ordered.map((item) => item.assetId));
 }
 
+/**
+ * The lifecycle status of each selected Asset, keyed by Asset id.
+ *
+ * A **second, read-only projection** of the same response, deliberately kept
+ * apart from `selectionFromDetailMedia` above rather than folded into it
+ * (`APP12-M01.E1-C1` §5). The ordered id array *is* the write model — it is what
+ * `mediaAssetIds` sends — and status is never part of operator write intent, so
+ * widening that array into objects would have put a read-only fact inside the
+ * request body's own type and made every selection operation carry it.
+ *
+ * This map is therefore additive: every existing operation, every existing
+ * caller and the request contract are untouched, and the grid gains the one
+ * fact it was missing.
+ *
+ * Keyed by Asset id rather than by position because position changes while the
+ * operator curates — an unsaved reorder must not make a tile describe a
+ * different image's health.
+ */
+export function mediaStatusByAssetId(
+  media: readonly AdminProductMediaResponse[],
+): ReadonlyMap<string, string> {
+  return new Map(media.map((item) => [item.assetId, item.status]));
+}
+
 /** First occurrence wins; order is otherwise untouched. */
 export function dedupe(assetIds: readonly string[]): readonly string[] {
   const seen = new Set<string>();

@@ -7,7 +7,11 @@ import type { AdminProductDetailResponse } from '@embroidery/api-client';
 import { formValuesFromDetail } from '../model/product-form-values';
 import { PRODUCT_MEDIA_COPY, PRODUCT_MEDIA_FAILURE_COPY } from '../model/product-media-copy';
 import { classifyMediaFailure, isMediaVersionConflict } from '../model/product-media-failure';
-import { hasSelectionChanged, selectionFromDetailMedia } from '../model/product-media-selection';
+import {
+  hasSelectionChanged,
+  mediaStatusByAssetId,
+  selectionFromDetailMedia,
+} from '../model/product-media-selection';
 import { useCategoryInventoryQuery } from '../hooks/use-category-inventory-query';
 import { useProductMediaMutation } from '../hooks/use-product-media-mutation';
 import { useUnsavedChanges } from '../hooks/use-unsaved-changes';
@@ -63,6 +67,8 @@ interface ProductPublishedMediaFormProps {
  */
 export function ProductPublishedMediaForm({ product, onReload }: ProductPublishedMediaFormProps) {
   const initialSelection = useMemo(() => selectionFromDetailMedia(product.media), [product.media]);
+  // The second projection of the same response — read-only, never sent.
+  const mediaStatus = useMemo(() => mediaStatusByAssetId(product.media), [product.media]);
   const [selection, setSelection] = useState<readonly string[]>(initialSelection);
   const [conflict, setConflict] = useState(false);
 
@@ -182,6 +188,7 @@ export function ProductPublishedMediaForm({ product, onReload }: ProductPublishe
 
           <ProductMediaEditor
             selection={selection}
+            statusByAssetId={mediaStatus}
             disabled={saving}
             requiresAtLeastOne
             emphasised

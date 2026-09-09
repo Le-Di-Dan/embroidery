@@ -6,6 +6,14 @@ import { ProductMediaGridTile } from './product-media-grid-tile';
 
 export interface ProductMediaGridProps {
   readonly selection: readonly string[];
+  /**
+   * The lifecycle status of each Asset the server knows about, keyed by id.
+   *
+   * Keyed rather than positional because the operator reorders freely before
+   * saving, and a tile must keep describing its own image's health across an
+   * unsaved move.
+   */
+  readonly statusByAssetId?: ReadonlyMap<string, string> | undefined;
   readonly selectedIndex: number | null;
   readonly disabled: boolean;
   /** True on a PUBLISHED product: the last image may not be removed. */
@@ -37,6 +45,7 @@ export interface ProductMediaGridProps {
  */
 export function ProductMediaGrid({
   selection,
+  statusByAssetId,
   selectedIndex,
   disabled,
   requiresAtLeastOne,
@@ -52,6 +61,7 @@ export function ProductMediaGrid({
         <ProductMediaGridTile
           key={assetId}
           assetId={assetId}
+          status={statusByAssetId?.get(assetId)}
           position={index + 1}
           total={selection.length}
           selected={selectedIndex === index}

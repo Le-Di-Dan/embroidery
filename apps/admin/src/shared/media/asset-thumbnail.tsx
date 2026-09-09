@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import { MEDIA_COPY } from './media-copy';
+import { assetThumbnailCaption } from './asset-thumbnail-state';
 import { buildAssetPreviewUrl } from './asset-preview-url';
 
 /**
@@ -81,16 +82,18 @@ export function AssetThumbnail({
   );
 }
 
-/** The reason this tile is not showing an image. Never a generic blank. */
+/**
+ * The reason this tile is not showing an image. Never a generic blank.
+ *
+ * `failed` is this component's own fifth state — a request that was expected to
+ * succeed and did not — and it outranks the caller's state because it describes
+ * what just happened rather than what the row says. Everything else defers to
+ * the shared state→caption mapping, so a surface that renders a caption without
+ * this component cannot describe the same state in different words.
+ */
 function captionFor(state: AssetThumbnailState, failed: boolean): string {
   if (failed) {
     return MEDIA_COPY.unavailable;
   }
-  if (state === 'PROCESSING') {
-    return MEDIA_COPY.processing;
-  }
-  if (state === 'REJECTED') {
-    return MEDIA_COPY.rejected;
-  }
-  return MEDIA_COPY.absent;
+  return state === 'READY' ? MEDIA_COPY.absent : assetThumbnailCaption(state);
 }

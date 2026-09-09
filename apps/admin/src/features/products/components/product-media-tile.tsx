@@ -1,6 +1,7 @@
 import type { AdminProductMediaResponse } from '@embroidery/api-client';
 
-import { AssetThumbnail, type AssetThumbnailState } from '../../../shared/media/asset-thumbnail';
+import { AssetThumbnail } from '../../../shared/media/asset-thumbnail';
+import { toAssetThumbnailState } from '../../../shared/media/asset-thumbnail-state';
 
 /**
  * The product media tile.
@@ -23,26 +24,10 @@ export function ProductMediaTile({
   readonly className?: string | undefined;
 }) {
   return (
-    <AssetThumbnail assetId={media?.assetId} state={toState(media?.status)} className={className} />
+    <AssetThumbnail
+      assetId={media?.assetId}
+      state={toAssetThumbnailState(media?.status)}
+      className={className}
+    />
   );
-}
-
-/**
- * The asset lifecycle state, read as what the tile can show.
- *
- * `status` is typed `string` on the wire because the contract leaves room for
- * states this screen does not know, so this parses rather than casts and an
- * unrecognised value falls to `ABSENT` — never to a promise of an image.
- */
-function toState(status: string | undefined): AssetThumbnailState {
-  if (status === 'ACCEPTED') {
-    return 'READY';
-  }
-  if (status === 'UPLOADED' || status === 'INSPECTING') {
-    return 'PROCESSING';
-  }
-  if (status === 'REJECTED') {
-    return 'REJECTED';
-  }
-  return 'ABSENT';
 }

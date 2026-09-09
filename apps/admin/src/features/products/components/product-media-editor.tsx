@@ -20,6 +20,14 @@ import { ProductMediaRemoveDialog } from './product-media-remove-dialog';
 
 interface ProductMediaEditorProps {
   readonly selection: readonly string[];
+  /**
+   * Server-known Asset statuses, keyed by Asset id — read-only, and never sent.
+   *
+   * Passed through untouched: the editor owns the ordered selection the save
+   * path writes, and this is the second projection the tiles read to tell an
+   * operator that a stored image is no longer usable.
+   */
+  readonly statusByAssetId?: ReadonlyMap<string, string> | undefined;
   readonly disabled: boolean;
   /** True on a PUBLISHED product (`APP12-M01.B2` refuses an empty set there). */
   readonly requiresAtLeastOne: boolean;
@@ -54,6 +62,7 @@ interface ProductMediaEditorProps {
  */
 export function ProductMediaEditor({
   selection,
+  statusByAssetId,
   disabled,
   requiresAtLeastOne,
   emphasised = false,
@@ -181,6 +190,7 @@ export function ProductMediaEditor({
       ) : (
         <ProductMediaGrid
           selection={selection}
+          statusByAssetId={statusByAssetId}
           selectedIndex={selectedIndex}
           disabled={disabled}
           requiresAtLeastOne={requiresAtLeastOne}
