@@ -27,6 +27,21 @@ data:
   # localhost fallback would silently publish the wrong host.
   STOREFRONT_PUBLIC_ORIGIN: ''
 
+  # --- Customer notification transport (`APP12-N01.B01`)
+  # Which transport the worker sends over. RECORDING captures in process memory
+  # and delivers to nobody; the loader refuses it outright when NODE_ENV is
+  # production or staging, and the release checker refuses anything but SMTP.
+  # Empty here on purpose — an overlay states it, and a base default is how the
+  # `APP12-U01` blocker reached a deployment in the first place.
+  NOTIFICATION_TRANSPORT: ''
+  SMTP_HOST: ''
+  SMTP_PORT: '587'
+  SMTP_SECURE: 'false'
+  SMTP_REQUIRE_TLS: 'true'
+  # The bare envelope sender. The display name is EMAIL_FROM_NAME's job.
+  EMAIL_FROM_ADDRESS: ''
+  EMAIL_FROM_NAME: 'Nét Thêu'
+
   # --- Wave-2 release control (`APP12-G02`, H02 §12)
   # Explicit, never inherited. The runtime is fail-closed when the variable is
   # absent, but a deployment that does not *state* the release decision is a

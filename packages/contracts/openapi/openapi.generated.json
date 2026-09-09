@@ -8073,10 +8073,9 @@
             "type": "string"
           },
           "contactKind": {
-            "description": "Which kind of destination `contact` is.",
+            "description": "Which kind of destination `contact` is. Customer verification is email only (`APP12-N01`); a phone number is a delivery contact, never a verification channel.",
             "enum": [
-              "EMAIL",
-              "PHONE"
+              "EMAIL"
             ],
             "example": "EMAIL",
             "type": "string"

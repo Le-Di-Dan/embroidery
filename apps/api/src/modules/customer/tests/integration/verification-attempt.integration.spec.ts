@@ -34,8 +34,6 @@ import {
 } from '../../domain/repositories/verification-challenge.repository';
 
 const EMAIL = 'nguoi.dung@example.com';
-const PHONE = '0912345678';
-const NORMALIZED_PHONE = '+84912345678';
 
 describe('APP4-B04 verification attempt (integration)', () => {
   let context: AttemptTestContext;
@@ -113,17 +111,13 @@ describe('APP4-B04 verification attempt (integration)', () => {
       expect(await codeAppearsInIdentityTables(context, challenge.code)).toEqual([]);
     });
 
-    it('normalizes a phone target through P01 and links the canonical value', async () => {
-      const challenge = await context.open('PHONE', PHONE, 'SUBMISSION');
-
-      expect((await submit(challenge.challengeId, challenge.code)).outcome).toBe('VERIFIED');
-
-      const contacts = await contactPoints(context);
-      expect(contacts).toHaveLength(1);
-      // E.164, not the trunk-zero national form the caller typed.
-      expect(contacts[0]?.normalized_value).toBe(NORMALIZED_PHONE);
-      expect(contacts[0]?.display_value).toBe(NORMALIZED_PHONE);
-    });
+    // The phone-normalization case that stood here is gone, and its absence is
+    // the point: `APP12-N01` locked customer verification to email, so the
+    // issuer refuses a `PHONE` challenge before a code is minted and this path
+    // can no longer be reached through any delivered operation. P01's E.164
+    // normalization is unchanged and still exercised — by its own unit suite,
+    // and through Admin contact maintenance, which remains the way a phone
+    // contact point is created.
 
     it('rejects a replay of the same code and duplicates nothing', async () => {
       const challenge = await context.open('EMAIL', EMAIL, 'SUBMISSION');

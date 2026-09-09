@@ -55,6 +55,15 @@ export interface VerificationChallengeIssued {
 export const VERIFICATION_ISSUE_FAILURES = [
   /** The contact could not be normalized into a canonical target. */
   'CONTACT_NOT_ACCEPTABLE',
+  /**
+   * The contact kind is not a verification channel (`APP12-N01`).
+   *
+   * Customer verification is email only. Reachable from the public endpoint only
+   * for a legacy `PHONE` challenge being resent — the request schema no longer
+   * admits `PHONE` on the way in — and from any non-HTTP caller. It says nothing
+   * about the target beyond the kind the caller itself named.
+   */
+  'VERIFICATION_CHANNEL_UNSUPPORTED',
   /** The published `verification.challenge` policy is missing or malformed. */
   'VERIFICATION_POLICY_UNAVAILABLE',
   /** `maxIssuesPerTargetPerWindow` is spent for this target and purpose. */

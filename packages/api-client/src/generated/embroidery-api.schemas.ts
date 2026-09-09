@@ -4668,14 +4668,13 @@ export interface InitiateFullPaymentAttemptBody {
 }
 
 /**
- * Which kind of destination `contact` is.
+ * Which kind of destination `contact` is. Customer verification is email only (`APP12-N01`); a phone number is a delivery contact, never a verification channel.
  */
 export type IssueVerificationChallengeBodyContactKind =
   (typeof IssueVerificationChallengeBodyContactKind)[keyof typeof IssueVerificationChallengeBodyContactKind];
 
 export const IssueVerificationChallengeBodyContactKind = {
   EMAIL: 'EMAIL',
-  PHONE: 'PHONE',
 } as const;
 
 /**
@@ -4699,7 +4698,7 @@ export interface IssueVerificationChallengeBody {
    * @maxLength 254
    */
   contact: string;
-  /** Which kind of destination `contact` is. */
+  /** Which kind of destination `contact` is. Customer verification is email only (`APP12-N01`); a phone number is a delivery contact, never a verification channel. */
   contactKind: IssueVerificationChallengeBodyContactKind;
   /** Why the contact is being verified. `SUBMISSION` precedes customer identity; `STEP_UP` re-proves possession for a sensitive action. */
   purpose: IssueVerificationChallengeBodyPurpose;

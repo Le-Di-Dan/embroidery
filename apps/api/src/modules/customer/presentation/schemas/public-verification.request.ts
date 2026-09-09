@@ -28,6 +28,7 @@
 import { z } from 'zod';
 
 import { createZodDto, registerZodDtos } from '../../../../platform/validation';
+import { VERIFICATION_CONTACT_KINDS } from '../../domain/verification/verification-channel';
 
 /**
  * Upper bound on an as-entered contact.
@@ -40,8 +41,10 @@ const MAX_CONTACT_LENGTH = 254;
 
 export const issueVerificationChallengeSchema = z
   .object({
-    contactKind: z.enum(['EMAIL', 'PHONE']).meta({
-      description: 'Which kind of destination `contact` is.',
+    contactKind: z.enum(VERIFICATION_CONTACT_KINDS).meta({
+      description:
+        'Which kind of destination `contact` is. Customer verification is email only ' +
+        '(`APP12-N01`); a phone number is a delivery contact, never a verification channel.',
       example: 'EMAIL',
     }),
     contact: z

@@ -13,9 +13,13 @@
  * plan. Neither changes what claiming, leasing or completion do for any existing
  * handler.
  *
- * The channel port is bound to the recording development adapter, and that is
- * the whole provider decision APP4 makes (`ADR-APP4-001` §12). A real transport
- * arrives as a second adapter behind the same symbol.
+ * The channel port was bound to the recording development adapter, which is the
+ * whole provider decision APP4 made (`ADR-APP4-001` §12) — and the release
+ * blocker `APP12-U01` found, because that adapter delivers to nobody.
+ * `APP12-N01.B01` supplies the real transport as the second adapter behind the
+ * same symbol, exactly as APP4 anticipated, and `notificationChannelProvider`
+ * is now the single place that chooses between them. In `production` and
+ * `staging` it refuses to resolve to the recording adapter at all.
  */
 import { Module, type OnModuleInit } from '@nestjs/common';
 import { DatabaseModule } from '@embroidery/persistence';
@@ -25,7 +29,7 @@ import { JobHandlerRegistry } from '../../runtime/registry/job-handler.registry'
 import { NotificationDeliveryUseCase } from './application/notification-delivery.usecase';
 import { WorkerDeliveryEnvelopeKeyProvider } from './config/delivery-envelope-key.provider';
 import { StorefrontPublicOriginProvider } from './config/storefront-origin.provider';
-import { NOTIFICATION_CHANNEL_PORT } from './domain/channel/notification-channel.port';
+import { notificationChannelProvider } from './config/notification-channel.factory';
 import { NOTIFICATION_DELIVERY_REPOSITORY } from './domain/repositories/notification-delivery.repository';
 import { RecordingNotificationChannelAdapter } from './infrastructure/channel/recording-notification-channel.adapter';
 import { SqlNotificationDeliveryRepository } from './infrastructure/persistence/sql-notification-delivery.repository';
@@ -39,7 +43,7 @@ import { WorkerMetricsModule } from '../../runtime/metrics/worker-metrics.module
   providers: [
     { provide: NOTIFICATION_DELIVERY_REPOSITORY, useClass: SqlNotificationDeliveryRepository },
     RecordingNotificationChannelAdapter,
-    { provide: NOTIFICATION_CHANNEL_PORT, useExisting: RecordingNotificationChannelAdapter },
+    notificationChannelProvider,
     NotificationDeliveryPolicyService,
     WorkerDeliveryEnvelopeKeyProvider,
     StorefrontPublicOriginProvider,

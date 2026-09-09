@@ -49,6 +49,10 @@ import {
   type ChallengeId,
   type VerificationChallengeRepository,
 } from '../domain/repositories/verification-challenge.repository';
+import {
+  VERIFICATION_CHANNEL_UNSUPPORTED as CHANNEL_UNSUPPORTED,
+  isVerificationContactKind,
+} from '../domain/verification/verification-channel';
 import { VerificationCodeMinter } from '../infrastructure/crypto/verification-code.minter';
 
 /**
@@ -105,6 +109,17 @@ export class VerificationChallengeIssuer {
     policy: VerificationChallengePolicy,
     issuedAt: Date,
   ): Promise<VerificationChallengeIssued> {
+    // The channel decision, before a code exists (`APP12-N01` §1). Both public
+    // endpoints issue through this method — the initial challenge and the
+    // resend, which carries its kind forward from the source row — so refusing
+    // here refuses everywhere, including for a legacy `PHONE` challenge whose
+    // resend would otherwise mint a fresh code for a transport that does not
+    // exist. Placed above the minter deliberately: nothing secret is created for
+    // a destination that can never be reached.
+    if (!isVerificationContactKind(target.contactKind)) {
+      throw new VerificationIssueError(CHANNEL_UNSUPPORTED);
+    }
+
     const challengeId = newId() as ChallengeId;
     const expiresAt = expiryOf(policy, issuedAt);
 

@@ -390,6 +390,25 @@ services:
       # public Storefront origin. No default: an unset value fails closed at
       # that rendering boundary rather than minting a link to a guessed host.
       STOREFRONT_PUBLIC_ORIGIN: ${STOREFRONT_PUBLIC_ORIGIN:-http://embroidery.local}
+      # Which transport the worker actually sends over (APP12-N01.B01).
+      #
+      # Defaulted to RECORDING here and ONLY here: development is the one place
+      # where "captured in memory, delivered to nobody" is a legitimate state,
+      # and the E2E/acceptance harnesses read the same sink. The loader refuses
+      # RECORDING outright when NODE_ENV is production or staging, so this
+      # default cannot follow the image into a deployment that must deliver.
+      #
+      # Point a local run at a real mailbox by setting NOTIFICATION_TRANSPORT
+      # and the SMTP_* block in .env; nothing else changes.
+      NOTIFICATION_TRANSPORT: ${NOTIFICATION_TRANSPORT:-RECORDING}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_REQUIRE_TLS: ${SMTP_REQUIRE_TLS:-true}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-Nét Thêu}
       # Reach the database over the compose network (never the host mapping).
       DATABASE_URL: postgres://${POSTGRES_USER:-embroidery}:${POSTGRES_PASSWORD:-embroidery_dev_password}@postgres:5432/${POSTGRES_DB:-embroidery}
       CHOKIDAR_USEPOLLING: 'true'

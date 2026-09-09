@@ -15,6 +15,7 @@ import {
   publicVerificationResend,
   publicVerificationSubmitAttempt,
   publicVerificationReadStatus,
+  type IssueVerificationChallengeBodyContactKind,
   type VerificationChallengeResponse,
   type VerificationChallengeStatusResponse,
 } from '@embroidery/api-client';
@@ -38,7 +39,17 @@ export async function issueVerificationChallenge(
   purpose: VerificationPurpose,
 ): Promise<VerificationChallengeResponse> {
   const body = await publicVerificationIssue(
-    { contact, contactKind: CONTACT_KIND_VALUES[contactKind], purpose },
+    {
+      contact,
+      // `APP12-N01` narrowed the contract to `EMAIL`, and the generated type
+      // narrowed with it. The Storefront still renders a phone choice until
+      // `N01.S01` removes it, so this seam can still be handed `PHONE` — and
+      // when it is, the server refuses it with `422` rather than sending an SMS
+      // nothing could deliver. The cast states that interim honestly instead of
+      // widening the contract type or silently rewriting the customer's choice.
+      contactKind: CONTACT_KIND_VALUES[contactKind] as IssueVerificationChallengeBodyContactKind,
+      purpose,
+    },
     { instance: getBrowserApiClient() },
   );
   return body.data;

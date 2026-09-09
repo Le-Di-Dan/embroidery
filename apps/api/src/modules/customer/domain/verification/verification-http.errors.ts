@@ -89,8 +89,25 @@ function verificationUnavailable(): HttpException {
  * cooldown exists to refuse. Reporting a conflict would leak that a *concurrent*
  * request for the same address is in flight.
  */
+/**
+ * The contact kind is not a verification channel (`APP12-N01`).
+ *
+ * 422 and not 400: the request is well-formed — the schema admits only `EMAIL`,
+ * so the only way to arrive here from HTTP is a resend of a legacy `PHONE`
+ * challenge — and the refusal is about what the system will carry rather than
+ * about how the caller wrote it. The message names the supported channel so an
+ * operator reading a log knows the policy, and names no contact.
+ */
+function verificationChannelUnsupported(): HttpException {
+  return new HttpException(
+    { message: 'Verification codes are sent by email only.' },
+    HttpStatus.UNPROCESSABLE_ENTITY,
+  );
+}
+
 const RESPONSE_OF: Readonly<Record<VerificationIssueFailure, () => HttpException>> = {
   CONTACT_NOT_ACCEPTABLE: contactNotAcceptable,
+  VERIFICATION_CHANNEL_UNSUPPORTED: verificationChannelUnsupported,
   VERIFICATION_POLICY_UNAVAILABLE: verificationUnavailable,
   ISSUANCE_RATE_EXCEEDED: issuanceRateExceeded,
   RESEND_TOO_SOON: resendTooSoon,

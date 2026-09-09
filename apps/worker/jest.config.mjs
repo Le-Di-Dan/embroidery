@@ -34,6 +34,8 @@ const ESM_ONLY_DIRECTORIES = ESM_ONLY_PACKAGES.map(
 /** @type {import('jest').Config} */
 export default {
   testEnvironment: 'node',
+  // The transport every suite composing WorkerModule must state (APP12-N01.B01).
+  setupFiles: ['<rootDir>/test/setup-notification-transport.ts'],
   roots: ['<rootDir>/src', '<rootDir>/test'],
   // Integration suites create a database and apply 31 migrations before the
   // first assertion; the 5s default would fail on setup, not on behaviour.

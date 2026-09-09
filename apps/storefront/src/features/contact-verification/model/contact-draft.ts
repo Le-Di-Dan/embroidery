@@ -17,10 +17,22 @@ import { IssueVerificationChallengeBodyContactKind } from '@embroidery/api-clien
 
 export type ContactKind = 'EMAIL' | 'PHONE';
 
-/** The contract's own enum, so the wire value is never a typed literal. */
+/**
+ * The contract's own enum, so the wire value is never a typed literal.
+ *
+ * `PHONE` is no longer in the contract: `APP12-N01` locked customer verification
+ * to email, and the generated enum narrowed with it. The local literal below
+ * keeps this module compiling and the phone *shape check* working for the UI
+ * that still renders a choice — it is not a wire value any more, and the server
+ * refuses it.
+ *
+ * This is the bounded compile-compatibility change `APP12-N01.B01` §22 allows.
+ * Removing the affordance itself — the choice, its copy and its error states —
+ * is `N01.S01`'s work and is deliberately not done here.
+ */
 export const CONTACT_KIND_VALUES = {
   EMAIL: IssueVerificationChallengeBodyContactKind.EMAIL,
-  PHONE: IssueVerificationChallengeBodyContactKind.PHONE,
+  PHONE: 'PHONE',
 } as const;
 
 export const CONTACT_KINDS: readonly ContactKind[] = ['EMAIL', 'PHONE'];

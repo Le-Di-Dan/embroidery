@@ -51,6 +51,12 @@ configMapGenerator:
       # value the worker composes secure links with and the Storefront resolves
       # `metadataBase`, canonical URLs, robots.txt and sitemap.xml from.
       - STOREFRONT_PUBLIC_ORIGIN=https://staging.embroidery.local
+      # Must be SMTP, and the mail account is an operator's to supply. Empty
+      # here on purpose — a host that parses is a host that deploys, and a
+      # deployment whose codes go nowhere is the APP12-U01 blocker returning.
+      - NOTIFICATION_TRANSPORT=
+      - SMTP_HOST=
+      - EMAIL_FROM_ADDRESS=
       - STAFF_ALLOWED_ORIGINS=https://admin.staging.embroidery.local
       - DESIGN_SESSION_ALLOWED_ORIGINS=https://staging.embroidery.local
       - OBJECT_STORAGE_ENDPOINT=http://embroidery-minio:9000

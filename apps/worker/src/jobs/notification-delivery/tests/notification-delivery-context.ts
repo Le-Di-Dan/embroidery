@@ -54,6 +54,7 @@ import {
 } from '../../../runtime/policy/worker-runtime-policy';
 import { applyOfflineObjectStorageEnv } from '../../../runtime/tests/offline-object-storage-env';
 import { STOREFRONT_PUBLIC_ORIGIN_ENV } from '../config/storefront-origin.config';
+import { NOTIFICATION_TRANSPORT_ENV } from '../config/notification-transport.config';
 import { NOTIFICATION_DELIVERY_EVENT_TYPE } from '../domain/notification-delivery.payload';
 import {
   NOTIFICATION_DELIVERY_POLICY_KEY,
@@ -127,6 +128,7 @@ export async function startNotificationWorker(
     env: process.env['NODE_ENV'],
     key: process.env[NOTIFICATION_DELIVERY_ENVELOPE_KEY_ENV],
     origin: process.env[STOREFRONT_PUBLIC_ORIGIN_ENV],
+    transport: process.env[NOTIFICATION_TRANSPORT_ENV],
   };
   const { raw, key } = syntheticEnvelopeKey();
   process.env['DATABASE_URL'] = disposable.url;
@@ -136,6 +138,11 @@ export async function startNotificationWorker(
   // fails closed without this. Set for every suite so the one secure-link case
   // renders, and restored on close like the key beside it.
   process.env[STOREFRONT_PUBLIC_ORIGIN_ENV] = TEST_STOREFRONT_ORIGIN;
+  // `APP12-N01.B01`: the transport is now a stated decision rather than a
+  // wiring default, so these suites state theirs. RECORDING is the honest one —
+  // they assert on the captured delivery, and the loader permits it here
+  // precisely because `NODE_ENV` is not a delivering environment.
+  process.env[NOTIFICATION_TRANSPORT_ENV] = 'RECORDING';
   const restoreStorageEnv = applyOfflineObjectStorageEnv();
 
   let moduleRef: TestingModule;
@@ -203,6 +210,7 @@ export async function startNotificationWorker(
       restore('NODE_ENV', previous.env);
       restore(NOTIFICATION_DELIVERY_ENVELOPE_KEY_ENV, previous.key);
       restore(STOREFRONT_PUBLIC_ORIGIN_ENV, previous.origin);
+      restore(NOTIFICATION_TRANSPORT_ENV, previous.transport);
       await disposable.drop();
     },
   };

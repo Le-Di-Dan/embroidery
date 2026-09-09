@@ -67,6 +67,55 @@ function isOptionalContactUrl(value) {
 
 const CONFIG_RULES = [
   {
+    key: 'NOTIFICATION_TRANSPORT',
+    consumer: 'apps/worker notification-channel selection (APP12-N01.B01)',
+    required: true,
+    shape: 'exactly SMTP in a deployed environment',
+    // Not merely "one of SMTP|RECORDING": RECORDING is a *valid* value of the
+    // variable and an invalid state for a deployment. `APP12-U01` found the
+    // worker wired to it unconditionally, which made every verification code
+    // "deliver" successfully into process memory while no customer received
+    // anything. A release that reaches this checker must deliver.
+    accepts: (value) => value === 'SMTP',
+  },
+  {
+    key: 'SMTP_HOST',
+    consumer: 'apps/worker SMTP transport (APP12-N01.B01)',
+    required: true,
+    shape: 'a hostname',
+    accepts: (value) => typeof value === 'string' && value.trim() !== '' && !/\s/.test(value),
+  },
+  {
+    key: 'SMTP_PORT',
+    consumer: 'apps/worker SMTP transport (APP12-N01.B01)',
+    required: true,
+    shape: 'an integer between 1 and 65535',
+    accepts: (value) => {
+      const port = Number(value);
+      return Number.isInteger(port) && port >= 1 && port <= 65_535;
+    },
+  },
+  {
+    key: 'EMAIL_FROM_ADDRESS',
+    consumer: 'apps/worker SMTP transport (APP12-N01.B01)',
+    required: true,
+    // A bare address, because `EMAIL_FROM_NAME` carries the display name. A
+    // value like `Nét Thêu <no-reply@…>` here produces a doubled display name
+    // in the customer's client, or a malformed header.
+    shape: 'a single bare email address, with no display name',
+    accepts: (value) =>
+      typeof value === 'string' &&
+      /^[^\s<>,;@]+@[^\s<>,;@]+$/.test(value.trim()) &&
+      value.trim() === value,
+  },
+  {
+    key: 'EMAIL_FROM_NAME',
+    consumer: 'apps/worker SMTP transport (APP12-N01.B01)',
+    required: true,
+    shape: 'a non-empty sender display name',
+    accepts: (value) => typeof value === 'string' && value.trim() !== '',
+  },
+  {
     key: 'STOREFRONT_PUBLIC_ORIGIN',
     consumer: 'apps/storefront config/public-origin.ts + apps/worker secure-link composition',
     required: true,
@@ -227,6 +276,11 @@ const REQUIRED_SECRET_KEYS = Object.freeze({
     'VERIFICATION_CODE_SECRET_PEPPER',
     'SECURE_LINK_TOKEN_SECRET_PEPPER',
     'NOTIFICATION_DELIVERY_ENVELOPE_KEY',
+    // The SMTP account the worker authenticates with (APP12-N01.B01). Both
+    // halves are a credential: the username identifies the sending account to
+    // the relay, and a relay that sees repeated failed logins blocks it.
+    'SMTP_USERNAME',
+    'SMTP_PASSWORD',
   ]),
 });
 

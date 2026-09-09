@@ -96,9 +96,23 @@ function pinImages(source) {
   );
 }
 
+/**
+ * Supplies the mail transport an operator owns (`APP12-N01.B01`).
+ *
+ * Empty in every committed overlay on purpose: a real mail account is external
+ * release configuration, and a host that parses is a host that deploys. A test
+ * that wants a PASS therefore has to supply it exactly as an operator would.
+ */
+function fillMail(source) {
+  return source
+    .replace('- NOTIFICATION_TRANSPORT=\n', '- NOTIFICATION_TRANSPORT=SMTP\n')
+    .replace('- SMTP_HOST=\n', '- SMTP_HOST=smtp.example\n')
+    .replace('- EMAIL_FROM_ADDRESS=\n', '- EMAIL_FROM_ADDRESS=no-reply@shop.example\n');
+}
+
 /** Supplies every externally-owned production value with a valid placeholder. */
 function fillProduction(source) {
-  return pinImages(source)
+  return fillMail(pinImages(source))
     .replace('- STOREFRONT_PUBLIC_ORIGIN=\n', '- STOREFRONT_PUBLIC_ORIGIN=https://shop.example\n')
     .replace('- STAFF_ALLOWED_ORIGINS=\n', '- STAFF_ALLOWED_ORIGINS=https://admin.shop.example\n')
     .replace(
@@ -173,7 +187,7 @@ function fillProductionPatches({ gatewayClassName = 'example-gateway' } = {}) {
 
 describe('release preflight — staging', () => {
   it('passes when every value is supplied and every image is immutable', () => {
-    const { code, output } = runPreflight('staging', pinImages);
+    const { code, output } = runPreflight('staging', (source) => fillMail(pinImages(source)));
     assert.ok(output.includes('RELEASE CONFIG staging: PASS'), output);
     assert.equal(code, 0);
   });

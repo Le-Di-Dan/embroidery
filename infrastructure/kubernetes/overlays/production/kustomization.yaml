@@ -44,6 +44,11 @@ configMapGenerator:
       # Empty, not `https://example.com`: a placeholder that parses is a
       # placeholder that deploys.
       - STOREFRONT_PUBLIC_ORIGIN=
+      # Must be SMTP. The release checker refuses RECORDING here, because a
+      # deployment that captures codes in memory delivers nothing (APP12-U01).
+      - NOTIFICATION_TRANSPORT=
+      - SMTP_HOST=
+      - EMAIL_FROM_ADDRESS=
       - STAFF_ALLOWED_ORIGINS=
       - DESIGN_SESSION_ALLOWED_ORIGINS=
       - OBJECT_STORAGE_ENDPOINT=

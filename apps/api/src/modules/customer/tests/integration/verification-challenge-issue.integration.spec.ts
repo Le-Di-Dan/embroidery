@@ -155,23 +155,21 @@ describe('APP4-B03 verification challenge issue (integration)', () => {
     });
   });
 
-  describe('a new PHONE target', () => {
-    it('normalizes to E.164 and asks for SMS delivery', async () => {
-      const result = await issue(PHONE, 'PHONE');
+  // `APP12-N01` locked customer verification to email. A phone number stays a
+  // delivery contact and is no longer a channel a code can travel over, so the
+  // cases below assert a refusal where they once asserted an SMS delivery.
+  describe('a PHONE target', () => {
+    it('is refused before any code is minted', async () => {
+      const failure = await failureOf(() => issue(PHONE, 'PHONE'));
 
-      const [intent] = await intents(context);
-      expect(intent?.channel).toBe('SMS');
+      expect(failure.failure).toBe('VERIFICATION_CHANNEL_UNSUPPORTED');
+    });
 
-      const [event] = await deliveryEvents(context);
-      if (event === undefined) throw new Error('no delivery event');
-      const payload = openDeliveryEnvelope(context.envelopeKey, event.payload);
-      expect(payload.channel).toBe('SMS');
-      expect(payload.normalizedRecipient.startsWith('+84')).toBe(true);
+    it('creates no challenge, no intent and no SMS delivery', async () => {
+      await failureOf(() => issue(PHONE, 'PHONE'));
 
-      const challenges = await challengesFor(context, payload.normalizedRecipient);
-      expect(challenges).toHaveLength(1);
-      expect(challenges[0]).toMatchObject({ id: result.challengeId, contact_kind: 'PHONE' });
-      expect(await codeAppearsAnywhere(context, context.minter.last)).toEqual([]);
+      expect(await intents(context)).toEqual([]);
+      expect(await deliveryEvents(context)).toEqual([]);
     });
 
     it('refuses a contact the normalizer cannot accept', async () => {
@@ -235,18 +233,6 @@ describe('APP4-B03 verification challenge issue (integration)', () => {
       // and the as-entered casing must not either.
       expect(result.recipientMasked).not.toBe(NORMALIZED_EMAIL);
       expect(result.recipientMasked).not.toContain('Nguoi.Dung');
-    });
-
-    it('masks a PHONE recipient from its E.164 form, not the digits typed', async () => {
-      const result = await issue(PHONE, 'PHONE');
-
-      const [event] = await deliveryEvents(context);
-      if (event === undefined) throw new Error('no delivery event');
-      const { normalizedRecipient } = openDeliveryEnvelope(context.envelopeKey, event.payload);
-
-      expect(result.recipientMasked).toBe(maskContact('PHONE', normalizedRecipient));
-      expect(result.recipientMasked).not.toBe(normalizedRecipient);
-      expect(result.recipientMasked).not.toBe(PHONE);
     });
 
     it('describes the live challenge on a repeat issue, minting nothing', async () => {
