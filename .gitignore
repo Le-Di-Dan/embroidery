@@ -44,3 +44,13 @@ Thumbs.db
 # Playwright MCP scratch artifacts (screenshots/snapshots) — never committed
 .playwright-mcp/
 evidences/
+
+# `evidences/` above is unanchored, so it also swallowed `docs/implementation/
+# evidences/`, which is not a scratch directory: `APP12-G03` §16 names
+# `docs/implementation/evidences/APP12-G03-UAT-DATA-MANIFEST.md` as the canonical
+# ownership and provenance authority for the persistent UAT dataset, and a
+# document nobody else can read is not an authority. Screenshots stay ignored —
+# only Markdown is tracked here.
+!docs/implementation/evidences/
+docs/implementation/evidences/*
+!docs/implementation/evidences/*.md

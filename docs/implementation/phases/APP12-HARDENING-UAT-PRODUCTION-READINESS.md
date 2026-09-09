@@ -7,7 +7,7 @@ ROADMAP_STATUS         = LOCKED
 ROADMAP_LOCK           = LOCKED
 IMPLEMENTATION_STARTED = true
 CHECKPOINTS            = 39
-NEXT                   = APP12-M01 (stage B in progress; internal package M01.S1)
+NEXT                   = APP12-U01 (operator/customer UAT) — NOT_AUTHORIZED
 CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
                          APP12-G02-C1 (2026-09-01, 1/1 — no C2)
                          APP12-C01-C1 (2026-09-01, 1/1 — no C2)
@@ -35,9 +35,13 @@ OVERRIDE               = APP12-M01 inserted 2026-09-05 by explicit Human Product
                            M01.D1  bounded Figma amendment                     COMPLETE_AFTER_C1
                            M01.D1-C1 Admin mobile media management (1/1)       COMPLETE
                            M01.A1  Admin media management UI                   COMPLETE
-                           M01.S1  Product Detail visible counter              NEXT (not authorized)
-                           M01.E1  cross-boundary acceptance                   not authorized
-                         `APP12-G03` remains NOT_AUTHORIZED.
+                           M01.S1  Product Detail visible counter              COMPLETE_AFTER_C1
+                           M01.S1-C1 lightbox overlay (1/1)                    COMPLETE
+                           M01.E1  cross-boundary acceptance                   COMPLETE_AFTER_C1
+                           M01.E1-C1 degraded signal + Figma (1/1)             COMPLETE
+                         `APP12-M01 = COMPLETE — PO CLOSED` (2026-09-09).
+                         `APP12-G03` was authorized on that closure and is
+                         COMPLETE (2026-09-09).
 ```
 
 The 39 checkpoints of the accepted C1 roadmap **as amended by the 2026-09-05
@@ -279,7 +283,7 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | 7 | `APP12-C02` | Admin category management authority (**MANDATORY**) | `COMPLETE` |
 | 8 | `APP12-A01` | Admin category management UI (**MANDATORY**) | `COMPLETE` |
 | 9 | `APP12-C03` | Storefront dynamic category discovery, breadcrumb, CTA, sitemap, gate reconciliation | `COMPLETE` |
-| 10 | `APP12-G03` | Representative UAT dataset | `NOT_AUTHORIZED` — deferred behind `APP12-M01` by the 2026-09-05 PO override |
+| 10 | `APP12-G03` | Representative UAT dataset | `COMPLETE` (2026-09-09) — authorized on the M01 PO closure. 4 published dynamic categories, 7 published Ready-Made Products, 47 real processed images (1/8/20), 16 variants, 14 SKUs, both price paths, in/low/out-of-stock. `G03_PERSISTENT_UAT_DATA = READY`, `G03_DATA = UAT_ONLY`. Manifest [`evidences/APP12-G03-UAT-DATA-MANIFEST.md`](../evidences/APP12-G03-UAT-DATA-MANIFEST.md), report [`reports/APP12-G03-COMPLETION-REPORT.md`](../reports/APP12-G03-COMPLETION-REPORT.md) |
 | 11 | `APP12-B01` | Public purchasable SKU projection | `COMPLETE_AFTER_C1` |
 | 11·C1 | `APP12-B01-C1` | Dev data provenance cleanup | `COMPLETE` |
 | 12 | `APP12-B02` | Ready-Made order creation and reservation | `COMPLETE` |
