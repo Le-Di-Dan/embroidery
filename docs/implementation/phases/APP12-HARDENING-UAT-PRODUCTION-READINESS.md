@@ -7,10 +7,10 @@ ROADMAP_STATUS         = LOCKED
 ROADMAP_LOCK           = LOCKED
 IMPLEMENTATION_STARTED = true
 CHECKPOINTS            = 41
-NEXT                   = APP12-N02 (Ready-Made sellability authoring &
-                         publication readiness) — AUTHORIZED; N02.G01 PO PASS,
-                         internal package N02.D01 COMPLETE —
-                         AWAITING_PO_REVIEW (design)
+NEXT                   = PO_REVIEW_REQUIRED — APP12-N02 is
+                         IMPLEMENTATION_COMPLETE — AWAITING_PO_REVIEW
+                         (N02.E01 COMPLETE — AWAITING_PO_REVIEW, 2026-09-10);
+                         on PO closure: APP12-U01-C1 (NOT_EXECUTED)
                          APP12-U01 = SUSPENDED_PENDING_BLOCKER_RECOVERY
 CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
                          APP12-G02-C1 (2026-09-01, 1/1 — no C2)
@@ -69,11 +69,14 @@ OVERRIDE               = APP12-M01 inserted 2026-09-05 by explicit Human Product
                          Internal packages, not new checkpoint ids:
                            N02.G01 gap audit                   COMPLETE — PO PASS
                            N02.D01 bounded Admin sellability design     COMPLETE
-                                   — AWAITING_PO_REVIEW (21 Figma frames,
-                                   21 registry rows REVIEW_REQUIRED)
-                           N02.B01 variant write authority + criteria   PENDING
-                           N02.A01 Admin variant/SKU/stock authoring    PENDING
-                           N02.E01 operator authoring acceptance        PENDING
+                                   — PO APPROVED (21 Figma frames,
+                                   FIG-APPROVAL-APP12-N02-D01-PO-001)
+                           N02.B01 variant write authority + criteria   COMPLETE — PO PASS
+                           N02.A01 Admin variant/SKU/stock authoring    COMPLETE — PO PASS
+                           N02.E01 operator authoring acceptance        COMPLETE
+                                   — AWAITING_PO_REVIEW (J1–J10 live, 12/12;
+                                   reports/APP12-N02-E01-COMPLETION-REPORT.md)
+                         `APP12-N02 = IMPLEMENTATION_COMPLETE — AWAITING_PO_REVIEW`.
                          `APP12-U01 = SUSPENDED_PENDING_BLOCKER_RECOVERY` until
                          N02 closes; `APP12-E01` / `APP12-R01` NOT_AUTHORIZED.
 ```

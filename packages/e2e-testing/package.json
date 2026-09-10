@@ -47,7 +47,9 @@
     "e2e:app12:n01e1": "node scripts/run-e2e.mjs --app12-n01e1",
     "e2e:app12:n01e1:headed": "node scripts/run-e2e.mjs --app12-n01e1 --headed",
     "e2e:app12:n02a01": "node scripts/run-e2e.mjs --app12-n02a01",
-    "e2e:app12:n02a01:headed": "node scripts/run-e2e.mjs --app12-n02a01 --headed"
+    "e2e:app12:n02a01:headed": "node scripts/run-e2e.mjs --app12-n02a01 --headed",
+    "e2e:app12:n02e01": "node scripts/run-e2e.mjs --app12-n02e01",
+    "e2e:app12:n02e01:headed": "node scripts/run-e2e.mjs --app12-n02e01 --headed"
   },
   "dependencies": {
     "@embroidery/database": "workspace:*",

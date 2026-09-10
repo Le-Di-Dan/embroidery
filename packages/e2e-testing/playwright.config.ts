@@ -307,6 +307,21 @@ export default defineConfig({
         viewport: { width: 1440, height: 900 },
       },
     },
+    // APP12-N02.E01 — the cross-boundary sellability acceptance. The A01 project
+    // on the Admin origin, serial for the same reason, with the Storefront read
+    // from a second context each journey opens itself: every claim is an Admin
+    // write whose consequence is a visitor's Product Detail page.
+    {
+      name: 'app12-n02e01-chromium',
+      testMatch: '**/app12/n02e01-*.acceptance.spec.ts',
+      timeout: 240_000,
+      use: {
+        ...devices['Desktop Chrome'],
+        ...chromiumLaunch,
+        baseURL: ADMIN_URL,
+        viewport: { width: 1440, height: 900 },
+      },
+    },
     // APP12-M01.S1 — the Storefront Product Detail gallery.
     //
     // The Storefront origin, because the surface under test is the page a
