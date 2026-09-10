@@ -1,0 +1,68 @@
+// Admin product publication — the readiness checklist (`441:228`, `442:189`,
+// and the ten-criterion states `977:187`…`977:638`).
+
+@use '@embroidery/styles' as styles;
+@use 'product-publication-tokens' as tokens;
+
+// Requirements ---------------------------------------------------------------
+
+.product-publication__requirements {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.product-publication__requirement {
+  display: grid;
+  grid-template-columns: tokens.$marker-width minmax(0, 1fr);
+  gap: styles.spacing(8);
+  align-items: start;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+}
+
+.product-publication__requirement-marker {
+  font-weight: styles.$font-weight-bold;
+  text-align: center;
+}
+
+// Colour reinforces the marker glyph and the off-screen word; it is never the
+// only signal (450:404 — "màu không phải tín hiệu duy nhất").
+.product-publication__requirement--satisfied .product-publication__requirement-marker {
+  color: styles.$color-status-success;
+}
+
+.product-publication__requirement--unsatisfied .product-publication__requirement-marker {
+  color: styles.$color-status-warning;
+}
+
+// `Chưa xét` (`APP12-N02.A01`, `977:187`…`977:413`). A muted row, never a green
+// one: the criterion has not been evaluated against anything yet. Colour is the
+// third signal here too — the glyph is a neutral dash and the off-screen word
+// says which state it is.
+.product-publication__requirement--pending {
+  color: styles.$color-text-secondary;
+}
+
+.product-publication__requirement--pending .product-publication__requirement-marker {
+  color: styles.$color-text-tertiary;
+}
+
+.product-publication__requirement-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+// Rendered once beneath the list, and only when a row actually reads as pending.
+.product-publication__requirements-note {
+  margin: styles.spacing(8) 0 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.product-publication__requirement[data-flagged='true'] .product-publication__requirement-text {
+  font-weight: styles.$font-weight-semibold;
+}

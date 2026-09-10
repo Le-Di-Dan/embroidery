@@ -1,0 +1,21 @@
+// Admin Ready-Made sellability authoring (`APP12-N02.A01`) — the feature's
+// single entry, loaded by `src/styles/main.scss`.
+//
+// Design source: the `APP12-N02.D01` frames approved under
+// `FIG-APPROVAL-APP12-N02-D01-PO-001` — `971:187`…`974:187` (1440), `978:187`
+// (1024), `979:187`…`979:321` (390), and the dialogs `975:187`…`976:300`.
+// Colour, type, radius and spacing come from `@embroidery/styles`.
+//
+// The partials are listed in cascade order: the section frame, then the
+// variant/SKU list, then the warning banner that sits above them on the page,
+// and last the dialogs, which layer over all of it. Reordering these lines
+// changes the emitted CSS; each selector lives in exactly one partial.
+//
+// Every class is prefixed `product-sellability`. `APP2-A03` lost time to a
+// global class collision jsdom could not see, so this sheet shares no selector
+// with any other feature.
+
+@use 'product-sellability-section';
+@use 'product-sellability-rows';
+@use 'product-sellability-warning';
+@use 'product-sellability-dialog';

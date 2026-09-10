@@ -1,0 +1,91 @@
+// The published-but-unbuyable banner (`974:187`, `979:321`).
+//
+// Amber, bordered and left-marked — and none of that is the signal. The state
+// is carried by a text badge, a heading sentence and a counted evidence block,
+// so an operator who cannot distinguish the colour reads exactly the same
+// facts. The colour is the fourth cue, not the first.
+
+@use '@embroidery/styles' as styles;
+
+.product-sellability-warning {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  margin-top: styles.spacing(24);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-status-warning;
+  border-left-width: styles.spacing(4);
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-primary;
+}
+
+.product-sellability-warning__badge {
+  align-self: flex-start;
+  margin: 0;
+  padding: styles.spacing(4) styles.spacing(8);
+  border: 1px solid styles.$color-status-warning;
+  border-radius: styles.$radius-xs;
+  color: styles.$color-status-warning;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.product-sellability-warning__title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+}
+
+// The counted structure. Bordered and set apart, because it is evidence the
+// operator can check against the list below rather than an assertion.
+.product-sellability-warning__evidence {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-background-secondary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+}
+
+.product-sellability-warning__evidence p {
+  margin: 0;
+}
+
+.product-sellability-warning__evidence-heading {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+  text-transform: uppercase;
+}
+
+// The sentence that keeps this apart from "hết hàng".
+.product-sellability-warning__note {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.product-sellability-warning__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+}
+
+.product-sellability-warning__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: styles.$size-touch-target-min;
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+  text-decoration: none;
+}

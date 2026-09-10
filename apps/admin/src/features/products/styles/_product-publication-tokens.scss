@@ -1,0 +1,19 @@
+// Admin product publication — the screen-specific composition constants
+// (`APP2-A04`).
+//
+// Extracted at `APP12-N02.A01`, when the ten-criterion checklist and its
+// `Chưa xét` presentation pushed the single sheet past the 400-line source
+// limit. The split is by responsibility, not by line count: the shell, the
+// checklist and the action/banner treatments are three subjects that happen to
+// share five constants, and the constants are what all three need first.
+//
+// None of these is a design token. They are measurements of this screen, and
+// they live here rather than in `@embroidery/styles` for that reason.
+
+$publication-breakpoint: 1024px;
+
+// Screen-specific composition constants (no shared token; not a token system).
+$publication-column: 360px;
+$media-tile: 96px;
+$control-height: 44px;
+$marker-width: 20px;

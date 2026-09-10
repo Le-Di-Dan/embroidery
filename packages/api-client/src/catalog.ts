@@ -230,3 +230,44 @@ export type {
   UpdateCategoryBody,
   TransitionCategoryBody,
 } from './generated/embroidery-api.schemas';
+
+// The Admin Ready-Made sellability authoring surface: the variant operations
+// delivered by `APP12-N02.B01`, and the two SKU definition operations that were
+// delivered by `APP7-B01` and have had no Admin caller until now (`APP12-N02.A01`).
+//
+// The five cross together because they are one capability. A variant with no way
+// to define a SKU under it is not authorable, and a SKU operation with no variant
+// list to place it in has nowhere to be called from — `APP12-N02.G01` proved that
+// exact shape: `adminSku_create` had been on the contract for five phases with
+// zero call sites, because the variant it needs did not have a writer.
+//
+// `adminProductVariantList` is the **authoring** read and the only one usable
+// here. `publicProductVariant_list` is not a substitute and is deliberately not
+// exported for this purpose: it is keyed by slug, refuses anything but a
+// published product, and filters out exactly the inactive variants and SKUs the
+// authoring section exists to show as history.
+//
+// No enum crosses as a value. `AdminVariantSkuResponseCurrencyCode` has one
+// member the server owns (VND) and no screen branches on it; importing the
+// vocabulary would create a second place for a server-owned fact to drift.
+//
+// There is no delete on this boundary because the contract publishes none.
+// Deactivation is how a variant or a SKU leaves the catalog, which is why both
+// update bodies carry `isActive` and neither operation has a destructive twin.
+export {
+  adminProductVariantList,
+  adminProductVariantCreate,
+  adminProductVariantUpdate,
+  adminSkuCreate,
+  adminSkuUpdate,
+} from './generated/embroidery-api';
+export type {
+  AdminProductVariantListResponse,
+  AdminProductVariantResponse,
+  AdminVariantSkuResponse,
+  AdminSkuResponse,
+  CreateProductVariantBody,
+  UpdateProductVariantBody,
+  CreateSkuBody,
+  UpdateSkuBody,
+} from './generated/embroidery-api.schemas';

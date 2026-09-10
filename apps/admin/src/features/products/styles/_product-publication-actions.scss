@@ -1,0 +1,143 @@
+// Admin product publication — the actions, the outcome banners and the
+// accessibility utility (`442:110`, `442:205`).
+//
+// Loaded last, so its rules cascade over the shell and checklist treatments
+// the banners reuse.
+
+@use '@embroidery/styles' as styles;
+@use 'product-publication-tokens' as tokens;
+
+// Actions --------------------------------------------------------------------
+
+.product-publication__primary,
+.product-publication__secondary,
+.product-publication__entry {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: tokens.$control-height;
+  padding: styles.spacing(8) styles.spacing(24);
+  border-radius: styles.$radius-button;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.product-publication__primary {
+  border: 1px solid transparent;
+  background: styles.$color-action-fill;
+  color: styles.$color-surface-primary;
+
+  &:hover:not(:disabled) {
+    background: styles.$color-action-fill-hover;
+  }
+
+  &:disabled {
+    background: styles.$color-border-secondary;
+    color: styles.$color-text-tertiary;
+    cursor: not-allowed;
+  }
+}
+
+.product-publication__primary--danger {
+  background: styles.$color-status-error;
+
+  &:hover:not(:disabled) {
+    background: styles.$color-action-fill-active;
+  }
+}
+
+.product-publication__secondary,
+.product-publication__entry {
+  border: 1px solid styles.$color-border-secondary;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+
+  &:hover {
+    background: styles.$color-background-secondary;
+  }
+}
+
+.product-publication__note {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+// Banners --------------------------------------------------------------------
+
+.product-publication__banner {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-left-width: 4px;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+}
+
+.product-publication__banner--success {
+  border-left-color: styles.$color-status-success;
+}
+
+.product-publication__banner--error {
+  border-left-color: styles.$color-status-error;
+}
+
+.product-publication__banner--blocked {
+  border-left-color: styles.$color-status-warning;
+}
+
+.product-publication__banner-title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.product-publication__banner-body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.product-publication__failure {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  align-items: flex-start;
+  padding: styles.spacing(24);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+}
+
+.product-publication__failure-title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-l;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.product-publication__failure-body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+// Utility --------------------------------------------------------------------
+
+// Available to assistive technology, removed from the visual composition.
+.product-publication__visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

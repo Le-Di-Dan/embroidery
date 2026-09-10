@@ -1,0 +1,89 @@
+// Sellability authoring — the section frame, its header and its empty/failure
+// states (`971:187`, `979:187`).
+//
+// Mobile-first. The base is the stacked 390 composition; the variant list's own
+// responsive behaviour lives beside it in `_product-sellability-rows.scss`.
+//
+// There is deliberately no table at any width. A desktop table compressed to
+// 390 is the failure `D01` §M rules out, and building one for 1440 would make
+// the mobile layout a compromise rather than a design.
+
+@use '@embroidery/styles' as styles;
+
+.product-sellability {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  margin-top: styles.spacing(24);
+  padding: styles.spacing(24);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-primary;
+}
+
+.product-sellability__header {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+}
+
+.product-sellability__title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-l;
+  font-weight: styles.$font-weight-bold;
+}
+
+.product-sellability__help,
+.product-sellability__count,
+.product-sellability__empty-note {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.product-sellability__status {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+// Empty and failure states -----------------------------------------------------
+
+.product-sellability__empty,
+.product-sellability__failure {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-background-secondary;
+}
+
+.product-sellability__failure {
+  border-color: styles.$color-status-error;
+}
+
+.product-sellability__empty-title,
+.product-sellability__failure-title,
+.product-sellability__failure-heading {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.product-sellability__empty-body,
+.product-sellability__failure-body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.product-sellability__failure-steps {
+  margin: 0;
+  padding-left: styles.spacing(16);
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}

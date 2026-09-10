@@ -93,6 +93,15 @@ const APP12_A01 = ['app12-a01-chromium'];
 // nothing about whether twenty images are legible at 157px. No Storefront
 // process is started — `M01.S1` owns that surface and is not authorised here.
 const APP12_M01A1 = ['app12-m01a1-chromium'];
+// APP12-N02.A01 — Admin Ready-Made sellability authoring. The M01.A1 topology
+// **exactly**, and deliberately not a new one: the surface under test is a new
+// section of the same product editor, and it needs the same authenticated
+// operator, the same disposable database and the same seeded catalog. Two of
+// that fixture's Products are the subject rather than the setting — `draft0`
+// has no variants because nothing has ever created one, and `published` is a
+// live Product in the same state, which is precisely the historical malformed
+// shape `N02.G01` found in the development world.
+const APP12_N02A01 = ['app12-n02a01-chromium'];
 const APP12_M01S1 = ['app12-m01s1-chromium'];
 // APP12-N01.S01 — the email-only verification UX. The S02 topology exactly, and
 // deliberately not a new one: the surface under test is the checkout's own
@@ -316,8 +325,12 @@ function parseArgs(argv) {
   const app12A01 = flags.has('--app12-a01');
   // APP12-A02-C1: the Admin Ready-Made order branch. Rides the S03 topology.
   const app12A02 = flags.has('--app12-a02');
+  // APP12-N02.A01: Admin sellability authoring. It rides the M01.A1 topology
+  // rather than declaring one, so the two can never drift apart: the section
+  // under test lives inside the product editor that suite already seeds for.
+  const app12N02A01 = flags.has('--app12-n02a01');
   // APP12-M01.A1: Admin product media management. The A01 topology plus storage.
-  const app12M01A1 = flags.has('--app12-m01a1');
+  const app12M01A1 = flags.has('--app12-m01a1') || app12N02A01;
   // APP12-M01.S1: the Storefront gallery. The same storage topology as A1, but
   // the Storefront process instead of the Admin one — no operator ever logs in.
   const app12M01S1 = flags.has('--app12-m01s1');
@@ -335,92 +348,96 @@ function parseArgs(argv) {
   // APP4-E01-H02: the browser tier, which IS a Playwright mode.
   const app4Browser = flags.has('--app4-browser') || app4R01 || app4R01C1 || app5E01 || app7E01;
   const full = flags.has('--full');
-  const mode = app12M01E1
-    ? 'app12-m01e1'
-    : app12M01S1
-      ? 'app12-m01s1'
-      : app12M01A1
-        ? 'app12-m01a1'
-        : app12V01
-          ? 'app12-v01'
-          : app4
-            ? 'app4'
+  const mode = app12N02A01
+    ? 'app12-n02a01'
+    : app12M01E1
+      ? 'app12-m01e1'
+      : app12M01S1
+        ? 'app12-m01s1'
+        : app12M01A1
+          ? 'app12-m01a1'
+          : app12V01
+            ? 'app12-v01'
+            : app4
+              ? 'app4'
+              : app12H08
+                ? 'app12-h08'
+                : app12H06
+                  ? 'app12-h06'
+                  : app12H01Wave2
+                    ? 'app12-h01-wave2'
+                    : app12H01
+                      ? 'app12-h01'
+                      : app12A02
+                        ? 'app12-a02'
+                        : app12A01
+                          ? 'app12-a01'
+                          : app12S03
+                            ? 'app12-s03'
+                            : app12N01S1
+                              ? 'app12-n01s1'
+                              : app12S02
+                                ? 'app12-s02'
+                                : app12S01
+                                  ? 'app12-s01'
+                                  : app7E01
+                                    ? 'app7-e01'
+                                    : app5E01
+                                      ? 'app5-e01'
+                                      : app4Browser
+                                        ? 'app4-browser'
+                                        : app1
+                                          ? 'app1'
+                                          : full
+                                            ? 'full'
+                                            : 'smoke';
+  const projects = app12N02A01
+    ? APP12_N02A01
+    : app12M01E1
+      ? APP12_M01E1
+      : app12M01S1
+        ? APP12_M01S1
+        : app12M01A1
+          ? APP12_M01A1
+          : app12V01
+            ? APP12_V01
             : app12H08
-              ? 'app12-h08'
+              ? APP12_H08
               : app12H06
-                ? 'app12-h06'
+                ? APP12_H06
                 : app12H01Wave2
-                  ? 'app12-h01-wave2'
+                  ? APP12_H01_WAVE2
                   : app12H01
-                    ? 'app12-h01'
+                    ? APP12_H01
                     : app12A02
-                      ? 'app12-a02'
+                      ? APP12_A02
                       : app12A01
-                        ? 'app12-a01'
+                        ? APP12_A01
                         : app12S03
-                          ? 'app12-s03'
-                          : app12N01S1
-                            ? 'app12-n01s1'
-                            : app12S02
-                              ? 'app12-s02'
-                              : app12S01
-                                ? 'app12-s01'
-                                : app7E01
-                                  ? 'app7-e01'
-                                  : app5E01
-                                    ? 'app5-e01'
-                                    : app4Browser
-                                      ? 'app4-browser'
-                                      : app1
-                                        ? 'app1'
-                                        : full
-                                          ? 'full'
-                                          : 'smoke';
-  const projects = app12M01E1
-    ? APP12_M01E1
-    : app12M01S1
-      ? APP12_M01S1
-      : app12M01A1
-        ? APP12_M01A1
-        : app12V01
-          ? APP12_V01
-          : app12H08
-            ? APP12_H08
-            : app12H06
-              ? APP12_H06
-              : app12H01Wave2
-                ? APP12_H01_WAVE2
-                : app12H01
-                  ? APP12_H01
-                  : app12A02
-                    ? APP12_A02
-                    : app12A01
-                      ? APP12_A01
-                      : app12S03
-                        ? APP12_S03
-                        : app12N01E1
-                          ? APP12_N01E1
-                          : app12N01S1
-                            ? APP12_N01S1
-                            : app12S02
-                              ? APP12_S02
-                              : app12S01
-                                ? APP12_S01
-                                : app7E01
-                                  ? APP7_E01
-                                  : app5E01
-                                    ? APP5_E01
-                                    : app4R01C1
-                                      ? APP4_R01_C1
-                                      : app4R01
-                                        ? APP4_R01
-                                        : app4Browser
-                                          ? APP4
-                                          : app1
-                                            ? APP1
-                                            : full
-                                              ? FULL
-                                              : SMOKE;
+                          ? APP12_S03
+                          : app12N01E1
+                            ? APP12_N01E1
+                            : app12N01S1
+                              ? APP12_N01S1
+                              : app12S02
+                                ? APP12_S02
+                                : app12S01
+                                  ? APP12_S01
+                                  : app7E01
+                                    ? APP7_E01
+                                    : app5E01
+                                      ? APP5_E01
+                                      : app4R01C1
+                                        ? APP4_R01_C1
+                                        : app4R01
+                                          ? APP4_R01
+                                          : app4Browser
+                                            ? APP4
+                                            : app1
+                                              ? APP1
+                                              : full
+                                                ? FULL
+                                                : SMOKE;
   // The E01 suite is always host/Chromium; it cannot run in the container.
   const runner =
     app1 ||

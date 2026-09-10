@@ -14,7 +14,11 @@ import {
   waitFor,
   within,
 } from '@embroidery/frontend-testing';
-import { adminProductDetail, adminProductUpdate } from '@embroidery/api-client';
+import {
+  adminProductDetail,
+  adminProductUpdate,
+  adminProductVariantList,
+} from '@embroidery/api-client';
 
 import { ProductDetailScreen } from '../../src/features/products/components/product-detail-screen';
 import { PRODUCT_FORM_COPY } from '../../src/features/products/model/product-form-copy';
@@ -23,12 +27,14 @@ import {
   makeProductDetail,
   makeProductMedia,
   productDetailEnvelope,
+  emptyVariantListEnvelope,
 } from '../support/product-fixture';
 
 jest.mock('next/navigation', () => mockCreateNavigationMock('/products/p-1').module);
 jest.mock('@embroidery/api-client', () => ({
   ...jest.requireActual<Record<string, unknown>>('@embroidery/api-client'),
   adminProductDetail: jest.fn(),
+  adminProductVariantList: jest.fn(),
   adminProductUpdate: jest.fn(),
 }));
 
@@ -43,6 +49,9 @@ let user: ReturnType<typeof createUser>;
 beforeEach(() => {
   jest.clearAllMocks();
   user = createUser();
+  // The detail screen now composes the sellability section, which always
+  // reads. An empty list keeps these suites about their own subject.
+  (adminProductVariantList as jest.Mock).mockResolvedValue(emptyVariantListEnvelope());
 });
 
 function renderDetail() {
@@ -370,13 +379,14 @@ describe('version conflict', () => {
 });
 
 describe('excluded capabilities', () => {
-  it('carries no variant, SKU or publication-readiness copy at all', async () => {
+  it('carries no publication-readiness or lifecycle copy of its own', async () => {
     const { container } = await renderLoadedDraft();
 
-    // These have no field in any B02 operation, so the words must not exist.
+    // `Phiên bản` and `SKU` were on this list until `APP12-N02.A01`, when the
+    // editor gained the sellability section and both became legitimate. The
+    // rest still have no field in any B02 operation and no approved surface
+    // here, so the words must not exist.
     for (const forbidden of [
-      'Phiên bản',
-      'SKU',
       'Điều kiện xuất bản',
       'Tới bước xuất bản',
       'Gỡ xuất bản',
@@ -386,6 +396,15 @@ describe('excluded capabilities', () => {
     ]) {
       expect(container.textContent).not.toContain(forbidden);
     }
+  });
+
+  it('composes the sellability section, and no delete affordance comes with it', async () => {
+    const { container } = await renderLoadedDraft();
+
+    // The positive half of the rule above: the section is deliberately here,
+    // and its arrival must not have quietly reintroduced a destructive control.
+    expect(container.textContent).toContain('Phiên bản & SKU');
+    expect(container.querySelector('[data-testid*="delete"]')).toBeNull();
   });
 
   it('offers no archive or delete control', async () => {

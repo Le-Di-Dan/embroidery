@@ -18,6 +18,7 @@ import {
 import {
   AdminProductMediaResponseRole,
   adminProductDetail,
+  adminProductVariantList,
   adminProductMediaReplace,
   adminProductUpdate,
 } from '@embroidery/api-client';
@@ -33,12 +34,14 @@ import {
   makeProductDetail,
   makeProductMedia,
   productDetailEnvelope,
+  sellableVariantListEnvelope,
 } from '../support/product-fixture';
 
 jest.mock('next/navigation', () => mockCreateNavigationMock('/products/p-1').module);
 jest.mock('@embroidery/api-client', () => ({
   ...jest.requireActual<Record<string, unknown>>('@embroidery/api-client'),
   adminProductDetail: jest.fn(),
+  adminProductVariantList: jest.fn(),
   adminProductUpdate: jest.fn(),
   adminProductMediaReplace: jest.fn(),
   adminAssetList: jest.fn(),
@@ -59,6 +62,9 @@ let user: ReturnType<typeof createUser>;
 beforeEach(() => {
   jest.clearAllMocks();
   user = createUser();
+  // The detail screen now composes the sellability section, which always
+  // reads. An empty list keeps these suites about their own subject.
+  (adminProductVariantList as jest.Mock).mockResolvedValue(sellableVariantListEnvelope());
 });
 
 function publishedProduct(count: number, updatedAt = TOKEN) {

@@ -127,6 +127,16 @@ export const PRODUCT_PUBLICATION_COPY = {
      * have it silently counted as satisfied by an older screen.
      */
     unknown: productPublicationMessage.text('requirements.unknown'),
+    /**
+     * A commerce criterion whose prerequisite is not met yet (`APP12-N02.A01`,
+     * `D01` §J.4). The evaluator marks such a criterion vacuously satisfied —
+     * true as logic, false as advice — and rendering that literally would put a
+     * green "đã đủ điều kiện" on "has an orderable SKU" for a product with no
+     * variant at all. It is presentation only: the contract still carries
+     * `satisfied`, and server eligibility is untouched.
+     */
+    pending: productPublicationMessage.text('requirements.pending'),
+    pendingNote: productPublicationMessage.text('requirements.pendingNote'),
   },
 
   ready: {

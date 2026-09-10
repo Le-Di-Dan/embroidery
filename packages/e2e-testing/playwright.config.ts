@@ -283,6 +283,30 @@ export default defineConfig({
         viewport: { width: 1440, height: 900 },
       },
     },
+    // APP12-N02.A01 — Admin Ready-Made sellability authoring.
+    //
+    // The Admin origin and the M01.A1 world, because the section under test is
+    // part of that same product editor. Serial and single-worker for a stronger
+    // reason than A1's: the journeys author variants and SKUs on shared
+    // Products, and the invariant they exercise — at most one order-eligible
+    // SKU per variant — is decided by the server against rows a second worker
+    // would be changing at the same time. Parallel workers would produce the
+    // ambiguity refusal by accident, in the suite that exists to produce it
+    // deliberately.
+    //
+    // 1440 is the project default; 1024 and 390 are asserted inside the suite by
+    // resizing, so the three states are proved in one browser rather than three.
+    {
+      name: 'app12-n02a01-chromium',
+      testMatch: '**/app12/n02a01-*.acceptance.spec.ts',
+      timeout: 180_000,
+      use: {
+        ...devices['Desktop Chrome'],
+        ...chromiumLaunch,
+        baseURL: ADMIN_URL,
+        viewport: { width: 1440, height: 900 },
+      },
+    },
     // APP12-M01.S1 — the Storefront Product Detail gallery.
     //
     // The Storefront origin, because the surface under test is the page a

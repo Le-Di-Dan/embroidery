@@ -229,3 +229,66 @@ export function categoryEnvelope(
     meta: { requestId: 'req-1', timestamp: '2026-09-01T00:00:00.000Z' },
   } as never;
 }
+
+/**
+ * The `adminProductVariant_list` envelope for a product with no variants
+ * (`APP12-N02.A01`).
+ *
+ * Every test that renders `ProductDetailScreen` needs one, because the screen
+ * now composes the sellability section and the section always reads. An empty
+ * list is the right default for suites about the form, the save path or media:
+ * it renders the section's own empty state and adds no alert, so those suites
+ * keep asserting about their own subject rather than about commerce structure.
+ */
+export function emptyVariantListEnvelope(productId = '01920000-0000-7000-8000-000000000001') {
+  return {
+    success: true,
+    code: 'ADMIN_PRODUCT_VARIANT_LIST_READ',
+    message: 'ok',
+    data: { productId, variants: [] },
+    meta: { requestId: 'req-1', timestamp: '2026-09-01T00:00:00.000Z' },
+  } as never;
+}
+
+/**
+ * A minimal *sellable* variant list: one active variant with one selling SKU.
+ *
+ * The right default for a suite whose subject is a **published** product and
+ * not its commerce structure. With an empty list a published product is
+ * structurally unsellable, and the truthful warning that follows would be a
+ * second `role="alert"` in a suite asserting about media refusals — the test
+ * would then be failing on a correct behaviour it never meant to exercise.
+ */
+export function sellableVariantListEnvelope(productId = '01920000-0000-7000-8000-000000000001') {
+  return {
+    success: true,
+    code: 'ADMIN_PRODUCT_VARIANT_LIST_READ',
+    message: 'ok',
+    data: {
+      productId,
+      variants: [
+        {
+          variantId: '019c0000-0000-7000-8000-0000000033a1',
+          productId,
+          colorName: 'Xanh navy',
+          sizeLabel: 'M',
+          isActive: true,
+          displayOrder: 1,
+          createdAt: '2026-09-01T00:00:00.000Z',
+          updatedAt: '2026-09-01T00:00:00.000Z',
+          skus: [
+            {
+              skuId: '019c0000-0000-7000-8000-0000000044b1',
+              code: 'AT-NAVY-M',
+              isActive: true,
+              currencyCode: 'VND',
+              createdAt: '2026-09-01T00:00:00.000Z',
+              updatedAt: '2026-09-01T00:00:00.000Z',
+            },
+          ],
+        },
+      ],
+    },
+    meta: { requestId: 'req-1', timestamp: '2026-09-01T00:00:00.000Z' },
+  } as never;
+}

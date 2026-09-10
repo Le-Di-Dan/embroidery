@@ -1,0 +1,228 @@
+// Sellability authoring — the variant cards, the SKU rows and their responsive
+// composition (`972:187`, `978:187`, `979:222`).
+//
+// Split from the section frame at authoring time rather than after the fact:
+// the frame is about one card's states, and this is about the list inside it.
+// The two share the breakpoint and nothing else.
+
+@use '@embroidery/styles' as styles;
+@use 'product-sellability-tokens' as tokens;
+
+// Variants ---------------------------------------------------------------------
+
+.product-sellability__variants,
+.product-sellability__sku-list {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.product-sellability__variant {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-xs;
+}
+
+// An inactive row is dimmed, but never *only* dimmed: the badge beside the
+// title says which state it is in words.
+.product-sellability__variant[data-active='false'],
+.product-sellability__sku[data-active='false'] {
+  background: styles.$color-background-secondary;
+}
+
+.product-sellability__variant-header {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+.product-sellability__variant-identity,
+.product-sellability__sku-identity {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  align-items: center;
+}
+
+.product-sellability__variant-title {
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+  overflow-wrap: anywhere;
+}
+
+.product-sellability__variant-summary {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+  overflow-wrap: anywhere;
+}
+
+.product-sellability__variant-summary--blocked {
+  color: styles.$color-status-warning;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.product-sellability__badge {
+  padding: styles.spacing(4) styles.spacing(8);
+  border-radius: styles.$radius-xs;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.product-sellability__badge--active {
+  border: 1px solid styles.$color-status-success;
+  color: styles.$color-status-success;
+}
+
+.product-sellability__badge--inactive {
+  border: 1px solid styles.$color-border-secondary;
+  color: styles.$color-text-secondary;
+}
+
+// Actions ----------------------------------------------------------------------
+
+.product-sellability__variant-actions,
+.product-sellability__sku-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  align-items: center;
+}
+
+.product-sellability__action,
+.product-sellability__secondary,
+.product-sellability__primary,
+.product-sellability__stock-link {
+  display: inline-flex;
+  gap: styles.spacing(4);
+  align-items: center;
+  justify-content: center;
+  // Every control clears the accessible minimum at every width, which is what
+  // stops the 390 layout from degrading into taps the operator misses.
+  min-height: styles.$size-touch-target-min;
+  padding: styles.spacing(8) styles.spacing(16);
+  border-radius: styles.$radius-button;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.product-sellability__action,
+.product-sellability__secondary,
+.product-sellability__stock-link {
+  border: 1px solid styles.$color-border-secondary;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+}
+
+.product-sellability__primary {
+  align-self: flex-start;
+  border: 1px solid transparent;
+  background: styles.$color-action-fill;
+  color: styles.$color-surface-primary;
+}
+
+.product-sellability__action:disabled,
+.product-sellability__secondary:disabled,
+.product-sellability__primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.product-sellability__variant-sku-count {
+  color: styles.$color-text-secondary;
+  font-weight: styles.$font-weight-regular;
+}
+
+// SKUs -------------------------------------------------------------------------
+
+.product-sellability__variant-skus {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  padding-top: styles.spacing(12);
+  border-top: 1px solid styles.$color-border-primary;
+}
+
+.product-sellability__skus-heading {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+  text-transform: uppercase;
+}
+
+.product-sellability__sku {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-secondary;
+}
+
+.product-sellability__sku-code {
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+  overflow-wrap: anywhere;
+}
+
+.product-sellability__sku-price {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+// An effective price the publication rule would refuse. Stated in words beside
+// the amount, so it is never colour alone.
+.product-sellability__sku-price-warning {
+  color: styles.$color-status-warning;
+  font-weight: styles.$font-weight-semibold;
+}
+
+// From the shell breakpoint upward the variant header composes horizontally,
+// with the actions on their own row beneath the title so no label is ever
+// compressed (`978:187`).
+@media (min-width: tokens.$sellability-breakpoint) {
+  .product-sellability__variant-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'identity actions'
+      'summary actions';
+    gap: styles.spacing(8) styles.spacing(16);
+    align-items: start;
+  }
+
+  .product-sellability__variant-identity {
+    grid-area: identity;
+  }
+
+  .product-sellability__variant-summary {
+    grid-area: summary;
+  }
+
+  .product-sellability__variant-actions {
+    grid-area: actions;
+    justify-content: flex-end;
+  }
+
+  .product-sellability__sku {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    align-items: center;
+  }
+}

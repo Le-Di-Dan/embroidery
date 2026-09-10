@@ -34,16 +34,48 @@ export interface PublicationCommandBody {
   readonly expectedUpdatedAt: string;
 }
 
+/**
+ * How a row reads to the operator.
+ *
+ * `pending` is the `APP12-N02.A01` vacuity rule (`D01` §J.4) and exists only
+ * here: a commerce criterion whose prerequisite is unmet is reported by the
+ * evaluator as *satisfied* — correct as logic, misleading as advice — and this
+ * value is what lets the checklist say "not evaluated yet" instead of putting a
+ * green tick on "has an orderable SKU" for a product with no variant.
+ */
+export type RequirementPresentation = 'satisfied' | 'unsatisfied' | 'pending';
+
 /** One rendered checklist row. */
 export interface PublicationRequirementRow {
   /** The server's code, used as a stable key and test handle — never displayed. */
   readonly code: string;
   /** Approved copy, or the neutral unsupported-requirement label. */
   readonly label: string;
+  /** The server's verdict, unchanged. Publish eligibility is never derived from the row. */
   readonly satisfied: boolean;
+  readonly presentation: RequirementPresentation;
   /** True when this build has no copy for the code. */
   readonly unknown: boolean;
 }
+
+/**
+ * The commerce criteria, in dependency order.
+ *
+ * A criterion is presented as `pending` when any criterion **before** it in
+ * this chain is unsatisfied. That is the whole rule: no active variant means
+ * neither "has an orderable SKU" nor "the price resolves" has been evaluated
+ * against anything, and an unsatisfied "has an orderable SKU" means the price
+ * criterion has no SKU to resolve a price for.
+ *
+ * It preserves the evaluator's philosophy rather than fighting it — report the
+ * one root missing fact, never three failures for one missing prerequisite —
+ * so each of the drawn states A, B and C names exactly one thing to do.
+ */
+const COMMERCE_DEPENDENCY_CHAIN: readonly string[] = [
+  AdminProductRequirementResponseCode.HAS_ACTIVE_VARIANT,
+  AdminProductRequirementResponseCode.HAS_ORDER_ELIGIBLE_SKU,
+  AdminProductRequirementResponseCode.SKU_PRICE_RESOLVABLE,
+];
 
 /**
  * A detail and readiness pair that agree, plus everything a command needs.
@@ -76,18 +108,46 @@ const KNOWN_CODES: ReadonlySet<string> = new Set(
 export function toRequirementRows(
   requirements: readonly AdminProductRequirementResponse[],
 ): readonly PublicationRequirementRow[] {
+  const satisfiedByCode = new Map<string, boolean>(
+    requirements.map((requirement) => [
+      requirement.code as string,
+      KNOWN_CODES.has(requirement.code) && requirement.satisfied === true,
+    ]),
+  );
+
+  /**
+   * True when a criterion earlier in the commerce chain is unmet, so this one
+   * has not actually been evaluated against anything. A criterion the report
+   * did not carry at all cannot block: an older server that has not delivered
+   * the chain must not turn the whole checklist grey.
+   */
+  const isVacuous = (code: string): boolean => {
+    const position = COMMERCE_DEPENDENCY_CHAIN.indexOf(code);
+    if (position <= 0) return false;
+    return COMMERCE_DEPENDENCY_CHAIN.slice(0, position).some(
+      (prerequisite) => satisfiedByCode.get(prerequisite) === false,
+    );
+  };
+
   return requirements.map((requirement) => {
     const code: string = requirement.code;
     const known = KNOWN_CODES.has(code);
+    // An unknown requirement is never treated as satisfied, whatever the
+    // server said about it: this build cannot explain what it means, so it
+    // cannot let it authorise a publish.
+    const satisfied = known && requirement.satisfied === true;
+    const presentation: RequirementPresentation = satisfied
+      ? isVacuous(code)
+        ? 'pending'
+        : 'satisfied'
+      : 'unsatisfied';
     return {
       code,
       label: known
         ? PRODUCT_REQUIREMENT_LABEL[requirement.code]
         : PRODUCT_PUBLICATION_COPY.requirements.unknown,
-      // An unknown requirement is never treated as satisfied, whatever the
-      // server said about it: this build cannot explain what it means, so it
-      // cannot let it authorise a publish.
-      satisfied: known && requirement.satisfied === true,
+      satisfied,
+      presentation,
       unknown: !known,
     };
   });

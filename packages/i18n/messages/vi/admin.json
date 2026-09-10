@@ -888,7 +888,9 @@
     "requirements": {
       "satisfied": "Đã đủ điều kiện",
       "unsatisfied": "Chưa đủ điều kiện",
-      "unknown": "Điều kiện chưa được hỗ trợ trong phiên bản này"
+      "unknown": "Điều kiện chưa được hỗ trợ trong phiên bản này",
+      "pending": "Chưa xét",
+      "pendingNote": "Điều kiện này chỉ được xét sau khi điều kiện trước đó đạt."
     },
     "ready": {
       "title": "Sẵn sàng xuất bản",
@@ -1190,6 +1192,180 @@
     "generic": {
       "title": "Chưa thể lưu ảnh sản phẩm",
       "body": "Bộ ảnh chưa được lưu. Hãy thử lại sau giây lát."
+    }
+  },
+  "productSellability": {
+    "section": {
+      "title": "Phiên bản & SKU",
+      "help": "Thay đổi phiên bản và SKU được lưu ngay khi bạn xác nhận trong hộp thoại. Nút lưu ở đầu trang chỉ lưu thông tin sản phẩm và ảnh.",
+      "loading": "Đang tải phiên bản & SKU…",
+      "emptyTitle": "Chưa có phiên bản nào",
+      "emptyBody": "Sản phẩm cần ít nhất một phiên bản đang hoạt động và một SKU đang bán thì khách hàng mới đặt hàng được.",
+      "addVariant": "Thêm phiên bản",
+      "failureTitle": "Không tải được phiên bản & SKU",
+      "failureBody": "Chưa đọc được danh sách phiên bản của sản phẩm này. Hãy thử lại.",
+      "retry": "Thử lại",
+      "variantCount": "{count} phiên bản"
+    },
+    "variant": {
+      "activeBadge": "Đang hoạt động",
+      "inactiveBadge": "Ngừng hoạt động",
+      "orderEligibleSku": "SKU đang bán: {code}",
+      "noOrderEligibleSku": "Chưa có SKU nào đang bán — phiên bản này chưa thể đặt hàng",
+      "skuCount": "{count} SKU",
+      "expand": "Xem SKU",
+      "collapse": "Ẩn SKU",
+      "edit": "Sửa",
+      "deactivate": "Ngừng hoạt động",
+      "reactivate": "Hoạt động lại",
+      "skusHeading": "SKU của phiên bản này",
+      "noSkus": "Chưa có SKU nào",
+      "addSku": "Thêm SKU",
+      "expandLabel": "Xem SKU của phiên bản {variant}",
+      "collapseLabel": "Ẩn SKU của phiên bản {variant}",
+      "editLabel": "Sửa phiên bản {variant}",
+      "deactivateLabel": "Ngừng hoạt động phiên bản {variant}",
+      "reactivateLabel": "Hoạt động lại phiên bản {variant}",
+      "addSkuLabel": "Thêm SKU cho phiên bản {variant}"
+    },
+    "sku": {
+      "activeBadge": "Đang bán",
+      "inactiveBadge": "Ngừng bán",
+      "inheritedPrice": "Dùng giá sản phẩm: {price}",
+      "overridePrice": "Giá riêng cho SKU: {price}",
+      "unresolvablePrice": "Chưa có giá bán hợp lệ",
+      "manageStock": "Quản lý tồn kho",
+      "manageStockLabel": "Quản lý tồn kho của SKU {code}",
+      "edit": "Sửa",
+      "deactivate": "Ngừng bán",
+      "reactivate": "Bán lại",
+      "editLabel": "Sửa SKU {code}",
+      "deactivateLabel": "Ngừng bán SKU {code}",
+      "reactivateLabel": "Bán lại SKU {code}"
+    },
+    "variantDialog": {
+      "createTitle": "Thêm phiên bản",
+      "editTitle": "Sửa phiên bản",
+      "createSubtitle": "Phiên bản được phân biệt bằng màu sắc, kích thước, hoặc cả hai.",
+      "editSubtitle": "Đang sửa phiên bản {variant}.",
+      "colorLabel": "Màu sắc",
+      "sizeLabel": "Kích thước",
+      "optionalHint": "Không bắt buộc, nhưng cần ít nhất một trong hai.",
+      "activeLabel": "Đang hoạt động",
+      "nextStep": "Sau khi tạo phiên bản, hãy thêm một SKU đang bán để khách hàng có thể đặt hàng phiên bản này.",
+      "submitCreate": "Tạo phiên bản",
+      "submitEdit": "Lưu phiên bản",
+      "submitting": "Đang lưu…",
+      "cancel": "Huỷ"
+    },
+    "skuDialog": {
+      "createTitle": "Thêm SKU",
+      "editTitle": "Sửa SKU",
+      "subtitle": "Phiên bản: {variant}",
+      "codeLabel": "Mã SKU",
+      "codeHint": "Mã dùng nội bộ để nhận diện SKU này. Không trùng với SKU nào khác.",
+      "priceModeLabel": "Giá bán",
+      "priceInherit": "Dùng giá sản phẩm: {price}",
+      "priceInheritUnset": "Dùng giá sản phẩm (sản phẩm chưa đặt giá)",
+      "priceOverride": "Đặt giá riêng cho SKU",
+      "priceOverrideLabel": "Giá riêng (₫)",
+      "priceOverrideHint": "Nhập số đồng nguyên, không dấu phân cách. Giá 0 không phải là giá hợp lệ.",
+      "activeLabel": "Đang bán",
+      "activeHint": "Mỗi phiên bản chỉ được có một SKU đang bán tại một thời điểm.",
+      "stockNote": "SKU mới bắt đầu với tồn kho 0. Tồn kho không phải là điều kiện xuất bản, và có thể chỉnh ở màn hình kho sau khi tạo.",
+      "submitCreate": "Tạo SKU",
+      "submitEdit": "Lưu SKU",
+      "submitting": "Đang lưu…",
+      "cancel": "Huỷ"
+    },
+    "variantDeactivate": {
+      "title": "Ngừng hoạt động phiên bản cuối cùng",
+      "subtitle": "Phiên bản {variant}",
+      "body": "Đây là phiên bản đang hoạt động cuối cùng của sản phẩm này.",
+      "arithmetic": "Sau thay đổi này: 0 phiên bản đang hoạt động.",
+      "consequence": "Khách hàng sẽ không còn phiên bản nào để đặt hàng.",
+      "remainsPublished": "Sản phẩm vẫn ở trạng thái Đang xuất bản. Hệ thống sẽ không tự động gỡ xuất bản.",
+      "notSoldOut": "Đây không phải là hết hàng. Hết hàng là tồn kho bằng 0 trên một SKU vẫn đang bán; ở đây không có SKU nào để bán.",
+      "keep": "Giữ nguyên",
+      "confirm": "Ngừng hoạt động phiên bản"
+    },
+    "skuDeactivate": {
+      "title": "Ngừng bán SKU cuối cùng",
+      "subtitle": "SKU {code}",
+      "body": "Đây là SKU có thể đặt hàng cuối cùng của sản phẩm này.",
+      "arithmetic": "Sau thay đổi này: 0 SKU có thể đặt hàng.",
+      "consequence": "Khách hàng sẽ không đặt mua được sản phẩm này.",
+      "remainsPublished": "Sản phẩm vẫn ở trạng thái Đang xuất bản. Hệ thống sẽ không tự động gỡ xuất bản.",
+      "notSoldOut": "Đây không phải là hết hàng. Hết hàng là tồn kho bằng 0 trên một SKU vẫn đang bán; ở đây không có SKU nào để bán.",
+      "keep": "Giữ nguyên",
+      "confirm": "Ngừng bán SKU"
+    },
+    "warning": {
+      "badge": "Không thể đặt hàng",
+      "title": "Sản phẩm vẫn đang được xuất bản nhưng hiện chưa có phiên bản có thể đặt hàng.",
+      "evidenceHeading": "Cấu trúc bán hàng còn thiếu",
+      "activeVariantCount": "Phiên bản đang hoạt động: {count}",
+      "orderEligibleSkuCount": "SKU có thể đặt hàng: {count}",
+      "notSoldOut": "Đây không phải là hết hàng. Hết hàng là tồn kho bằng 0 trên một SKU vẫn đang bán; ở đây không có SKU nào để bán.",
+      "toSection": "Đi tới Phiên bản & SKU",
+      "toReadiness": "Xem điều kiện xuất bản"
+    },
+    "validation": {
+      "labelRequired": "Cần nhập ít nhất màu sắc hoặc kích thước.",
+      "codeRequired": "Cần nhập mã SKU.",
+      "priceRequired": "Cần nhập giá riêng cho SKU.",
+      "priceInvalid": "Giá riêng chỉ gồm chữ số, tối đa 12 chữ số."
+    },
+    "failure": {
+      "labelRequired": {
+        "title": "Chưa đủ thông tin phiên bản",
+        "body": "Phiên bản cần ít nhất màu sắc hoặc kích thước."
+      },
+      "duplicate": {
+        "title": "Phiên bản đã tồn tại",
+        "body": "Sản phẩm đã có một phiên bản với màu sắc và kích thước này. Phiên bản đó có thể đang ở trạng thái ngừng hoạt động — hãy mở và bật lại thay vì tạo mới."
+      },
+      "notAuthorable": {
+        "title": "Sản phẩm không cho phép thay đổi",
+        "body": "Trạng thái hiện tại của sản phẩm không cho phép sửa phiên bản hay SKU."
+      },
+      "variantMissing": {
+        "title": "Không tìm thấy phiên bản",
+        "body": "Phiên bản này không còn nằm trong sản phẩm. Hãy tải lại danh sách."
+      },
+      "skuAmbiguous": {
+        "title": "Phiên bản đã có một SKU đang bán",
+        "body": "Phiên bản này đã có SKU đang bán: {code}. Mỗi phiên bản chỉ được có một SKU đang bán.",
+        "recoveryHeading": "Cách xử lý",
+        "recoveryFirst": "1. Ngừng bán SKU {code}.",
+        "recoverySecond": "2. Sau đó bật “Đang bán” cho SKU mới.",
+        "noAutoDeactivate": "Hệ thống sẽ không tự ngừng bán SKU cũ giúp bạn.",
+        "alternative": "Hoặc: tắt “Đang bán” và tạo SKU mới ở trạng thái ngừng bán ngay bây giờ."
+      },
+      "skuCodeConflict": {
+        "title": "Mã SKU đã được dùng",
+        "body": "Mã SKU này đã thuộc về một SKU khác. Hãy chọn mã khác."
+      },
+      "skuMissing": {
+        "title": "Không tìm thấy SKU",
+        "body": "SKU này không còn tồn tại. Hãy tải lại danh sách."
+      },
+      "invalid": {
+        "title": "Dữ liệu chưa hợp lệ",
+        "body": "Máy chủ từ chối nội dung vừa gửi. Hãy kiểm tra lại các trường trong hộp thoại."
+      },
+      "unauthenticated": {
+        "title": "Phiên đăng nhập đã kết thúc",
+        "body": "Hãy đăng nhập lại rồi thực hiện lại thay đổi này."
+      },
+      "forbidden": {
+        "title": "Không có quyền thực hiện",
+        "body": "Tài khoản hiện tại không được phép thay đổi phiên bản hay SKU của sản phẩm này."
+      },
+      "retryable": {
+        "title": "Chưa lưu được thay đổi",
+        "body": "Chưa rõ máy chủ đã ghi nhận thay đổi này hay chưa. Hãy tải lại danh sách trước khi thử lại."
+      }
     }
   }
 }

@@ -1,0 +1,8 @@
+// Sellability authoring — the one measurement the section frame and the row
+// list share.
+//
+// The Admin surfaces switch layout at one threshold; the design system defers
+// breakpoints (FU-A16). It is a measurement of these screens, not a design
+// token, which is why it lives here and not in `@embroidery/styles`.
+
+$sellability-breakpoint: 1024px;

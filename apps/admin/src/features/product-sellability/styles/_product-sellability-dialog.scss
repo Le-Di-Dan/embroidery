@@ -1,0 +1,163 @@
+// The variant and SKU dialogs, and the two structural confirmations
+// (`975:187`…`976:300`).
+//
+// Loaded last, so its rules cascade over the section treatments the dialogs
+// reuse for their refusal notes.
+//
+// The panel is capped in width and scrolls its own backdrop, so at 390 it fits
+// the viewport with no horizontal overflow and the primary action is never
+// pushed off screen.
+
+@use '@embroidery/styles' as styles;
+
+$sellability-dialog-width: 560px;
+
+.product-sellability-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  padding: styles.spacing(16);
+  overflow-y: auto;
+  align-items: flex-start;
+  justify-content: center;
+  background: styles.$color-overlay-scrim;
+}
+
+.product-sellability-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  width: 100%;
+  max-width: $sellability-dialog-width;
+  margin: auto;
+  padding: styles.spacing(24);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-primary;
+}
+
+.product-sellability-dialog__title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-l;
+  font-weight: styles.$font-weight-bold;
+}
+
+// The dialog's accessible description, and the line that names its subject.
+.product-sellability-dialog__subtitle {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.product-sellability-dialog__form,
+.product-sellability-dialog__body {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+}
+
+.product-sellability-dialog__body p {
+  margin: 0;
+}
+
+// The "after this change" line. Set apart because it is the checkable fact in a
+// dialog otherwise made of sentences.
+.product-sellability-dialog__arithmetic {
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-background-secondary;
+  font-weight: styles.$font-weight-semibold;
+}
+
+// "The product stays published." The one sentence an operator must not skim.
+.product-sellability-dialog__emphasis {
+  font-weight: styles.$font-weight-bold;
+}
+
+.product-sellability-dialog__note {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.product-sellability-dialog__fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  margin: 0;
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-xs;
+}
+
+.product-sellability-dialog__legend {
+  padding: 0 styles.spacing(4);
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.product-sellability-dialog__radio,
+.product-sellability-dialog__toggle {
+  display: flex;
+  gap: styles.spacing(8);
+  align-items: center;
+  min-height: styles.$size-touch-target-min;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+}
+
+.product-sellability-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  justify-content: flex-end;
+}
+
+.product-sellability-dialog__primary,
+.product-sellability-dialog__secondary,
+.product-sellability-dialog__destructive {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: styles.$size-touch-target-min;
+  padding: styles.spacing(8) styles.spacing(16);
+  border-radius: styles.$radius-button;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+  cursor: pointer;
+}
+
+.product-sellability-dialog__primary {
+  border: 1px solid transparent;
+  background: styles.$color-action-fill;
+  color: styles.$color-surface-primary;
+}
+
+.product-sellability-dialog__secondary {
+  border: 1px solid styles.$color-border-secondary;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+}
+
+// The state-breaking action. Outlined in the danger colour rather than filled
+// with it: in both confirmations the safe answer is the primary button, and a
+// filled destructive button beside it would read as the recommended one.
+.product-sellability-dialog__destructive {
+  border: 1px solid styles.$color-status-error;
+  background: styles.$color-surface-primary;
+  color: styles.$color-status-error;
+}
+
+.product-sellability-dialog__primary:disabled,
+.product-sellability-dialog__secondary:disabled,
+.product-sellability-dialog__destructive:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

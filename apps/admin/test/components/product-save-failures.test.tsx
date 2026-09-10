@@ -17,7 +17,11 @@ import {
   screen,
   waitFor,
 } from '@embroidery/frontend-testing';
-import { adminProductDetail, adminProductUpdate } from '@embroidery/api-client';
+import {
+  adminProductDetail,
+  adminProductUpdate,
+  adminProductVariantList,
+} from '@embroidery/api-client';
 
 import { ProductDetailScreen } from '../../src/features/products/components/product-detail-screen';
 import {
@@ -25,7 +29,11 @@ import {
   PRODUCT_SAVE_FAILURE_COPY,
 } from '../../src/features/products/model/product-form-copy';
 import { makeApiClientError } from '../support/api-error';
-import { makeProductDetail, productDetailEnvelope } from '../support/product-fixture';
+import {
+  emptyVariantListEnvelope,
+  makeProductDetail,
+  productDetailEnvelope,
+} from '../support/product-fixture';
 
 const PRODUCT_ID = '01920000-0000-7000-8000-000000000001';
 
@@ -36,6 +44,7 @@ jest.mock(
 jest.mock('@embroidery/api-client', () => ({
   ...jest.requireActual<Record<string, unknown>>('@embroidery/api-client'),
   adminProductDetail: jest.fn(),
+  adminProductVariantList: jest.fn(),
   adminProductUpdate: jest.fn(),
 }));
 
@@ -61,6 +70,9 @@ let user: ReturnType<typeof createUser>;
 beforeEach(() => {
   jest.clearAllMocks();
   user = createUser();
+  // The detail screen now composes the sellability section, which always
+  // reads. An empty list keeps these suites about their own subject.
+  (adminProductVariantList as jest.Mock).mockResolvedValue(emptyVariantListEnvelope());
 });
 
 const TYPED_SUFFIX = '!';
