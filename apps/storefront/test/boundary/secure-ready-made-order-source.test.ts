@@ -202,7 +202,18 @@ describe('money — §15, §16', () => {
   it('reads the payable figure from the obligation, never from the order row', () => {
     const card = codeOnly(readFileSync(join(FEATURE_DIR, 'ui', 'order-amount-card.tsx'), 'utf8'));
     expect(card).toContain('full.fullPaymentAmount');
-    expect(card).not.toContain('payableTotal');
+    // The copy button — the one control that hands a figure to a transfer —
+    // carries the live obligation's amount and nothing else.
+    expect(card).toMatch(/value=\{full\.fullPaymentAmount\}/);
+    // `APP12-U01-C1` F2: the settled figure is the projection's own
+    // `payment.payableTotal`, read exactly once, in the SETTLED branch — and
+    // SETTLED is only ever a SATISFIED obligation. Never `orders.total_amount`.
+    expect(card.match(/payableTotal/g)).toHaveLength(1);
+    expect(card).not.toMatch(/totalAmount/);
+    const state = codeOnly(
+      readFileSync(join(FEATURE_DIR, 'model', 'order-access-state.ts'), 'utf8'),
+    );
+    expect(state).toMatch(/payment\?\.status === ObligationStatus\.SATISFIED\) return 'SETTLED'/);
   });
 });
 

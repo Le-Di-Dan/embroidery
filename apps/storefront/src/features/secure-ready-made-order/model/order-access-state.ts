@@ -49,6 +49,7 @@
 import {
   ReadyMadeOrderAccessResponseStatus as OrderStatus,
   ReadyMadeOrderAccessResponseTerminationReason as TerminationReason,
+  ReadyMadeOrderPaymentResponseStatus as ObligationStatus,
   type CustomerFullPaymentResponse,
   type FullPaymentAttemptResponse,
   type ReadyMadeOrderAccessResponse,
@@ -265,4 +266,36 @@ export function evidenceIntakeOpen(
   if (!showsPaymentBlock(variant)) return false;
   if (attemptId === undefined) return false;
   return submittedCount < maxPerAttempt;
+}
+
+/**
+ * What the amount card's highlight says (`APP12-U01-C1` F2).
+ *
+ * ```text
+ * PAYABLE      the live obligation, while the payment block is on screen
+ * SETTLED      the satisfied obligation's own frozen figure, as history
+ * PENDING_FEE  AWAITING_SHIPPING_FEE only — no total exists yet
+ * NONE         anything else: nothing is owed and nothing was settled
+ * ```
+ *
+ * U01 caught the pending-fee sentence on `READY_FOR_DELIVERY` and `DELIVERED`,
+ * after the customer had paid, because the card fell back to it whenever the
+ * payment block was off screen. The sentence now belongs to the one state it
+ * is true in.
+ *
+ * `SETTLED` is read from the projection's `payment.status`, which `APP12-B04`
+ * publishes for the live obligation — and `SATISFIED` is live. The figure is
+ * that obligation's own `payableTotal`, never a sum of the subtotal and fee.
+ */
+export type AmountHighlight = 'PAYABLE' | 'SETTLED' | 'PENDING_FEE' | 'NONE';
+
+export function amountHighlightOf(
+  order: ReadyMadeOrderAccessResponse,
+  showsTotal: boolean,
+  full: CustomerFullPaymentResponse | undefined,
+): AmountHighlight {
+  if (showsTotal && full !== undefined) return 'PAYABLE';
+  if (order.payment?.status === ObligationStatus.SATISFIED) return 'SETTLED';
+  if (order.status === OrderStatus.AWAITING_SHIPPING_FEE) return 'PENDING_FEE';
+  return 'NONE';
 }

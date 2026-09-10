@@ -1,25 +1,35 @@
 #!/usr/bin/env node
 /**
- * `APP12-U01` disposable UAT world — the long-lived **application** process.
+ * `APP12-U01-C1` disposable UAT world — the long-lived **application** process.
  *
- * Business UAT is not a test run: an operator and a customer work the product
- * across many separate turns, so the world has to stand until it is told to
- * stop. This process owns everything that is not a container — the API host
- * process, both Next apps from their production builds, and the in-process API
- * and worker contexts — then prints `U01_WORLD_READY` and waits.
+ * Business UAT is not a test run: the Human Product Owner works the product as a
+ * customer and as an operator across many separate sittings, so the world has to
+ * stand until it is told to stop. This process owns everything that is not a
+ * container — the API host process, the **real worker process**, and both Next
+ * apps from their production builds — then prints `U01_WORLD_READY` and waits.
  *
- * Containers (the ephemeral PostgreSQL that holds the clone, the ephemeral
- * MinIO that holds the copied objects, and the real Nginx gateway) belong to
+ * Containers (the ephemeral PostgreSQL that holds the clone, the ephemeral MinIO
+ * that holds the copied objects, and the real Nginx gateway) belong to
  * `uat-app12-u01-infra.mjs`, which runs the clone first and writes the run
  * descriptor this process reads.
  *
- * ## Why the worker runs *here*
+ * ## What changed in C1, and why
  *
- * `RecordingNotificationChannelAdapter` is the repository's only notification
- * channel and it is deliberately memory-only, so the process that executes a
- * delivery must be the process that can read it. A containerised worker delivers
- * to nobody readable (`APP12-H07`). The control server beside it is the seam the
- * driver uses; see `uat-app12-u01-control.mjs` for what may cross it.
+ * Base `APP12-U01` ran the worker *inside* this process on the recording
+ * adapter and exposed `GET /verification-code` so a driver could read the OTP
+ * back out of memory. The Product Owner rejected that as acceptance evidence
+ * (brief §1): a code the run reads from itself proves nothing about a customer.
+ *
+ * So there is no in-process worker, no recording adapter and no control seam any
+ * more. The worker is the built `apps/worker/dist/main.js`, started as its own
+ * process with `NOTIFICATION_TRANSPORT=SMTP`, running its own poll loop — the
+ * same composition a deployment runs. The OTP and the `ORDER_ACCESS` link leave
+ * through the real SMTP path to the inbox the Human PO typed, and nothing in
+ * this repository can read either of them.
+ *
+ * SMTP settings arrive the way `CLAUDE.md` §8a allows: `node --env-file=.env`
+ * hands them file → process → child. This file tests only that each one is
+ * *present* and never reads, prints or stores a value.
  *
  * Usage: `U01_RUN_FILE=… node --env-file=.env tools/uat-app12-u01-world.mjs`
  */
@@ -39,14 +49,23 @@ import {
 } from '../packages/e2e-testing/support/orchestration/config.mjs';
 import { createApiService } from '../packages/e2e-testing/support/orchestration/api-service.mjs';
 import { startProcess } from '../packages/e2e-testing/support/orchestration/processes.mjs';
-import { waitForHttp } from '../packages/e2e-testing/support/orchestration/net.mjs';
+import { delay, waitForHttp } from '../packages/e2e-testing/support/orchestration/net.mjs';
 import { bootstrapAdmin } from '../packages/e2e-testing/support/orchestration/environment.mjs';
-import { createApp4E01Runtime } from '../packages/e2e-testing/support/app4/app4-runtime.mjs';
-import { createWorkerControl } from '../packages/e2e-testing/support/app4/worker-control.mjs';
 import { assertDisposableTarget } from './uat-app12-u01-clone.mjs';
-import { startControlServer } from './uat-app12-u01-control.mjs';
 
-const CONTROL_PORT = 4499;
+/** Present-or-not only. The values go to the worker's environment untouched. */
+const SMTP_VARIABLES = Object.freeze([
+  'SMTP_HOST',
+  'SMTP_PORT',
+  'SMTP_USERNAME',
+  'SMTP_PASSWORD',
+  'EMAIL_FROM_ADDRESS',
+  'EMAIL_FROM_NAME',
+]);
+
+/** The factory's own line on the branch that returns `SmtpNotificationChannelAdapter`. */
+const WORKER_SMTP_LINE = 'NOTIFICATION_TRANSPORT=SMTP via';
+const WORKER_READY_LINE = 'Worker readiness: ready';
 
 function log(message) {
   process.stdout.write(`[u01] ${message}\n`);
@@ -57,27 +76,56 @@ function resolveNextBin(appDir) {
   return require.resolve('next/dist/bin/next');
 }
 
-/**
- * The email of the clone's single active admin, or `undefined`.
- *
- * A read, and only a read: the credential column is never selected, and nothing
- * in this process ever learns the operator's password.
- */
-async function activeAdminEmail(url) {
+function databaseClient(url) {
   const databaseRequire = createRequire(
     new URL('../packages/database/package.json', import.meta.url),
   );
   const { Client } = databaseRequire('pg');
-  const client = new Client({ connectionString: url });
+  return new Client({ connectionString: url });
+}
+
+/**
+ * Read-only facts the world needs before it starts anything that can send mail.
+ *
+ * The clone inherits the shared world's outbox. A `notification.delivery`
+ * event still due there would be claimed by this run's real worker and mailed
+ * to a real person, so the world refuses to start one while any is undispatched.
+ * The credential column of `admin_accounts` is never selected.
+ */
+async function cloneFacts(url) {
+  const client = databaseClient(url);
   await client.connect();
   try {
-    const { rows } = await client.query(
+    await client.query('set session characteristics as transaction read only');
+    const admin = await client.query(
       `select email from admin_accounts where status = 'ACTIVE' order by created_at limit 1`,
     );
-    return rows[0]?.email;
+    const due = await client.query(
+      `select count(*)::int as n from outbox_events
+       where event_type = 'notification.delivery.requested' and status <> 'DISPATCHED'`,
+    );
+    return { activeAdminEmail: admin.rows[0]?.email, undispatchedNotifications: due.rows[0].n };
   } finally {
     await client.end();
   }
+}
+
+/** Waits until `needle` appears in a child's log, failing fast if it exits. */
+async function waitForLogLine(proc, needle, { label, timeoutMs = 90_000 }) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (proc.tail().includes(needle)) return;
+    if (proc.child.exitCode !== null) {
+      throw new Error(`${label}: process exited (${String(proc.child.exitCode)}).`);
+    }
+    await delay(500);
+  }
+  throw new Error(`${label}: "${needle}" not seen within ${String(timeoutMs)}ms.`);
+}
+
+function maskEmail(email) {
+  const [local, domain] = String(email).split('@');
+  return `${local.slice(0, 1)}***@${domain ?? ''}`;
 }
 
 async function main() {
@@ -91,33 +139,50 @@ async function main() {
     `postgres://${config.db.user}:${config.db.password}` +
     `@localhost:${String(config.ports.postgres)}/${databaseName}`;
 
+  const missingSmtp = SMTP_VARIABLES.filter((name) => (process.env[name] ?? '') === '');
+  if (missingSmtp.length > 0) {
+    throw new Error(`SMTP configuration absent: ${missingSmtp.join(', ')} (names only).`);
+  }
+
+  // One per-run secret universe for the API and the worker: an envelope the API
+  // seals must open in the worker, and the peppers must agree on both sides.
   const app4 = createApp4SecretConfig(descriptor.runId);
-  // The customer opens the real delivered link, so the origin the worker renders
-  // it against must be the origin this run's browser can actually reach
-  // (IMP-D050 — never a lookalike, always the configured public origin).
+  // IMP-D050: the link the worker renders must be the origin the Human PO's
+  // browser can actually reach — this run's gateway, never a lookalike.
   app4.storefrontOrigin = config.baseUrls.storefront;
+  // A synthetic merchant: BIN 970000 is `.env.example`'s placeholder and no real
+  // acquirer's, so the FULL-payment QR cannot move real money (brief §11).
   const merchant = createMerchantBankConfig();
+  const appModuleEnv = { ...app4SecretEnv(app4), ...merchantBankEnv(merchant) };
   const operator = {
     email: `u01-operator-${descriptor.runId}@uat.example.test`,
     password: `U01-${randomBytes(18).toString('base64url')}`,
     displayName: 'UAT Operator',
   };
-  const appModuleEnv = { ...app4SecretEnv(app4), ...merchantBankEnv(merchant) };
 
   try {
-    // The clone carries whatever staff account the shared world holds, and the
-    // system permits exactly one active admin (`ADMIN_ACCOUNT_ALREADY_ACTIVE`).
-    // So the run reuses that operator rather than minting a second one: its
-    // credential is never read, written or rotated here — the driver types it
-    // into the real login form, which is the journey U01 is meant to observe.
-    const existing = await activeAdminEmail(databaseUrl);
-    if (existing === undefined) {
+    const facts = await cloneFacts(databaseUrl);
+    if (facts.undispatchedNotifications !== 0) {
+      throw new Error(
+        `The clone holds ${String(facts.undispatchedNotifications)} undispatched notification ` +
+          'deliveries; a real worker would mail them. Refusing to start.',
+      );
+    }
+    if (facts.activeAdminEmail === undefined) {
       log('no active admin in the clone — bootstrapping this run’s operator');
-      await bootstrapAdmin({ config, databaseUrl, credentials: operator, log, extraEnv: appModuleEnv });
+      await bootstrapAdmin({
+        config,
+        databaseUrl,
+        credentials: operator,
+        log,
+        extraEnv: appModuleEnv,
+      });
     } else {
-      operator.email = existing;
+      // The system permits exactly one active admin, so the clone's own operator
+      // is the one the Human PO signs in as. Its credential is never read here.
+      operator.email = facts.activeAdminEmail;
       operator.password = undefined;
-      log('reusing the operator account the clone already carries');
+      log('the Human PO signs in with the operator account the clone already carries');
     }
 
     const adminOrigins = [
@@ -125,9 +190,36 @@ async function main() {
       `http://${config.hosts.admin}:8080`,
     ].join(',');
     log('starting api');
-    const apiService = createApiService({ config, databaseUrl, adminOrigins, extraEnv: appModuleEnv });
+    const apiService = createApiService({
+      config,
+      databaseUrl,
+      adminOrigins,
+      extraEnv: appModuleEnv,
+    });
     await apiService.start();
     cleanup.push('stop api', () => apiService.stop());
+
+    log('starting the real worker process (SMTP)');
+    const worker = startProcess({
+      name: 'worker',
+      command: process.execPath,
+      args: ['dist/main.js'],
+      cwd: join(config.repoRoot, 'apps', 'worker'),
+      env: {
+        NODE_ENV: 'development',
+        DATABASE_URL: databaseUrl,
+        DATABASE_SSL_MODE: 'disable',
+        // The dev worker keeps 9464 inside its container; nothing here scrapes.
+        METRICS_ENABLED: 'false',
+        NOTIFICATION_TRANSPORT: 'SMTP',
+        ...objectStorageEnv(config.storage),
+        ...appModuleEnv,
+      },
+    });
+    cleanup.push('stop worker', () => worker.stop());
+    await waitForLogLine(worker, WORKER_SMTP_LINE, { label: 'worker transport' });
+    await waitForLogLine(worker, WORKER_READY_LINE, { label: 'worker readiness' });
+    worker.child.once('exit', (code) => log(`WORKER EXITED (${String(code)}) — mail will stop`));
 
     for (const app of [
       {
@@ -170,45 +262,29 @@ async function main() {
       });
     }
 
-    log('booting the in-process api and worker contexts');
-    Object.assign(process.env, objectStorageEnv(config.storage), merchantBankEnv(merchant));
-    const runtime = await createApp4E01Runtime({
+    // Booleans and public facts only: this file is read by the preflight and
+    // quoted by the preparation report.
+    const status = {
       runId: descriptor.runId,
-      app4,
-      databaseUrl,
+      databaseName,
+      storefront: config.baseUrls.storefront,
+      admin: config.baseUrls.admin,
       apiBaseUrl: `http://localhost:${String(config.ports.api)}/api`,
-      label: `u01-${descriptor.runId}`,
-      log,
-    });
-    cleanup.push('close in-process runtime', () => runtime.close());
-    const worker = createWorkerControl(runtime);
+      workerPid: worker.pid,
+      workerTransportSmtp: worker.tail().includes(WORKER_SMTP_LINE),
+      workerReady: worker.tail().includes(WORKER_READY_LINE),
+      recordingTransportWarned: worker.tail().includes('NOTIFICATION_TRANSPORT=RECORDING'),
+      smtpConfigPresent: missingSmtp.length === 0,
+      envelopeKeyConfigured: (appModuleEnv.NOTIFICATION_DELIVERY_ENVELOPE_KEY ?? '') !== '',
+      undispatchedNotificationsAtStart: facts.undispatchedNotifications,
+      operatorEmailMasked: maskEmail(operator.email),
+      operatorBootstrapped: operator.password !== undefined,
+      merchantBankBin: merchant.bankBin,
+    };
+    writeFileSync(`${runFile}.world.json`, JSON.stringify(status, null, 2), 'utf8');
 
-    const control = await startControlServer({
-      worker,
-      port: CONTROL_PORT,
-      log,
-      state: () => ({
-        runId: descriptor.runId,
-        databaseName,
-        postgresContainer: descriptor.postgresContainer,
-        objects: descriptor.objects,
-        dumpBytes: descriptor.dumpBytes,
-        storefront: config.baseUrls.storefront,
-        admin: config.baseUrls.admin,
-        apiBaseUrl: `http://localhost:${String(config.ports.api)}/api`,
-        operatorEmail: operator.email,
-        merchant: {
-          bankBin: merchant.bankBin,
-          accountNumber: merchant.accountNumber,
-          accountName: merchant.accountName,
-          bankDisplayName: merchant.bankDisplayName,
-        },
-      }),
-    });
-    cleanup.push('close control server', () => control.close());
-
-    // The operator's password reaches the driver through this run's own scratch
-    // file — never a log line, never argv, never the report.
+    // Only when the clone had no operator: the password then reaches the Human
+    // PO through this run's scratch file, never a log line, argv or report.
     const credentialsPath = process.env['U01_CREDENTIALS_PATH'];
     if (credentialsPath !== undefined && operator.password !== undefined) {
       writeFileSync(credentialsPath, JSON.stringify(operator), 'utf8');
@@ -221,22 +297,14 @@ async function main() {
       });
     }
 
-    process.stdout.write(
-      `U01_WORLD_READY ${JSON.stringify({
-        runId: descriptor.runId,
-        databaseName,
-        storefront: config.baseUrls.storefront,
-        admin: config.baseUrls.admin,
-        control: control.url,
-      })}\n`,
-    );
+    process.stdout.write(`U01_WORLD_READY ${JSON.stringify(status)}\n`);
 
     await new Promise((resolve) => {
       for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
         process.on(signal, () => resolve(signal));
       }
-      // The driver cannot deliver a signal to a detached background process on
-      // every platform, so a file that disappears is the second stop mechanism.
+      // A detached background process cannot be signalled on every platform, so
+      // a file that disappears is the second stop mechanism.
       const stopFile = process.env['U01_STOP_FILE'];
       if (stopFile !== undefined) {
         const timer = setInterval(() => {

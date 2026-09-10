@@ -7,6 +7,7 @@ import type {
 
 import { formatExactAmount, formatExactMoney } from '../../../shared/money/exact-money';
 import { ORDER_ACCESS_COPY as COPY } from '../model/order-access-copy';
+import { amountHighlightOf } from '../model/order-access-state';
 import { CopyValueButton } from './copy-value-button';
 
 /**
@@ -16,6 +17,7 @@ import { CopyValueButton } from './copy-value-button';
  *
  * ```text
  * highlight   ←  full.fullPaymentAmount     the live obligation (§15)
+ *             ←  order.payment.payableTotal the satisfied obligation, as history
  * Tiền hàng   ←  order.merchandiseSubtotal  frozen at order creation
  * Phí giao    ←  order.delivery.feeAmount   the exact fee an operator set
  * ```
@@ -42,12 +44,14 @@ import { CopyValueButton } from './copy-value-button';
  * *priced at nothing* have to be different answers on the screen, exactly as
  * they are on the wire.
  *
- * ## The highlight is absent whenever the obligation is
+ * ## After payment the total stays, and says it was paid (`APP12-U01-C1` F2)
  *
- * `full` is `undefined` in every state but `AWAITING_PAYMENT`, because §14
- * forbids reading the obligation outside it. So a delivered, completed,
- * cancelled or expired order shows its frozen merchandise facts with no payable
- * total beside them — which is the truthful rendering, since nothing is owed.
+ * `full` is read only while the order is `AWAITING_PAYMENT` (§14), and the card
+ * used to fall back to the pending-fee sentence everywhere else — so a paid,
+ * delivered order told its customer the fee was still to come. Once the
+ * obligation is `SATISFIED` the projection still carries its frozen figure, and
+ * the card shows it as `Tổng đã thanh toán`: no copy button, because there is
+ * nothing left to transfer, and a title that no longer asks for money.
  */
 interface OrderAmountCardProps {
   readonly order: ReadyMadeOrderAccessResponse;
@@ -59,11 +63,13 @@ interface OrderAmountCardProps {
 
 export function OrderAmountCard({ order, full, showsTotal }: OrderAmountCardProps) {
   const fee = order.delivery?.feeAmount;
+  const highlight = amountHighlightOf(order, showsTotal, full);
+  const asksForMoney = highlight === 'PAYABLE' || highlight === 'PENDING_FEE';
 
   return (
     <section className="secure-order__card" aria-labelledby="secure-order-amount">
       <h2 className="secure-order__card-title" id="secure-order-amount">
-        {COPY.amount.title}
+        {asksForMoney ? COPY.amount.title : COPY.amount.summaryTitle}
       </h2>
 
       {renderHighlight()}
@@ -93,7 +99,41 @@ export function OrderAmountCard({ order, full, showsTotal }: OrderAmountCardProp
   );
 
   function renderHighlight() {
-    if (!showsTotal || full === undefined) {
+    if (highlight === 'PAYABLE' && full !== undefined) {
+      return (
+        <div className="secure-order__highlight">
+          <p className="secure-order__highlight-label">{COPY.amount.highlightLabel}</p>
+          <p className="secure-order__highlight-value">
+            <span className="secure-order__highlight-number">
+              {formatExactAmount(full.fullPaymentAmount)}
+            </span>{' '}
+            <span className="secure-order__highlight-currency">{full.currencyCode}</span>
+          </p>
+          <CopyValueButton
+            value={full.fullPaymentAmount}
+            label={COPY.copy.amount}
+            doneMessage={COPY.copy.doneAmount}
+          />
+        </div>
+      );
+    }
+
+    const settled = order.payment;
+    if (highlight === 'SETTLED' && settled !== undefined) {
+      return (
+        <div className="secure-order__highlight" data-testid="secure-order-settled-total">
+          <p className="secure-order__highlight-label">{COPY.amount.settledLabel}</p>
+          <p className="secure-order__highlight-value">
+            <span className="secure-order__highlight-number">
+              {formatExactAmount(settled.payableTotal)}
+            </span>{' '}
+            <span className="secure-order__highlight-currency">{order.currencyCode}</span>
+          </p>
+        </div>
+      );
+    }
+
+    if (highlight === 'PENDING_FEE') {
       return (
         <p className="secure-order__highlight secure-order__highlight--pending">
           <span className="secure-order__highlight-label">{COPY.amount.highlightLabel}</span>
@@ -102,21 +142,6 @@ export function OrderAmountCard({ order, full, showsTotal }: OrderAmountCardProp
       );
     }
 
-    return (
-      <div className="secure-order__highlight">
-        <p className="secure-order__highlight-label">{COPY.amount.highlightLabel}</p>
-        <p className="secure-order__highlight-value">
-          <span className="secure-order__highlight-number">
-            {formatExactAmount(full.fullPaymentAmount)}
-          </span>{' '}
-          <span className="secure-order__highlight-currency">{full.currencyCode}</span>
-        </p>
-        <CopyValueButton
-          value={full.fullPaymentAmount}
-          label={COPY.copy.amount}
-          doneMessage={COPY.copy.doneAmount}
-        />
-      </div>
-    );
+    return null;
   }
 }

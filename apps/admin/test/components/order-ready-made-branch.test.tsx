@@ -400,6 +400,77 @@ describe('once a FULL obligation exists', () => {
   });
 });
 
+describe('three distinct server figures, and no promised link (`APP12-U01-C1` F1, F3)', () => {
+  /** A priced order whose stored total already includes the fee — U01's shape. */
+  const priced = (status: string) =>
+    readyMadeOrder({
+      status,
+      totalAmount: FULL_AMOUNT,
+      items: [makeCatalogItem({ approvalSnapshotId: undefined, lineTotalAmount: MERCHANDISE })],
+    });
+
+  it('renders the frozen line as merchandise, never the fee-inclusive total', async () => {
+    detailMock.mockResolvedValue(envelope(priced('AWAITING_PAYMENT')));
+    paymentsMock.mockResolvedValue(envelope(fullPayments('PENDING')));
+    shippingMock.mockResolvedValue(envelope(makeShippingDetail({ feeAmount: '35000.00' })));
+
+    renderWithProviders(<OrderDetailScreen orderId={ORDER_ID} />);
+
+    const merchandise = await screen.findByTestId('shipping-fee-merchandise');
+    expect(merchandise).toHaveTextContent('1.250.000');
+    expect(merchandise).not.toHaveTextContent('1.285.000');
+    expect(screen.getByTestId('shipping-fee-payable')).toHaveTextContent('1.285.000');
+  });
+
+  it('keeps goods, fee and total apart once the FULL is satisfied', async () => {
+    detailMock.mockResolvedValue(envelope(priced('READY_FOR_DELIVERY')));
+    paymentsMock.mockResolvedValue(envelope(fullPayments('SATISFIED')));
+    shippingMock.mockResolvedValue(envelope(makeShippingDetail({ feeAmount: '35000.00' })));
+
+    renderWithProviders(<OrderDetailScreen orderId={ORDER_ID} />);
+
+    expect(await screen.findByTestId('shipping-fee-merchandise')).toHaveTextContent('1.250.000');
+    expect(screen.getByTestId('shipping-fee-frozen')).toHaveTextContent('35.000');
+    expect(screen.getByTestId('shipping-fee-payable')).toHaveTextContent('1.285.000');
+  });
+
+  it('names no goods figure for an order that is not one line', async () => {
+    detailMock.mockResolvedValue(
+      envelope(
+        readyMadeOrder({
+          items: [
+            makeCatalogItem({ approvalSnapshotId: undefined }),
+            makeCatalogItem({ approvalSnapshotId: undefined, position: 2 }),
+          ],
+        }),
+      ),
+    );
+
+    renderWithProviders(<OrderDetailScreen orderId={ORDER_ID} />);
+
+    expect(await screen.findByTestId('shipping-fee-merchandise')).toHaveTextContent('—');
+  });
+
+  it.each([
+    ['before the fee', 'AWAITING_SHIPPING_FEE', null],
+    ['while correcting', 'PENDING', '35000.00'],
+  ] as const)('promises no new link or email %s', async (_label, state, fee) => {
+    if (state === 'PENDING') {
+      detailMock.mockResolvedValue(envelope(priced('AWAITING_PAYMENT')));
+      paymentsMock.mockResolvedValue(envelope(fullPayments('PENDING')));
+    }
+    shippingMock.mockResolvedValue(envelope(makeShippingDetail({ feeAmount: fee })));
+
+    renderWithProviders(<OrderDetailScreen orderId={ORDER_ID} />);
+
+    const card = (await screen.findByTestId('shipping-fee-submit')).closest('section');
+    const text = card?.textContent ?? '';
+    expect(text).not.toMatch(/gửi khách liên kết|liên kết mới|gửi liên kết|nhận liên kết/i);
+    // What it may say instead: payment continues on the link the customer holds.
+    expect(text).toMatch(/liên kết đơn hàng đã nhận/);
+  });
+});
+
 describe('the payment vocabulary on a Ready-Made order (`V01-UX-006`, §24)', () => {
   /** Every form of the word the deposit workbench uses, and none of them is true here. */
   const DEPOSIT_WORDS = [/tiền cọc/iu, /số tiền cọc/iu, /nghĩa vụ cọc/iu];

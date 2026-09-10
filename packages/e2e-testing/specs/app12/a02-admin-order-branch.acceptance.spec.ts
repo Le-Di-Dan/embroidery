@@ -84,6 +84,48 @@ let operator: Page;
 /** Journeys B–F share one order; A places a second alongside it. */
 let subject: PlacedOrder;
 
+/** The goods figure journey B read before any fee existed (`APP12-U01-C1` F1). */
+let goodsBefore = '';
+
+/**
+ * `APP12-U01-C1` F1 — `Tiền hàng` is the frozen line, whatever the fee did.
+ *
+ * Before a fee the order total *is* the goods figure, so the pre-fee reading is
+ * the reference; afterwards the row must still say exactly that and must not
+ * say the fee-inclusive total, which `Tổng khách phải trả` now carries.
+ */
+async function expectGoods(payableAmount: string): Promise<void> {
+  const goods = operator.getByTestId('shipping-fee-merchandise').locator('dd');
+  await expect(goods).toHaveText(goodsBefore);
+  await expect(goods).not.toContainText(groupDong(payableAmount));
+  await expect(operator.getByTestId('shipping-fee-payable')).toContainText(
+    groupDong(payableAmount),
+  );
+}
+
+/** `APP12-U01-C1` F3 — the fee card never promises a new link or an email. */
+async function expectNoPromisedLink(): Promise<void> {
+  // The fee card itself, by its own heading — an outer column is also a
+  // `section` containing the row, so a `has:` filter matches both.
+  const card = operator.locator('section[aria-labelledby="shipping-fee-heading"]');
+  await expect(card).not.toContainText(/gửi khách liên kết|liên kết mới|gửi liên kết/);
+}
+
+/** `APP12-U01-C1` §9 — axe (serious/critical) and horizontal overflow, live. */
+async function expectAccessibleUnclipped(label: string): Promise<void> {
+  const { runAxe, describeViolations } = (await import('../../support/app12/h08-axe.mjs')) as {
+    runAxe: (page: Page, options: Record<string, unknown>) => Promise<{ gated: unknown[] }>;
+    describeViolations: (scan: unknown) => string;
+  };
+  const scan = await runAxe(operator, { label, disableRules: ['color-contrast'] });
+  expect(scan.gated, `${label}: ${describeViolations(scan)}`).toHaveLength(0);
+  const overflow = await operator.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  );
+  expect(overflow, `${label}: no horizontal overflow`).toBe(false);
+  process.stdout.write(`[app12-a02:u01c1] ${label} axe=0 overflow=false\n`);
+}
+
 /**
  * A `numeric(14,2)` decimal string as the Admin renders it: whole đồng, grouped.
  *
@@ -154,11 +196,11 @@ test('A — a mixed queue serves every row, and the origin filter is the server�
   // from the pre-first-click state and the second re-adds what the first
   // removed. Asserting the exact query string between them is what makes that
   // visible rather than silently producing a two-origin filter.
-  await operator.getByTestId('order-origin-filter-READY_MADE').click();
+  await operator.getByTestId('order-origin-filter-READY_MADE').locator('xpath=..').click();
   await expect(operator).toHaveURL(/[?&]origin=READY_MADE(&|$)/);
   await expect(queueRow(operator, subject.orderCode)).toHaveCount(1);
 
-  await operator.getByTestId('order-origin-filter-READY_MADE').click();
+  await operator.getByTestId('order-origin-filter-READY_MADE').locator('xpath=..').click();
   await expect(operator).not.toHaveURL(/origin=/);
 
   // Filtering to CUSTOM excludes it, and every row that survives is custom.
@@ -180,7 +222,7 @@ test('A — a mixed queue serves every row, and the origin filter is the server�
   // What this tier proves is the half only a browser can: the filter is the
   // **server's**. The row leaves the page under `origin=CUSTOM` and the page
   // that comes back carries no Ready-Made badge at all.
-  await operator.getByTestId('order-origin-filter-CUSTOM').click();
+  await operator.getByTestId('order-origin-filter-CUSTOM').locator('xpath=..').click();
   await expect(operator).toHaveURL(/[?&]origin=CUSTOM(&|$)/);
   await expect(queueRow(operator, subject.orderCode)).toHaveCount(0);
 
@@ -192,11 +234,14 @@ test('A — a mixed queue serves every row, and the origin filter is the server�
   proofs['customRowsUnderCustomFilter'] = customCount;
   proofs['originFilterServerSide'] = true;
 
-  await operator.getByTestId('order-origin-filter-CUSTOM').click();
+  await operator.getByTestId('order-origin-filter-CUSTOM').locator('xpath=..').click();
   await expect(operator).not.toHaveURL(/origin=/);
 
   // And the Ready-Made status the queue could not name before this correction.
-  await operator.getByTestId('order-filter-AWAITING_SHIPPING_FEE').click();
+  // The checkbox has been clipped since `APP12-V02`; the chip — its wrapping
+  // `<label>` — is what an operator presses, so that is what every filter
+  // toggle in this suite clicks (`xpath=..`).
+  await operator.getByTestId('order-filter-AWAITING_SHIPPING_FEE').locator('xpath=..').click();
   await expect(operator).toHaveURL(/status=AWAITING_SHIPPING_FEE/);
   await expect(queueRow(operator, subject.orderCode)).toHaveCount(1);
 });
@@ -212,7 +257,9 @@ test('B — before the fee: the detail renders, and the first fee opens payment'
   await expect(operator.getByTestId('order-detail-deadline')).toBeVisible();
 
   // `BR-031` — the custom-only sections are absent and the absence is stated.
-  await expect(operator.getByTestId('order-detail-omitted')).toContainText(COPY.omitted);
+  // `V01-UX-004` removed the sentence narrating the absence; the absence itself
+  // is what is asserted (as `order-ready-made-branch.test.tsx` does).
+  await expect(operator.getByTestId('order-detail-omitted')).toHaveCount(0);
   for (const customOnly of ['open-final-payment', 'remaining-payment', 'deposit-expected-amount']) {
     await expect(operator.getByTestId(customOnly)).toHaveCount(0);
   }
@@ -225,6 +272,13 @@ test('B — before the fee: the detail renders, and the first fee opens payment'
   // `NULL` is unpriced, so the field opens empty rather than at zero.
   await expect(operator.getByTestId('shipping-fee-input')).toHaveValue('');
   await expect(operator.getByTestId('shipping-fee-submit')).toContainText(COPY.confirmFee);
+
+  // `APP12-U01-C1` F1/F3 — the goods figure before any fee, and a card that
+  // promises no link or email.
+  goodsBefore = (
+    await operator.getByTestId('shipping-fee-merchandise').locator('dd').innerText()
+  ).trim();
+  await expectNoPromisedLink();
 
   await submitShippingFee(operator, '35000');
 
@@ -247,6 +301,12 @@ test('B — before the fee: the detail renders, and the first fee opens payment'
   );
   // The FULL memo, never the deposit's.
   await expect(operator.getByTestId('full-payment-reference')).toContainText(/FL$/);
+
+  // F1 — the fee moved the order total, and it did not move the goods figure.
+  await expectGoods(live.amount as string);
+  await expectNoPromisedLink();
+  await expectAccessibleUnclipped('a02-u01c1-after-fee');
+  proofs['u01c1_f1_merchandise_after_fee'] = true;
 });
 
 test('C — a fee correction supersedes, and the screen shows the successor', async () => {
@@ -377,6 +437,12 @@ test('D — a real FULL attempt is verified from the Admin screen', async ({ bro
   // And the money-moving control is gone rather than disabled.
   await expect(operator.getByTestId('full-payment-verify')).toHaveCount(0);
   await expect(operator.getByTestId('full-payment-settled')).toBeVisible();
+
+  // F1 — three server figures, side by side on the settled card.
+  await expectGoods(owed.amount as string);
+  await expect(operator.getByTestId('shipping-fee-frozen')).toContainText('45.000');
+  await expectAccessibleUnclipped('a02-u01c1-settled');
+  proofs['u01c1_f1_settled_three_figures'] = true;
 });
 
 test('E — dispatch and completion, through the APP9 rail', async () => {

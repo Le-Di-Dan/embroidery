@@ -195,6 +195,14 @@ export const ORDER_ACCESS_COPY = {
      * to render and this line says why.
      */
     pendingFee: orderAccessMessage.text('amount.pendingFee'),
+    /**
+     * The card title whenever nothing is due (`APP12-U01-C1` F2): a paid,
+     * delivered or completed order is not asking for money, so it is not
+     * headed `Số tiền cần thanh toán`.
+     */
+    summaryTitle: orderAccessMessage.text('amount.summaryTitle'),
+    /** The settled obligation's figure, kept on screen as history. */
+    settledLabel: orderAccessMessage.text('amount.settledLabel'),
   },
 
   /** `910:307` … `910:324` — the bank-transfer card. */

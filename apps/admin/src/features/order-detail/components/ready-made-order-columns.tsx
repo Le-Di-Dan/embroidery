@@ -5,6 +5,7 @@ import type { AdminOrderDetailResponse } from '@embroidery/api-client';
 import { useOrderPaymentsQuery, useOrderRefresh } from '../hooks/use-order-detail-queries';
 import { useShippingDetailQuery } from '../hooks/use-order-fulfillment';
 import { READY_MADE_DETAIL_COPY as COPY } from '../model/ready-made-detail-copy';
+import { readyMadeMerchandiseOf } from '../model/ready-made-merchandise';
 import { FullPaymentPanel } from './full-payment-panel';
 import { OrderItemsTable } from './order-items-table';
 import { ReadyMadeFrozenFactsCard } from './ready-made-frozen-facts-card';
@@ -96,7 +97,7 @@ export function ReadyMadeOrderColumns({ orderId, order }: ReadyMadeOrderColumnsP
                 orderId={orderId}
                 detail={detail}
                 payments={payments.data}
-                merchandiseAmount={order.totalAmount}
+                merchandiseAmount={readyMadeMerchandiseOf(order)}
                 currencyCode={order.currencyCode}
                 onSaved={() => {
                   void refresh.refreshAll();

@@ -35,6 +35,7 @@ import {
   closeS03World,
   openS03World,
   s03Evidence,
+  statusPill,
 } from './support/s03-world';
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -43,6 +44,19 @@ import {
 
 /** The exact fee the operator sets. Distinct from every seeded figure. */
 const SHIPPING_FEE = '35000.00';
+
+/**
+ * `APP12-U01-C1` copy, transcribed as expectations for the same reason
+ * `s03-world.ts`'s catalog is — and kept here so that shared module stays
+ * inside its size limit.
+ */
+const U01_COPY = {
+  // F2 — once paid, the card keeps the total as history.
+  amountSummaryTitle: 'Số tiền đơn hàng',
+  amountSettled: 'Tổng đã thanh toán',
+  // F4 — cause-neutral: it never claims a replacement link.
+  unavailableBody: 'Không thể tiếp tục từ trang này',
+} as const;
 
 test.describe.configure({ mode: 'serial' });
 
@@ -74,6 +88,33 @@ function factLabel(page: Page, label: string) {
 
 async function pageText(page: Page): Promise<string> {
   return (await page.locator('body').innerText()).toLowerCase();
+}
+
+/**
+ * `APP12-U01-C1` F2 — a paid order keeps its exact total and asks for nothing.
+ *
+ * `shown` is the figure the customer saw while paying, already checked against
+ * the obligation row. The settled highlight must repeat it verbatim, and neither
+ * the pending-fee sentence nor the "amount to pay" title may survive payment.
+ */
+async function assertSettled(page: Page, shown: string): Promise<void> {
+  const settled = page.getByTestId('secure-order-settled-total');
+  await expect(settled).toContainText(U01_COPY.amountSettled);
+  await expect(settled).toContainText(shown);
+  await expect(page.getByRole('heading', { name: U01_COPY.amountSummaryTitle })).toBeVisible();
+  await expect(page.getByText(COPY.amountPending)).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: COPY.amountTitle })).toHaveCount(0);
+}
+
+/** One axe pass at WCAG 2.2 AA, gated on serious and critical (see N01.S1). */
+async function assertNoGatedViolations(page: Page, label: string): Promise<void> {
+  const { runAxe, describeViolations } = (await import('../../support/app12/h08-axe.mjs')) as {
+    runAxe: (page: Page, options: Record<string, unknown>) => Promise<{ gated: unknown[] }>;
+    describeViolations: (scan: unknown) => string;
+  };
+  const scan = await runAxe(page, { label, disableRules: ['color-contrast'] });
+  expect(scan.gated, `${label}: ${describeViolations(scan)}`).toHaveLength(0);
+  proofs[`axe:${label}`] = scan.gated.length;
 }
 
 for (const viewport of VIEWPORTS) {
@@ -183,6 +224,7 @@ for (const viewport of VIEWPORTS) {
       await refreshUntilVisible(page, page.getByText(COPY.pillReadyForDelivery));
       await expect(page.getByRole('button', { name: COPY.startAttempt })).toHaveCount(0);
       await expect(page.getByRole('heading', { name: COPY.qrTitle })).toHaveCount(0);
+      await assertSettled(page, shown);
 
       // §25 — the reservation is consumed, so the deadline stops being shown
       // while the access-expiry note stays. Two facts, and only one of them ended.
@@ -197,7 +239,10 @@ for (const viewport of VIEWPORTS) {
       await admin.dispatch(orderId);
       expect(await evidence.orderStatusOf(orderCode)).toBe('DELIVERED');
 
-      await refreshUntilVisible(page, page.getByText(COPY.pillDelivered));
+      // The exact pill: since `APP12-V02` §17.1 the heading "Đơn hàng đã giao"
+      // also contains the pill's words, so a substring match is ambiguous.
+      await refreshUntilVisible(page, statusPill(page, COPY.pillDelivered));
+      await assertSettled(page, shown);
 
       const delivered = await pageText(page);
       for (const forbidden of FORBIDDEN_LOGISTICS) {
@@ -212,7 +257,7 @@ for (const viewport of VIEWPORTS) {
       await admin.complete(orderId);
       expect(await evidence.orderStatusOf(orderCode)).toBe('COMPLETED');
 
-      await refreshUntilVisible(page, page.getByText(COPY.pillCompleted));
+      await refreshUntilVisible(page, statusPill(page, COPY.pillCompleted));
       await expect(page.getByRole('button', { name: COPY.startAttempt })).toHaveCount(0);
       await expect(page.getByRole('heading', { name: COPY.qrTitle })).toHaveCount(0);
 
@@ -220,9 +265,37 @@ for (const viewport of VIEWPORTS) {
       // their receipt — which is what makes one route serve the whole tail.
       await expect(page.getByText(orderCode, { exact: false })).toBeVisible();
 
+      await assertSettled(page, shown);
+      await assertNoGatedViolations(page, `s03-${viewport.name}-completed`);
+
       await page.screenshot({
         path: `test-results/app12-s03/${viewport.name}-06-completed.png`,
       });
+
+      // ── `APP12-U01-C1` F4 — a reload without the fragment ──────────────
+      // The strip ran on the first visit, so a reload carries no credential.
+      // The card must not claim a replacement link, because the original one
+      // still works — which is proven by reopening it straight afterwards.
+      await page.reload();
+      await expect(page.getByRole('heading', { name: COPY.unavailableTitle })).toBeVisible({
+        timeout: 30_000,
+      });
+      await expect(page.getByText(U01_COPY.unavailableBody)).toBeVisible();
+      expect(await pageText(page)).not.toMatch(/đã được thay|thay bằng liên kết|liên kết mới nhất/);
+      await assertNoGatedViolations(page, `s03-${viewport.name}-reload-unavailable`);
+      await page.screenshot({
+        path: `test-results/app12-s03/${viewport.name}-07-reload-unavailable.png`,
+      });
+
+      // Reopened the way a customer does — from the email, in a fresh tab. A
+      // `goto` on this same page would only change the fragment of the URL it
+      // is already on, a same-document navigation that claims nothing (U01).
+      const reopened = await page.context().newPage();
+      await reopened.setViewportSize({ width: viewport.width, height: viewport.height });
+      await openSecureOrder(reopened);
+      await expect(statusPill(reopened, COPY.pillCompleted)).toBeVisible();
+      await reopened.close();
+      proofs[`reload_then_reopen_${viewport.name}`] = true;
 
       // No horizontal overflow at any point of the journey.
       const overflow = await page.evaluate(

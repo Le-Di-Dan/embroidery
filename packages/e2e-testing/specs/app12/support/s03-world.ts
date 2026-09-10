@@ -119,8 +119,8 @@ export const COPY = {
     'Ảnh đã nhận không có nghĩa là đã thanh toán. Xưởng vẫn cần đối chiếu khoản chuyển.',
   evidencePending: 'Đang kiểm tra',
 
-  deadlinePrefix: 'Xưởng giữ hàng cho bạn tới',
-  accessExpiryPrefix: 'Liên kết này hết hạn lúc',
+  deadlinePrefix: 'Xưởng giữ hàng đến',
+  accessExpiryPrefix: 'Liên kết hết hạn',
 
   stepUpTitle: 'Xác minh lại trước khi thanh toán',
 

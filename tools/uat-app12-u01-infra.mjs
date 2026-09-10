@@ -8,7 +8,7 @@
  * customer over hours, not in one test run), and the only process able to run
  * that long in this environment cannot reach the Docker socket. So the two
  * concerns are separated by capability rather than by taste: containers here,
- * host processes and the in-process worker in `uat-app12-u01-world.mjs`.
+ * host processes and the real worker process in `uat-app12-u01-world.mjs`.
  *
  * ```text
  * up        ephemeral postgres + minio, clone the shared DB and object store

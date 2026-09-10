@@ -8,7 +8,7 @@
     "unavailable": {
       "title": "Liên kết không sử dụng được",
       "alertTitle": "Không mở được liên kết này",
-      "alertBody": "Liên kết có thể đã hết hạn, đã được thay bằng liên kết mới, hoặc không dành cho thiết bị này. Hãy dùng liên kết mới nhất trong tin nhắn của bạn.",
+      "alertBody": "Không thể tiếp tục từ trang này với thông tin truy cập bảo mật hiện có. Hãy mở lại liên kết từ email {brand} gần nhất của bạn.",
       "body": "Nếu bạn vẫn cần truy cập, hãy trả lời tin nhắn gần nhất của {brand} để được gửi liên kết mới."
     },
     "transientError": {
@@ -74,7 +74,9 @@
     },
     "amount": {
       "title": "Số tiền cần thanh toán",
+      "summaryTitle": "Số tiền đơn hàng",
       "highlightLabel": "Tổng thanh toán",
+      "settledLabel": "Tổng đã thanh toán",
       "merchandiseLabel": "Tiền hàng",
       "feeLabel": "Phí giao hàng",
       "pendingFee": "Có sau khi xưởng xác nhận phí giao hàng"

@@ -25,8 +25,12 @@ interface ReadyMadeShippingFeeCardProps {
   readonly orderId: string;
   readonly detail: AdminShippingDetailResponse;
   readonly payments: AdminOrderPaymentsResponse;
-  /** The order's frozen merchandise subtotal, transported as stored. */
-  readonly merchandiseAmount: string;
+  /**
+   * The order's frozen merchandise subtotal — the one line's `lineTotalAmount`,
+   * transported as stored. Never `order.totalAmount`, which includes the fee
+   * once one is confirmed (`APP12-U01-C1` F1). `undefined` renders a dash.
+   */
+  readonly merchandiseAmount: string | undefined;
   readonly currencyCode: string;
   readonly onSaved: () => void;
 }
@@ -62,11 +66,18 @@ interface ReadyMadeShippingFeeCardProps {
  * ## A correction says what it replaces, and does not promise more time
  *
  * While the `FULL` is `PENDING` a fee change is allowed, and it **supersedes**
- * the obligation: the predecessor is replaced and its payment link stops
- * working. The warning says exactly that. It deliberately does not say the
- * customer gets longer to pay — the server reschedules the stock hold, which is
- * a different fact, and a deadline claimed here would be this screen inventing
- * one.
+ * the obligation: the predecessor is replaced, and the customer sees the new
+ * amount on the order link they already hold. The warning says exactly that.
+ * It deliberately does not say the customer gets longer to pay — the server
+ * reschedules the stock hold, which is a different fact, and a deadline claimed
+ * here would be this screen inventing one.
+ *
+ * ## No new link is promised (`APP12-U01-C1` F3)
+ *
+ * Confirming or correcting the fee mints no grant and queues no notification —
+ * U01 proved both mechanically. The durable customer surface is the
+ * `ORDER_ACCESS` link issued at checkout, so the notes say payment continues
+ * there and never that a link is sent.
  *
  * ## After settlement the card refuses, and says why
  *
@@ -102,16 +113,35 @@ export function ReadyMadeShippingFeeCard({
     save.mutate(toSaveShippingBody(values), { onSuccess: () => onSaved() });
   };
 
+  const merchandiseRow = (
+    <DefinitionRow label={COPY.shipping.merchandise} testId="shipping-fee-merchandise">
+      {merchandiseAmount === undefined
+        ? '—'
+        : formatAmountWithCurrency(merchandiseAmount, currencyCode)}
+    </DefinitionRow>
+  );
+  const payableRow = (
+    <DefinitionRow label={COPY.shipping.payable} testId="shipping-fee-payable">
+      {payable === undefined
+        ? COPY.shipping.payableUnknown
+        : formatAmountWithCurrency(payable, currencyCode)}
+    </DefinitionRow>
+  );
+
   if (stage === 'settled') {
+    // Three server-owned figures, side by side and never combined: the frozen
+    // goods line, the frozen fee, and the satisfied obligation's own amount.
     return (
       <section className="order-card" aria-labelledby="shipping-fee-heading">
         <h2 className="order-card__title" id="shipping-fee-heading">
           {COPY.shipping.heading}
         </h2>
         <dl className="order-card__definitions">
+          {merchandiseRow}
           <DefinitionRow label={COPY.shipping.frozenHeading} testId="shipping-fee-frozen">
             {storedFee === null ? '—' : formatAmountWithCurrency(storedFee, currencyCode)}
           </DefinitionRow>
+          {payableRow}
         </dl>
         <div className="order-card__refusal" role="note" data-testid="shipping-fee-refused">
           <p className="order-card__refusal-title">{COPY.shipping.refusedTitle}</p>
@@ -146,14 +176,8 @@ export function ReadyMadeShippingFeeCard({
       />
 
       <dl className="order-card__definitions">
-        <DefinitionRow label={COPY.shipping.merchandise} testId="shipping-fee-merchandise">
-          {formatAmountWithCurrency(merchandiseAmount, currencyCode)}
-        </DefinitionRow>
-        <DefinitionRow label={COPY.shipping.payable} testId="shipping-fee-payable">
-          {payable === undefined
-            ? COPY.shipping.payableUnknown
-            : formatAmountWithCurrency(payable, currencyCode)}
-        </DefinitionRow>
+        {merchandiseRow}
+        {payableRow}
       </dl>
 
       {correcting ? (
