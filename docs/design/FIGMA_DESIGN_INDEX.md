@@ -1555,6 +1555,75 @@ replacement. The nodes still resolve — they are simply no longer authority for
 checkpoint.
 
 
+
+### 4.14 APP12-N02.D01 — Ready-Made sellability authoring (NEW, this checkpoint)
+
+Section **`968:187`** — [13 — N02.D01 · Ready-Made sellability authoring](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=968-187), page **APP_12**.
+
+**Why this package exists.** `APP12-N02.G01` proved that no delivered operation writes a
+`product_variants` row, that `adminSku_create` has zero Admin call sites, and that
+publication readiness reports 7/7 green for a Product that can never be bought. There has
+**never** been an approved Admin design for variant or SKU authoring: `APP2-A03-G01`
+deliberately removed the `Phiên bản & SKU` section from the Product Form on 2026-07-31,
+correctly, because at that time no operation could serve it. This package draws it back —
+together with the authority that will serve it.
+
+**Pre-draw audit (mandatory).** This registry was searched for every N02-owned term —
+`variant`, `Phiên bản`, `SKU`, `sellab`, `stock`, `kho` — before a frame was drawn. The
+only `SKU`-owning rows are `APP8-D01`'s stock screen (`FIG-APP8-A01-STOCK-*`,
+`FIG-APP8-A01-ADJUST-*`, `FIG-APP8-A01-LEDGER-TRUNCATED`); the only Product-editor rows
+are `APP2-D01`'s form (`FIG-ADMIN-PRODUCT-DRAFT-*`, reconciled by `APP2-A03-G01`) and
+`APP12-M01.D1`'s media section. **No row anywhere in this registry drew a variant or a
+SKU-authoring surface.** The live `APP_12` page was then read: three sections existed
+(`901:3`, `933:187`, `958:187`) and the new section was appended below them.
+
+**Admin read-authority preflight (the §2 amendment).** `AdminProductDetailResponse` was
+read from `packages/contracts/openapi/openapi.generated.json`: its properties are
+`productId · slug · name · description · status · category · basePriceAmount ·
+currencyCode · media · primaryMedia · createdAt · updatedAt · archivedAt`. There is **no
+`variants` and no `skus` field**, and no other Admin operation returns one. The single
+variant read in the whole contract is `GET /api/public/products/{slug}/variants`, and it
+is structurally unusable as an authoring source: it is keyed by slug, refuses anything
+that is not `PUBLISHED`, filters `is_active = true` on both variants and SKUs, and
+projects neither `code` nor `isActive`. The design therefore assumes an Admin read that
+does not exist yet, and `N02.B01` owns it — see `FIG-APP12-N02-D01-HANDOFF`.
+
+**No historical frame was redrawn or superseded.** `FIG-ADMIN-PRODUCT-DRAFT-DESKTOP-DEFAULT`
+(`434:20`) and `FIG-ADMIN-PRODUCT-DRAFT-MOBILE-DEFAULT` (`438:90`) remain
+`APPROVED_FOR_IMPLEMENTATION` and remain the authority for name, description, category and
+price; this package **extends** the editor rather than replacing it, exactly as
+`APP12-M01.D1` extended it with the media section. `APP8-D01`'s stock screen is reused as
+it stands — N02 adds only the per-SKU `Quản lý tồn kho ↗` handoff into it, and draws no
+stock surface of its own. `Supersedes/By` is therefore `—` on every row and no existing
+row was modified.
+
+**No approval evidence exists yet.** All 21 rows enter `REVIEW_REQUIRED`. No approval id
+is claimed, and none may be applied until the Product Owner reviews this package.
+
+| Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| FIG-APP12-N02-D01-OVERVIEW | Shared | APP12-N02 authority | Sellability Authoring Authority, Admin-Read Preflight & Locked Decisions | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 969:187 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=969-187) | APP12-N02.D01 | — | — | 2026-09-10 |
+| FIG-APP12-N02-D01-EDITOR-DRAFT-EMPTY-DESKTOP | Admin | /products/{productId} | Product Editor — Phiên bản & SKU | DRAFT — No variant | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 971:187 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=971-187) | APP12-N02.D01 | — | — | 2026-09-10 |
+| FIG-APP12-N02-D01-EDITOR-DRAFT-POPULATED-DESKTOP | Admin | /products/{productId} | Product Editor — Phiên bản & SKU | DRAFT — 3 variants, 1 expanded | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 972:187 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=972-187) | APP12-N02.D01 | — | — | 2026-09-10 |
+| FIG-APP12-N02-D01-EDITOR-PUBLISHED-EDITABLE-DESKTOP | Admin | /products/{productId} | Product Editor — Phiên bản & SKU | PUBLISHED — Sellability editable, core locked | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 973:187 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=973-187) | APP12-N02.D01 | — | — | 2026-09-10 |
+| FIG-APP12-N02-D01-EDITOR-PUBLISHED-UNSELLABLE-DESKTOP | Admin | /products/{productId} | Product Editor — Phiên bản & SKU | PUBLISHED — Structurally unsellable warning & recovery | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 974:187 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=974-187) | APP12-N02.D01 | — | — | 2026-09-10 |
+| FIG-APP12-N02-D01-EDITOR-TABLET | Admin | /products/{productId} | Product Editor — Phiên bản & SKU | DRAFT — Populated, actions reflowed | Tablet 1024 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 978:187 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=978-187) | APP12-N02.D01 | — | — | 2026-09-10 |
+| FIG-APP12-N02-D01-EDITOR-DRAFT-EMPTY-MOBILE | Admin | /products/{productId} | Product Editor — Phiên bản & SKU | DRAFT — No variant | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 979:187 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=979-187) | APP12-N02.D01 | — | — | 2026-09-10 |
+| FIG-APP12-N02-D01-EDITOR-DRAFT-POPULATED-MOBILE | Admin | /products/{productId} | Product Editor — Phiên bản & SKU | DRAFT — 3 variants, 1 expanded | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 979:222 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=979-222) | APP12-N02.D01 | — | — | 2026-09-10 |
+| FIG-APP12-N02-D01-EDITOR-PUBLISHED-UNSELLABLE-MOBILE | Admin | /products/{productId} | Product Editor — Phiên bản & SKU | PUBLISHED — Structurally unsellable warning & recovery | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 979:321 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=979-321) | APP12-N02.D01 | — | — | 2026-09-10 |
+| FIG-APP12-N02-D01-VARIANT-CREATE | Admin | /products/{productId} | Variant Dialog | Create — Default | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 975:187 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=975-187) | APP12-N02.D01 | — | — | 2026-09-10 |
+| FIG-APP12-N02-D01-VARIANT-REFUSALS | Admin | /products/{productId} | Variant Dialog | Create — Missing label & duplicate refusal | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 975:220 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=975-220) | APP12-N02.D01 | — | — | 2026-09-10 |
+| FIG-APP12-N02-D01-VARIANT-DEACTIVATE-LAST | Admin | /products/{productId} | Variant Dialog | Deactivate last active variant (PUBLISHED) | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 975:254 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=975-254) | APP12-N02.D01 | — | — | 2026-09-10 |
+| FIG-APP12-N02-D01-SKU-CREATE-EDIT | Admin | /products/{productId} | SKU Dialog | Create — Default & Edit — Price override | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 976:187 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=976-187) | APP12-N02.D01 | — | — | 2026-09-10 |
+| FIG-APP12-N02-D01-SKU-AMBIGUOUS-REFUSAL | Admin | /products/{productId} | SKU Dialog | Second order-eligible SKU refusal (SKU_ORDER_ELIGIBLE_AMBIGUOUS) | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 976:269 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=976-269) | APP12-N02.D01 | — | — | 2026-09-10 |
+| FIG-APP12-N02-D01-SKU-DEACTIVATE-LAST | Admin | /products/{productId} | SKU Dialog | Deactivate last order-eligible SKU (PUBLISHED) | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 976:300 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=976-300) | APP12-N02.D01 | — | — | 2026-09-10 |
+| FIG-APP12-N02-D01-READINESS-NO-VARIANT | Admin | /products/{productId}/publish | Publication Readiness | A — No active variant (7/10) | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 977:187 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=977-187) | APP12-N02.D01 | — | — | 2026-09-10 |
+| FIG-APP12-N02-D01-READINESS-NO-SKU | Admin | /products/{productId}/publish | Publication Readiness | B — Active variant, no order-eligible SKU (8/10) | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 977:300 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=977-300) | APP12-N02.D01 | — | — | 2026-09-10 |
+| FIG-APP12-N02-D01-READINESS-PRICE-UNRESOLVABLE | Admin | /products/{productId}/publish | Publication Readiness | C — Order-eligible SKU, unresolvable effective price (9/10) | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 977:413 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=977-413) | APP12-N02.D01 | — | — | 2026-09-10 |
+| FIG-APP12-N02-D01-READINESS-READY-STOCK-ZERO | Admin | /products/{productId}/publish | Publication Readiness | D — All 10 satisfied, stock 0 | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 977:527 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=977-527) | APP12-N02.D01 | — | — | 2026-09-10 |
+| FIG-APP12-N02-D01-READINESS-READY-STOCK-POSITIVE | Admin | /products/{productId}/publish | Publication Readiness | E — All 10 satisfied, stock > 0 | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 977:638 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=977-638) | APP12-N02.D01 | — | — | 2026-09-10 |
+| FIG-APP12-N02-D01-HANDOFF | Shared | APP12-N02 handoff | B01/A01 Authority Matrix, APP8 Stock Reuse & Copy Inventory | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 981:187 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=981-187) | APP12-N02.D01 | — | — | 2026-09-10 |
+
 ## 5. IA and user-flow registry
 
 Flow/IA/wireframe nodes are indexed as `REFERENCE_ONLY` — they inform, but do not
