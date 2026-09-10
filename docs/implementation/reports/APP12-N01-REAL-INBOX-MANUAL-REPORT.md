@@ -1,7 +1,7 @@
 # APP12-N01 — Real-Inbox Manual Acceptance — Execution Report
 
 ```text
-REAL_INBOX_MANUAL              = PASS_PENDING_PO_CONTENT_CONFIRMATION
+REAL_INBOX_MANUAL              = PASS
 REAL_EMAIL_RECEIVED            = true
 OTP_FROM_REAL_INBOX_VERIFIED   = true
 RESEND_REAL_INBOX              = PASS
@@ -9,8 +9,8 @@ PHONE_SMS_VERIFICATION_PRESENT = false
 REAL_ORDER_CREATED             = false
 REAL_PAYMENT_SUBMITTED         = false
 
-MESSAGE_CONTENT_INSPECTION     = AWAITING_PO   (steps 6, 7, 11)
-APP12-N01                      = AWAITING_PO_CONTENT_CONFIRMATION
+MESSAGE_CONTENT_INSPECTION     = PASS — PO CONFIRMED (steps 6, 7, 11)
+APP12-N01                      = COMPLETE — PO PASS
 
 APP12-U01                      = SUSPENDED_PENDING_BLOCKER_RECOVERY
 APP12-E01                      = NOT_AUTHORIZED
@@ -33,13 +33,8 @@ evidence as markdown, and each frame shows only the masked destination
 
 The verification OTP **left the application over a real SMTP relay, reached a
 real inbox the Product Owner controls, and was accepted by the real Storefront
-UI** — twice: once on first issue and once on a resend.
-
-What is not yet closed is not the delivery. It is the *reading* of the delivered
-message: steps 6, 7 and 11 ask what the inbox shows — sender, subject, body,
-expiry wording, absence of internal ids — and only the Product Owner can see
-that. Those answers are outstanding, so this report does not write a bare
-`PASS`.
+UI** — twice: once on first issue and once on a resend. The Product Owner has
+read the delivered messages and accepted them. `APP12-N01` closes.
 
 Three environment defects blocked the run before any of it could happen. None
 was a runtime-code defect, all three were real, and each would have stopped a
@@ -82,8 +77,8 @@ worker.job.completed  NOTIFICATION_DELIVERY:66:1  outcome=SUCCEEDED  attemptNo=1
 ```
 
 `notification_intents` reached `SATISFIED`. So the *application* sent exactly one
-message per request. How many arrived is the inbox's answer, not the database's —
-which is why step 6 and step 11 stay open below.
+message per request. How many *arrived* is the inbox's answer rather than the
+database's, and the Product Owner confirmed three — one per row (§D).
 
 ### B.3 The code from the real inbox verified, twice
 
@@ -210,30 +205,53 @@ misread as an application failure.
 
 ---
 
-## D. Outstanding — Product Owner only
+## D. The Product Owner's inbox findings
 
-Steps 6, 7 and 11 cannot be discharged from outside the mailbox:
+Steps 6, 7 and 11 cannot be discharged from outside the mailbox. Both were
+answered by the Product Owner on 2026-09-10.
 
-1. Exactly **three** messages arrived, no more.
-2. Sender renders as `Nét Thêu` at the configured address.
-3. Subject is correct Vietnamese — specifically **not** mangled into `Nét T hêu`
-   or mojibake. The subject exceeds the 76-byte RFC 2047 encoded-word limit and
-   arrives as two adjacent encoded words whose separating whitespace must be
-   dropped; `E01` found this defect in its own reader and it is the single most
-   likely visible fault in a real client.
-4. Body states the six-digit code and the ten-minute validity.
-5. The ignore-if-you-did-not-request guidance is present.
-6. No internal id, UUID, token, debug text or other customer's data appears.
-7. Inbox versus Spam placement.
+**Steps 6 and 11 — exactly three messages arrived**, matching the three
+`DELIVERED` rows one-for-one. One request, one message: no duplicate, no silent
+retry, no missing send.
 
-On confirmation this becomes `REAL_INBOX_MANUAL = PASS` and `APP12-N01` closes.
+**Step 7 — the message content was accepted.** In the Product Owner's own words:
+*"nội dung thư đúng quy cách, không sai font chữ, nội dung tinh gọn dễ hiểu."*
+
+The encoding half of that answer is the load-bearing one. The Vietnamese subject
+exceeds the 76-byte RFC 2047 encoded-word limit and therefore arrives as two
+adjacent encoded words whose separating whitespace must be dropped — get it
+wrong and the brand renders as `Nét T hêu`, or the whole header as mojibake.
+`E01` found exactly that defect in its own MIME reader, against a synthetic
+message. This run is the first time the rendering has been confirmed in a real
+mail client, and it is correct.
+
+This is the Product Owner's holistic acceptance of the message rather than an
+item-by-item transcript; it is recorded as such deliberately, because step 7 is
+the Product Owner's judgement to make and this report should not restate it as
+something more granular than what was given.
 
 `APP12-U01` remains suspended regardless: its variant-authoring and
 publication-readiness blockers are independent of `N01`.
 
 ---
 
-## E. Configuration note
+## E. Operational note — the dev stack now sends real email
+
+`NOTIFICATION_TRANSPORT=SMTP` is live in the development `.env`. Every
+verification code, secure link and order notification issued from this stack
+will now reach a real mailbox over the configured relay.
+
+That is correct for this test and wrong as a resting state: ordinary local work,
+UAT clicking and any manual notification path will send genuine mail to whatever
+address is typed. Consider setting `NOTIFICATION_TRANSPORT=RECORDING` back in
+`.env` once this acceptance is filed — the operator's edit, not this session's.
+
+The isolated e2e tiers are unaffected either way: they load their own
+environment and default `RECORDING` themselves.
+
+---
+
+## F. Configuration note
 
 The SMTP block and the envelope key were added to `.env` **by the operator**.
 This session never wrote `.env`, never read a protected value out of it, and
