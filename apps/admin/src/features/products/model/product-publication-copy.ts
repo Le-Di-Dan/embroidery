@@ -75,6 +75,16 @@ export const PRODUCT_REQUIREMENT_LABEL: Readonly<
     productRequirementLabelMessage.text('PRODUCT_MEDIA_ASSETS_READY'),
   [AdminProductRequirementResponseCode.PRODUCT_MEDIA_DERIVATIVES_READY]:
     productRequirementLabelMessage.text('PRODUCT_MEDIA_DERIVATIVES_READY'),
+  // `APP12-N02.B01`. The three sellability requirements, transcribed from the
+  // approved design (`APP12-N02.D01` §J.1). None of them mentions stock: a
+  // sold-out product is a product that is selling, and structural
+  // unsellability is a different thing that must not be labelled "hết hàng".
+  [AdminProductRequirementResponseCode.HAS_ACTIVE_VARIANT]:
+    productRequirementLabelMessage.text('HAS_ACTIVE_VARIANT'),
+  [AdminProductRequirementResponseCode.HAS_ORDER_ELIGIBLE_SKU]:
+    productRequirementLabelMessage.text('HAS_ORDER_ELIGIBLE_SKU'),
+  [AdminProductRequirementResponseCode.SKU_PRICE_RESOLVABLE]:
+    productRequirementLabelMessage.text('SKU_PRICE_RESOLVABLE'),
 };
 
 export const PRODUCT_PUBLICATION_COPY = {

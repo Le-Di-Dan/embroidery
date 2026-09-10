@@ -99,7 +99,28 @@ describe('product publication races (live PostgreSQL, independent connections)',
       basePriceAmount: '250000',
       mediaAssetIds: [await seedAsset()],
     });
+    await seedSellableStructure(updated.productId);
     return { productId: updated.productId, updatedAt: updated.updatedAt };
+  }
+
+  /**
+   * The minimum structure a customer could buy (`APP12-N02.B01`).
+   *
+   * "Publishable" gained three requirements at that checkpoint, so a seed
+   * without an active variant carrying an order-eligible SKU is refused before
+   * the race under test can even start.
+   */
+  async function seedSellableStructure(productId: string): Promise<void> {
+    const variantId = newId();
+    const skuId = newId();
+    await ctx.disposable.client.db.execute(sql`
+      insert into product_variants (id, product_id, color_name, size_label, display_order, is_active)
+      values (${variantId}, ${productId}, 'Trắng', 'M', 0, true)
+    `);
+    await ctx.disposable.client.db.execute(sql`
+      insert into skus (id, product_variant_id, code, price_override_amount, currency_code, is_active)
+      values (${skuId}, ${variantId}, ${`RACE-${skuId.slice(-8)}`}, null, 'VND', true)
+    `);
   }
 
   function outcomeOf(result: PromiseSettledResult<unknown>): string {

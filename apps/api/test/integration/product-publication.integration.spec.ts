@@ -107,18 +107,27 @@ describe('product publication (live PostgreSQL)', () => {
       [
         'no description',
         { description: undefined as string | undefined },
-        'PRODUCT_DESCRIPTION_READY',
+        ['PRODUCT_DESCRIPTION_READY'],
       ],
-      ['the zero price sentinel', { basePriceAmount: undefined }, 'PRODUCT_PRICE_READY'],
-      ['no media', { mediaAssetIds: [] as readonly string[] }, 'PRODUCT_MEDIA_READY'],
-    ])('reports %s as the single unsatisfied requirement', async (_label, overrides, expected) => {
+      // The base price co-fails with the SKU price (`APP12-N02.D01` §J.3): the
+      // seeded SKU has no override, so an unset base price really is two broken
+      // facts about the same amount rather than an independence leak.
+      [
+        'the zero price sentinel',
+        { basePriceAmount: undefined },
+        ['PRODUCT_PRICE_READY', 'SKU_PRICE_RESOLVABLE'],
+      ],
+      ['no media', { mediaAssetIds: [] as readonly string[] }, ['PRODUCT_MEDIA_READY']],
+      // `APP12-N02.B01`: the shape `N02.G01` found published live.
+      ['no selling structure', { sellable: false }, ['HAS_ACTIVE_VARIANT']],
+    ])('reports %s as the unsatisfied requirement set', async (_label, overrides, expected) => {
       const seeded = await seedPublishableProduct(ctx, overrides);
       const readiness = await publication.readiness(seeded.productId);
 
       expect(readiness.eligible).toBe(false);
-      expect(readiness.requirements.filter((r) => !r.satisfied).map((r) => r.code)).toEqual([
+      expect(readiness.requirements.filter((r) => !r.satisfied).map((r) => r.code)).toEqual(
         expected,
-      ]);
+      );
     });
 
     it('reports an image that inspection has not accepted', async () => {

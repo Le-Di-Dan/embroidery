@@ -82,6 +82,9 @@ import type {
   AdminProductPublish200,
   AdminProductUnpublish200,
   AdminProductUpdate200,
+  AdminProductVariantCreate201,
+  AdminProductVariantList200,
+  AdminProductVariantUpdate200,
   AdminProductionJobCreate201,
   AdminProductionJobGet200,
   AdminProductionJobList200,
@@ -109,6 +112,7 @@ import type {
   CreateDesignTemplateBody,
   CreateGalleryEntryBody,
   CreateProductBody,
+  CreateProductVariantBody,
   CreateProductionJobBody,
   CreateQuotationDraftBody,
   CreateReadyMadeOrderBody,
@@ -211,6 +215,7 @@ import type {
   UpdateCustomerProfileBody,
   UpdateGalleryEntryBody,
   UpdateProductBody,
+  UpdateProductVariantBody,
   UpdateSkuBody,
   VerifyPaymentAttemptBody,
 } from './embroidery-api.schemas';
@@ -1575,6 +1580,61 @@ export const adminProductUnpublish = (
 };
 
 /**
+ * The authoring and history source for the sellability section. Returns every variant of the product and every SKU under it — inactive rows included — in a stable order, for any lifecycle state. Read-only: it writes nothing and records no audit event. The public variant projection is not a substitute: it is keyed by slug, refuses anything but a published product, filters out inactive variants and SKUs, and publishes neither the SKU code nor the sellable flag.
+ * @summary List the variants and SKUs of a product
+ */
+export const adminProductVariantList = (
+  productId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminProductVariantList200>>,
+) => {
+  return apiRequest<AdminProductVariantList200>(
+    { url: `/api/admin/products/${productId}/variants`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * Creates one variant of the product. Allowed while the product is a draft and while it is published — a live product must be repairable in place, and creating a variant never unpublishes it — and refused once it is archived. The display order is assigned by the server under a write lock and is never accepted from the request; there is no reorder operation. At least one of `colorName` and `sizeLabel` must be non-blank once trimmed. Both labels are trimmed and their internal whitespace collapsed before they are stored and compared, and a blank label is stored as null. Within one product the normalized pair must be unique, compared case-insensitively and without stripping accents, across active and inactive variants alike.
+ * @summary Create a product variant
+ */
+export const adminProductVariantCreate = (
+  productId: unknown,
+  createProductVariantBody: CreateProductVariantBody,
+  options?: SecondParameter<typeof apiRequest<AdminProductVariantCreate201>>,
+) => {
+  return apiRequest<AdminProductVariantCreate201>(
+    {
+      url: `/api/admin/products/${productId}/variants`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: createProductVariantBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Patches the two labels and the offered flag. A label may be cleared with null or a blank string as long as the other one survives. Deactivating is how a variant leaves the catalog — there is no delete, and deactivating the last active variant of a published product does not unpublish it. Allowed on a draft and on a published product, refused once archived. The variant must belong to the addressed product; one that belongs to another is reported as not found under this one. At least one of `colorName` and `sizeLabel` must be non-blank once trimmed. Both labels are trimmed and their internal whitespace collapsed before they are stored and compared, and a blank label is stored as null. Within one product the normalized pair must be unique, compared case-insensitively and without stripping accents, across active and inactive variants alike.
+ * @summary Update, deactivate or reactivate a product variant
+ */
+export const adminProductVariantUpdate = (
+  productId: unknown,
+  variantId: unknown,
+  updateProductVariantBody: UpdateProductVariantBody,
+  options?: SecondParameter<typeof apiRequest<AdminProductVariantUpdate200>>,
+) => {
+  return apiRequest<AdminProductVariantUpdate200>(
+    {
+      url: `/api/admin/products/${productId}/variants/${variantId}`,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      data: updateProductVariantBody,
+    },
+    options,
+  );
+};
+
+/**
  * Creates one sellable SKU definition under the named variant. The product/variant relationship is proved server-side from locked rows, and the write is refused when it would leave the variant with more than one order-eligible (`isActive`) SKU — an order must be able to resolve exactly one SKU without guessing. The currency is server-owned (VND) and stock is not part of this contract: `skus` is the definition side only.
  * @summary Create a SKU for a product variant
  */
@@ -2914,6 +2974,15 @@ export type AdminProductSideBackgroundGetResult = NonNullable<
 >;
 export type AdminProductUnpublishResult = NonNullable<
   Awaited<ReturnType<typeof adminProductUnpublish>>
+>;
+export type AdminProductVariantListResult = NonNullable<
+  Awaited<ReturnType<typeof adminProductVariantList>>
+>;
+export type AdminProductVariantCreateResult = NonNullable<
+  Awaited<ReturnType<typeof adminProductVariantCreate>>
+>;
+export type AdminProductVariantUpdateResult = NonNullable<
+  Awaited<ReturnType<typeof adminProductVariantUpdate>>
 >;
 export type AdminSkuCreateResult = NonNullable<Awaited<ReturnType<typeof adminSkuCreate>>>;
 export type AdminQuotationCreateResult = NonNullable<

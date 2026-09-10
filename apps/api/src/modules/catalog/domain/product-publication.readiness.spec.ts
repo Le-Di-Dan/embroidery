@@ -20,6 +20,8 @@ import {
 
 const ASSET_A = '019826f0-1c3d-7a41-9b6e-2f5a8c4d1e07';
 const ASSET_B = '019826f0-1c3d-7a41-9b6e-2f5a8c4d1e08';
+const VARIANT_A = '019826f0-1c3d-7a41-9b6e-2f5a8c4d1e09';
+const SKU_A = '019826f0-1c3d-7a41-9b6e-2f5a8c4d1e0a';
 
 function publishableFacts(): ProductPublicationFacts {
   return {
@@ -51,6 +53,20 @@ function publishableFacts(): ProductPublicationFacts {
         storageKey: `development/derivatives/${assetId}/${kind}.webp`,
       })),
     ),
+    // One active variant carrying one active SKU on the base price: the minimum
+    // structure the three `APP12-N02.B01` sellability requirements need, so
+    // every case below still breaks exactly one fact. The sellability matrix
+    // itself lives in `product-publication.sellability.spec.ts`.
+    variants: [{ variantId: VARIANT_A, isActive: true }],
+    skus: [
+      {
+        skuId: SKU_A,
+        variantId: VARIANT_A,
+        isActive: true,
+        priceOverrideAmount: undefined,
+        currencyCode: 'VND',
+      },
+    ],
   };
 }
 
@@ -135,10 +151,16 @@ describe('publication readiness', () => {
       ]);
     });
 
-    it('the zero price sentinel fails only the price requirement', () => {
+    it('the zero price sentinel fails the price requirement and the SKU price with it', () => {
+      // The one documented co-failure (`APP12-N02.D01` §J.3), and it is not an
+      // independence leak: the SKU inherits the base price, so an unset base
+      // price really is two broken facts about the same amount. The converse —
+      // a SKU override that fails while the base price stands — is the case
+      // that proves the two criteria are independent, and it lives in
+      // `product-publication.sellability.spec.ts`.
       expect(
         failuresAfter((f) => ({ ...f, product: { ...f.product, basePriceAmount: '0.00' } })),
-      ).toEqual(['PRODUCT_PRICE_READY']);
+      ).toEqual(['PRODUCT_PRICE_READY', 'SKU_PRICE_RESOLVABLE']);
     });
 
     it('no media fails the media requirement only', () => {
@@ -286,12 +308,33 @@ describe('publication readiness', () => {
       expect(readiness.eligible).toBe(true);
     });
 
-    it('names no variant, SKU, inventory, SEO, display-order or thumbnail-URL requirement', () => {
+    it('names no inventory, SEO, display-order or thumbnail-URL requirement', () => {
+      // `VARIANT` and `SKU` left this list at `APP12-N02.B01`, by Product Owner
+      // authority and with the writer that makes them satisfiable: the three
+      // codes below are asserted by name so they cannot be joined by a fourth
+      // without a deliberate edit here. Inventory is still excluded, and
+      // permanently — a sold-out product is a product that is selling.
       const codes = PRODUCT_PUBLICATION_REQUIREMENT_CODES.join(' ');
-      for (const forbidden of ['VARIANT', 'SKU', 'INVENTORY', 'SEO', 'STOCK', 'URL', 'SHIPPING']) {
+      for (const forbidden of ['INVENTORY', 'STOCK', 'SEO', 'URL', 'SHIPPING', 'QUANTITY']) {
         expect(codes).not.toContain(forbidden);
       }
-      expect(PRODUCT_PUBLICATION_REQUIREMENT_CODES).toHaveLength(7);
+      expect(PRODUCT_PUBLICATION_REQUIREMENT_CODES).toHaveLength(10);
+      expect(PRODUCT_PUBLICATION_REQUIREMENT_CODES.slice(7)).toEqual([
+        'HAS_ACTIVE_VARIANT',
+        'HAS_ORDER_ELIGIBLE_SKU',
+        'SKU_PRICE_RESOLVABLE',
+      ]);
+      // The first seven keep their codes *and* their positions: a client that
+      // renders the list in order must see the checklist it already knew.
+      expect(PRODUCT_PUBLICATION_REQUIREMENT_CODES.slice(0, 7)).toEqual([
+        'PRODUCT_NAME_READY',
+        'PRODUCT_DESCRIPTION_READY',
+        'PRODUCT_CATEGORY_READY',
+        'PRODUCT_PRICE_READY',
+        'PRODUCT_MEDIA_READY',
+        'PRODUCT_MEDIA_ASSETS_READY',
+        'PRODUCT_MEDIA_DERIVATIVES_READY',
+      ]);
     });
 
     it('publishes a product that has no SEO fields and a zero display order', () => {

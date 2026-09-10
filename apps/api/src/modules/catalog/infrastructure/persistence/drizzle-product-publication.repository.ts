@@ -1,10 +1,15 @@
 /**
  * Drizzle implementation of the Product publication contract (`APP2-B03`).
  *
- * Three round trips for the locked snapshot regardless of how many images a
- * product has — product+category, then media — and one guarded statement for
- * the transition itself. The repository opens no transaction of its own
- * (DEC-DB7-006); the use case owns that through `TransactionManager`.
+ * A fixed number of round trips for the snapshot regardless of how many images,
+ * variants or SKUs a product has — product+category, then media, variants and
+ * SKUs, each in one statement — and one guarded statement for the transition
+ * itself. The repository opens no transaction of its own (DEC-DB7-006); the use
+ * case owns that through `TransactionManager`.
+ *
+ * `APP12-N02.B01` added the variant and SKU reads. It added no stock read, and
+ * none may be added: `skus` is the definition side and `sku_stocks` is a
+ * different context's truth (REL-026).
  */
 import { Injectable } from '@nestjs/common';
 import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
@@ -20,12 +25,23 @@ import type {
   ProductPublicationRepository,
   ProductPublicationSnapshot,
   PublicationMediaRow,
+  PublicationSkuRow,
+  PublicationVariantRow,
   PublishProductInput,
 } from '../../domain/repositories/product-publication.repository';
 import { nextUpdatedAt, updatedAtMatches } from './product-concurrency-token';
 import { toProductDraft } from './product-draft-row.mapper';
 
-const { products, categories, productMedia } = schema;
+const { products, categories, productMedia, productVariants, skus } = schema;
+
+/** The empty snapshot, returned whenever the product row itself is missing. */
+const NO_PRODUCT: ProductPublicationSnapshot = {
+  product: undefined,
+  category: undefined,
+  media: [],
+  variants: [],
+  skus: [],
+};
 
 @Injectable()
 export class DrizzleProductPublicationRepository
@@ -68,15 +84,26 @@ export class DrizzleProductPublicationRepository
         .limit(1);
 
       if (row === undefined) {
-        return { product: undefined, category: undefined, media: [] };
+        return NO_PRODUCT;
       }
+      // Four batched reads, never one per item: a product with twenty images
+      // and ten variants costs the same round trips as one with a single image
+      // and a single variant. Sequential rather than concurrent, for the reason
+      // `APP12-M01.B2` states: these may run on the single connection an
+      // enclosing transaction holds, and issuing them in parallel on it is not
+      // something a transaction-scoped executor can honour.
+      const media = await this.readMedia(id);
+      const variants = await this.readVariants(id);
+      const skuRows = await this.readSkus(id);
       return {
         product: toProductDraft(row),
         category: {
           status: row.categoryStatus,
           archivedAt: row.categoryArchivedAt ?? undefined,
         },
-        media: await this.readMedia(id),
+        media,
+        variants,
+        skus: skuRows,
       };
     });
   }
@@ -105,7 +132,7 @@ export class DrizzleProductPublicationRepository
         .for('update', { of: products });
 
       if (row === undefined) {
-        return { product: undefined, category: undefined, media: [] };
+        return NO_PRODUCT;
       }
 
       // The category only has to stay as it is until commit, so share mode is
@@ -119,6 +146,14 @@ export class DrizzleProductPublicationRepository
         .limit(1)
         .for('share');
 
+      // The variant and SKU reads take no row lock, deliberately. Both are read
+      // inside this transaction while the product root is held `FOR UPDATE`,
+      // and every writer of either must take a lock on that same product row
+      // before it mutates (`APP12-N02.B01` exclusively, `APP7-B01` in share
+      // mode), so neither set can change before this transaction commits. A
+      // share lock here would also be taken in the opposite order to
+      // `APP7-B01`'s variant-then-product sequence, which is how a deadlock
+      // cycle that does not exist today would be created.
       return {
         product: toProductDraft(row),
         category:
@@ -126,6 +161,8 @@ export class DrizzleProductPublicationRepository
             ? undefined
             : { status: category.status, archivedAt: category.archivedAt ?? undefined },
         media: await this.readMedia(id, true),
+        variants: await this.readVariants(id),
+        skus: await this.readSkus(id),
       };
     });
   }
@@ -149,6 +186,45 @@ export class DrizzleProductPublicationRepository
       assetId: row.assetId,
       role: row.role,
       displayOrder: row.displayOrder,
+    }));
+  }
+
+  /** Every variant of the product, active and inactive. One statement. */
+  private async readVariants(id: ProductDraftId): Promise<PublicationVariantRow[]> {
+    const rows = await this.db
+      .select({ variantId: productVariants.id, isActive: productVariants.isActive })
+      .from(productVariants)
+      .where(eq(productVariants.productId, id));
+    return rows.map((row) => ({ variantId: row.variantId, isActive: row.isActive }));
+  }
+
+  /**
+   * Every SKU under those variants, in one join.
+   *
+   * The override and its currency come with it because the price a SKU resolves
+   * to is `COALESCE(override, base)` and the currency travels with whichever
+   * amount wins. No stock column is selected, and none exists on this table:
+   * `skus` is the definition side (REL-026).
+   */
+  private async readSkus(id: ProductDraftId): Promise<PublicationSkuRow[]> {
+    const rows = await this.db
+      .select({
+        skuId: skus.id,
+        variantId: skus.productVariantId,
+        isActive: skus.isActive,
+        priceOverrideAmount: skus.priceOverrideAmount,
+        currencyCode: skus.currencyCode,
+      })
+      .from(skus)
+      .innerJoin(productVariants, eq(productVariants.id, skus.productVariantId))
+      .where(eq(productVariants.productId, id));
+
+    return rows.map((row) => ({
+      skuId: row.skuId,
+      variantId: row.variantId,
+      isActive: row.isActive,
+      priceOverrideAmount: row.priceOverrideAmount ?? undefined,
+      currencyCode: row.currencyCode,
     }));
   }
 

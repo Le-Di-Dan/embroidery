@@ -10,6 +10,7 @@ import { DesignTemplatePublicModule } from '../modules/design/design-template-pu
 import { CatalogAdminSideBackgroundModule } from '../modules/catalog/catalog-admin-side-background.module';
 import { CatalogPlacementModule } from '../modules/catalog/catalog-placement.module';
 import { CatalogSkuModule } from '../modules/catalog/catalog-sku.module';
+import { CatalogVariantModule } from '../modules/catalog/catalog-variant.module';
 import { CatalogPublicMediaModule } from '../modules/catalog/catalog-public-media.module';
 import { CatalogPublicSideBackgroundModule } from '../modules/catalog/catalog-public-side-background.module';
 import { CatalogPublicModule } from '../modules/catalog/catalog-public.module';
@@ -102,6 +103,14 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // count and in the segment after `admin`, so registration order cannot make
     // one shadow another.
     CatalogSkuModule,
+    // `APP12-N02.B01` — Admin variant authoring, the writer `product_variants`
+    // never had: `N02.G01` proved zero delivered operations insert or update one,
+    // so a Ready-Made Product could be published and still be unbuyable.
+    // Registered beside `CatalogSkuModule`, whose SKU routes it completes. Its
+    // three routes sit under `admin/products/:productId/variants` and differ
+    // from every other registered route in segment count and in the segment
+    // after `admin`, so registration order cannot make one shadow another.
+    CatalogVariantModule,
     // APP3-B02A — Admin Side background delivery, the JIT unblock for APP3-A01's
     // placement preview. Registered beside the placement module it serves and
     // before the public delivery module: the two share the `sides/.../background`

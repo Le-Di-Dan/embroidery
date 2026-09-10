@@ -36,6 +36,21 @@ export interface PublicationMediaRow {
   readonly displayOrder: number;
 }
 
+/** One variant of the product — the two fields readiness reads (`APP12-N02.B01`). */
+export interface PublicationVariantRow {
+  readonly variantId: string;
+  readonly isActive: boolean;
+}
+
+/** One SKU under those variants, with the override that may price it. */
+export interface PublicationSkuRow {
+  readonly skuId: string;
+  readonly variantId: string;
+  readonly isActive: boolean;
+  readonly priceOverrideAmount: string | undefined;
+  readonly currencyCode: string;
+}
+
 /**
  * Everything a readiness evaluation needs about one product, read together.
  *
@@ -43,11 +58,21 @@ export interface PublicationMediaRow {
  * `PRODUCT_NOT_FOUND`; `category` is `undefined` only if the owning row
  * vanished, which readiness reports as an unsatisfied category requirement
  * rather than as a crash.
+ *
+ * `variants` and `skus` were added by `APP12-N02.B01`. Before it this snapshot
+ * read the product, its category and its media and **nothing else**, which is
+ * why readiness was not merely lenient about sellability but blind to it: there
+ * was no fact in the shape a requirement could have been written against.
+ *
+ * Neither carries a stock row, a quantity or a threshold, and the shape is the
+ * enforcement: an evaluator cannot read a field the snapshot has no place for.
  */
 export interface ProductPublicationSnapshot {
   readonly product: ProductDraft | undefined;
   readonly category: PublicationCategoryRow | undefined;
   readonly media: readonly PublicationMediaRow[];
+  readonly variants: readonly PublicationVariantRow[];
+  readonly skus: readonly PublicationSkuRow[];
 }
 
 export interface PublishProductInput {
@@ -78,6 +103,16 @@ export interface ProductPublicationRepository {
    * it; the category and media are locked in share mode because this
    * transaction only needs them to stay as they are — an exclusive lock there
    * would serialise unrelated publishes of products in the same category.
+   *
+   * **Variants and SKUs are read inside the transaction but are deliberately
+   * not row-locked** (`APP12-N02.B01`). They do not need to be: every writer of
+   * either must take a lock on the owning `products` row before it mutates —
+   * `APP12-N02.B01` takes it `FOR UPDATE`, `APP7-B01` takes it `FOR SHARE` —
+   * and this transaction is already holding that row exclusively, so no variant
+   * or SKU write for this product can commit between this read and this commit.
+   * Locking them anyway would be worse than redundant: `APP7-B01` locks the
+   * variant *before* the product, so a share lock taken here in the opposite
+   * order would create a deadlock cycle that does not exist today.
    *
    * @requiresTransaction
    */

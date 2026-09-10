@@ -25,6 +25,7 @@ import {
   PRODUCT_UNSET_BASE_PRICE,
   type ProductPublicationRequirementCode,
 } from './product-publication.policy';
+import { resolvePublicSkuUnitPrice } from './public-sku-price.policy';
 
 /** The product fields readiness reads. A subset of the row, by design. */
 export interface PublicationProductFacts {
@@ -64,6 +65,36 @@ export interface PublicationDerivativeFacts {
   readonly storageKey: string | undefined;
 }
 
+/**
+ * One variant of the product (`APP12-N02.B01`).
+ *
+ * Two fields, because two are all three sellability requirements read. There is
+ * deliberately no label, no display order and no stock: a requirement reports a
+ * code and a boolean, and a fact this evaluator cannot use is a fact that would
+ * only ever leak.
+ */
+export interface PublicationVariantFacts {
+  readonly variantId: string;
+  readonly isActive: boolean;
+}
+
+/**
+ * One SKU under one of those variants.
+ *
+ * `currencyCode` is the SKU's own — `skus.currency_code` and
+ * `products.currency_code` are separate columns with separate CHECKs, and each
+ * is the currency *of its own row's amount*, so an override is priced in the
+ * SKU's currency and an inherited base price in the product's.
+ */
+export interface PublicationSkuFacts {
+  readonly skuId: string;
+  readonly variantId: string;
+  readonly isActive: boolean;
+  /** `numeric(14,2)` as a string, or absent when the base price applies. */
+  readonly priceOverrideAmount: string | undefined;
+  readonly currencyCode: string;
+}
+
 export interface ProductPublicationFacts {
   readonly product: PublicationProductFacts;
   readonly category: PublicationCategoryFacts | undefined;
@@ -73,6 +104,10 @@ export interface ProductPublicationFacts {
   readonly assets: readonly PublicationAssetFacts[];
   /** Live derivatives of those assets, in any order. */
   readonly derivatives: readonly PublicationDerivativeFacts[];
+  /** Every variant of the product, active and inactive (`APP12-N02.B01`). */
+  readonly variants: readonly PublicationVariantFacts[];
+  /** Every SKU under those variants, active and inactive. */
+  readonly skus: readonly PublicationSkuFacts[];
 }
 
 export interface ProductPublicationRequirement {
@@ -180,6 +215,54 @@ function areDerivativesPublishable(
 }
 
 /**
+ * The SKUs an order could actually resolve (`APP12-N02.B01`).
+ *
+ * Two conditions, and the second is the one that is easy to lose: a SKU is
+ * order-eligible when `is_active` is true **and** its owning variant is active.
+ * An active SKU under a delisted variant is not for sale — the variant is what
+ * a customer chooses — and counting it would let a Product publish on structure
+ * no storefront path can reach.
+ *
+ * "Order-eligible ≡ `is_active = true`" is `APP7-B01`'s rule and is not
+ * reinterpreted here; this only adds the reachability the variant level carries.
+ */
+function orderEligibleSkus(facts: ProductPublicationFacts): readonly PublicationSkuFacts[] {
+  const activeVariants = new Set(
+    facts.variants.filter((variant) => variant.isActive).map((variant) => variant.variantId),
+  );
+  return facts.skus.filter((sku) => sku.isActive && activeVariants.has(sku.variantId));
+}
+
+/**
+ * Every order-eligible SKU resolves to a publishable price — **every**, not one.
+ *
+ * The resolution is `COALESCE(sku.price_override_amount, product.base_price_amount)`
+ * (BR-021 / IMP-D058), and the predicate is the same `isPublishablePrice` the
+ * base price is already checked with, so the two criteria cannot start
+ * disagreeing about what a valid VND amount is.
+ *
+ * The quantifier is the whole point, and it is not the obvious one. A price
+ * override is validated only as `^\d{1,12}$`, so `"0"` is an accepted override
+ * on a Product whose base price is perfectly valid: `PRODUCT_PRICE_READY` stays
+ * satisfied, the old seven stayed 7/7, and the Product would have published a
+ * SKU that sells for nothing. "At least one valid price" would let that same
+ * SKU through as long as a sibling were priced — so the rule is that every SKU
+ * an order could resolve must be sellable, because an order does not get to
+ * pick the priced one.
+ *
+ * Vacuously true when nothing is order-eligible: "every eligible SKU is priced"
+ * holds when none is, and `HAS_ORDER_ELIGIBLE_SKU` is the requirement that
+ * reports the actual problem. Reporting two failures for one missing fact would
+ * tell the operator to fix two things.
+ */
+function areEligiblePricesResolvable(facts: ProductPublicationFacts): boolean {
+  return orderEligibleSkus(facts).every((sku) => {
+    const price = resolvePublicSkuUnitPrice(sku, facts.product);
+    return isPublishablePrice(price.amount, price.currencyCode);
+  });
+}
+
+/**
  * Evaluates every requirement, in the locked order.
  *
  * All of them are always evaluated: an unsatisfied requirement is ordinary data
@@ -221,6 +304,16 @@ export function evaluatePublicationReadiness(
     PRODUCT_MEDIA_READY: isPublishableMedia(facts.media),
     PRODUCT_MEDIA_ASSETS_READY: areAssetsPublishable(facts.media, facts.assets),
     PRODUCT_MEDIA_DERIVATIVES_READY: areDerivativesPublishable(facts.media, facts.derivatives),
+    // `APP12-N02.B01` / `N02.D01` §J. A Product with no offered variant has
+    // nothing a customer can choose, so the storefront can show it and never
+    // sell it — the exact state `N02.G01` found live.
+    HAS_ACTIVE_VARIANT: facts.variants.some((variant) => variant.isActive),
+    // Vacuously satisfied with no active variant, for the same reason the media
+    // requirements are vacuously satisfied with no media: `HAS_ACTIVE_VARIANT`
+    // is the requirement that reports that problem.
+    HAS_ORDER_ELIGIBLE_SKU:
+      !facts.variants.some((variant) => variant.isActive) || orderEligibleSkus(facts).length > 0,
+    SKU_PRICE_RESOLVABLE: areEligiblePricesResolvable(facts),
   };
 
   const requirements = PRODUCT_PUBLICATION_REQUIREMENT_CODES.map((code) => ({

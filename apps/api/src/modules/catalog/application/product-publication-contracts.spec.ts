@@ -160,6 +160,8 @@ describe('publication projections', () => {
         media: [],
         assets: [],
         derivatives: [],
+        variants: [],
+        skus: [],
       }),
     );
     expect(Object.keys(view).sort()).toEqual([
@@ -194,6 +196,8 @@ describe('publication projections', () => {
           media: [],
           assets: [],
           derivatives: [],
+          variants: [],
+          skus: [],
         }),
       ),
       transition: toPublicationView(productAt()),

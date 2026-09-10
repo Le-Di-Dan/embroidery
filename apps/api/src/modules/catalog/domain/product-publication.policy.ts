@@ -8,9 +8,17 @@
  *
  * Every requirement below is grounded in a source document. None is invented
  * from general ecommerce practice, and the exclusions are as much the contract
- * as the inclusions — variants, SKU, inventory, shipping, discounts, reviews,
- * search, SEO fields and a nonzero display order are deliberately **not**
- * publication requirements (`APP2-B03` §7).
+ * as the inclusions — inventory, shipping, discounts, reviews, search, SEO
+ * fields and a nonzero display order are deliberately **not** publication
+ * requirements (`APP2-B03` §7).
+ *
+ * Variants and SKUs were on that exclusion list until `APP12-N02.B01` and are
+ * now the last three requirements. The reason for the change is not a change of
+ * mind about §7: when it was written, no delivered operation could create a
+ * variant or a SKU, so requiring one would have made every Product permanently
+ * unpublishable. `APP12-N02.B01` supplies the writer, and the requirement comes
+ * with it. Inventory stays excluded permanently — see
+ * `PUBLICATION_STOCK_EXCLUSION`.
  */
 import {
   APP2_CATEGORY_STATUS,
@@ -86,6 +94,45 @@ export const PRODUCT_PUBLICATION_REQUIREMENT_CODES = [
   'PRODUCT_MEDIA_READY',
   'PRODUCT_MEDIA_ASSETS_READY',
   'PRODUCT_MEDIA_DERIVATIVES_READY',
+  // `APP12-N02.B01`. The three sellability requirements, appended rather than
+  // inserted: the first seven keep their codes and their positions, so a client
+  // that renders the list in order sees the checklist it already knew with
+  // three rows added at the end.
+  //
+  // These are the requirements `APP2-B03` §7 deliberately excluded, and the
+  // exclusion was correct *then*: no delivered operation could create a variant
+  // or a SKU, so a variant requirement would have made every Ready-Made Product
+  // permanently unpublishable. `APP12-N02.G01` proved the cost of leaving them
+  // out once Ready-Made direct commerce shipped — a Product with no variant at
+  // all reported 7/7 satisfied and published into a storefront that could never
+  // sell it. `N02.B01` supplies the writer and the requirements together.
+  //
+  // What is still excluded, and now permanently: stock. Quantity on hand,
+  // reservations and the low-stock threshold are Inventory truth (REL-026), and
+  // a sold-out Product is a Product that is selling. See `PUBLICATION_STOCK_EXCLUSION`.
+  'HAS_ACTIVE_VARIANT',
+  'HAS_ORDER_ELIGIBLE_SKU',
+  'SKU_PRICE_RESOLVABLE',
+] as const;
+
+/**
+ * The Inventory facts publication readiness may never read (`APP12-N02.B01`
+ * §15, `N02.D01` §J).
+ *
+ * Named as a constant so the exclusion is a stated rule with a home rather than
+ * an absence a later reader has to infer from what the evaluator happens not to
+ * do. A Product whose SKU has zero on hand, whose stock anchor has never been
+ * created, or whose low-stock threshold is unset is **publishable**: those are
+ * facts about supply on a Product that is offered for sale, and refusing to
+ * publish on them would make "out of stock" and "not for sale" the same state.
+ *
+ * `evaluatePublicationReadiness` takes no argument that could carry any of
+ * them, which is what makes this enforceable rather than aspirational.
+ */
+export const PUBLICATION_STOCK_EXCLUSION = [
+  'sku_stocks',
+  'quantity_on_hand',
+  'low_stock_threshold',
 ] as const;
 
 export type ProductPublicationRequirementCode =

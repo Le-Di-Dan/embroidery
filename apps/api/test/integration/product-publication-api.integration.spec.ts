@@ -134,6 +134,19 @@ describe('Admin product publication HTTP flow (integration)', () => {
       mediaAssetIds: [await seedAsset()],
     });
     expect(patched.status).toBe(200);
+    // `APP12-N02.B01`: publishable now means buyable, so a complete product
+    // carries one active variant with one order-eligible SKU. Seeded as rows —
+    // this suite exercises the publication routes, not the variant ones.
+    const variantId = newId();
+    const skuId = newId();
+    await ctx.database.client.db.execute(sql`
+      insert into product_variants (id, product_id, color_name, size_label, display_order, is_active)
+      values (${variantId}, ${draft.productId}, 'Trắng', 'M', 0, true)
+    `);
+    await ctx.database.client.db.execute(sql`
+      insert into skus (id, product_variant_id, code, price_override_amount, currency_code, is_active)
+      values (${skuId}, ${variantId}, ${`PUB-${skuId.slice(-8)}`}, null, 'VND', true)
+    `);
     return (patched.body as Envelope<PublicationPayload>).data;
   }
 
@@ -151,7 +164,7 @@ describe('Admin product publication HTTP flow (integration)', () => {
       expect(typeof body.meta.requestId).toBe('string');
       expect(body.meta.requestId.length).toBeGreaterThan(0);
       expect(body.data.eligible).toBe(true);
-      expect(body.data.requirements).toHaveLength(7);
+      expect(body.data.requirements).toHaveLength(10);
     });
 
     it('publishes and unpublishes with their own success codes', async () => {
@@ -301,13 +314,18 @@ describe('Admin product publication HTTP flow (integration)', () => {
       expect(res.status).toBe(409);
       const body = res.body as Envelope<unknown>;
       expect(body.code).toBe('PRODUCT_PUBLICATION_NOT_READY');
-      // A bare draft is missing three facts at once, and all three codes must
+      // A bare draft is missing four facts at once, and all four codes must
       // survive the platform mapper — a client that received only the first
-      // would send the operator back three times.
+      // would send the operator back four times. The other two of each pair are
+      // absent, and their absence is the vacuity rule working: with no image
+      // there is nothing to inspect, and with no active variant there is
+      // nothing to price, so the response names each missing prerequisite once
+      // rather than its consequences as well.
       expect(body.errors?.map((entry) => entry.code)).toEqual([
         'PRODUCT_DESCRIPTION_READY',
         'PRODUCT_PRICE_READY',
         'PRODUCT_MEDIA_READY',
+        'HAS_ACTIVE_VARIANT',
       ]);
       expect(body.message).not.toMatch(/select|constraint|null value/i);
     });

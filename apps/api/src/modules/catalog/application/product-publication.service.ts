@@ -247,6 +247,12 @@ export class ProductPublicationService {
         isWatermarked: derivative.isWatermarked,
         storageKey: derivative.storageKey,
       })),
+      // `APP12-N02.B01`. Carried straight from the snapshot, which read them in
+      // the same statement count either way, so the three sellability
+      // requirements cost the readiness GET and the publish recheck nothing
+      // extra and see exactly the same rows.
+      variants: snapshot.variants,
+      skus: snapshot.skus,
     };
 
     return evaluatePublicationReadiness(facts);

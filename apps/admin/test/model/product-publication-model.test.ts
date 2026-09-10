@@ -39,7 +39,7 @@ describe('requirement rows', () => {
   it('renders every contract code, in the server order', () => {
     const rows = toRequirementRows(makeReadiness().requirements);
 
-    expect(rows).toHaveLength(7);
+    expect(rows).toHaveLength(10);
     expect(rows.map((row) => row.code)).toEqual([...REQUIREMENT_CODES]);
   });
 

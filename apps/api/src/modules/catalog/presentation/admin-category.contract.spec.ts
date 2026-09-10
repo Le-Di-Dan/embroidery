@@ -146,16 +146,18 @@ describe('the published Admin category surface', () => {
     expect(OPENAPI.paths[COLLECTION]?.['delete']).toBeUndefined();
   });
 
-  it('leaves the artifact at 140 operations, with the public count unchanged at 49', () => {
+  it('leaves the artifact at 143 operations, with the public count unchanged at 49', () => {
     const operations = allOperations();
 
     // 138 was the `APP12-H01` baseline. `APP12-V02-C2` added exactly one Admin
     // operation under Human-PO authority — `adminAsset_preview`, the catalog
     // lane's missing image-delivery contract — taking it to 139. `APP12-M01.B2`
     // added one more Admin operation — `adminProductMedia_replace`, the bounded
-    // published-media curation write — taking it to 140. The public count is the
+    // published-media curation write — taking it to 140. `APP12-N02.B01` added
+    // three — `adminProductVariant_list`, `_create` and `_update`, the writer
+    // `product_variants` never had — taking it to 143. The public count is the
     // number that guards this surface, and it did not move through any of them.
-    expect(operations).toHaveLength(140);
+    expect(operations).toHaveLength(143);
     expect(
       operations.filter(({ operation: op }) => op.operationId?.startsWith('public')),
     ).toHaveLength(49);

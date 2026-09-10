@@ -73,7 +73,9 @@ describe('generated client boundary', () => {
   });
 
   it('exports the requirement codes as a value so the screen cannot invent them', () => {
-    expect(Object.values(apiClient.AdminProductRequirementResponseCode)).toHaveLength(7);
+    // Seven at `APP2-B03`; ten since `APP12-N02.B01` added the three
+    // sellability requirements.
+    expect(Object.values(apiClient.AdminProductRequirementResponseCode)).toHaveLength(10);
   });
 });
 

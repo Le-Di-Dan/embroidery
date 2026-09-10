@@ -125,6 +125,38 @@ export interface SeededProduct {
   readonly productId: string;
   readonly updatedAt: string;
   readonly assetIds: readonly string[];
+  /** The active variant seeded with the product, unless `sellable: false`. */
+  readonly variantId: string | undefined;
+  /** Its single order-eligible SKU, on the product base price. */
+  readonly skuId: string | undefined;
+}
+
+/**
+ * Gives a product the minimum structure a customer could buy
+ * (`APP12-N02.B01`).
+ *
+ * One active variant carrying one active SKU with no price override, so the SKU
+ * resolves to the product base price. Written as rows rather than through the
+ * authoring service because this fixture serves publication suites, which must
+ * not depend on the variant module's own module graph — and because a fixture
+ * that went through the service would stop being usable to seed the malformed
+ * states those suites need.
+ */
+async function seedSellableStructure(
+  ctx: ApiIntegrationTestContext,
+  productId: string,
+): Promise<{ variantId: string; skuId: string }> {
+  const variantId = newId();
+  const skuId = newId();
+  await ctx.database.client.db.execute(sql`
+    insert into product_variants (id, product_id, color_name, size_label, display_order, is_active)
+    values (${variantId}, ${productId}, 'Trắng', 'M', 0, true)
+  `);
+  await ctx.database.client.db.execute(sql`
+    insert into skus (id, product_variant_id, code, price_override_amount, currency_code, is_active)
+    values (${skuId}, ${variantId}, ${`SEED-${skuId.slice(-8)}`}, null, 'VND', true)
+  `);
+  return { variantId, skuId };
 }
 
 /**
@@ -142,6 +174,13 @@ export async function seedPublishableProduct(
     readonly basePriceAmount?: string | undefined;
     readonly mediaAssetIds?: readonly string[] | undefined;
     readonly categorySlug?: string;
+    /**
+     * Whether the product gets the selling structure the last three publication
+     * requirements need (`APP12-N02.B01`). Default `true`: "publishable" now
+     * means a customer could actually buy it. `false` seeds the structurally
+     * unsellable product — the exact shape `N02.G01` found published live.
+     */
+    readonly sellable?: boolean;
   } = {},
 ): Promise<SeededProduct> {
   const drafts = ctx.app.get(ProductDraftService);
@@ -177,8 +216,13 @@ export async function seedPublishableProduct(
     ...(assetIds.length === 0 ? {} : { mediaAssetIds: assetIds }),
   };
 
+  const structure =
+    overrides.sellable === false
+      ? { variantId: undefined, skuId: undefined }
+      : await seedSellableStructure(ctx, created.productId);
+
   if (Object.keys(patch).length === 0) {
-    return { productId: created.productId, updatedAt: created.updatedAt, assetIds };
+    return { productId: created.productId, updatedAt: created.updatedAt, assetIds, ...structure };
   }
 
   const updated = await drafts.update({
@@ -186,7 +230,7 @@ export async function seedPublishableProduct(
     expectedUpdatedAt: new Date(created.updatedAt),
     ...patch,
   });
-  return { productId: updated.productId, updatedAt: updated.updatedAt, assetIds };
+  return { productId: updated.productId, updatedAt: updated.updatedAt, assetIds, ...structure };
 }
 
 /**

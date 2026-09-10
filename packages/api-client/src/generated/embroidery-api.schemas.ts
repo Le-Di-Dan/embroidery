@@ -1998,6 +1998,9 @@ export const AdminProductRequirementResponseCode = {
   PRODUCT_MEDIA_READY: 'PRODUCT_MEDIA_READY',
   PRODUCT_MEDIA_ASSETS_READY: 'PRODUCT_MEDIA_ASSETS_READY',
   PRODUCT_MEDIA_DERIVATIVES_READY: 'PRODUCT_MEDIA_DERIVATIVES_READY',
+  HAS_ACTIVE_VARIANT: 'HAS_ACTIVE_VARIANT',
+  HAS_ORDER_ELIGIBLE_SKU: 'HAS_ORDER_ELIGIBLE_SKU',
+  SKU_PRICE_RESOLVABLE: 'SKU_PRICE_RESOLVABLE',
 } as const;
 
 export interface AdminProductRequirementResponse {
@@ -2034,6 +2037,55 @@ export interface AdminProductPublicationResponse {
   status: AdminProductPublicationResponseStatus;
   /** The advanced concurrency token the database stored for this write. */
   updatedAt: string;
+}
+
+export type AdminVariantSkuResponseCurrencyCode =
+  (typeof AdminVariantSkuResponseCurrencyCode)[keyof typeof AdminVariantSkuResponseCurrencyCode];
+
+export const AdminVariantSkuResponseCurrencyCode = {
+  VND: 'VND',
+} as const;
+
+export interface AdminVariantSkuResponse {
+  /** The business SKU code. Globally unique and compared bytewise. */
+  code: string;
+  createdAt: string;
+  currencyCode: AdminVariantSkuResponseCurrencyCode;
+  /** The sellable flag. `true` makes this SKU order-eligible for its variant. Inactive SKUs are returned as history and are never deleted. */
+  isActive: boolean;
+  /** Whole đồng as a decimal string; never a JSON number. Absent when the product base price applies. */
+  priceOverrideAmount?: string;
+  skuId: string;
+  updatedAt: string;
+}
+
+export interface AdminProductVariantResponse {
+  /**
+   * Null when the variant is not distinguished by colour.
+   * @nullable
+   */
+  colorName: string | null;
+  createdAt: string;
+  /** Server-assigned creation order. Never accepted from a request: there is no reorder operation. */
+  displayOrder: number;
+  /** Whether the variant is offered. Inactive variants are returned as history and are never deleted. */
+  isActive: boolean;
+  productId: string;
+  /**
+   * Null when the variant is not distinguished by size.
+   * @nullable
+   */
+  sizeLabel: string | null;
+  /** Every SKU of this variant, active and inactive, oldest first. Empty on a create or update response, which reports the variant row alone. */
+  skus: AdminVariantSkuResponse[];
+  updatedAt: string;
+  variantId: string;
+}
+
+export interface AdminProductVariantListResponse {
+  productId: string;
+  /** Every variant of the product, active and inactive, in the stable authoring order. This is the authoring and history source; the public variant projection is not usable for it. */
+  variants: AdminProductVariantResponse[];
 }
 
 export type AdminProductionJobCreatedResponseStatus =
@@ -3155,6 +3207,14 @@ export interface CreateProductBody {
    * @maxLength 200
    */
   name: string;
+}
+
+export interface CreateProductVariantBody {
+  /** @nullable */
+  colorName?: string | null;
+  isActive?: boolean;
+  /** @nullable */
+  sizeLabel?: string | null;
 }
 
 export interface CreateProductionJobBody {
@@ -6358,6 +6418,14 @@ export interface UpdateProductBody {
   name?: string;
 }
 
+export interface UpdateProductVariantBody {
+  /** @nullable */
+  colorName?: string | null;
+  isActive?: boolean;
+  /** @nullable */
+  sizeLabel?: string | null;
+}
+
 export interface UpdateSkuBody {
   code?: string;
   isActive?: boolean;
@@ -6984,6 +7052,18 @@ export type AdminProductPublish200 = ApiSuccessResponse & {
 
 export type AdminProductUnpublish200 = ApiSuccessResponse & {
   data: AdminProductPublicationResponse;
+};
+
+export type AdminProductVariantList200 = ApiSuccessResponse & {
+  data: AdminProductVariantListResponse;
+};
+
+export type AdminProductVariantCreate201 = ApiSuccessResponse & {
+  data: AdminProductVariantResponse;
+};
+
+export type AdminProductVariantUpdate200 = ApiSuccessResponse & {
+  data: AdminProductVariantResponse;
 };
 
 export type AdminSkuCreate201 = ApiSuccessResponse & {

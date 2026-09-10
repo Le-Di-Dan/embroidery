@@ -129,7 +129,7 @@ describe('requirement checklist', () => {
   it('shows all seven even when some are unmet', async () => {
     await renderLoaded({}, { unsatisfied: ['PRODUCT_PRICE_READY', 'PRODUCT_MEDIA_READY'] });
 
-    expect(screen.getAllByTestId(/^requirement-/)).toHaveLength(7);
+    expect(screen.getAllByTestId(/^requirement-/)).toHaveLength(10);
     expect(screen.getByTestId('requirement-PRODUCT_PRICE_READY')).toHaveAttribute(
       'data-satisfied',
       'false',
@@ -315,13 +315,36 @@ describe('summary honesty', () => {
 });
 
 describe('excluded capabilities', () => {
-  it('offers no archive, delete, variant or SKU surface', async () => {
+  it('offers no archive, delete or stock surface', async () => {
     await renderLoaded();
 
     const text = document.body.textContent ?? '';
-    for (const forbidden of ['Lưu trữ', 'Xoá', 'Xóa', 'Phiên bản', 'SKU', 'Tồn kho']) {
+    for (const forbidden of ['Lưu trữ', 'Xoá', 'Xóa', 'Tồn kho']) {
       expect(text).not.toContain(forbidden);
     }
+  });
+
+  it('names variants and SKUs only as readiness facts, never as something to do here', async () => {
+    // `APP12-N02.B01` added three requirements whose approved copy says
+    // "phiên bản" and "SKU", so the words now legitimately appear on this
+    // screen. What must still be absent is a *capability*: this route reports
+    // readiness and transitions the lifecycle, and authoring a variant or a SKU
+    // belongs to the product editor. So the assertion moved from the page text
+    // to the interactive controls, which is what "surface" always meant.
+    await renderLoaded();
+
+    const controls = [...screen.queryAllByRole('button'), ...screen.queryAllByRole('link')];
+    for (const control of controls) {
+      expect(control.textContent ?? '').not.toMatch(/phiên bản|sku|tồn kho/i);
+    }
+
+    // And every occurrence of either word is inside a requirement row.
+    const requirementText = screen
+      .getAllByTestId(/^requirement-/)
+      .map((row) => row.textContent ?? '')
+      .join('');
+    const occurrences = (haystack: string) => (haystack.match(/SKU|phiên bản/gi) ?? []).length;
+    expect(occurrences(document.body.textContent ?? '')).toBe(occurrences(requirementText));
   });
 
   it('renders no form control — this route edits nothing', async () => {

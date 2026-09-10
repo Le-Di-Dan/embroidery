@@ -2960,7 +2960,10 @@
               "PRODUCT_PRICE_READY",
               "PRODUCT_MEDIA_READY",
               "PRODUCT_MEDIA_ASSETS_READY",
-              "PRODUCT_MEDIA_DERIVATIVES_READY"
+              "PRODUCT_MEDIA_DERIVATIVES_READY",
+              "HAS_ACTIVE_VARIANT",
+              "HAS_ORDER_ELIGIBLE_SKU",
+              "SKU_PRICE_RESOLVABLE"
             ],
             "example": "PRODUCT_MEDIA_READY",
             "type": "string"
@@ -3045,6 +3048,90 @@
           "currencyCode",
           "createdAt",
           "updatedAt"
+        ],
+        "type": "object"
+      },
+      "AdminProductVariantListResponse": {
+        "properties": {
+          "productId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6073",
+            "format": "uuid",
+            "type": "string"
+          },
+          "variants": {
+            "description": "Every variant of the product, active and inactive, in the stable authoring order. This is the authoring and history source; the public variant projection is not usable for it.",
+            "items": {
+              "$ref": "#/components/schemas/AdminProductVariantResponse"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "productId",
+          "variants"
+        ],
+        "type": "object"
+      },
+      "AdminProductVariantResponse": {
+        "properties": {
+          "colorName": {
+            "description": "Null when the variant is not distinguished by colour.",
+            "example": "Xanh navy",
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "displayOrder": {
+            "description": "Server-assigned creation order. Never accepted from a request: there is no reorder operation.",
+            "example": 0,
+            "type": "number"
+          },
+          "isActive": {
+            "description": "Whether the variant is offered. Inactive variants are returned as history and are never deleted.",
+            "example": true,
+            "type": "boolean"
+          },
+          "productId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6073",
+            "format": "uuid",
+            "type": "string"
+          },
+          "sizeLabel": {
+            "description": "Null when the variant is not distinguished by size.",
+            "example": "M",
+            "nullable": true,
+            "type": "string"
+          },
+          "skus": {
+            "description": "Every SKU of this variant, active and inactive, oldest first. Empty on a create or update response, which reports the variant row alone.",
+            "items": {
+              "$ref": "#/components/schemas/AdminVariantSkuResponse"
+            },
+            "type": "array"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "variantId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072",
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "variantId",
+          "productId",
+          "colorName",
+          "sizeLabel",
+          "displayOrder",
+          "isActive",
+          "createdAt",
+          "updatedAt",
+          "skus"
         ],
         "type": "object"
       },
@@ -4592,6 +4679,54 @@
         ],
         "type": "object"
       },
+      "AdminVariantSkuResponse": {
+        "properties": {
+          "code": {
+            "description": "The business SKU code. Globally unique and compared bytewise.",
+            "example": "AT-NAVY-M",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "currencyCode": {
+            "enum": [
+              "VND"
+            ],
+            "example": "VND",
+            "type": "string"
+          },
+          "isActive": {
+            "description": "The sellable flag. `true` makes this SKU order-eligible for its variant. Inactive SKUs are returned as history and are never deleted.",
+            "example": true,
+            "type": "boolean"
+          },
+          "priceOverrideAmount": {
+            "description": "Whole đồng as a decimal string; never a JSON number. Absent when the product base price applies.",
+            "example": "385000",
+            "type": "string"
+          },
+          "skuId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
+            "format": "uuid",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "skuId",
+          "code",
+          "currencyCode",
+          "isActive",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
       "ApiErrorResponse": {
         "description": "Canonical error envelope (D-034). Server faults always carry the generic message; internal detail is never published.",
         "properties": {
@@ -5368,6 +5503,24 @@
           "categorySlug",
           "name"
         ],
+        "type": "object"
+      },
+      "CreateProductVariantBody": {
+        "additionalProperties": false,
+        "properties": {
+          "colorName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "isActive": {
+            "default": true,
+            "type": "boolean"
+          },
+          "sizeLabel": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "CreateProductionJobBody": {
@@ -11540,6 +11693,23 @@
         "required": [
           "expectedUpdatedAt"
         ],
+        "type": "object"
+      },
+      "UpdateProductVariantBody": {
+        "additionalProperties": false,
+        "properties": {
+          "colorName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "sizeLabel": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "UpdateSkuBody": {
@@ -26655,6 +26825,614 @@
         "summary": "Unpublish a product",
         "tags": [
           "adminProduct"
+        ]
+      }
+    },
+    "/api/admin/products/{productId}/variants": {
+      "get": {
+        "description": "The authoring and history source for the sellability section. Returns every variant of the product and every SKU under it — inactive rows included — in a stable order, for any lifecycle state. Read-only: it writes nothing and records no audit event. The public variant projection is not a substitute: it is keyed by slug, refuses anything but a published product, filters out inactive variants and SKUs, and publishes neither the SKU code nor the sellable flag.",
+        "operationId": "adminProductVariant_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "productId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminProductVariantListResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The variants of the product, each with its SKUs.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such product.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "List the variants and SKUs of a product",
+        "tags": [
+          "adminProductVariant"
+        ]
+      },
+      "post": {
+        "description": "Creates one variant of the product. Allowed while the product is a draft and while it is published — a live product must be repairable in place, and creating a variant never unpublishes it — and refused once it is archived. The display order is assigned by the server under a write lock and is never accepted from the request; there is no reorder operation. At least one of `colorName` and `sizeLabel` must be non-blank once trimmed. Both labels are trimmed and their internal whitespace collapsed before they are stored and compared, and a blank label is stored as null. Within one product the normalized pair must be unique, compared case-insensitively and without stripping accents, across active and inactive variants alike.",
+        "operationId": "adminProductVariant_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "productId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProductVariantBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminProductVariantResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The created variant.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid body or path parameter, or neither label is non-blank.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such product.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The product state does not allow variant changes, or the product already has a variant with that colour and size.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The body is not application/json.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Create a product variant",
+        "tags": [
+          "adminProductVariant"
+        ]
+      }
+    },
+    "/api/admin/products/{productId}/variants/{variantId}": {
+      "patch": {
+        "description": "Patches the two labels and the offered flag. A label may be cleared with null or a blank string as long as the other one survives. Deactivating is how a variant leaves the catalog — there is no delete, and deactivating the last active variant of a published product does not unpublish it. Allowed on a draft and on a published product, refused once archived. The variant must belong to the addressed product; one that belongs to another is reported as not found under this one. At least one of `colorName` and `sizeLabel` must be non-blank once trimmed. Both labels are trimmed and their internal whitespace collapsed before they are stored and compared, and a blank label is stored as null. Within one product the normalized pair must be unique, compared case-insensitively and without stripping accents, across active and inactive variants alike.",
+        "operationId": "adminProductVariant_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "variantId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "path",
+            "name": "productId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProductVariantBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminProductVariantResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The updated variant.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid body or path parameter, no field named, or the patch would leave the variant with neither label.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such product, no such variant, or the variant belongs to another product.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The product state does not allow variant changes, or another variant of the product already has that colour and size.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The body is not application/json.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Update, deactivate or reactivate a product variant",
+        "tags": [
+          "adminProductVariant"
         ]
       }
     },

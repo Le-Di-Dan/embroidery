@@ -965,7 +965,10 @@
     "PRODUCT_PRICE_READY": "Đã đặt giá sản phẩm",
     "PRODUCT_MEDIA_READY": "Thứ tự ảnh sản phẩm hợp lệ",
     "PRODUCT_MEDIA_ASSETS_READY": "Tất cả ảnh đã được duyệt",
-    "PRODUCT_MEDIA_DERIVATIVES_READY": "Ảnh hiển thị công khai đã sẵn sàng"
+    "PRODUCT_MEDIA_DERIVATIVES_READY": "Ảnh hiển thị công khai đã sẵn sàng",
+    "HAS_ACTIVE_VARIANT": "Có ít nhất một phiên bản đang hoạt động",
+    "HAS_ORDER_ELIGIBLE_SKU": "Có ít nhất một SKU có thể đặt hàng",
+    "SKU_PRICE_RESOLVABLE": "SKU có thể đặt hàng đã có giá bán hợp lệ"
   },
   "skuStock": {
     "page": {

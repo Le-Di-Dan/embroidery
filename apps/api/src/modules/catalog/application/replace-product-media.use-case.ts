@@ -203,6 +203,15 @@ export class ReplaceProductMediaUseCase {
         isWatermarked: derivative.isWatermarked,
         storageKey: derivative.storageKey,
       })),
+      // Empty, and read from nowhere (`APP12-N02.B01`). This write judges the
+      // media selection alone: it refuses on the three media requirement codes
+      // and on no other, so the sellability requirements cannot change its
+      // verdict and reading two more tables to compute a value that is then
+      // filtered away would be a cost with no consequence. A published Product
+      // that has become structurally unsellable is also exactly the one an
+      // operator most needs to be able to fix an image on.
+      variants: [],
+      skus: [],
     };
 
     const unsatisfied = unsatisfiedMediaRequirements(evaluatePublicationReadiness(facts));

@@ -129,17 +129,18 @@ describe('the published category inventory operation', () => {
     expect(publicCategoryWrites).toEqual([]);
   });
 
-  it('leaves the artifact at 140 operations, 49 of them public', () => {
+  it('leaves the artifact at 143 operations, 49 of them public', () => {
     const operations = allOperations();
 
     // 133 when C02 closed; the Ready-Made commerce checkpoints `APP12-B01`…
     // `APP12-B05` and `APP12-A02-C1` brought it to 138 / 49, which is the
     // baseline `APP12-H01` re-measured and froze; `APP12-V02-C2` added one
-    // **Admin** operation on top of it, and `APP12-M01.B2` a second one
-    // (`adminProductMedia_replace`). This read is still not one of the
-    // additions: the public assertion below is what says so, and it has not
-    // moved through any of them.
-    expect(operations).toHaveLength(140);
+    // **Admin** operation on top of it, `APP12-M01.B2` a second one
+    // (`adminProductMedia_replace`), and `APP12-N02.B01` three more
+    // (`adminProductVariant_list`, `_create` and `_update`). This read is still
+    // not one of the additions: the public assertion below is what says so, and
+    // it has not moved through any of them.
+    expect(operations).toHaveLength(143);
     expect(
       operations.filter(({ operation }) => operation.operationId?.startsWith('public')),
     ).toHaveLength(49);
