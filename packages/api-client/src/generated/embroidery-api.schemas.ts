@@ -2479,29 +2479,6 @@ export interface AdminQuotationVersionHistoryResponse {
 }
 
 /**
- * An internal note of who is carrying the parcel. Not a carrier integration: nothing is called, polled or subscribed to, and no delivery state is derived from it.
- * @nullable
- */
-export type AdminShippingDetailResponseCarrierName = { [key: string]: unknown } | null;
-
-/**
- * @nullable
- */
-export type AdminShippingDetailResponseDistrict = { [key: string]: unknown } | null;
-
-/**
- * The effective shipping fee, exactly as `numeric(14,2)` stores it. A string, never a JSON number. Absent only on a detail saved before a fee was set.
- * @nullable
- */
-export type AdminShippingDetailResponseFeeAmount = { [key: string]: unknown } | null;
-
-/**
- * When dispatch froze the detail. Absent while it is still editable.
- * @nullable
- */
-export type AdminShippingDetailResponseFrozenAt = { [key: string]: unknown } | null;
-
-/**
  * LC-19. `FROZEN` means dispatch has already snapshotted this detail (GRD-017) and no further edit is accepted.
  */
 export type AdminShippingDetailResponseStatus =
@@ -2512,38 +2489,27 @@ export const AdminShippingDetailResponseStatus = {
   FROZEN: 'FROZEN',
 } as const;
 
-/**
- * An internal reference an operator typed. There is no live tracking lookup.
- * @nullable
- */
-export type AdminShippingDetailResponseTrackingCode = { [key: string]: unknown } | null;
-
-/**
- * @nullable
- */
-export type AdminShippingDetailResponseWard = { [key: string]: unknown } | null;
-
 export interface AdminShippingDetailResponse {
   addressLine: string;
   /**
    * An internal note of who is carrying the parcel. Not a carrier integration: nothing is called, polled or subscribed to, and no delivery state is derived from it.
    * @nullable
    */
-  carrierName?: AdminShippingDetailResponseCarrierName;
+  carrierName?: string | null;
   /** Defaulted on the row; there is no cross-border fulfillment in the MVP. */
   countryCode: string;
   /** @nullable */
-  district?: AdminShippingDetailResponseDistrict;
+  district?: string | null;
   /**
    * The effective shipping fee, exactly as `numeric(14,2)` stores it. A string, never a JSON number. Absent only on a detail saved before a fee was set.
    * @nullable
    */
-  feeAmount?: AdminShippingDetailResponseFeeAmount;
+  feeAmount?: string | null;
   /**
    * When dispatch froze the detail. Absent while it is still editable.
    * @nullable
    */
-  frozenAt?: AdminShippingDetailResponseFrozenAt;
+  frozenAt?: string | null;
   province: string;
   recipientName: string;
   /** The delivery contact for this order, as stored. Not the customer profile. */
@@ -2554,32 +2520,10 @@ export interface AdminShippingDetailResponse {
    * An internal reference an operator typed. There is no live tracking lookup.
    * @nullable
    */
-  trackingCode?: AdminShippingDetailResponseTrackingCode;
+  trackingCode?: string | null;
   /** @nullable */
-  ward?: AdminShippingDetailResponseWard;
+  ward?: string | null;
 }
-
-/**
- * The successor’s amount: the previous live amount moved by the fee difference.
- * @nullable
- */
-export type AdminShippingFeeOutcomeResponseRemainingAmount = { [key: string]: unknown } | null;
-
-/**
- * The successor REMAINING obligation, now the one live payable authority.
- * @nullable
- */
-export type AdminShippingFeeOutcomeResponseRemainingObligationId = {
-  [key: string]: unknown;
-} | null;
-
-/**
- * The REMAINING obligation this change marked SUPERSEDED. Its amount was **not** edited; it keeps the figure it was payable at.
- * @nullable
- */
-export type AdminShippingFeeOutcomeResponseSupersededObligationId = {
-  [key: string]: unknown;
-} | null;
 
 export interface AdminShippingFeeOutcomeResponse {
   /**
@@ -2608,17 +2552,17 @@ export interface AdminShippingFeeOutcomeResponse {
    * The successor’s amount: the previous live amount moved by the fee difference.
    * @nullable
    */
-  remainingAmount?: AdminShippingFeeOutcomeResponseRemainingAmount;
+  remainingAmount?: string | null;
   /**
    * The successor REMAINING obligation, now the one live payable authority.
    * @nullable
    */
-  remainingObligationId?: AdminShippingFeeOutcomeResponseRemainingObligationId;
+  remainingObligationId?: string | null;
   /**
    * The REMAINING obligation this change marked SUPERSEDED. Its amount was **not** edited; it keeps the figure it was payable at.
    * @nullable
    */
-  supersededObligationId?: AdminShippingFeeOutcomeResponseSupersededObligationId;
+  supersededObligationId?: string | null;
 }
 
 export interface AdminShippingDetailSavedResponse {

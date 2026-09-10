@@ -39,6 +39,14 @@ import {
   storyFieldRequirements,
   ui03AuthorityClaims,
 } from './check-storefront-product-detail-authority.scan.mjs';
+// Registry authority — which nodes currently carry implementation authority for
+// this page, and which are recorded history (`APP12-E01` §3.9).
+import {
+  RECONCILED_ROOTS,
+  checkRegistry,
+} from './check-storefront-product-detail-authority.registry.mjs';
+
+export { RECONCILED_ROOTS };
 
 export {
   REJECTED_DETAIL_PATHS,
@@ -93,20 +101,6 @@ export const REJECTED_MEASURES = Object.freeze(['1280px', '928px']);
 /** The sentence the canonical authority must carry verbatim. */
 export const MEASURE_RULE =
   'maximum readable measure of 640px on Desktop and Tablet; Mobile uses its 342px content width';
-
-/** The reconciled roots that carry S02 implementation authority. */
-export const RECONCILED_ROOTS = Object.freeze([
-  '529:2224',
-  '529:2225',
-  '529:2431',
-  '529:2575',
-  '532:3',
-  '532:105',
-  '533:3',
-  '533:26',
-  '537:3',
-  '537:38',
-]);
 
 /** The heading that opens the bounded ruling block inside the phase plan. */
 const RULING_HEADING = '### 6.2.3 ';
@@ -254,42 +248,6 @@ export function unlabelledMeasureClaims(text) {
   });
 }
 
-function checkRegistry(text, fail) {
-  const approvals = text.split('\n').filter((line) => line.includes(EXPECTED.approvalId));
-  const rows = approvals.filter((line) => line.startsWith('| FIG-'));
-  if (rows.length !== RECONCILED_ROOTS.length) {
-    fail(
-      `${CANONICAL_FILES.designIndex}: ${rows.length} row(s) carry ${EXPECTED.approvalId}, ` +
-        `expected ${RECONCILED_ROOTS.length}`,
-    );
-  }
-  for (const node of RECONCILED_ROOTS) {
-    const row = rows.find((line) => line.includes(`| ${node} |`));
-    if (row === undefined) {
-      fail(`${CANONICAL_FILES.designIndex}: reconciled root ${node} has no approved registry row`);
-    } else if (!row.includes('APPROVED_FOR_IMPLEMENTATION')) {
-      fail(
-        `${CANONICAL_FILES.designIndex}: reconciled root ${node} is not APPROVED_FOR_IMPLEMENTATION`,
-      );
-    }
-  }
-  for (const node of UI03_ROOTS) {
-    const row = text
-      .split('\n')
-      .find((line) => line.startsWith('| FIG-UI03-') && line.includes(`| ${node} |`));
-    if (row === undefined) {
-      fail(`${CANONICAL_FILES.designIndex}: UI03 draft root ${node} is no longer recorded`);
-      continue;
-    }
-    if (!row.includes('HISTORICAL_DRAFT_SOURCE')) {
-      fail(`${CANONICAL_FILES.designIndex}: UI03 root ${node} is not HISTORICAL_DRAFT_SOURCE`);
-    }
-    if (row.includes('APPROVED_FOR_IMPLEMENTATION')) {
-      fail(`${CANONICAL_FILES.designIndex}: UI03 root ${node} is marked implementable`);
-    }
-  }
-}
-
 export function checkStorefrontProductDetailAuthority(root = REPO_ROOT) {
   const failures = [];
   const fail = (message) => failures.push(message);
@@ -316,7 +274,15 @@ export function checkStorefrontProductDetailAuthority(root = REPO_ROOT) {
   );
   checkApproval(sources.approval, fail);
   checkMeasureRule(sources, block, fail);
-  if (sources.designIndex !== undefined) checkRegistry(sources.designIndex, fail);
+  if (sources.designIndex !== undefined)
+    checkRegistry({
+      text: sources.designIndex,
+      approvalId: EXPECTED.approvalId,
+      route: EXPECTED.detailRoute,
+      ui03Roots: UI03_ROOTS,
+      designIndex: CANONICAL_FILES.designIndex,
+      fail,
+    });
 
   for (const key of ['roadmap', 'traceability', 'designIndex']) {
     if (sources[key] !== undefined && !sources[key].includes(EXPECTED.detailRoute)) {
@@ -391,7 +357,9 @@ function main() {
   console.log(
     'check:storefront-product-detail-authority — Product Detail is /san-pham/[slug] from publicProductDetail ' +
       'and catalog-preview media across 6 canonical documents; one description section, price/stock hidden, ' +
-      'materials/process/related/save/commission deferred, 10 reconciled roots approved, 4 UI03 roots historical',
+      'materials/process/related/save/commission deferred, 10 reconciled roots carrying current ' +
+      'authority (approved, or superseded by an approved successor on the same route), ' +
+      '4 UI03 roots historical',
   );
 }
 

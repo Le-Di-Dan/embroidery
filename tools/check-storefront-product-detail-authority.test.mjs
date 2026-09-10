@@ -283,6 +283,73 @@ describe('check-storefront-product-detail-authority', () => {
     );
   });
 
+  /**
+   * `APP12-E01` §3.9 — supersession is followed, never forgiven.
+   *
+   * The two lightbox roots are legitimately `SUPERSEDED` by
+   * `FIG-APP12-M01-D1-SF-LIGHTBOX`, and the gate accepts that. These four cases
+   * prove it accepts nothing weaker: the successor has to exist, be current, be
+   * approved, and belong to the same route.
+   */
+  const SUPERSEDED_LIGHTBOX = '| FIG-S02-PRODUCT-DETAIL-LIGHTBOX-DESKTOP |';
+  const SUCCESSOR_ROW = '| FIG-APP12-M01-D1-SF-LIGHTBOX |';
+
+  it('accepts a superseded root whose successor carries current authority', () => {
+    // The committed registry is exactly that case, so the whole gate passing is
+    // the assertion — stated here so the intent survives a future reader.
+    assert.deepEqual(checkStorefrontProductDetailAuthority(), []);
+  });
+
+  it('rejects a superseded root that names no successor', () => {
+    const failures = failuresFor('designIndex', (text) =>
+      text
+        .split('\n')
+        .map((line) =>
+          line.startsWith(SUPERSEDED_LIGHTBOX)
+            ? line.replace('| → FIG-APP12-M01-D1-SF-LIGHTBOX |', '| — |')
+            : line,
+        )
+        .join('\n'),
+    );
+    assert.match(failures, /533:3 is SUPERSEDED but names no successor row/);
+  });
+
+  it('rejects a superseded root whose successor is not recorded as current', () => {
+    const failures = failuresFor('designIndex', (text) =>
+      text
+        .split('\n')
+        .filter((line) => !line.startsWith(SUCCESSOR_ROW))
+        .join('\n'),
+    );
+    assert.match(failures, /which the registry does not record as current/);
+  });
+
+  it('rejects a superseded root whose successor is not approved for implementation', () => {
+    const failures = failuresFor('designIndex', (text) =>
+      text
+        .split('\n')
+        .map((line) =>
+          line.startsWith(SUCCESSOR_ROW)
+            ? line.replace('APPROVED_FOR_IMPLEMENTATION', 'REVIEW_REQUIRED')
+            : line,
+        )
+        .join('\n'),
+    );
+    assert.match(failures, /which is not APPROVED_FOR_IMPLEMENTATION/);
+  });
+
+  it('rejects a successor that moved authority to another route', () => {
+    const failures = failuresFor('designIndex', (text) =>
+      text
+        .split('\n')
+        .map((line) =>
+          line.startsWith(SUCCESSOR_ROW) ? line.replace('/san-pham/[slug]', '/bo-suu-tap') : line,
+        )
+        .join('\n'),
+    );
+    assert.match(failures, /which is not a \/san-pham\/\[slug\] row/);
+  });
+
   it('rejects deleting a UI03 draft root from the registry', () => {
     const failures = failuresFor('designIndex', (text) =>
       text

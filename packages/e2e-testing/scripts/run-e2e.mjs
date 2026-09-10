@@ -28,183 +28,34 @@ import { startEnvironment } from '../support/orchestration/environment.mjs';
 import { runContainer, runHost } from '../support/orchestration/playwright-runner.mjs';
 import { isPortListening } from '../support/orchestration/net.mjs';
 
-const SMOKE = ['storefront-chromium', 'admin-chromium'];
-const FULL = [
-  'storefront-chromium',
-  'admin-chromium',
-  'storefront-firefox',
-  'admin-firefox',
-  'storefront-webkit',
-  'admin-webkit',
-];
-// APP1-E01 cross-layer acceptance projects. Host/Chromium only: the auth,
-// session-mutation and responsive journeys need the host's disposable-database
-// access and DevTools-driven checks, which the throwaway Linux container (only
-// @playwright/test installed, no workspace) cannot provide.
-const APP1 = ['app1-admin-chromium', 'app1-storefront-chromium'];
-// APP4-E01-H02 helper readiness, host/Chromium for the same reason as APP1.
-const APP4 = ['app4-storefront-chromium', 'app4-admin-chromium'];
-// APP4-E01-R01 canonical acceptance — one serial project.
-const APP4_R01 = ['app4-r01-chromium'];
-// APP4-E01-R01-C1 — the targeted correction, run without the full R01 journey.
-const APP4_R01_C1 = ['app4-r01-c1-chromium'];
-// APP5-E01 — the custom-request cross-layer acceptance run. Same topology as the
-// APP4 browser tier, plus this run's object storage for the in-process worker.
-const APP5_E01 = ['app5-e01-chromium'];
-// APP7-E01 — the deposit-payment cross-layer acceptance run. Same topology as
-// the APP5 one (it needs the verification lane, the notification sink and this
-// run's object storage) plus the merchant bank account `APP7-B03` fails fast
-// without.
-const APP7_E01 = ['app7-e01-chromium'];
-// APP12-S01 — the Ready-Made purchase state. The leanest browser topology in the
-// file: no Admin, no secret material, no object storage. It needs a disposable
-// database carrying a test-only catalog, the real API, the real Storefront and
-// the real gateway, and nothing else.
-const APP12_S01 = ['app12-s01-chromium'];
-// APP12-H06 — the Wave-1 SEO and public-readiness matrix. The S01 topology plus
-// this run's object storage: the run has to fetch an `og:image` and a JSON-LD
-// image to prove they are publicly retrievable (`APP12-H06` §10), which needs
-// real bytes behind the delivery route rather than only the rows that address
-// them. No Admin, no secret material beyond what `AppModule` refuses to start
-// without, and no commercial write — every journey is an anonymous read.
-const APP12_H06 = ['app12-h06-chromium'];
-// APP12-S02 — the Ready-Made checkout. The S01 topology plus the APP4
-// verification lane and the in-process worker, because the customer has to
-// receive a real verification code before an order can be created at all. It is
-// the first Storefront mode that writes commercial rows, so it runs only
-// against the disposable database the orchestrator drops afterwards.
-const APP12_S02 = ['app12-s02-chromium'];
-// APP12-S03 — the secure Ready-Made order surface. The S02 topology plus an
-// authenticated Admin session, because the customer's screen only moves when an
-// operator writes: the run drives the delivered Admin operations from a second
-// real session while the browser watches the page. It also needs this run's
-// object storage, because the evidence journey uploads a real image.
-const APP12_S03 = ['app12-s03-chromium'];
-// APP12-A01 — Admin dynamic category management. The leanest Admin topology in
-// the file: a disposable database, the real API, the real Admin and the real
-// gateway. No Storefront process is started — A01 changes none of it — and no
-// object storage, because a category has no media. It needs the staff-bootstrap
-// Admin because every journey is an authenticated operator writing taxonomy.
-const APP12_A01 = ['app12-a01-chromium'];
-// APP12-M01.A1 — Admin product multi-image management. The A01 Admin topology
-// plus this run's object storage, and that addition is the whole point: the
-// subject is a grid of twenty **real photographs**, so the run needs real WebP
-// derivatives behind the Admin preview route. Twenty neutral blocks would prove
-// nothing about whether twenty images are legible at 157px. No Storefront
-// process is started — `M01.S1` owns that surface and is not authorised here.
-const APP12_M01A1 = ['app12-m01a1-chromium'];
-// APP12-N02.A01 — Admin Ready-Made sellability authoring. The M01.A1 topology
-// **exactly**, and deliberately not a new one: the surface under test is a new
-// section of the same product editor, and it needs the same authenticated
-// operator, the same disposable database and the same seeded catalog. Two of
-// that fixture's Products are the subject rather than the setting — `draft0`
-// has no variants because nothing has ever created one, and `published` is a
-// live Product in the same state, which is precisely the historical malformed
-// shape `N02.G01` found in the development world.
-const APP12_N02A01 = ['app12-n02a01-chromium'];
-// APP12-N02.E01 — the final cross-boundary sellability acceptance world. The
-// `N02.A01` topology (which is the `M01.A1` one) **plus the Storefront process**,
-// and that addition is the whole package: `N02.E01` §6/§7/§16 are claims about an
-// operator's variant/SKU write reaching a visitor's Product Detail page, and the
-// Admin-only A01 topology cannot carry one of them.
-//
-// No new fixture. The `M01.A1` dataset is not the setting here but the subject:
-// its `pub-3`, `pub-1` and `pub-race` Products are PUBLISHED rows with **zero
-// variants**, which is exactly the historical malformed shape §13 has to repair,
-// and its four unattached Assets are what §6 and §7 attach to the two Products
-// they create from nothing through the real form. Seeding a second catalog would
-// only add a second thing to keep in step.
-//
-// One project rather than four. Every journey is an operator at the Admin origin
-// whose *consequence* is read at the Storefront origin, so the run is one chain
-// and the public reads open their own context — splitting it across projects
-// would lose the state each journey hands the next.
-const APP12_N02E01 = ['app12-n02e01-chromium'];
-const APP12_M01S1 = ['app12-m01s1-chromium'];
-// APP12-N01.S01 — the email-only verification UX. The S02 topology exactly, and
-// deliberately not a new one: the surface under test is the checkout's own
-// verification card, so it needs the same catalog, the same APP4 lane and the
-// same in-process worker. What differs is entirely inside the Playwright child
-// — the spec composes that worker with a delivering SMTP transport aimed at a
-// loopback capture listener it owns, because `S01` §18 forbids reading the code
-// out of the recording adapter. Nothing in the orchestrated topology changes,
-// which is why this rides `app12S02` everywhere below rather than duplicating
-// twelve conditions.
-const APP12_N01S1 = ['app12-n01s1-chromium'];
-// APP12-N01.E01 — the same world as N01.S01 (same topology, same in-process
-// worker, same loopback capture listener), running the cross-boundary content
-// acceptance instead of the UX acceptance. It reuses the S01 mode string on
-// purpose: E01 asks what the delivered message said, not what the world was, so
-// forking the topology would only create a second thing to keep in step.
-const APP12_N01E1 = ['app12-n01e1-chromium'];
-// APP12-M01.E1 — the final cross-boundary acceptance world, and the first mode
-// that starts the Admin **and** the Storefront over one catalog. That union is
-// the whole point: §11 and §12 are claims about an operator's write reaching a
-// visitor's page, and neither the A1 topology (no Storefront) nor the S1 one
-// (no operator) can carry them. Three ordered projects rather than one, because
-// the three surfaces have three different base origins and Playwright resolves
-// `baseURL` per project; they run in declaration order under the config's
-// single worker, and their datasets are disjoint by fixture prefix.
-const APP12_M01E1 = [
-  'app12-m01e1-domain-chromium',
-  'app12-m01e1-admin-chromium',
-  'app12-m01e1-cross-chromium',
-  'app12-m01e1-sf-chromium',
-];
-// APP12-A02-C1 — the Admin Ready-Made order branch. The S03 topology exactly:
-// a Storefront to place a **real** order through the real checkout, the APP4
-// verification lane that order cannot exist without, an authenticated Admin,
-// this run's object storage for the evidence journey, and the disposable
-// database all of it writes to. The difference from S03 is only which screen is
-// under test — there the customer's, here the operator's — so the environment
-// is shared rather than duplicated.
-const APP12_A02 = ['app12-a02-chromium'];
-// APP12-H01 — the Wave-1 live security acceptance. The A02 topology exactly,
-// because the security journeys need the same commercial universe: a real
-// verified Ready-Made order to hold an ORDER_ACCESS grant, an authenticated
-// operator to price it, this run’s object storage for the evidence lane, and
-// the disposable database all of it writes to. Nothing is added to the
-// topology; only the subject differs — there the screens, here what they
-// refuse.
-const APP12_H01 = ['app12-h01-chromium'];
-// The same topology with the custom capability RELEASED, for the one journey
-// that cannot be proved with it withheld: that a real REQUEST_ACCESS grant and
-// a real ORDER_ACCESS grant cannot reach each other’s operations. It is a
-// separate run rather than a second project because the release state is read
-// once when the API composes its module graph, so one process cannot serve
-// both.
-const APP12_H01_WAVE2 = ['app12-h01-wave2-chromium'];
-// APP12-H08 — the Wave-1 accessibility and compatibility gate. The A02/H01
-// topology exactly, and for the same reason those two share it: the audit needs
-// the *whole* commercial universe on screen — a real purchasable catalog, a real
-// verified checkout, a real ORDER_ACCESS surface and a real authenticated
-// operator working the same order — because an accessibility finding on a
-// fixture-rendered page is a finding about the fixture.
-//
-// Four projects rather than one, and the split is the checkpoint's own §11
-// matrix rather than a convenience: the customer audit and the operator audit
-// run on different origins, and the two non-Chromium engines run a *smoke*
-// (§11: "Do not test every route in every browser") rather than the full audit.
-const APP12_H08 = [
-  'app12-h08-storefront-chromium',
-  'app12-h08-admin-chromium',
-  'app12-h08-firefox',
-  'app12-h08-webkit',
-];
-// APP12-V01 — the professional UI/UX live audit. The H08 topology plus the
-// content-density fixture, because the subject is what a *populated* product
-// looks like: a Discover grid with one card and an Admin table with one row are
-// calm by accident, and a critique written from them would be a critique of the
-// fixture. Four projects, split by origin and by what each one has to build —
-// the public browsing surfaces need no order, the commerce audit places one, the
-// Admin audit works it, and the Admin shell tour opens every operator route.
-const APP12_V01 = [
-  'app12-v01-public-chromium',
-  'app12-v01-commerce-chromium',
-  'app12-v01-admin-shell-chromium',
-  'app12-v01-admin-order-chromium',
-  'app12-v02-perf-chromium',
-];
+import {
+  SMOKE,
+  FULL,
+  APP1,
+  APP4,
+  APP4_R01,
+  APP4_R01_C1,
+  APP5_E01,
+  APP7_E01,
+  APP12_S01,
+  APP12_H06,
+  APP12_S02,
+  APP12_S03,
+  APP12_A01,
+  APP12_M01A1,
+  APP12_N02A01,
+  APP12_N02E01,
+  APP12_M01S1,
+  APP12_N01S1,
+  APP12_N01E1,
+  APP12_M01E1,
+  APP12_A02,
+  APP12_E01,
+  APP12_H01,
+  APP12_H01_WAVE2,
+  APP12_H08,
+  APP12_V01,
+} from '../support/orchestration/run-modes.mjs';
 
 /**
  * `--app4` (APP4-E01-H01) is not a Playwright mode.
@@ -338,11 +189,17 @@ function parseArgs(argv) {
   const app12S02 = flags.has('--app12-s02') || app12N01S1;
   // APP12-S03: the same Playwright mode family as S02, plus the Admin origin and
   // this run's object storage.
-  const app12S03 = flags.has('--app12-s03');
   // APP12-A01: the Admin-only Playwright mode. Same family, no Storefront.
   const app12A01 = flags.has('--app12-a01');
   // APP12-A02-C1: the Admin Ready-Made order branch. Rides the S03 topology.
   const app12A02 = flags.has('--app12-a02');
+  // APP12-E01: the Wave-1 commerce final regression. It rides the S03 topology
+  // by *being* one to every condition below — which is deliberate. Repeating
+  // `|| app12E01` at a dozen sites is how a mode ends up subtly different from
+  // the one it claims to reuse; folding it in here means E01 gets S03's
+  // environment by construction and there is nothing to keep in step.
+  const app12E01 = flags.has('--app12-e01');
+  const app12S03 = flags.has('--app12-s03') || app12E01;
   // APP12-N02.A01: Admin sellability authoring. It rides the M01.A1 topology
   // rather than declaring one, so the two can never drift apart: the section
   // under test lives inside the product editor that suite already seeds for.
@@ -392,29 +249,31 @@ function parseArgs(argv) {
                       ? 'app12-h01-wave2'
                       : app12H01
                         ? 'app12-h01'
-                        : app12A02
-                          ? 'app12-a02'
-                          : app12A01
-                            ? 'app12-a01'
-                            : app12S03
-                              ? 'app12-s03'
-                              : app12N01S1
-                                ? 'app12-n01s1'
-                                : app12S02
-                                  ? 'app12-s02'
-                                  : app12S01
-                                    ? 'app12-s01'
-                                    : app7E01
-                                      ? 'app7-e01'
-                                      : app5E01
-                                        ? 'app5-e01'
-                                        : app4Browser
-                                          ? 'app4-browser'
-                                          : app1
-                                            ? 'app1'
-                                            : full
-                                              ? 'full'
-                                              : 'smoke';
+                        : app12E01
+                          ? 'app12-e01'
+                          : app12A02
+                            ? 'app12-a02'
+                            : app12A01
+                              ? 'app12-a01'
+                              : app12S03
+                                ? 'app12-s03'
+                                : app12N01S1
+                                  ? 'app12-n01s1'
+                                  : app12S02
+                                    ? 'app12-s02'
+                                    : app12S01
+                                      ? 'app12-s01'
+                                      : app7E01
+                                        ? 'app7-e01'
+                                        : app5E01
+                                          ? 'app5-e01'
+                                          : app4Browser
+                                            ? 'app4-browser'
+                                            : app1
+                                              ? 'app1'
+                                              : full
+                                                ? 'full'
+                                                : 'smoke';
   const projects = app12N02E01
     ? APP12_N02E01
     : app12N02A01
@@ -435,35 +294,37 @@ function parseArgs(argv) {
                     ? APP12_H01_WAVE2
                     : app12H01
                       ? APP12_H01
-                      : app12A02
-                        ? APP12_A02
-                        : app12A01
-                          ? APP12_A01
-                          : app12S03
-                            ? APP12_S03
-                            : app12N01E1
-                              ? APP12_N01E1
-                              : app12N01S1
-                                ? APP12_N01S1
-                                : app12S02
-                                  ? APP12_S02
-                                  : app12S01
-                                    ? APP12_S01
-                                    : app7E01
-                                      ? APP7_E01
-                                      : app5E01
-                                        ? APP5_E01
-                                        : app4R01C1
-                                          ? APP4_R01_C1
-                                          : app4R01
-                                            ? APP4_R01
-                                            : app4Browser
-                                              ? APP4
-                                              : app1
-                                                ? APP1
-                                                : full
-                                                  ? FULL
-                                                  : SMOKE;
+                      : app12E01
+                        ? APP12_E01
+                        : app12A02
+                          ? APP12_A02
+                          : app12A01
+                            ? APP12_A01
+                            : app12S03
+                              ? APP12_S03
+                              : app12N01E1
+                                ? APP12_N01E1
+                                : app12N01S1
+                                  ? APP12_N01S1
+                                  : app12S02
+                                    ? APP12_S02
+                                    : app12S01
+                                      ? APP12_S01
+                                      : app7E01
+                                        ? APP7_E01
+                                        : app5E01
+                                          ? APP5_E01
+                                          : app4R01C1
+                                            ? APP4_R01_C1
+                                            : app4R01
+                                              ? APP4_R01
+                                              : app4Browser
+                                                ? APP4
+                                                : app1
+                                                  ? APP1
+                                                  : full
+                                                    ? FULL
+                                                    : SMOKE;
   // The E01 suite is always host/Chromium; it cannot run in the container.
   const runner =
     app1 ||

@@ -9,6 +9,7 @@
  */
 import { defineConfig, devices } from '@playwright/test';
 
+import { app12E01Projects } from './playwright.projects.e01';
 import { app12V01Projects } from './playwright.projects.v01';
 
 const STOREFRONT_URL = process.env.E2E_BASE_STOREFRONT ?? 'http://embroidery.local:8090';
@@ -452,6 +453,9 @@ export default defineConfig({
         viewport: { width: 1440, height: 900 },
       },
     },
+    // APP12-E01 — the Wave-1 commerce final regression. Both projects and their
+    // reasoning live in `playwright.projects.e01.ts` (§24: this file is over limit).
+    ...app12E01Projects({ storefrontUrl: STOREFRONT_URL, chromiumLaunch }),
     // APP12-H01 — the Wave-1 live security acceptance.
     //
     // Two projects, one topology. The Admin origin is the baseURL because the

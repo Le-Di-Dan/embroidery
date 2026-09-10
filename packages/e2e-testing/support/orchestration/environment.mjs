@@ -15,6 +15,7 @@ import { composeEnv } from './config.mjs';
 import { assertDockerAvailable, composeDown, composeUp, waitForHealthy } from './docker.mjs';
 import { provisionDisposableDatabase, proveSchemaBaseline } from './database.mjs';
 import { startProcess } from './processes.mjs';
+import { buildNextApps } from './next-build.mjs';
 import { createApiService } from './api-service.mjs';
 import { startApiControlServer } from './api-control-server.mjs';
 import { redactUrl } from './redact.mjs';
@@ -253,8 +254,14 @@ export async function startEnvironment({
     }
 
     // 5. Next apps (production build via next start).
-    const apps = [];
-    for (const app of [
+    //
+    // `APP12-E01` §3.4 / `FU-APP12-H08-04` — the build is part of the run now.
+    // `next start` serves whatever `.next` is on disk, so for the whole life of
+    // this harness a browser project could pass against source nobody had
+    // compiled since the last manual build. The orchestrator owns every other
+    // artifact it starts; it owns this one too. The BUILD_IDs come back so the
+    // run can state which build it served.
+    const appDefinitions = [
       {
         name: 'storefront',
         dir: join(config.repoRoot, 'apps', 'storefront'),
@@ -269,7 +276,14 @@ export async function startEnvironment({
         // resolver (D-036); it reaches the host API process directly.
         env: { INTERNAL_API_BASE_URL: `http://localhost:${config.ports.api}/api` },
       },
-    ]) {
+    ];
+    const buildIds = await buildNextApps({
+      apps: appDefinitions.map(({ name, dir }) => ({ name, dir })),
+      log,
+    });
+
+    const apps = [];
+    for (const app of appDefinitions) {
       log(`starting ${app.name}`);
       const proc = startProcess({
         name: app.name,
@@ -316,6 +330,7 @@ export async function startEnvironment({
       database,
       schema,
       baseUrls: config.baseUrls,
+      buildIds,
       api: apiService,
       apiControlUrl,
       apps,

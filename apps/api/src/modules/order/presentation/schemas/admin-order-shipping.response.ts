@@ -45,10 +45,10 @@ export class AdminShippingDetailResponse {
   @ApiProperty({ example: '12 Nguyễn Huệ' })
   addressLine!: string;
 
-  @ApiProperty({ required: false, nullable: true, example: 'Phường Bến Nghé' })
+  @ApiProperty({ required: false, nullable: true, type: 'string', example: 'Phường Bến Nghé' })
   ward?: string | null;
 
-  @ApiProperty({ required: false, nullable: true, example: 'Quận 1' })
+  @ApiProperty({ required: false, nullable: true, type: 'string', example: 'Quận 1' })
   district?: string | null;
 
   @ApiProperty({ example: 'TP. Hồ Chí Minh' })
@@ -63,6 +63,7 @@ export class AdminShippingDetailResponse {
   @ApiProperty({
     required: false,
     nullable: true,
+    type: 'string',
     example: '50000.00',
     description:
       'The effective shipping fee, exactly as `numeric(14,2)` stores it. A string, never a ' +
@@ -73,6 +74,7 @@ export class AdminShippingDetailResponse {
   @ApiProperty({
     required: false,
     nullable: true,
+    type: 'string',
     example: 'Giao Hàng Nhanh',
     description:
       'An internal note of who is carrying the parcel. Not a carrier integration: nothing is ' +
@@ -83,6 +85,7 @@ export class AdminShippingDetailResponse {
   @ApiProperty({
     required: false,
     nullable: true,
+    type: 'string',
     example: 'GHN123456789',
     description: 'An internal reference an operator typed. There is no live tracking lookup.',
   })
@@ -100,6 +103,7 @@ export class AdminShippingDetailResponse {
   @ApiProperty({
     required: false,
     nullable: true,
+    type: 'string',
     format: 'date-time',
     description: 'When dispatch froze the detail. Absent while it is still editable.',
   })
@@ -127,8 +131,15 @@ export class AdminShippingFeeOutcomeResponse {
     // Stated rather than reflected. This property became `string | null` in
     // `APP12-B03`, and a union gives the metadata reader no scalar to infer —
     // it would publish as `object` and the generated client would lose the
-    // string. The neighbouring APP9 fields carry that shape already; this one
-    // is not allowed to regress into it.
+    // string.
+    //
+    // `APP12-E01` §3.8 / `FU-APP12-B03-01`: every nullable scalar in this file
+    // now states its `type` for the same reason. Nine of them did not, so the
+    // Admin's frozen shipping fee, its frozen-at stamp, the two successor
+    // obligation ids and the successor amount all reached the generated client
+    // as `{ [key: string]: unknown } | null` — an object where a money string
+    // lives. Nothing consumed them wrongly, because nothing could consume them
+    // at all; the contract simply lied about the shape it returns.
     type: 'string',
     example: '50000.00',
     description:
@@ -155,6 +166,7 @@ export class AdminShippingFeeOutcomeResponse {
   @ApiProperty({
     required: false,
     nullable: true,
+    type: 'string',
     format: 'uuid',
     example: OBLIGATION_ID_EXAMPLE,
     description:
@@ -166,6 +178,7 @@ export class AdminShippingFeeOutcomeResponse {
   @ApiProperty({
     required: false,
     nullable: true,
+    type: 'string',
     format: 'uuid',
     example: OBLIGATION_ID_EXAMPLE,
     description: 'The successor REMAINING obligation, now the one live payable authority.',
@@ -175,6 +188,7 @@ export class AdminShippingFeeOutcomeResponse {
   @ApiProperty({
     required: false,
     nullable: true,
+    type: 'string',
     example: '1815000.00',
     description: 'The successor’s amount: the previous live amount moved by the fee difference.',
   })

@@ -8,12 +8,35 @@ ROADMAP_LOCK           = LOCKED
 IMPLEMENTATION_STARTED = true
 CHECKPOINTS            = 41
 NEXT                   = PO_REVIEW_REQUIRED —
-                         APP12-U01-C1 = COMPLETE — AWAITING_PO_REVIEW (2026-09-10;
-                         continuation F1-F4 all PASS live;
-                         reports/APP12-U01-C1-COMPLETION-REPORT.md)
-                         APP12-U01 = COMPLETE_AFTER_C1 — AWAITING_PO_REVIEW
+                         APP12-U01-C1 = COMPLETE — PO PASS (2026-09-10)
+                         APP12-U01 = COMPLETE_AFTER_C1 — PO PASS
+                         APP12-N01 = COMPLETE — PO CLOSED
                          APP12-N02 = COMPLETE — PO CLOSED (2026-09-10)
-                         APP12-E01 = NEXT — NOT_EXECUTED, awaiting Human PO PASS
+                         APP12-E01 = CORRECTION_REQUIRED (2026-09-10;
+                         reports/APP12-E01-COMPLETION-REPORT.md). Every routed
+                         §3 follow-up CLOSED and the whole negative/recovery
+                         matrix PASS, but the regression found one Wave-1
+                         runtime blocker: FU-APP12-E01-01 — an ORDER_ACCESS
+                         link does not survive the SMTP transport.
+                         SmtpNotificationChannelAdapter has one render path and
+                         no secretKind branch, so a SECURE_LINK_TOKEN delivery
+                         is sent as "Mã xác thực email" carrying the 43-char
+                         bearer grant in the position of a six-digit code and
+                         no link at all — measured on the wire. Over the only
+                         production-capable transport a customer cannot reach
+                         their own order. Not repaired in-checkpoint: the fix
+                         needs a new customer-facing message, which is product
+                         and design copy authority (§23), and §25 routes a
+                         newly discovered material defect to a correction.
+                         APP12-E01-C1 = NOT_AUTHORIZED until PO review.
+                         APP12-R01 = NOT_AUTHORIZED.
+                         E01_CORRECTION_USED = 0/1; NO_E01_C2 = true.
+                         Carried non-runtime: U01_FIGMA_COPY =
+                         PRE_R01_DESIGN_RECONCILIATION_REQUIRED (the
+                         figma-desktop MCP server refused connection for the
+                         whole session, so no live frame could be read;
+                         FIG-APPROVAL-APP12-E01-U01-COPY-PO-001 unused and
+                         FIGMA_DESIGN_INDEX.md byte-identical).
 CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
                          APP12-G02-C1 (2026-09-01, 1/1 — no C2)
                          APP12-C01-C1 (2026-09-01, 1/1 — no C2)
@@ -357,7 +380,7 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | 29·N2 | `APP12-N02` | Ready-Made sellability authoring & publication readiness (PO override, 2026-09-10, 40 → 41) | **`COMPLETE — PO CLOSED`** (2026-09-10) — G01/D01/B01/A01 PO PASS, `N02.E01` J1–J10 live ([`reports/APP12-N02-E01-COMPLETION-REPORT.md`](../reports/APP12-N02-E01-COMPLETION-REPORT.md)). History: `N02.G01` COMPLETE — **PO PASS** ([`reports/APP12-N02-G01-COMPLETION-REPORT.md`](../reports/APP12-N02-G01-COMPLETION-REPORT.md)): 0 operations write `product_variants`, `adminSku_create` has 0 Admin call sites, `ProductPublicationSnapshot` carries no variant/SKU/stock fact, `/kho/skus/{skuId}` is linked only from an order row, and 2 PUBLISHED Products in the shared dev world are already structurally unbuyable. `N02.D01` COMPLETE — AWAITING_PO_REVIEW ([`reports/APP12-N02-D01-COMPLETION-REPORT.md`](../reports/APP12-N02-D01-COMPLETION-REPORT.md)): 21 Figma frames on page `APP_12` section `968:187` and 21 registry rows `REVIEW_REQUIRED` (`FIGMA_DESIGN_INDEX.md` §4.14, 592 → 613); a bounded `Phiên bản & SKU` capability inside `/products/{productId}` with no DELETE at any state, readiness drawn at 10 criteria in five states (including 10/10 with stock 0), PUBLISHED recovery without unpublishing, and a truthful structural-unsellability warning that is never labelled sold-out. Two preflight findings changed the design: `AdminProductDetailResponse` carries **no** `variants`/`skus` (so B01 owns 3 new operations, and the public slug-keyed read may not be reused), and `priceOverrideAmount` accepts `"0"`, giving `SKU_PRICE_RESOLVABLE` a **standalone** failure while `PRODUCT_PRICE_READY` stays green. Runtime/DB/OpenAPI changes 0. Internal next `N02.B01` — NOT_AUTHORIZED until PO approves D01. |
 | 30 | `APP12-U01` | Wave 1 Ready-Made business UAT | **`CORRECTION_REQUIRED`** → `SUSPENDED_PENDING_BLOCKER_RECOVERY` — executed 2026-09-09 ([`reports/APP12-U01-COMPLETION-REPORT.md`](../reports/APP12-U01-COMPLETION-REPORT.md)). Blocker 1 (operator cannot make a Product sellable) is owned by `APP12-N02`; blocker 2 (no channel reaches a customer) was closed by `APP12-N01`. Re-entry as `APP12-U01-C1` on the criteria in `APP12-N02-G01` §Q. |
 | 30·C1 | `APP12-U01-C1` | Manual role-based business UAT recovery (correction 1/1, no C2) | **`COMPLETE — AWAITING_PO_REVIEW`** (2026-09-10) — Stage 2 ran by Playwright on Human-PO override with PO-supplied OTP/login: READY_MADE → COMPLETED end to end, 4 findings ([`reports/APP12-U01-C1-PREPARATION-REPORT.md`](../reports/APP12-U01-C1-PREPARATION-REPORT.md) §P). The PO then authorised fixing them **inside this same C1** (`APP12-U01-C1-CONTINUATION`, no U01-C2): F1 Admin `Tiền hàng` is now the frozen line total, never the fee-inclusive total; F2 a paid order keeps its exact settled total and drops the pending-fee wording; F3 Admin copy no longer promises a payment link that is never sent (no canonical requirement for one exists, and no notification was invented); F4 the secure-link card no longer claims a replacement link. All four PASS live at Admin 1440 and Storefront 1440/1024/390, axe serious+critical 0, overflow 0 ([`reports/APP12-U01-C1-COMPLETION-REPORT.md`](../reports/APP12-U01-C1-COMPLETION-REPORT.md)). Shared-dev digest unchanged; nothing deployed or pushed. |
-| 31 | `APP12-E01` | Wave 1 commerce regression, positive and negative | `NOT_STARTED` |
+| 31 | `APP12-E01` | Wave 1 commerce regression, positive and negative | **`CORRECTION_REQUIRED`** (2026-09-10) — every routed §3 follow-up CLOSED (`FU-APP12-H07-02`, `H07-03` **HIGH**, `H08-04` **HIGH**, `H08-06`, `H02-03`, `B03-01`, `G03-01`); API regression 55/55, worker bootstrap-failure process proof 4/4 measured in both directions, checkout CSP 0 executable-inline violations, `PAYMENT_UNDER_REVIEW` axe serious/critical 0 at 390 and 1440. Blocked by the blocker it found: `FU-APP12-E01-01` — no `ORDER_ACCESS` link survives the SMTP transport, so `FU-APP12-H02-01` cannot close. [`reports/APP12-E01-COMPLETION-REPORT.md`](../reports/APP12-E01-COMPLETION-REPORT.md) |
 | 32 | `APP12-R01` | **WAVE 1 RELEASE GATE** — Ready-Made GO / NO-GO | `NOT_STARTED` |
 | 33 | `APP12-W01` | Custom lifecycle UAT excluding Editor deep interaction | `NOT_STARTED` |
 | 34 | `APP12-W02` | Editor functional deep UAT | `NOT_STARTED` |

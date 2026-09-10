@@ -44,6 +44,23 @@ const OFFLINE_STORAGE_ENV: Readonly<Record<string, string>> = {
   OBJECT_STORAGE_DERIVATIVES_BUCKET: 'app12-b03-c1-derivatives',
 };
 
+/**
+ * The transport this child composes under (`APP12-E01` §25, harness fix).
+ *
+ * `APP12-N01.B01` removed `NotificationDeliveryModule`'s wiring default — a
+ * default is how the U01 blocker reached a deployment — so composing
+ * `WorkerModule` now *requires* the variable to be stated. Nothing on the API
+ * side ever stated it, so every API suite that spawns this child has failed at
+ * boot since N01 landed: the child died before printing `READY` and the parent
+ * reported only "said nothing within 120000ms".
+ *
+ * `RECORDING` is the honest answer, for the same reason the worker's own setup
+ * file gives: this child exists to run the reservation-expiry sweep, it sends
+ * nothing, and naming a real SMTP transport would invent a dependency the sweep
+ * does not have. `??=` semantics are kept by letting an outer value win.
+ */
+const NOTIFICATION_TRANSPORT = process.env['NOTIFICATION_TRANSPORT'] ?? 'RECORDING';
+
 /** What one real pass reported. */
 export interface ExpiryPassOutcome {
   readonly examined: number;
@@ -81,6 +98,7 @@ export async function startWorkerExpiryProcess(
       NODE_ENV: 'test',
       DATABASE_URL: context.database.url,
       DATABASE_SSL_MODE: 'disable',
+      NOTIFICATION_TRANSPORT,
       ...OFFLINE_STORAGE_ENV,
     },
     stdio: ['pipe', 'pipe', 'pipe'],

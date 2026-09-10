@@ -65,7 +65,18 @@ spec:
             - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
             - { name: TZ, value: UTC }
           readinessProbe:
-            exec: { command: ['pg_isready', '-U', 'embroidery', '-d', 'embroidery'] }
+            # `APP12-E01` §3.3 / `FU-APP12-H07-02` — the probe names the database
+            # this server actually creates. It used to ask for `embroidery`,
+            # which `POSTGRES_DB` above has never been, so every five seconds for
+            # the life of the pod the server logged
+            # `FATAL: database "embroidery" does not exist`. The probe still
+            # passed — `pg_isready` reports a reachable server even when the
+            # connection is rejected — so the only effect was to fill the log an
+            # operator reads during a staging incident with a failure that was
+            # not one. Written against the same env values rather than repeated
+            # as literals, so the two cannot drift apart again.
+            exec:
+              command: ['sh', '-c', 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"']
             periodSeconds: 5
             failureThreshold: 12
           resources:
