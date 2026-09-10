@@ -104,6 +104,12 @@ const APP12_M01S1 = ['app12-m01s1-chromium'];
 // which is why this rides `app12S02` everywhere below rather than duplicating
 // twelve conditions.
 const APP12_N01S1 = ['app12-n01s1-chromium'];
+// APP12-N01.E01 — the same world as N01.S01 (same topology, same in-process
+// worker, same loopback capture listener), running the cross-boundary content
+// acceptance instead of the UX acceptance. It reuses the S01 mode string on
+// purpose: E01 asks what the delivered message said, not what the world was, so
+// forking the topology would only create a second thing to keep in step.
+const APP12_N01E1 = ['app12-n01e1-chromium'];
 // APP12-M01.E1 — the final cross-boundary acceptance world, and the first mode
 // that starts the Admin **and** the Storefront over one catalog. That union is
 // the whole point: §11 and §12 are claims about an operator's write reaching a
@@ -300,7 +306,8 @@ function parseArgs(argv) {
   // APP12-S02: the same Playwright mode family, with the APP4 secret material
   // and the browser tier's in-process runtime the verification lane needs.
   // APP12-N01.S01: the email-only verification UX, on the S02 topology.
-  const app12N01S1 = flags.has('--app12-n01s1');
+  const app12N01E1 = flags.has('--app12-n01e1');
+  const app12N01S1 = flags.has('--app12-n01s1') || app12N01E1;
   const app12S02 = flags.has('--app12-s02') || app12N01S1;
   // APP12-S03: the same Playwright mode family as S02, plus the Admin origin and
   // this run's object storage.
@@ -391,27 +398,29 @@ function parseArgs(argv) {
                       ? APP12_A01
                       : app12S03
                         ? APP12_S03
-                        : app12N01S1
-                          ? APP12_N01S1
-                          : app12S02
-                            ? APP12_S02
-                            : app12S01
-                              ? APP12_S01
-                              : app7E01
-                                ? APP7_E01
-                                : app5E01
-                                  ? APP5_E01
-                                  : app4R01C1
-                                    ? APP4_R01_C1
-                                    : app4R01
-                                      ? APP4_R01
-                                      : app4Browser
-                                        ? APP4
-                                        : app1
-                                          ? APP1
-                                          : full
-                                            ? FULL
-                                            : SMOKE;
+                        : app12N01E1
+                          ? APP12_N01E1
+                          : app12N01S1
+                            ? APP12_N01S1
+                            : app12S02
+                              ? APP12_S02
+                              : app12S01
+                                ? APP12_S01
+                                : app7E01
+                                  ? APP7_E01
+                                  : app5E01
+                                    ? APP5_E01
+                                    : app4R01C1
+                                      ? APP4_R01_C1
+                                      : app4R01
+                                        ? APP4_R01
+                                        : app4Browser
+                                          ? APP4
+                                          : app1
+                                            ? APP1
+                                            : full
+                                              ? FULL
+                                              : SMOKE;
   // The E01 suite is always host/Chromium; it cannot run in the container.
   const runner =
     app1 ||

@@ -308,6 +308,14 @@ export default defineConfig({
       testMatch: '**/app12/n01s1-*.acceptance.spec.ts',
       use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: STOREFRONT_URL },
     },
+    // APP12-N01.E01 rides the identical world and differs only in what it asks:
+    // the content of the message that crossed the boundary, rather than the UX
+    // that caused it. Same Storefront origin, same self-resizing viewports.
+    {
+      name: 'app12-n01e1-chromium',
+      testMatch: '**/app12/n01e1-*.acceptance.spec.ts',
+      use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: STOREFRONT_URL },
+    },
     {
       name: 'app12-m01s1-chromium',
       testMatch: '**/app12/m01s1-*.acceptance.spec.ts',

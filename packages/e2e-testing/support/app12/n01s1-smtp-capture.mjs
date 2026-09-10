@@ -89,6 +89,155 @@ export function codeFromMessage(message) {
 }
 
 /**
+ * Decodes a quoted-printable string, soft breaks and `=XX` bytes alike.
+ *
+ * The plain-text alternative is Vietnamese, so every accented character arrives
+ * as an escape. `codeFromMessage` above can ignore that — a six-digit code is
+ * pure ASCII — but `contentProof` compares whole sentences and cannot.
+ */
+function decodeQuotedPrintable(raw) {
+  const unfolded = unfoldQuotedPrintable(raw);
+  const bytes = [];
+  for (let index = 0; index < unfolded.length; index += 1) {
+    const pair = unfolded.slice(index + 1, index + 3);
+    if (unfolded[index] === '=' && /^[0-9A-Fa-f]{2}$/.test(pair)) {
+      bytes.push(Number.parseInt(pair, 16));
+      index += 2;
+      continue;
+    }
+    bytes.push(unfolded.charCodeAt(index) & 0xff);
+  }
+  return Buffer.from(bytes).toString('utf8');
+}
+
+/**
+ * Decodes RFC 2047 encoded-words, which is how a non-ASCII Subject travels.
+ *
+ * The leading `replace` is not cosmetic. A Vietnamese subject is longer than the
+ * 76-byte encoded-word limit, so it arrives as two adjacent words split mid-word
+ * — `…N=C3=A9t_T?=` then `=?UTF-8?Q?h=C3=AAu?=`. RFC 2047 §6.2 says the
+ * whitespace *between* adjacent encoded-words is a separator and must not
+ * survive decoding; keeping it yields "Nét T hêu", which is exactly the wrong
+ * answer a naive reader gives.
+ */
+function decodeEncodedWords(value) {
+  const joined = value.replace(/\?=\s+=\?/g, '?==?');
+  return joined.replace(/=\?[^?]+\?([BbQq])\?([^?]*)\?=/g, (_match, encoding, data) =>
+    encoding.toUpperCase() === 'B'
+      ? Buffer.from(data, 'base64').toString('utf8')
+      : decodeQuotedPrintable(data.replace(/_/g, ' ')),
+  );
+}
+
+/** Splits one MIME entity into its header block and its raw body. */
+function splitEntity(entity) {
+  const separator = entity.search(/\r?\n\r?\n/);
+  if (separator === -1) return { headers: entity, body: '' };
+  const gap = /\r?\n\r?\n/.exec(entity.slice(separator))[0].length;
+  return { headers: entity.slice(0, separator), body: entity.slice(separator + gap) };
+}
+
+/**
+ * Reads one header, undoing the folding a long value arrives with.
+ *
+ * The block is unfolded *before* matching rather than during it. A lookahead
+ * that tried to span the fold was the first version and it silently returned
+ * only the first line of every folded header — `Subject` truncated mid-word and
+ * `Content-Type` without its `boundary=`, which left the whole message
+ * unparseable while every individual regex looked correct.
+ */
+function headerOf(headers, name) {
+  const unfolded = headers.replace(/\r?\n[ \t]+/g, ' ');
+  const match = new RegExp(`^${name}:[ \\t]*(.*)$`, 'im').exec(unfolded);
+  return match ? decodeEncodedWords(match[1]).trim() : '';
+}
+
+/** Decodes one part's body according to its transfer encoding. */
+function decodeBody(headers, body) {
+  const encoding = headerOf(headers, 'Content-Transfer-Encoding').toLowerCase();
+  if (encoding === 'base64') return Buffer.from(body.replace(/\s/g, ''), 'base64').toString('utf8');
+  if (encoding === 'quoted-printable') return decodeQuotedPrintable(body);
+  return body;
+}
+
+/**
+ * The subject and the two alternative bodies of one captured message.
+ *
+ * Enough of a MIME reader to walk a `multipart/alternative`, and no more: it
+ * reads the boundary the message declares rather than guessing one, and a part
+ * it cannot classify is simply not returned.
+ */
+function readMessage(raw) {
+  const { headers, body } = splitEntity(raw);
+  const subject = headerOf(headers, 'Subject');
+  const boundary = /boundary="?([^";\r\n]+)"?/i.exec(headerOf(headers, 'Content-Type'))?.[1];
+  const parts = boundary
+    ? body
+        .split(`--${boundary}`)
+        .slice(1, -1)
+        .map((part) => splitEntity(part.replace(/^\r?\n/, '')))
+    : [{ headers, body }];
+
+  let text = '';
+  let html = '';
+  for (const part of parts) {
+    const type = headerOf(part.headers, 'Content-Type').toLowerCase();
+    const decoded = decodeBody(part.headers, part.body);
+    if (type.includes('text/plain')) text += decoded;
+    else if (type.includes('text/html')) html += decoded;
+  }
+  return { subject, text, html };
+}
+
+/** Any UUID at all — an internal identifier has no business in a customer email. */
+const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+/**
+ * Whether one captured message satisfies `APP12-N01.E01` §8, field by field.
+ *
+ * Every value here is a boolean or a name. The code, the bodies and any leaked
+ * secret are compared inside this function and never leave it — a caller can
+ * assert the message was correct without ever holding what made it correct, so
+ * a failing expectation prints a field name rather than an OTP.
+ *
+ * `forbidden` is a list of `{ name, value }`: the caller says what must not be
+ * in the message, and gets back only the names of whatever was.
+ */
+function contentProof(message, expected) {
+  const { subject, text, html } = readMessage(message.raw);
+  const whole = `${subject}\n${text}\n${html}`;
+  const minutes = `${String(expected.minutes)} phút`;
+
+  const leaks = (expected.forbidden ?? [])
+    .filter(({ value }) => typeof value === 'string' && value.length > 0 && whole.includes(value))
+    .map(({ name }) => name);
+  if (UUID.test(whole)) leaks.push('an internal identifier (UUID)');
+
+  // A whole number of minutes is not a secret, and returning it turns a bare
+  // `false` into a diagnosis: a mismatch says which window the message stated.
+  const stated = /hết hạn sau (\d+) phút/.exec(text)?.[1];
+
+  return {
+    statedMinutes: stated === undefined ? undefined : Number(stated),
+    recipientIsRequested:
+      message.recipients.length === 1 &&
+      message.recipients[0].toLowerCase() === expected.recipient.toLowerCase(),
+    senderIsConfigured: message.sender.toLowerCase() === expected.sender.toLowerCase(),
+    subjectIsVerificationIntent: subject === expected.subject,
+    textPartExists: text.trim().length > 0,
+    htmlPartExists: html.includes('<html'),
+    codePresent: codeFromMessage(message) !== undefined,
+    expiryAgreesWithChallenge: text.includes(minutes) && html.includes(minutes),
+    ignoreIfNotRequested:
+      text.includes(expected.ignoreGuidance) && html.includes(expected.ignoreGuidance),
+    namesTheBrand: text.includes(expected.brand) && html.includes(expected.brand),
+    leaks,
+  };
+}
+
+export { contentProof };
+
+/**
  * Starts the listener and resolves once it is accepting connections.
  *
  * `authOptional` is false on purpose: the adapter must actually authenticate, so
@@ -173,6 +322,11 @@ export async function startSmtpCapture({ repoRoot }) {
      * name a reviewer can search for.
      */
     codeOf: codeFromMessage,
+
+    /**
+     * `APP12-N01.E01` §8, as booleans and leak names. Never message contents.
+     */
+    contentProof,
 
     /** Every message accepted for one envelope recipient, oldest first. */
     messagesFor: (address) =>

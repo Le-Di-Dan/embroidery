@@ -82,6 +82,22 @@ export const COPY = {
 } as const;
 
 /**
+ * What the delivered message itself must say (`APP12-N01.E01` §8).
+ *
+ * Literal for the same reason `COPY` is: an expectation that imports the
+ * renderer's own constants would agree with any wording the renderer adopts,
+ * including a wrong one. `sender` is the address the capture harness composes
+ * the worker with, so asserting it proves the configured sender reached the
+ * envelope rather than a default.
+ */
+export const EMAIL = {
+  sender: 'no-reply@vidu.test',
+  subject: 'Mã xác thực Nét Thêu',
+  brand: 'Nét Thêu',
+  ignoreGuidance: 'Nếu bạn không yêu cầu mã này, bạn có thể bỏ qua email này.',
+} as const;
+
+/**
  * Vietnamese and English wording that would only appear if a phone or SMS
  * verification affordance came back. Asserted absent on every screen the flow
  * renders (`S01` §19).
@@ -207,6 +223,37 @@ export function capturedFor(address: string): any[] {
 /** Safe facts about one captured message — never its contents. */
 export function safeMessage(message: any): Record<string, unknown> {
   return smtp.safeMessage(message);
+}
+
+/**
+ * `APP12-N01.E01` §8 for one captured message: booleans and leak names only.
+ *
+ * The comparison happens inside the capture harness, so the code and the bodies
+ * never reach a Playwright matcher — a failed expectation names the field that
+ * was wrong and prints nothing that was secret.
+ */
+export function contentProof(
+  message: any,
+  expected: {
+    recipient: string;
+    minutes: number;
+    forbidden: ReadonlyArray<{ name: string; value: string | undefined }>;
+  },
+): Record<string, unknown> {
+  return smtp.contentProof(message, {
+    recipient: expected.recipient,
+    sender: EMAIL.sender,
+    subject: EMAIL.subject,
+    brand: EMAIL.brand,
+    ignoreGuidance: EMAIL.ignoreGuidance,
+    minutes: expected.minutes,
+    forbidden: expected.forbidden,
+  }) as Record<string, unknown>;
+}
+
+/** The SMTP password this run generated, so a spec can prove it never shipped. */
+export function smtpPassword(): string {
+  return String(smtp.workerEnv()['SMTP_PASSWORD']);
 }
 
 /** Total messages this listener has accepted, across every address. */
