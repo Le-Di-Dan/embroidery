@@ -6,8 +6,11 @@
 ROADMAP_STATUS         = LOCKED
 ROADMAP_LOCK           = LOCKED
 IMPLEMENTATION_STARTED = true
-CHECKPOINTS            = 39
-NEXT                   = APP12-U01 (operator/customer UAT) — NOT_AUTHORIZED
+CHECKPOINTS            = 41
+NEXT                   = APP12-N02 (Ready-Made sellability authoring &
+                         publication readiness) — AUTHORIZED; internal package
+                         N02.G01 COMPLETE — AWAITING_PO_REVIEW
+                         APP12-U01 = SUSPENDED_PENDING_BLOCKER_RECOVERY
 CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
                          APP12-G02-C1 (2026-09-01, 1/1 — no C2)
                          APP12-C01-C1 (2026-09-01, 1/1 — no C2)
@@ -42,10 +45,39 @@ OVERRIDE               = APP12-M01 inserted 2026-09-05 by explicit Human Product
                          `APP12-M01 = COMPLETE — PO CLOSED` (2026-09-09).
                          `APP12-G03` was authorized on that closure and is
                          COMPLETE (2026-09-09).
+
+                         APP12-N01 inserted 2026-09-09 by explicit Human Product
+                         Owner override (39 → 40). Email-only OTP delivery.
+                         Sequence: … G03 → N01 → U01 → E01 → R01 …
+                         Internal packages, not new checkpoint ids:
+                           N01.B01 OTP leaves the process               COMPLETE
+                           N01.S01 email is the verification identity   COMPLETE
+                           N01.E01 cross-boundary email acceptance      COMPLETE
+                         `APP12-N01 = COMPLETE — PO CLOSED` (2026-09-09).
+                         REAL_INBOX_MANUAL = PASS;
+                         PHONE_SMS_VERIFICATION_PRESENT = false.
+
+                         APP12-N02 inserted 2026-09-10 by explicit Human Product
+                         Owner override (40 → 41). Ready-Made sellability
+                         authoring and publication readiness — it owns the
+                         `APP12-U01` operator blocker (no delivered operation
+                         creates a `product_variants` row; `adminSku_create` has
+                         no Admin call site; readiness reports 7/7 green for a
+                         Product that can never be bought).
+                         Sequence: … G03 → N01 → N02 → U01 → E01 → R01 …
+                         Internal packages, not new checkpoint ids:
+                           N02.G01 gap audit                            COMPLETE
+                                   — AWAITING_PO_REVIEW
+                           N02.D01 bounded Admin sellability design     PENDING
+                           N02.B01 variant write authority + criteria   PENDING
+                           N02.A01 Admin variant/SKU/stock authoring    PENDING
+                           N02.E01 operator authoring acceptance        PENDING
+                         `APP12-U01 = SUSPENDED_PENDING_BLOCKER_RECOVERY` until
+                         N02 closes; `APP12-E01` / `APP12-R01` NOT_AUTHORIZED.
 ```
 
-The 39 checkpoints of the accepted C1 roadmap **as amended by the 2026-09-05
-Product Owner override** are immutable. Except through such an explicit
+The 41 checkpoints of the accepted C1 roadmap **as amended by the 2026-09-05,
+2026-09-09 and 2026-09-10 Product Owner overrides** are immutable. Except through such an explicit
 re-planning authority, no APP12 checkpoint ID may be invented, and they may not
 be reordered, merged, split or renamed.
 Work discovered later is handled only by (1) a correction of the current
@@ -314,7 +346,9 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | 29·C1 | `APP12-V02-C1` | i18n copy authority and Admin login reflow correction | `COMPLETE` |
 | 29·C2 | `APP12-V02-C2` | Media upload, processing and image delivery reliability correction | `COMPLETE` |
 | 29·M | `APP12-M01` | Product multi-image gallery (PO override, 2026-09-05) — stage A audit / stage B implementation | **`IMPLEMENTATION_IN_PROGRESS`** — `M01.A` AUDIT_COMPLETE (PO PASS); `M01.B1` COMPLETE; `M01.DB1` COMPLETE (migration `0039`, four `product_media` invariants, `MAX_PRODUCT_MEDIA_ITEMS = 20`); `M01.B2` COMPLETE (one bounded Admin media-only write, `adminProductMedia_replace`, published-Product curation without unpublishing); `M01.D1` COMPLETE_AFTER_C1 (18 frames on Figma page `APP_12` section `933:187`; primary anchored at position 0, no stage arrows, multi-select picker kept) + `M01.D1-C1` COMPLETE (correction 1/1 — Admin 390 media management, 7 frames, 20-image grid 1,938 px against 3,748 px in approved `438:90`; 25 registry rows now `APPROVED_FOR_IMPLEMENTATION` under `FIG-APPROVAL-APP12-M01-D1-PO-001`); `M01.A1` COMPLETE (Admin media grid at 1440/1024/390, primary anchored at position 0 with an explicit set-primary, the 20 cap enforced in the section and the picker, the whole-form PUBLISHED lock narrowed so commercial fields stay read-only while media curates through `adminProductMedia_replace`, five B2 refusals mapped to approved Vietnamese; eight live headed journeys against a disposable database carrying real WebP derivatives); internal next `M01.S1` |
-| 30 | `APP12-U01` | Wave 1 Ready-Made business UAT | `NOT_STARTED` |
+| 29·N1 | `APP12-N01` | Email-only OTP delivery (PO override, 2026-09-09, 39 → 40) | `COMPLETE — PO CLOSED` (2026-09-09) — `N01.B01` / `N01.S01` / `N01.E01` all PO PASS; `REAL_INBOX_MANUAL = PASS`, `OTP_FROM_REAL_INBOX_VERIFIED = true`, `PHONE_SMS_VERIFICATION_PRESENT = false`. Reports [`reports/APP12-N01-B01-COMPLETION-REPORT.md`](../reports/APP12-N01-B01-COMPLETION-REPORT.md), [`reports/APP12-N01-S01-COMPLETION-REPORT.md`](../reports/APP12-N01-S01-COMPLETION-REPORT.md), [`reports/APP12-N01-E01-COMPLETION-REPORT.md`](../reports/APP12-N01-E01-COMPLETION-REPORT.md), manual [`reports/APP12-N01-REAL-INBOX-MANUAL-REPORT.md`](../reports/APP12-N01-REAL-INBOX-MANUAL-REPORT.md). Closes `FU-APP12-U01-NOTIFICATION-PROVIDER`. |
+| 29·N2 | `APP12-N02` | Ready-Made sellability authoring & publication readiness (PO override, 2026-09-10, 40 → 41) | **`AUDIT_COMPLETE`** — `N02.G01` COMPLETE — AWAITING_PO_REVIEW ([`reports/APP12-N02-G01-COMPLETION-REPORT.md`](../reports/APP12-N02-G01-COMPLETION-REPORT.md)). Both U01 blockers confirmed against source, contract and the live database: 0 operations write `product_variants`, `addVariant` has 0 non-test callers, `adminSku_create` has 0 Admin call sites, and `ProductPublicationSnapshot` carries no variant/SKU/stock fact at all. Three further findings: `/kho/skus/{skuId}` is linked only from an order row (circular for a new SKU); 2 PUBLISHED Products in the shared dev world are already structurally unbuyable (`tui-vai-theu-thu-cong` 0 variants, `ao-thun-cotton` 1 variant / 0 SKUs); the gap originates in `APP2-A03-G01`, which correctly removed `Phiên bản & SKU` from the approved Product Form when no operation could serve it. Recommendation: 2 variant operations (CREATE + UPDATE, no DELETE), 3 blocking readiness criteria (`HAS_ACTIVE_VARIANT`, `HAS_ORDER_ELIGIBLE_SKU`, `SKU_PRICE_RESOLVABLE`), stock-anchor existence `NOT_REQUIRED`, stock quantity never a criterion, `low_stock_threshold` `NONBLOCKING_FOR_N02`. Internal next `N02.D01` (mandatory — no approved Admin variant/SKU design has ever existed). |
+| 30 | `APP12-U01` | Wave 1 Ready-Made business UAT | **`CORRECTION_REQUIRED`** → `SUSPENDED_PENDING_BLOCKER_RECOVERY` — executed 2026-09-09 ([`reports/APP12-U01-COMPLETION-REPORT.md`](../reports/APP12-U01-COMPLETION-REPORT.md)). Blocker 1 (operator cannot make a Product sellable) is owned by `APP12-N02`; blocker 2 (no channel reaches a customer) was closed by `APP12-N01`. Re-entry as `APP12-U01-C1` on the criteria in `APP12-N02-G01` §Q. |
 | 31 | `APP12-E01` | Wave 1 commerce regression, positive and negative | `NOT_STARTED` |
 | 32 | `APP12-R01` | **WAVE 1 RELEASE GATE** — Ready-Made GO / NO-GO | `NOT_STARTED` |
 | 33 | `APP12-W01` | Custom lifecycle UAT excluding Editor deep interaction | `NOT_STARTED` |
