@@ -24,9 +24,35 @@
  * Test-only.
  */
 
-/** Undoes quoted-printable soft line breaks. Nodemailer folds at 76 bytes. */
-function unfold(raw) {
-  return raw.replace(/=\r?\n/g, '');
+/**
+ * Decodes the quoted-printable message body — soft breaks **and** `=XX` bytes.
+ *
+ * Undoing the soft breaks alone is not enough, and the difference is not
+ * cosmetic. Quoted-printable escapes the `=` character itself, so the secure
+ * link's fragment carrier travels as `#t=3D<token>`. A reader that only unfolds
+ * therefore recovers a URL with two extra characters wedged between the carrier
+ * and the token — one that still has the right origin, the right path and a
+ * fragment, and so satisfies every *shape* assertion while being a token the
+ * grant resolver will never accept.
+ *
+ * That is exactly how it failed the first time this path could run at all
+ * (`APP12-E01-C1` §8): origin and fragment cases green, and the browser landing
+ * on "Liên kết không sử dụng được". The verification lane never noticed because
+ * a six-digit code is pure ASCII with nothing to escape.
+ */
+function decodeQuotedPrintable(raw) {
+  const unfolded = raw.replace(/=\r?\n/g, '');
+  const bytes = [];
+  for (let index = 0; index < unfolded.length; index += 1) {
+    const pair = unfolded.slice(index + 1, index + 3);
+    if (unfolded[index] === '=' && /^[0-9A-Fa-f]{2}$/.test(pair)) {
+      bytes.push(Number.parseInt(pair, 16));
+      index += 2;
+      continue;
+    }
+    bytes.push(unfolded.charCodeAt(index) & 0xff);
+  }
+  return Buffer.from(bytes).toString('utf8');
 }
 
 /**
@@ -40,7 +66,7 @@ function unfold(raw) {
  * The returned value is a secret. Navigate with it; never assert on it.
  */
 export function secureLinkFrom(message, path) {
-  const body = unfold(message.raw);
+  const body = decodeQuotedPrintable(message.raw);
   // Anchored on the configured path, so the footer's store links and the
   // unsubscribe line cannot match. `[^\s<>"]+` stops at whitespace and at the
   // angle brackets an HTML alternative wraps an href in.

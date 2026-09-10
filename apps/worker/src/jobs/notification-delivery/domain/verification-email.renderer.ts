@@ -32,14 +32,17 @@
  * folder.
  */
 
-/** The brand every customer-facing message signs with. */
-export const BRAND_NAME = 'Nét Thêu';
+import { BRAND_NAME, escapeHtml, type EmailContent } from './email-content';
 
-export interface VerificationEmailContent {
-  readonly subject: string;
-  readonly text: string;
-  readonly html: string;
-}
+/**
+ * Re-exported so this renderer stays the one import a caller of the
+ * verification message needs. The constant itself lives in `email-content`
+ * now that a second customer message signs with it (`APP12-E01-C1` §12).
+ */
+export { BRAND_NAME };
+
+/** The verification message's rendered form. The shared three-part shape. */
+export type VerificationEmailContent = EmailContent;
 
 export interface VerificationEmailInput {
   readonly code: string;
@@ -63,16 +66,6 @@ export function validityMinutes(issuedAt: Date, expiresAt: Date): number {
   const msPerMinute = 60 * 1000;
   const ms = expiresAt.getTime() - issuedAt.getTime();
   return Math.max(1, Math.ceil(ms / msPerMinute));
-}
-
-/** Escapes the five characters that change meaning inside HTML text. */
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 export function renderVerificationEmail(input: VerificationEmailInput): VerificationEmailContent {

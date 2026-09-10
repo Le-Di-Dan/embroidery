@@ -23,6 +23,30 @@
  * OTP generator anywhere in the system would be a second answer to "what is the
  * code", which is why there is not one here.
  *
+ * ### Two intents, two renderers, one discriminator (`APP12-E01-C1`)
+ *
+ * This class had a single render path until `APP12-E01` measured what that
+ * meant on the wire. `renderVerificationEmail` was called for *every* delivery,
+ * so an `ORDER_ACCESS` grant went out as "Mã xác thực email" with a 43-character
+ * bearer token in the position of a six-digit code, a 72-hour window printed as
+ * "4320 phút", and no link at all — `FU-APP12-E01-01`. A customer who had just
+ * paid could not reach their own order over the only transport that reaches
+ * humans.
+ *
+ * The fix is at this boundary and only here: {@link renderMessage} dispatches on
+ * `secretKind`, the field the envelope codec already validates against a closed
+ * set. Grant issuance, TTL, scope and fragment semantics are untouched — the
+ * message was wrong, not the credential.
+ *
+ * ### The URL is placed, never composed
+ *
+ * `secureLinkUrl` arrives finished from `notification-delivery.usecase`, which
+ * owns the configured origin, the landing path the scope selects and the `#t=`
+ * carrier (`ADR-APP4-001` §11). This adapter is not the URL composer; it does
+ * not parse, rebuild or re-encode that string, and a `SECURE_LINK_TOKEN` that
+ * arrives without one is refused rather than degraded into a message carrying
+ * the naked token.
+ *
  * ### Email only, by construction
  *
  * `NotificationChannel` still admits `SMS` because historical rows do. This
@@ -43,6 +67,7 @@
  */
 import { Injectable, Logger } from '@nestjs/common';
 import { createTransport, type Transporter } from 'nodemailer';
+import type { DeliverySecretKind } from '@embroidery/notification-delivery';
 
 import {
   type DeliveryResult,
@@ -50,8 +75,21 @@ import {
   type NotificationDelivery,
 } from '../../domain/channel/notification-channel.port';
 import type { SmtpTransportConfig } from '../../config/notification-transport.config';
+import type { EmailContent } from '../../domain/email-content';
 import { renderVerificationEmail } from '../../domain/verification-email.renderer';
+import { renderSecureOrderLinkEmail } from '../../domain/secure-order-link-email.renderer';
 import { maskRecipient } from '../../domain/recipient-mask';
+
+/**
+ * The two customer intents this transport can render (`APP4-G01` §7).
+ *
+ * `satisfies` rather than bare strings, exactly as `notification-delivery.usecase`
+ * writes them: the set lives in `@embroidery/notification-delivery`, and a typo
+ * here would fail *closed* rather than loudly — every secure link silently
+ * refused while every test about codes kept passing.
+ */
+const VERIFICATION_CODE = 'VERIFICATION_CODE' satisfies DeliverySecretKind;
+const SECURE_LINK_TOKEN = 'SECURE_LINK_TOKEN' satisfies DeliverySecretKind;
 
 /**
  * SMTP reply codes that mean "not now" rather than "not ever".
@@ -90,6 +128,51 @@ function failureClassOf(error: unknown): string {
   return 'SMTP_UNKNOWN_FAILURE';
 }
 
+/**
+ * The message one delivery becomes, or `undefined` to refuse it (§4, §5).
+ *
+ * The discriminator is `secretKind` and nothing else. Branching on the token's
+ * length, its TTL or its shape would be a guess dressed as a check: a
+ * six-character grant and a 43-character code are both representable, and the
+ * first envelope that carried one would be rendered as the other. The kind is
+ * the field the envelope codec already validated against a closed set, so it is
+ * the only honest question to ask.
+ *
+ * The dispatch is exhaustive by construction — an unrecognised kind, and a
+ * secure link with no URL, both return `undefined`, and the caller turns that
+ * into a refusal. There is deliberately no default branch: the failure this
+ * whole correction exists to undo (`FU-APP12-E01-01`) *was* a default branch,
+ * the verification renderer standing in for every kind that had not been
+ * thought about.
+ */
+function renderMessage(delivery: NotificationDelivery): EmailContent | undefined {
+  if (delivery.secretKind === VERIFICATION_CODE) {
+    return renderVerificationEmail({
+      code: delivery.secret,
+      issuedAt: delivery.issuedAt,
+      expiresAt: delivery.expiresAt,
+    });
+  }
+
+  if (delivery.secretKind === SECURE_LINK_TOKEN) {
+    // §5: the URL arrives already composed by the use case, from the configured
+    // origin, the landing the grant scope selects and the fragment carrier. If
+    // it is absent, this adapter has nothing to say — and what it must *not* do
+    // is fall back to the raw token, which is the bearer credential itself and
+    // would then be printed in a message with no way to use it. So: no message.
+    if (delivery.secureLinkUrl === undefined || delivery.secureLinkUrl === '') {
+      return undefined;
+    }
+    return renderSecureOrderLinkEmail({
+      secureLinkUrl: delivery.secureLinkUrl,
+      issuedAt: delivery.issuedAt,
+      expiresAt: delivery.expiresAt,
+    });
+  }
+
+  return undefined;
+}
+
 @Injectable()
 export class SmtpNotificationChannelAdapter implements NotificationChannelPort {
   private readonly logger = new Logger(SmtpNotificationChannelAdapter.name);
@@ -118,11 +201,18 @@ export class SmtpNotificationChannelAdapter implements NotificationChannelPort {
       return { outcome: 'FAILED', retryable: false };
     }
 
-    const content = renderVerificationEmail({
-      code: delivery.secret,
-      issuedAt: delivery.issuedAt,
-      expiresAt: delivery.expiresAt,
-    });
+    const content = renderMessage(delivery);
+    if (content === undefined) {
+      // Permanent, and no message at all. Waiting cannot supply a renderer for
+      // a kind that has none, and cannot conjure a URL the use case did not
+      // compose — both are defects upstream of this transport. The kind is a
+      // discriminator from a closed set, so naming it here is diagnosis, not
+      // disclosure; the secret, the recipient and the link stay out of the line.
+      this.logger.warn(
+        `Refusing a ${delivery.secretKind} delivery: no renderable message for that secret kind.`,
+      );
+      return { outcome: 'FAILED', retryable: false };
+    }
     const masked = maskRecipient(delivery.normalizedRecipient);
 
     try {

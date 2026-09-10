@@ -21,12 +21,19 @@
  * - **§3.4 / `FU-APP12-H08-04`** — that the Storefront being exercised was built
  *   from current source. The orchestrator now builds before it starts, and this
  *   asserts the served `BUILD_ID` is the one it built.
- * `PAYMENT_UNDER_REVIEW` (§13, §3.5) is **not** here. It needs a delivered
- * `ORDER_ACCESS` link to reach the state at all, and the finding this file
- * records is that no such link survives the SMTP transport — so scanning it from
- * this world would make an accessibility result hostage to an unrelated
- * blocker. It runs in `e01-review.acceptance.spec.ts` on the recording
- * topology, where the link is available, exactly as `APP12-S03` reaches it.
+ * - **`APP12-E01-C1` §8, §9** — that the link, once opened, renders *this*
+ *   customer's order and not another's. `APP12-E01` could not ask this: the
+ *   journey stopped at the message, because `FU-APP12-E01-01` meant no link
+ *   survived the SMTP transport at all. With the render dispatch corrected the
+ *   remaining cases run for the first time, and the last of them places a
+ *   second real order so that two live grants can be shown to stay separate.
+ *
+ * `PAYMENT_UNDER_REVIEW` (§13, §3.5) is **not** here, and stays where
+ * `APP12-E01` put it. It runs in `e01-review.acceptance.spec.ts` on the
+ * recording topology, exactly as `APP12-S03` reaches it, so an accessibility
+ * result is never hostage to a delivery defect — which is not a hypothetical
+ * arrangement: it is why that scan still had a result to report when this
+ * journey was red.
  *
  * ### Secrets
  *
@@ -38,7 +45,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { expect, test } from '@playwright/test';
+import { expect, test, type Browser, type Page } from '@playwright/test';
 
 import { COPY as S03_COPY } from './support/s03-world';
 import {
@@ -163,5 +170,63 @@ test.describe('the delivered ORDER_ACCESS link', () => {
       timeout: 20_000,
     });
     expect(await page.evaluate(() => window.location.hash)).toBe('');
+
+    // `APP12-E01-C1` §8.8. Reaching *a* secure order page is not the claim —
+    // the claim is that the message's own link opened **this customer's**
+    // order. Without this the journey would pass on a link that authorized
+    // correctly and rendered somebody else's.
+    await expect(page.locator('.secure-order__order-line')).toContainText(orderCode);
+  });
+
+  test('opens only its own order, never the next customer’s', async ({ page, browser }) => {
+    // `APP12-E01-C1` §9. Two real orders now exist in this world, each with its
+    // own delivered message. A grant that widened — to the customer, to the
+    // surface, or to "the most recent order" — would show the same page for
+    // both links, and every assertion above would still pass.
+    //
+    // The API tier states the denial matrix against expired, revoked and
+    // never-existed grants (`CMD-TEST-APP12-E01-API`, J3). What only a browser
+    // can add is this: two live, valid grants stay separate.
+    const second = await placeOrder(page);
+    expect(second.orderCode).not.toBe(orderCode);
+
+    // Each link is opened in a **fresh browser context**, and that is the
+    // recipient's situation rather than a harness convenience: these are two
+    // different customers, and neither has the other's client state. It also
+    // respects what `APP12-U01-C1` measured — a second `goto` in a page already
+    // on this route is a same-document fragment change, so the claim never
+    // re-runs and the surface correctly refuses to swap one live grant for
+    // another from inside the same session.
+    await inOwnBrowser(browser, async (fresh) => {
+      await openDeliveredOrderAccess(fresh, second.address);
+      await expect(fresh.locator('.secure-order__order-line')).toContainText(second.orderCode);
+      await expect(fresh.locator('.secure-order__order-line')).not.toContainText(orderCode);
+    });
+
+    // And the first link is unchanged by the second's existence.
+    await inOwnBrowser(browser, async (fresh) => {
+      await openDeliveredOrderAccess(fresh, address);
+      await expect(fresh.locator('.secure-order__order-line')).toContainText(orderCode);
+      await expect(fresh.locator('.secure-order__order-line')).not.toContainText(second.orderCode);
+    });
+    proofs['crossOrderIsolation'] = true;
   });
 });
+
+/**
+ * Runs one step in a browser context of its own, and always closes it.
+ *
+ * A context, not just a tab: the two links belong to two different customers,
+ * and a shared context would let one recipient's stored client state decide what
+ * the other's link does. The context inherits nothing from this run except the
+ * browser binary — every link opened through it is opened cold, exactly as it
+ * would be from a mail client.
+ */
+async function inOwnBrowser(browser: Browser, step: (page: Page) => Promise<void>): Promise<void> {
+  const context = await browser.newContext();
+  try {
+    await step(await context.newPage());
+  } finally {
+    await context.close();
+  }
+}

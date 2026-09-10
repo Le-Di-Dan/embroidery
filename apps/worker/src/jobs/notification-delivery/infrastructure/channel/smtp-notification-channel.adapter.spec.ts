@@ -131,6 +131,64 @@ describe('SmtpNotificationChannelAdapter', () => {
     });
   });
 
+  /**
+   * The regression that stops `FU-APP12-E01-01` from being fixed by breaking
+   * `APP12-N01` (`APP12-E01-C1` §3, §10).
+   *
+   * The correction gave this adapter a second renderer and a `secretKind`
+   * branch. The cheapest wrong way to do that is one merged "generic" template
+   * serving both intents, which would quietly reshape the verification message
+   * the Product Owner has already closed. So the verification path is asserted
+   * *positively* — it still says what it said — and *negatively*: none of the
+   * secure-link message has leaked into it.
+   */
+  describe('verification-email preservation', () => {
+    beforeEach(async () => {
+      server = await startSmtpCaptureServer({ username: USERNAME, password: PASSWORD });
+      adapter = new SmtpNotificationChannelAdapter(configFor(server.port));
+    });
+
+    it('still renders an OTP as an OTP, under the verification subject', async () => {
+      await adapter!.send(deliveryFor());
+
+      const message = server.messages[0]!;
+      expect(decodedSubject(message)).toBe('Mã xác thực Nét Thêu');
+      const body = decodedBody(message);
+      expect(body).toContain('Mã xác thực email');
+      expect(body).toContain(CODE);
+      // Minutes, still: an OTP window is read in minutes and the secure-link
+      // message's hour formatting must not have reached this path.
+      expect(body).toContain('10 phút');
+      expect(body).not.toContain('giờ');
+    });
+
+    it('carries none of the secure-order message', async () => {
+      await adapter!.send(deliveryFor());
+
+      const body = decodedBody(server.messages[0]!);
+      expect(body).not.toContain('Mở đơn hàng');
+      expect(body).not.toContain('Theo dõi đơn hàng của bạn');
+      expect(body).not.toContain('/truy-cap/don-hang');
+      // No anchor at all. The verification message has no action to click, and
+      // a link appearing in an OTP mail is the shape phishing filters score on.
+      expect(body).not.toMatch(/<a\s/);
+    });
+
+    it('dispatches on the secret kind alone, not on which fields arrived', async () => {
+      // A `VERIFICATION_CODE` that somehow carried a link is still a code. The
+      // discriminator is the kind the envelope codec validated; branching on
+      // field presence would make the message depend on an upstream accident.
+      await adapter!.send(
+        deliveryFor({ secureLinkUrl: 'http://cua-hang.localhost:8080/truy-cap/don-hang#t=x' }),
+      );
+
+      const body = decodedBody(server.messages[0]!);
+      expect(decodedSubject(server.messages[0]!)).toBe('Mã xác thực Nét Thêu');
+      expect(body).toContain(CODE);
+      expect(body).not.toContain('/truy-cap/don-hang');
+    });
+  });
+
   describe('failure classification', () => {
     it('classifies a 4xx refusal as retryable', async () => {
       server = await startSmtpCaptureServer({
